@@ -53,6 +53,8 @@ AHI shall be the last resort, prefer MHI or CAMD for God's sake!
   * Applied Y2K patch from https://aminet.net/dev/c/SASC_Y2k_patch.lha
 
 ### Setup:
+* All of the requirements above installed somewhere ...
+* ... and `path ... ADD`ed accordingly to make it callable.
 
 ----------------------
 * Point AHI4Developer: at AHI/Developer from https://www.lysator.liu.se/ahi/v4-site/files/ahi/system/ahidev.lha - no installation needed
