@@ -17,7 +17,6 @@ Some easy manual steps for the time being, an installer for everything AmiGUS ma
 * Copy `AmiGUS.audio` to `DEVS:AHI`
 * Reboot.
 * Open AHI settings from `Preferences` and set some AmiGUS audio modes.
-
 ### Tested Sofware:
 AHI shall be the last resort, prefer MHI or CAMD for God's sake!
 * HippoPlayer
