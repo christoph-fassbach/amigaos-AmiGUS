@@ -74,11 +74,14 @@ UWORD getBufferSamples(
  * a requested number of samples for use with the selected
  * copy function and playback mode properies.
  *
+ * @param playback Playback object pointer.
  * @param ahiBufferSamples Sample count suggested by AHI.
  *
  * @return Byte size to be fed to AHI.
  */
-ULONG AlignByteSizeForSamples( ULONG ahiBufferSamples );
+ULONG AlignByteSizeForSamples(
+  struct AmiGUSPcmPlayback * playback,
+  ULONG ahiBufferSamples );
 
 /**
  * As AHI suggests to only support AHIST_S16S for recording,
@@ -86,16 +89,19 @@ ULONG AlignByteSizeForSamples( ULONG ahiBufferSamples );
  * We will aim for a buffer size 
  * divisible by 8, 4 buffers per second, 4 bytes per sample.
  *
+ * @param recording Recording object pointer.
  * @param sampleRate Sample rate to use.
  *
  * @return Buffer byte size according to parameters above.
  */
-ULONG getRecordingBufferSize( LONG sampleRate );
+ULONG getRecordingBufferSize(
+  struct AmiGUSPcmRecording * recording,
+  LONG sampleRate );
 
-BOOL CreatePlaybackBuffers( VOID );
-VOID DestroyPlaybackBuffers( VOID );
+BOOL CreatePlaybackBuffers( struct AHIAudioCtrlDrv *aAudioCtrl );
+VOID DestroyPlaybackBuffers( struct AmiGUSAhiDriverData *driverData );
 
-BOOL CreateRecordingBuffers( VOID );
-VOID DestroyRecordingBuffers( VOID );
+BOOL CreateRecordingBuffers( struct AHIAudioCtrlDrv *aAudioCtrl );
+VOID DestroyRecordingBuffers( struct AmiGUSAhiDriverData *driverData );
 
 #endif /* BUFFERS_H */

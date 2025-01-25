@@ -110,9 +110,10 @@ UWORD getBufferSamples(
   return result;
 }
 
-ULONG getRecordingBufferSize( LONG sampleRate ) {
+ULONG getRecordingBufferSize(
+  struct AmiGUSPcmRecording * recording,
+  LONG sampleRate ) {
 
-  struct AmiGUSPcmRecording * recording = &AmiGUSBase->agb_Recording;
   const LONG recordingDivisor = 4; /* 4 buffers per second */
   const UBYTE shift = recording->agpr_AhiSampleShift;
   const UBYTE sampleSize = ( 1 << shift );
@@ -136,10 +137,12 @@ ULONG getRecordingBufferSize( LONG sampleRate ) {
 }
 
 // TRUE = failure
-BOOL CreatePlaybackBuffers( VOID ) {
+BOOL CreatePlaybackBuffers( struct AHIAudioCtrlDrv *aAudioCtrl ) {
 
-  struct AmiGUSPcmPlayback * playback = &AmiGUSBase->agb_Playback;
-  const ULONG bufferSize = AmiGUSBase->agb_AudioCtrl->ahiac_BuffSize;
+  struct AmiGUSAhiDriverData * driverData = 
+    ( struct AmiGUSAhiDriverData * ) aAudioCtrl->ahiac_DriverData;
+  struct AmiGUSPcmPlayback * playback = &driverData->agdd_Playback;
+  ULONG bufferSize = aAudioCtrl->ahiac_BuffSize;
   const LONG longSize = bufferSize >> 2; /* Buffers are ticking in LONGs! */
 
   if ( playback->agpp_Buffer[0] ) {
@@ -179,9 +182,9 @@ BOOL CreatePlaybackBuffers( VOID ) {
   return FALSE;
 }
 
-VOID DestroyPlaybackBuffers(VOID) {
+VOID DestroyPlaybackBuffers( struct AmiGUSAhiDriverData *driverData ) {
 
-  struct AmiGUSPcmPlayback * playback = &AmiGUSBase->agb_Playback;
+  struct AmiGUSPcmPlayback * playback = &driverData->agdd_Playback;
 
   if ( playback->agpp_Buffer[0] ) {
 
@@ -200,10 +203,12 @@ VOID DestroyPlaybackBuffers(VOID) {
   LOG_D(("D: All playback buffers free`ed\n"));
 }
 
-BOOL CreateRecordingBuffers( VOID ) {
+BOOL CreateRecordingBuffers( struct AHIAudioCtrlDrv *aAudioCtrl ) {
 
-  struct AmiGUSPcmRecording * recording = &AmiGUSBase->agb_Recording;
-  const LONG sampleRate = AmiGUSSampleRates[ AmiGUSBase->agb_HwSampleRateId ];
+  struct AmiGUSAhiDriverData * driverData = 
+    ( struct AmiGUSAhiDriverData * ) aAudioCtrl->ahiac_DriverData;
+  struct AmiGUSPcmRecording * recording = &driverData->agdd_Recording;
+  const LONG sampleRate = AmiGUSSampleRates[ driverData->agdd_HwSampleRateId ];
   ULONG byteSize;
   
   if ( recording->agpr_Buffer[0] ) {
@@ -211,7 +216,7 @@ BOOL CreateRecordingBuffers( VOID ) {
     LOG_D(("D: Recording buffers already exist!\n"));
     return FALSE;
   }
-  byteSize = getRecordingBufferSize( sampleRate );
+  byteSize = getRecordingBufferSize( recording, sampleRate );
   LOG_D(( "D: Allocating %ld BYTEs recording buffer for %ldHz.\n",
           byteSize,
           sampleRate ));
@@ -244,9 +249,9 @@ BOOL CreateRecordingBuffers( VOID ) {
   return FALSE;
 }
 
-VOID DestroyRecordingBuffers( VOID ) {
+VOID DestroyRecordingBuffers( struct AmiGUSAhiDriverData *driverData ) {
 
-  struct AmiGUSPcmRecording * recording = &AmiGUSBase->agb_Recording;
+  struct AmiGUSPcmRecording * recording = &driverData->agdd_Recording;
 
   if ( recording->agpr_Buffer[0] ) {
 
@@ -277,11 +282,13 @@ const ULONG CopyFunctionRequirementById[] = {
   0xffFFffF0  /*       4 LONGs                   */
 };
 
-ULONG AlignByteSizeForSamples( ULONG ahiBufferSamples ) {
+ULONG AlignByteSizeForSamples(
+  struct AmiGUSPcmPlayback * playback, 
+  ULONG ahiBufferSamples ) {
 
-  const ULONG index = AmiGUSBase->agb_Playback.agpp_CopyFunctionId;
+  const ULONG index = playback->agpp_CopyFunctionId;
   const ULONG mask = CopyFunctionRequirementById[ index ];
-  const UBYTE shift = AmiGUSBase->agb_Playback.agpp_AhiSampleShift;
+  const UBYTE shift = playback->agpp_AhiSampleShift;
   ULONG aligned = ahiBufferSamples;
 
   aligned <<= shift;    /* now: in BYTEs! */

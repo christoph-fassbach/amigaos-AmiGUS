@@ -70,6 +70,16 @@
  * Library base structure components
  *****************************************************************************/
 
+/** A single AmiGUS Board representation - owned by the AmiGUSBase driver    */
+struct AmiGUSPcmCard {
+  struct MinNode                agpc_Node;
+  APTR                          agpc_CardBase;      /* Card's base address   */
+  struct AHIAudioCtrlDrv      * agpc_PlaybackCtrl;  /* Attached play client  */
+  struct AHIAudioCtrlDrv      * agpc_RecordingCtrl; /* Attached rec client   */
+  ULONG                         agpc_StateFlags;    /* AmiGUS state as below */
+};
+
+/** Playback sub-structure of the driver data                                */
 struct AmiGUSPcmPlayback {
   /* Mixing/playback double-buffers to be copied to FIFO alternatingly       */
   ULONG                       * agpp_Buffer[2];      /* Fully LONG aligned!  */
@@ -77,24 +87,25 @@ struct AmiGUSPcmPlayback {
   ULONG                         agpp_BufferMax[2];   /* LONGs high mark each */
   ULONG                         agpp_CurrentBuffer;  /* Current playing buf. */
 
+  ULONG                         agpp_Watermark;      /* Counting in WORDs!   */
+
   CopyFunctionType              agpp_CopyFunction;   /* Magic AHI<->AmiGUS.. */
   ULONG                         agpp_CopyFunctionId; /* ID of CopyFunction   */
-
-  ULONG                         agpp_Watermark;      /* Counting in WORDs!   */
 
   UWORD                         agpp_HwSampleFormatId;   /* Sample format ID */
   UBYTE                         agpp_AhiSampleShift; /* Sample <> Byte shift */
   UBYTE                         agpp_Reserved0;      /* for alignment        */
 };
 
+/** Recording sub-structure of the driver data                               */
 struct AmiGUSPcmRecording {
   /* Recording double-buffers filled from FIFO/emptied by AHI alternatingly  */
   ULONG                       * agpr_Buffer[2];      /* Fully LONG aligned!  */
   ULONG                         agpr_BufferIndex[2]; /* Next LONG index each */
   ULONG                         agpr_BufferMax[2];   /* LONGs high mark each */
-
   ULONG                         agpr_CurrentBuffer;  /* Current recording b. */
 
+  /* NULL if recording not supported !!! */
   CopyFunctionType              agpr_CopyFunction;   /* Magic AmiGUS<->AHI.. */
   ULONG                         agpr_CopyFunctionId; /* ID of CopyFunction   */
 
@@ -102,56 +113,51 @@ struct AmiGUSPcmRecording {
 
   UWORD                         agpr_HwSampleFormatId;   /* Sample format ID */
   UBYTE                         agpr_AhiSampleShift; /* Sample <> Byte shift */
-
   UBYTE                         agpr_HwSourceId;          /* Input source ID */
-  //UWORD                         agpr_Reserved0;      /* for alignment        */
+};
+
+/** Driver data - owned by AHIAudioCtrlDrv->ahiac_DriverData                 */
+struct AmiGUSAhiDriverData {
+  struct AmiGUSPcmPlayback      agdd_Playback;       /* Playback vars group  */
+  struct AmiGUSPcmRecording     agdd_Recording;      /* Recording vars group */
+  struct AmiGUSPcmCard        * agdd_Card;           /* Driver attached card */
+  UWORD                         agdd_HwSampleRateId; /* HW sample rate ID    */
+  UWORD                         agdd_Reserved0;      /* for alignment        */
 };
 
 /******************************************************************************
  * Library base structure
  *****************************************************************************/
 
-/* This is the private structure. The official one does not contain all
-the private fields! */
 struct AmiGUSBase {
   /* Library base stuff */
   struct BaseLibrary            agb_BaseLibrary;
 
+  /* Library dependencies */
   struct ExecBase             * agb_SysBase;
   struct DosLibrary           * agb_DOSBase;
   struct IntuitionBase        * agb_IntuitionBase;
   struct Library              * agb_UtilityBase;
   struct Library              * agb_ExpansionBase;
 
+  /* List of driver compatible boards found in the system */
+  struct MinList                agb_CardList;
+
+  /* Interrupt, main/worker process and messaging members */
+  struct Interrupt            * agb_Interrupt;        /*                     */
+  struct Process              * agb_MainProcess;      /*                     */
+  struct Process              * agb_WorkerProcess;    /*                     */
+  LONG                          agb_WorkerReady;      /*                     */
+  BYTE                          agb_MainSignal;       /*                     */
+  BYTE                          agb_WorkerWorkSignal; /*                     */
+  BYTE                          agb_WorkerStopSignal; /*                     */
+  UBYTE                         agb_Reserved0;        /* for alignment       */
+
+  /* Debugging / logging members */
   struct Device               * agb_TimerBase;
   struct IORequest            * agb_TimerRequest;
-  /* AmiGUS specific member variables */
-  APTR                          agb_CardBase;
-  struct Interrupt            * agb_Interrupt;
-  struct Process              * agb_MainProcess;
-  struct Process              * agb_WorkerProcess;
-  LONG                          agb_WorkerReady;
-  BYTE                          agb_MainSignal;
-  BYTE                          agb_WorkerWorkSignal;
-  BYTE                          agb_WorkerStopSignal;
-  /* Only 1 AmiGUS supported per machine currently, sorry */
-  BYTE                          agb_UsageCounter;    
-
-  /* Driver settings */
-  UWORD                         agb_HwSampleRateId; /* HW sample rate ID    */
-  // UWORD                         agb_Reserved0; 
-
-  UBYTE                         agb_CanRecord;      /* Can record? Yes / No  */
-  UBYTE                         agb_StateFlags;     /* AmiGUS state as below */
-
-
-  struct AmiGUSPcmPlayback      agb_Playback;       /* Playback vars group   */
-  struct AmiGUSPcmRecording     agb_Recording;      /* Recording vars group  */
-  
-  struct AHIAudioCtrlDrv      * agb_AudioCtrl;
-
-  BPTR                          agb_LogFile;       /* Debug log file handle  */
-  APTR                          agb_LogMem;        /* Debug log memory blob  */
+  BPTR                          agb_LogFile;        /* Debug log file handle */
+  APTR                          agb_LogMem;         /* Debug log memory blob */
 };
 
 #if defined(BASE_GLOBAL)

@@ -128,6 +128,7 @@ BOOL testPlaybackCopy16to8( VOID ) {
   BOOL failed = FALSE;
   LONG out;
   int i;
+  struct AmiGUSPcmPlayback playback;
 
   /********* for copy function tests, just adapt the between section *********/
   ULONG in[] = { 0x00000000, 0x12345678, 0x9abcdef0, 0xffFFffFF };
@@ -135,13 +136,13 @@ BOOL testPlaybackCopy16to8( VOID ) {
   ULONG exp[] = { 3, 4, 1, 1 };
   STRPTR expF[] = { "12569ade" };
 
-  AmiGUSBase->agb_Playback.agpp_CopyFunction = PlaybackCopyFunctionById[ 0 ];
+  playback.agpp_CopyFunction = PlaybackCopyFunctionById[ 0 ];
   printf("\nTesting PlaybackCopy16to8 ...\n");
   /********* for copy function tests, just adapt the between section *********/
   
   flushFIFO();
 
-  out = (* AmiGUSBase->agb_Playback.agpp_CopyFunction)( in, &index );
+  out = (* playback.agpp_CopyFunction)( NULL, in, &index );
 
   tst0 = ( exp[ 0 ] == index );
   tst1 = ( exp[ 1 ] == out );
@@ -179,6 +180,7 @@ BOOL testPlaybackCopy16to16( VOID ) {
   BOOL failed = FALSE;
   LONG out;
   int i;
+  struct AmiGUSPcmPlayback playback;
 
   /********* for copy function tests, just adapt the between section *********/
   ULONG in[] = { 0x00000000, 0x12345678, 0xffFFffFF };
@@ -186,13 +188,13 @@ BOOL testPlaybackCopy16to16( VOID ) {
   ULONG exp[] = { 2, 4, 1, 1 };
   STRPTR expF[] = { "12345678" };
 
-  AmiGUSBase->agb_Playback.agpp_CopyFunction = PlaybackCopyFunctionById[ 1 ];
+  playback.agpp_CopyFunction = PlaybackCopyFunctionById[ 1 ];
   printf("\nTesting PlaybackCopy16to16 ...\n");
   /********* for copy function tests, just adapt the between section *********/
   
   flushFIFO();
 
-  out = (* AmiGUSBase->agb_Playback.agpp_CopyFunction)( in, &index );
+  out = (* playback.agpp_CopyFunction)( NULL, in, &index );
 
   tst0 = ( exp[ 0 ] == index );
   tst1 = ( exp[ 1 ] == out );
@@ -230,6 +232,7 @@ BOOL testPlaybackCopy32to8( VOID ) {
   BOOL failed = FALSE;
   LONG out;
   int i;
+  struct AmiGUSPcmPlayback playback;
 
   /********* for copy function tests, just adapt the between section *********/
   ULONG in[] =  {
@@ -243,13 +246,13 @@ BOOL testPlaybackCopy32to8( VOID ) {
   ULONG exp[] = { 5, 4, 1, 1 };
   STRPTR expF[] = { "129a0f87" };
 
-  AmiGUSBase->agb_Playback.agpp_CopyFunction = PlaybackCopyFunctionById[ 2 ];
+  playback.agpp_CopyFunction = PlaybackCopyFunctionById[ 2 ];
   printf("\nTesting PlaybackCopy32to8 ...\n");
   /********* for copy function tests, just adapt the between section *********/
   
   flushFIFO();
 
-  out = (* AmiGUSBase->agb_Playback.agpp_CopyFunction)( in, &index );
+  out = (* playback.agpp_CopyFunction)( NULL, in, &index );
 
   tst0 = ( exp[ 0 ] == index );
   tst1 = ( exp[ 1 ] == out );
@@ -287,6 +290,7 @@ BOOL testPlaybackCopy32to16( VOID ) {
   BOOL failed = FALSE;
   LONG out;
   int i;
+  struct AmiGUSPcmPlayback playback;
 
   /********* for copy function tests, just adapt the between section *********/
   ULONG in[] = { 0x00000000, 0x12345678, 0x9abcdef0, 0xffFFffFF };
@@ -294,13 +298,13 @@ BOOL testPlaybackCopy32to16( VOID ) {
   ULONG exp[] = { 3, 4, 1, 1 };
   STRPTR expF[] = { "12349abc" };
 
-  AmiGUSBase->agb_Playback.agpp_CopyFunction = PlaybackCopyFunctionById[ 3 ];
+  playback.agpp_CopyFunction = PlaybackCopyFunctionById[ 3 ];
   printf("\nTesting PlaybackCopy32to16 ...\n");
   /********* for copy function tests, just adapt the between section *********/
   
   flushFIFO();
 
-  out = (* AmiGUSBase->agb_Playback.agpp_CopyFunction)( in, &index );
+  out = (* playback.agpp_CopyFunction)( NULL, in, &index );
 
   tst0 = ( exp[ 0 ] == index );
   tst1 = ( exp[ 1 ] == out );
@@ -338,6 +342,7 @@ BOOL testPlaybackCopy32to24( VOID ) {
   BOOL failed = FALSE;
   LONG out;
   int i;
+  struct AmiGUSPcmPlayback playback;
 
   /********* for copy function tests, just adapt the between section *********/
   ULONG in[] = {
@@ -354,13 +359,13 @@ BOOL testPlaybackCopy32to24( VOID ) {
     "bcde0fed",
     "cb876543" };
 
-  AmiGUSBase->agb_Playback.agpp_CopyFunction = PlaybackCopyFunctionById[ 4 ];
+  playback.agpp_CopyFunction = PlaybackCopyFunctionById[ 4 ];
   printf("\nTesting PlaybackCopy32to24 ...\n");
   /********* for copy function tests, just adapt the between section *********/
   
   flushFIFO();
 
-  out = (* AmiGUSBase->agb_Playback.agpp_CopyFunction)( in, &index );
+  out = (* playback.agpp_CopyFunction)( NULL, in, &index );
 
   tst0 = ( exp[ 0 ] == index );
   tst1 = ( exp[ 1 ] == out );
@@ -398,25 +403,27 @@ BOOL testPlaybackCopyFunctionCalling( VOID ) {
   BOOL failed = FALSE;
   LONG out;
   int i;
+  struct AmiGUSPcmPlayback playback;
 
   /********* for copy function tests, just adapt the between section *********/
   ULONG in[] = { 0x00000000, 0x12345678, 0xffFFffFF };
   ULONG exp[] = { 2, 4, 1, 1 };
   STRPTR expF[] = { "12345678" };
 
-  AmiGUSBase->agb_Playback.agpp_CopyFunction = PlaybackCopyFunctionById[ 1 ];
-  AmiGUSBase->agb_Playback.agpp_Buffer[ 0 ] = in;
-  AmiGUSBase->agb_Playback.agpp_BufferIndex[ 0 ] = 1;
+  playback.agpp_CopyFunction = PlaybackCopyFunctionById[ 1 ];
+  playback.agpp_Buffer[ 0 ] = in;
+  playback.agpp_BufferIndex[ 0 ] = 1;
   printf("\nTesting PlaybackCopyFunctionCalling ...\n");
   /********* for copy function tests, just adapt the between section *********/
   
   flushFIFO();
 
-  out = (* AmiGUSBase->agb_Playback.agpp_CopyFunction)(
-    AmiGUSBase->agb_Playback.agpp_Buffer[ 0 ],
-    &( AmiGUSBase->agb_Playback.agpp_BufferIndex[ 0 ] ));
+  out = (* playback.agpp_CopyFunction)(
+    NULL,
+    playback.agpp_Buffer[ 0 ],
+    &( playback.agpp_BufferIndex[ 0 ] ));
 
-  tst0 = ( exp[ 0 ] == AmiGUSBase->agb_Playback.agpp_BufferIndex[ 0 ] );
+  tst0 = ( exp[ 0 ] == playback.agpp_BufferIndex[ 0 ] );
   tst1 = ( exp[ 1 ] == out );
   tst2 = ( exp[ 2 ] == nextTestFIFO );
   for ( i = 0; i < exp[ 3 ]; ++i ) {
@@ -428,7 +435,7 @@ BOOL testPlaybackCopyFunctionCalling( VOID ) {
           "Bytes written:     %8ld (expected) - %8ld (actual) - \t%s\n"
           "Next FIFO index:   %8ld (expected) - %8ld (actual) - \t%s\n"
           "FIFO content:                                   %s - \t%s\n",
-          exp[ 0 ], AmiGUSBase->agb_Playback.agpp_BufferIndex[ 0 ], (tst0) ? "passed" : "FAIL!!",
+          exp[ 0 ], playback.agpp_BufferIndex[ 0 ], (tst0) ? "passed" : "FAIL!!",
           exp[ 1 ], out, (tst1) ? "passed" : "FAIL!!",
           exp[ 2 ], nextTestFIFO, (tst2) ? "passed" : "FAIL!!",
           "          ", (tst3) ? "passed" : "FAIL!!" );
@@ -452,6 +459,7 @@ BOOL testRecordingCopy8Mto16S( VOID ) {
   BOOL failed = FALSE;
   LONG out;
   int i;
+  struct AmiGUSPcmRecording recording;
 
   /**** for recording copy function tests, just adapt the between section ****/
   ULONG in[] = {
@@ -473,7 +481,7 @@ BOOL testRecordingCopy8Mto16S( VOID ) {
     0x78007800,
     0x00000000 };
 
-  AmiGUSBase->agb_Recording.agpr_CopyFunction = RecordingCopyFunctionById[ 0 ];
+  recording.agpr_CopyFunction = RecordingCopyFunctionById[ 0 ];
   printf("\nTesting RecordingCopy8Mto16S ...\n");
   /**** for recording copy function tests, just adapt the between section ****/
 
@@ -483,7 +491,7 @@ BOOL testRecordingCopy8Mto16S( VOID ) {
     testLongFIFO[ i ] = in[ i ];
   }
 
-  out = (* AmiGUSBase->agb_Recording.agpr_CopyFunction)( target, &index );
+  out = (* recording.agpr_CopyFunction)( NULL, target, &index );
 
   tst0 = ( exp[ 0 ] == index );
   tst1 = ( exp[ 1 ] == out );
@@ -521,6 +529,7 @@ BOOL testRecordingCopy8Sto16S( VOID ) {
   BOOL failed = FALSE;
   LONG out;
   int i;
+  struct AmiGUSPcmRecording recording;
 
   /**** for recording copy function tests, just adapt the between section ****/
   ULONG in[] = {
@@ -538,7 +547,7 @@ BOOL testRecordingCopy8Sto16S( VOID ) {
     0x56007800,
     0x00000000 };
 
-  AmiGUSBase->agb_Recording.agpr_CopyFunction = RecordingCopyFunctionById[ 1 ];
+  recording.agpr_CopyFunction = RecordingCopyFunctionById[ 1 ];
   printf("\nTesting RecordingCopy8Sto16S ...\n");
   /**** for recording copy function tests, just adapt the between section ****/
 
@@ -548,7 +557,7 @@ BOOL testRecordingCopy8Sto16S( VOID ) {
     testLongFIFO[ i ] = in[ i ];
   }
 
-  out = (* AmiGUSBase->agb_Recording.agpr_CopyFunction)( target, &index );
+  out = (* recording.agpr_CopyFunction)( NULL, target, &index );
 
   tst0 = ( exp[ 0 ] == index );
   tst1 = ( exp[ 1 ] == out );
@@ -586,6 +595,7 @@ BOOL testRecordingCopy16Mto16S( VOID ) {
   BOOL failed = FALSE;
   LONG out;
   int i;
+  struct AmiGUSPcmRecording recording;
 
   /**** for recording copy function tests, just adapt the between section ****/
   ULONG in[] = {
@@ -603,7 +613,7 @@ BOOL testRecordingCopy16Mto16S( VOID ) {
     0x56785678,
     0x00000000 };
 
-  AmiGUSBase->agb_Recording.agpr_CopyFunction = RecordingCopyFunctionById[ 2 ];
+  recording.agpr_CopyFunction = RecordingCopyFunctionById[ 2 ];
   printf("\nTesting RecordingCopy16Mto16S ...\n");
   /**** for recording copy function tests, just adapt the between section ****/
 
@@ -613,7 +623,7 @@ BOOL testRecordingCopy16Mto16S( VOID ) {
     testLongFIFO[ i ] = in[ i ];
   }
 
-  out = (* AmiGUSBase->agb_Recording.agpr_CopyFunction)( target, &index );
+  out = (* recording.agpr_CopyFunction)( NULL, target, &index );
 
   tst0 = ( exp[ 0 ] == index );
   tst1 = ( exp[ 1 ] == out );
@@ -651,6 +661,7 @@ BOOL testRecordingCopy16Sto16S( VOID ) {
   BOOL failed = FALSE;
   LONG out;
   int i;
+  struct AmiGUSPcmRecording recording;
 
   /**** for recording copy function tests, just adapt the between section ****/
   ULONG in[] = {
@@ -666,7 +677,7 @@ BOOL testRecordingCopy16Sto16S( VOID ) {
     0x12345678,
     0x00000000 };
 
-  AmiGUSBase->agb_Recording.agpr_CopyFunction = RecordingCopyFunctionById[ 3 ];
+  recording.agpr_CopyFunction = RecordingCopyFunctionById[ 3 ];
   printf("\nTesting RecordingCopy16Sto16S ...\n");
   /**** for recording copy function tests, just adapt the between section ****/
 
@@ -676,7 +687,7 @@ BOOL testRecordingCopy16Sto16S( VOID ) {
     testLongFIFO[ i ] = in[ i ];
   }
 
-  out = (* AmiGUSBase->agb_Recording.agpr_CopyFunction)( target, &index );
+  out = (* recording.agpr_CopyFunction)( NULL, target, &index );
 
   tst0 = ( exp[ 0 ] == index );
   tst1 = ( exp[ 1 ] == out );
@@ -714,6 +725,7 @@ BOOL testRecordingCopy24Mto32S( VOID ) {
   BOOL failed = FALSE;
   LONG out;
   int i;
+  struct AmiGUSPcmRecording recording;
 
   /**** for recording copy function tests, just adapt the between section ****/
   ULONG in[] = {
@@ -740,7 +752,7 @@ BOOL testRecordingCopy24Mto32S( VOID ) {
     0x9abc0300,
     0x00000000 };
 
-  AmiGUSBase->agb_Recording.agpr_CopyFunction = RecordingCopyFunctionById[ 4 ];
+  recording.agpr_CopyFunction = RecordingCopyFunctionById[ 4 ];
   printf("\nTesting RecordingCopy24Mto32S ...\n");
   /**** for recording copy function tests, just adapt the between section ****/
 
@@ -750,7 +762,7 @@ BOOL testRecordingCopy24Mto32S( VOID ) {
     testLongFIFO[ i ] = in[ i ];
   }
 
-  out = (* AmiGUSBase->agb_Recording.agpr_CopyFunction)( target, &index );
+  out = (* recording.agpr_CopyFunction)( NULL, target, &index );
 
   tst0 = ( exp[ 0 ] == index );
   tst1 = ( exp[ 1 ] == out );
@@ -788,6 +800,7 @@ BOOL testRecordingCopy24Sto32S( VOID ) {
   BOOL failed = FALSE;
   LONG out;
   int i;
+  struct AmiGUSPcmRecording recording;
 
   /**** for recording copy function tests, just adapt the between section ****/
   ULONG in[] = {
@@ -819,7 +832,7 @@ BOOL testRecordingCopy24Sto32S( VOID ) {
     0x43210800,
     0x00000000 };
 
-  AmiGUSBase->agb_Recording.agpr_CopyFunction = RecordingCopyFunctionById[ 5 ];
+  recording.agpr_CopyFunction = RecordingCopyFunctionById[ 5 ];
   printf("\nTesting RecordingCopy24Sto32S ...\n");
   /**** for recording copy function tests, just adapt the between section ****/
 
@@ -829,7 +842,7 @@ BOOL testRecordingCopy24Sto32S( VOID ) {
     testLongFIFO[ i ] = in[ i ];
   }
 
-  out = (* AmiGUSBase->agb_Recording.agpr_CopyFunction)( target, &index );
+  out = (* recording.agpr_CopyFunction)( NULL, target, &index );
 
   tst0 = ( exp[ 0 ] == index );
   tst1 = ( exp[ 1 ] == out );

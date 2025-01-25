@@ -205,10 +205,10 @@ BOOL testGetBufferSizes( VOID ) {
   return failed;
 }
 
-ULONG alignBufferSamplesRef( ULONG ahiBuffSamples ) {
+ULONG alignBufferSamplesRef( struct AmiGUSPcmPlayback * playback, ULONG ahiBuffSamples ) {
 
-  ULONG mask = CopyFunctionRequirementById[ AmiGUSBase->agb_Playback.agpp_CopyFunctionId ];
-  UBYTE shift = AmiGUSBase->agb_Playback.agpp_AhiSampleShift;
+  ULONG mask = CopyFunctionRequirementById[ playback->agpp_CopyFunctionId ];
+  UBYTE shift = playback->agpp_AhiSampleShift;
   ULONG aligned = ahiBuffSamples;
 
   aligned <<= shift;
@@ -262,13 +262,14 @@ BOOL testAlignBuffSamples( VOID ) {
     for ( shift = 1; 4 > shift; ++shift ) {
       for ( i = 0; NUM_SAMPLE_RATES > i; ++i ) {
 
+        struct AmiGUSPcmPlayback playback;
         suggestedBufferSize = sampleRates[ i ] / 100;
-        AmiGUSBase->agb_Playback.agpp_CopyFunctionId = copyFunctionId;
-        AmiGUSBase->agb_Playback.agpp_AhiSampleShift = shift;
+        playback.agpp_CopyFunctionId = copyFunctionId;
+        playback.agpp_AhiSampleShift = shift;
 
-        alignedBufferSize = AlignByteSizeForSamples( suggestedBufferSize )
-                            >> AmiGUSBase->agb_Playback.agpp_AhiSampleShift;
-        ref = alignBufferSamplesRef( suggestedBufferSize );
+        alignedBufferSize = AlignByteSizeForSamples( &playback, suggestedBufferSize )
+                            >> playback.agpp_AhiSampleShift;
+        ref = alignBufferSamplesRef( &playback, suggestedBufferSize );
 
         exp0 = ( alignedBufferSize <= suggestedBufferSize );
         exp1 = ( suggestedBufferSize - alignedBufferSize <= 6 );
@@ -296,8 +297,8 @@ BOOL testAlignBuffSamples( VOID ) {
           h4, h5, h5, h5, h6,
           h0, h1, h1, h1, h2 );
   printf( "Example mask: 0x%08lx, Example ~ mask: 0x%08lx\n",
-          CopyFunctionRequirementById[ AmiGUSBase->agb_Playback.agpp_CopyFunctionId ],
-          ~CopyFunctionRequirementById[ AmiGUSBase->agb_Playback.agpp_CopyFunctionId ] );
+          CopyFunctionRequirementById[ copyFunctionId - 1 ],
+          ~CopyFunctionRequirementById[ copyFunctionId - 1 ] );
   return failed;
 }
 

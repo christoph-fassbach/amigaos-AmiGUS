@@ -32,6 +32,10 @@ ASM(ULONG) SAVEDS AHIsub_AllocAudio(
   REG(a1, struct TagItem* aTagList),
   REG(a2, struct AHIAudioCtrlDrv* aAudioCtrl)
 ) {
+
+  struct AmiGUSAhiDriverData *driverData;
+  struct AmiGUSPcmPlayback *playback;
+  struct AmiGUSPcmRecording *recording;
   struct TagItem *stateTag = 0;
   struct TagItem *tag;
   ULONG sampleRateId;
@@ -47,6 +51,8 @@ ASM(ULONG) SAVEDS AHIsub_AllocAudio(
   UBYTE bitsPerAmiGusSample = 0;
   BYTE playSampleBytesShift = -1;
   BYTE recSampleBytesShift = -1;
+  struct AmiGUSPcmCard *card =
+    ( struct AmiGUSPcmCard * ) AmiGUSBase->agb_CardList.mlh_Head;
 
   /* 
    * Will rely on AHI provided mixing and timing,
@@ -64,19 +70,18 @@ ASM(ULONG) SAVEDS AHIsub_AllocAudio(
    * ------------------------------------------------------
    */
   Disable();
-  if ( AmiGUSBase->agb_UsageCounter ) {
+  while (( card->agpc_PlaybackCtrl ) && ( card->agpc_RecordingCtrl )) {
 
-    // TODO: Allow 2 clients here - 1 for recording, 1 for playback! Need to be super independent though and some rework before...
-    Enable();
-    DisplayError( EDriverInUse );
-    return AHISF_ERROR;
-  
-  } else {
+    if ( !( card->agpc_Node.mln_Succ ) ) {
 
-    ++AmiGUSBase->agb_UsageCounter;
-    Enable();
+      Enable();
+      DisplayError( EDriverInUse );
+      return AHISF_ERROR;
+    }
+    card = ( struct AmiGUSPcmCard * )card->agpc_Node.mln_Succ;
   }
-  LOG_D(("D: Alloc`ed AmiGUS AHI hardware\n"));
+  Enable();
+  LOG_D(( "D: Alloc`ed AmiGUS AHI hardware\n" ));
 
   /*
    * ------------------------------------------------------
@@ -207,30 +212,55 @@ ASM(ULONG) SAVEDS AHIsub_AllocAudio(
     return AHISF_ERROR;
   }
 
-  AmiGUSBase->agb_HwSampleRateId = sampleRateId;
-  AmiGUSBase->agb_CanRecord = canRecord;
+  driverData = AllocVec( sizeof( struct AmiGUSAhiDriverData ), MEMF_FAST );
+  if ( !driverData ) {
 
-  AmiGUSBase->agb_Playback.agpp_HwSampleFormatId = playHwSampleFormatId;
-  AmiGUSBase->agb_Playback.agpp_AhiSampleShift = playSampleBytesShift;
-  AmiGUSBase->agb_Playback.agpp_CopyFunctionId =
-    playbackCopyFunctionId;
-  AmiGUSBase->agb_Playback.agpp_CopyFunction =
+    DisplayError( EOutOfMemory );
+    return AHISF_ERROR;
+  }
+  driverData->agdd_HwSampleRateId = sampleRateId;
+
+  playback = &( driverData->agdd_Playback );
+  playback->agpp_Buffer[ 0 ] = NULL;
+  playback->agpp_Buffer[ 1 ] = NULL;
+  playback->agpp_BufferIndex[ 0 ] = 0;
+  playback->agpp_BufferIndex[ 1 ] = 0;
+  playback->agpp_BufferMax[ 0 ] = 0;
+  playback->agpp_BufferMax[ 1 ] = 0;
+  playback->agpp_CurrentBuffer = 0;
+  playback->agpp_Watermark = 0;
+  playback->agpp_CopyFunctionId = playbackCopyFunctionId;
+  playback->agpp_CopyFunction =
     PlaybackCopyFunctionById[ playbackCopyFunctionId ];
+  playback->agpp_HwSampleFormatId = playHwSampleFormatId;
+  playback->agpp_AhiSampleShift = playSampleBytesShift;
 
-  AmiGUSBase->agb_Recording.agpr_HwSampleFormatId = recHwSampleFormatId;
-  AmiGUSBase->agb_Recording.agpr_AhiSampleShift = recSampleBytesShift;
-  AmiGUSBase->agb_Recording.agpr_CopyFunctionId =
-    recordingCopyFunctionId;
-  AmiGUSBase->agb_Recording.agpr_CopyFunction =
-    RecordingCopyFunctionById[ recordingCopyFunctionId ];
-  AmiGUSBase->agb_Recording.agpr_RecordingMessage.ahirm_Type =
+  recording = &( driverData->agdd_Recording );
+  recording->agpr_Buffer[ 0 ] = NULL;
+  recording->agpr_Buffer[ 1 ] = NULL;
+  recording->agpr_BufferIndex[ 0 ] = 0;
+  recording->agpr_BufferIndex[ 1 ] = 0;
+  recording->agpr_BufferMax[ 0 ] = 0;
+  recording->agpr_BufferMax[ 1 ] = 0;
+  recording->agpr_CurrentBuffer = 0;
+  recording->agpr_CopyFunction = ( canRecord ) ?
+      RecordingCopyFunctionById[ recordingCopyFunctionId ] :
+      NULL;
+  recording->agpr_CopyFunctionId = recordingCopyFunctionId;
+  recording->agpr_RecordingMessage.ahirm_Type =
         RecordingSampleTypeById[ recordingCopyFunctionId ];
+  recording->agpr_RecordingMessage.ahirm_Buffer = NULL;
+  recording->agpr_RecordingMessage.ahirm_Length = 0;
+  recording->agpr_HwSampleFormatId = recHwSampleFormatId;
+  recording->agpr_AhiSampleShift = recSampleBytesShift;
+  recording->agpr_HwSourceId = 0;
 
   /*
    * ------------------------------------------------------
    * Part 4: Prepare slave task communication.
    * ------------------------------------------------------
    */
+  // TODO: only if needed! not twice!
   AmiGUSBase->agb_WorkerWorkSignal = -1;
   AmiGUSBase->agb_WorkerStopSignal = -1;
   AmiGUSBase->agb_MainProcess = ( struct Process * ) FindTask( NULL );
@@ -250,7 +280,12 @@ ASM(ULONG) SAVEDS AHIsub_AllocAudio(
 ASM(void) SAVEDS AHIsub_FreeAudio(
   REG(a2, struct AHIAudioCtrlDrv *aAudioCtrl)
 ) {
-  LOG_D(("D: AHIsub_FreeAudio start\n"));
+
+  struct AmiGUSAhiDriverData * driverData = 
+    ( struct AmiGUSAhiDriverData * ) aAudioCtrl->ahiac_DriverData;
+  struct AmiGUSPcmCard * card = driverData->agdd_Card;
+
+  LOG_D(( "D: AHIsub_FreeAudio start\n" ));
 
   /*
    * ------------------------------------------------------
@@ -260,7 +295,27 @@ ASM(void) SAVEDS AHIsub_FreeAudio(
   /* Freeing a non-alloc`ed signal, i.e. -1, is harmless */
   FreeSignal( AmiGUSBase->agb_MainSignal );
   AmiGUSBase->agb_MainSignal = -1;
-  LOG_D(("D: Free`ed main signal\n"));
+  LOG_D(( "D: Free`ed main signal\n" ));
+  // TODO: nope, cannot do that here! Only for last one!
+
+  /*
+   * ------------------------------------------------------
+   * Part 3: Free driver data.
+   * ------------------------------------------------------
+   */
+  FreeVec( aAudioCtrl->ahiac_DriverData );
+  aAudioCtrl->ahiac_DriverData = NULL;
+  // TODO: should that be in stop only?
+  if ( aAudioCtrl == card->agpc_PlaybackCtrl ) {
+
+    card->agpc_PlaybackCtrl = NULL;
+    card->agpc_StateFlags &= AMIGUS_AHI_F_PLAY_STOP_MASK;
+  }
+  if ( aAudioCtrl == card->agpc_RecordingCtrl ) {
+
+    card->agpc_RecordingCtrl = NULL;
+    card->agpc_StateFlags &= AMIGUS_AHI_F_REC_STOP_MASK;
+  }
 
   /*
    * ------------------------------------------------------
@@ -269,20 +324,11 @@ ASM(void) SAVEDS AHIsub_FreeAudio(
    * ------------------------------------------------------
    */
   Disable();
-  if ( !AmiGUSBase->agb_UsageCounter ) {
+  driverData->agdd_Card = NULL;
+  Enable();
+  LOG_D(( "D: Free`ed AmiGUS AHI hardware\n" ));
 
-    Enable();
-    DisplayError( EDriverNotInUse );
-    return;
-  
-  } else {
-
-    --AmiGUSBase->agb_UsageCounter;
-    Enable();
-  }
-  LOG_D(("D: Free`ed AmiGUS AHI hardware\n"));
-
-  LOG_D(("D: AHIsub_FreeAudio done\n"));
+  LOG_D(( "D: AHIsub_FreeAudio done\n" ));
 
   return;
 }

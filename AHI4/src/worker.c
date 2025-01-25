@@ -80,11 +80,11 @@ VOID FillBuffer( BYTE buffer ) {
 typedef ASM(BOOL) PreTimerType( REG(a2, struct AHIAudioCtrlDrv *) );
 typedef ASM(VOID) PostTimerType( REG(a2, struct AHIAudioCtrlDrv *) );
 
-INLINE VOID FillBuffer( BYTE buffer ) {
+INLINE VOID FillBuffer( struct AHIAudioCtrlDrv * audioCtrl, BYTE buffer ) {
 
 //  LOG_D(( "D: FB%1ld\n", buffer ));
-  struct AmiGUSPcmPlayback * playback = &AmiGUSBase->agb_Playback;
-  struct AHIAudioCtrlDrv *audioCtrl = AmiGUSBase->agb_AudioCtrl;
+  struct AmiGUSAhiDriverData * driverData = audioCtrl->ahiac_DriverData;
+  struct AmiGUSPcmPlayback * playback = &( driverData->agdd_Playback );
   PreTimerType *preTimer = (PreTimerType *)audioCtrl->ahiac_PreTimer;
   PostTimerType *postTimer = (PostTimerType *)audioCtrl->ahiac_PostTimer;
 
@@ -124,7 +124,9 @@ INLINE VOID FillBuffer( BYTE buffer ) {
      * Remember: Buffers ticking in LONGs (hence the final shift) !!!
      */
     playback->agpp_BufferMax[ buffer ] =
-      AlignByteSizeForSamples( audioCtrl->ahiac_BuffSamples ) >> 2;
+      AlignByteSizeForSamples(
+        playback,
+        audioCtrl->ahiac_BuffSamples ) >> 2;
     playback->agpp_BufferIndex[ buffer ] = 0; /* buffer full  */
   }
   /*
@@ -135,9 +137,11 @@ INLINE VOID FillBuffer( BYTE buffer ) {
 
 #endif
 
-INLINE VOID HandlePlayback( VOID ) {
+INLINE VOID HandlePlayback( struct AmiGUSPcmCard * card ) {
 
-  struct AmiGUSPcmPlayback * playback = &AmiGUSBase->agb_Playback;
+  struct AHIAudioCtrlDrv * audioCtrl = card->agpc_PlaybackCtrl;
+  struct AmiGUSAhiDriverData * driverData = audioCtrl->ahiac_DriverData;
+  struct AmiGUSPcmPlayback * playback = &( driverData->agdd_Playback );
 
   ULONG i;
   ULONG k = playback->agpp_CurrentBuffer;
@@ -146,11 +150,11 @@ INLINE VOID HandlePlayback( VOID ) {
     if ( playback->agpp_BufferIndex[ k ] 
         >= playback->agpp_BufferMax[ k ] ) {
 
-      FillBuffer( k );
+      FillBuffer( audioCtrl, k );
     }
     k ^= 0x00000001;
   }
-  if ( AMIGUS_AHI_F_PLAY_UNDERRUN & AmiGUSBase->agb_StateFlags ) {
+  if ( AMIGUS_AHI_F_PLAY_UNDERRUN & card->agpc_StateFlags ) {
 
     LOG_W(( "W: Recovering from playback buffer underrun.\n" ));
     /*
@@ -161,7 +165,7 @@ INLINE VOID HandlePlayback( VOID ) {
     so instead we can go through full playback init and start cycle.
     Bonus: resets the playback state flags. :)
     */
-    StartAmiGusPcmPlayback();
+    StartAmiGusPcmPlayback( driverData );
   }
 
   LOG_INT(( "WORKER: Playback i0 %5ld m0 %5ld i1 %5ld m1 %5ld\n",
@@ -171,11 +175,12 @@ INLINE VOID HandlePlayback( VOID ) {
             playback->agpp_BufferMax[ 1 ] ));
 }
 
-INLINE VOID HandleRecording( VOID ) {
+INLINE VOID HandleRecording( struct AmiGUSPcmCard * card ) {
 
-  struct AmiGUSPcmRecording * recording = &( AmiGUSBase->agb_Recording );
-  struct AHIAudioCtrlDrv *audioCtrl = AmiGUSBase->agb_AudioCtrl;
-  struct AHIRecordMessage *message = &( recording->agpr_RecordingMessage );
+  struct AHIAudioCtrlDrv * audioCtrl = card->agpc_RecordingCtrl;
+  struct AmiGUSAhiDriverData * driverData = audioCtrl->ahiac_DriverData;
+  struct AmiGUSPcmRecording * recording = &( driverData->agdd_Recording );
+  struct AHIRecordMessage * message = &( recording->agpr_RecordingMessage );
 
   ULONG i;
   ULONG k = recording->agpr_CurrentBuffer;
@@ -246,6 +251,7 @@ INLINE VOID HandleRecording( VOID ) {
 /*__entry for vbcc*/ SAVEDS VOID WorkerProcess( VOID ) {
 
   ULONG signals = TRUE;
+  struct AmiGUSPcmCard * card;
 
   LOG_D(("D: Worker for AmiGUSBase @ %08lx starting...\n", (LONG) AmiGUSBase));
 
@@ -263,13 +269,18 @@ INLINE VOID HandleRecording( VOID ) {
     // SetSignal(0, 1 << agb_WorkerStopSignal );
     while ( signals ) {
 
-      if ( AMIGUS_AHI_F_PLAY_STARTED & AmiGUSBase->agb_StateFlags ) {
+      card = ( struct AmiGUSPcmCard * ) AmiGUSBase->agb_CardList.mlh_Head;
+      while ( card->agpc_Node.mln_Succ ) {
 
-        HandlePlayback();
-      }
-      if ( AMIGUS_AHI_F_REC_STARTED & AmiGUSBase->agb_StateFlags ) {
+        if ( AMIGUS_AHI_F_PLAY_STARTED & card->agpc_StateFlags ) {
 
-        HandleRecording();
+          HandlePlayback( card );
+        }
+        if ( AMIGUS_AHI_F_REC_STARTED & card->agpc_StateFlags ) {
+
+          HandleRecording( card );
+        }
+        card = ( struct AmiGUSPcmCard * ) card->agpc_Node.mln_Succ;
       }
 
       AmiGUSBase->agb_WorkerReady = TRUE;

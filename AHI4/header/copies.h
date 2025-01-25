@@ -25,8 +25,9 @@
  * Type of the copy functions provided here.
  */
 typedef LONG ( ASM( * ) CopyFunctionType )(
-  REG( d0, ULONG * ),
-  REG( a0, ULONG * ) );
+  REG( d0, APTR cardBase ),
+  REG( d1, ULONG *bufferBase ), 
+  REG( d2, ULONG *bufferIndex ));
 
 /**
  * so... playback copy functions needed...

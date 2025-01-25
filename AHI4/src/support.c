@@ -172,3 +172,10 @@ VOID Sleep( ULONG millis ) {
   }
   LOG_V(( "V: Slept until %ld %ld\n", ecv.ev_hi, ecv.ev_lo ));
 }
+
+VOID NonConflictingNewMinList( struct MinList * list ) {
+
+  list->mlh_Head = ( struct MinNode * ) &list->mlh_Tail;
+  list->mlh_Tail = NULL;
+  list->mlh_TailPred = ( struct MinNode * ) list;
+}

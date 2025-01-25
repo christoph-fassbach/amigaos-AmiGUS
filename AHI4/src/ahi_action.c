@@ -83,6 +83,9 @@ ASM(ULONG) SAVEDS AHIsub_Start(
   REG(d0, ULONG aFlags),
   REG(a2, struct AHIAudioCtrlDrv *aAudioCtrl)
 ) {
+  struct AmiGUSAhiDriverData * driverData = 
+    ( struct AmiGUSAhiDriverData * ) aAudioCtrl->ahiac_DriverData;
+  
   LOG_D(("D: AHIsub_Start start\n"));
 
   AHIsub_Update( aFlags, aAudioCtrl );
@@ -90,7 +93,7 @@ ASM(ULONG) SAVEDS AHIsub_Start(
   if ( AHISF_PLAY & aFlags ) {
 
     LOG_D(("D: Creating playback buffers\n" ));
-    if ( CreatePlaybackBuffers() ) {
+    if ( CreatePlaybackBuffers( aAudioCtrl ) ) {
 
       LOG_D(("D: No playback buffers, failed.\n"));
       DisplayError( EAllocatePlaybackBuffers );
@@ -100,13 +103,13 @@ ASM(ULONG) SAVEDS AHIsub_Start(
 
  if ( AHISF_RECORD & aFlags ) {
 
-    if ( !AmiGUSBase->agb_CanRecord ) {
+    if ( !driverData->agdd_Recording.agpr_CopyFunction ) {
       
       DisplayError( ERecordingModeNotSupported );
       return AHIE_UNKNOWN;
     }
     LOG_D(("D: Creating recording buffers\n" ));
-    if ( CreateRecordingBuffers() ) {
+    if ( CreateRecordingBuffers( aAudioCtrl ) ) {
 
       LOG_D(("D: No recording buffers, failed.\n"));
       DisplayError( EAllocateRecordingBuffers );
@@ -130,12 +133,12 @@ ASM(ULONG) SAVEDS AHIsub_Start(
   if ( AHISF_PLAY & aFlags ) {
 
     LOG_D(("D: Starting playback\n" ));
-    StartAmiGusPcmPlayback();
+    StartAmiGusPcmPlayback( driverData );
   }
   if ( AHISF_RECORD & aFlags ) {
 
     LOG_D(("D: Starting recording\n" ));
-    StartAmiGusPcmRecording();
+    StartAmiGusPcmRecording( driverData );
   }
   LOG_D(( "D: AHIsub_Start done\n" ));
   return AHIE_OK;
@@ -143,49 +146,40 @@ ASM(ULONG) SAVEDS AHIsub_Start(
 
 ASM(VOID) SAVEDS AHIsub_Update(
   REG(d0, ULONG aFlags),
-  REG(a2, struct AHIAudioCtrlDrv *newAudioCtrl)
+  REG(a2, struct AHIAudioCtrlDrv *aAudioCtrl)
 ) {
 
-  const struct AHIAudioCtrlDrv *oldAudioCtrl = AmiGUSBase->agb_AudioCtrl;
+  struct AmiGUSAhiDriverData * driverData = 
+    ( struct AmiGUSAhiDriverData * ) aAudioCtrl->ahiac_DriverData;
 
   LOG_D(( "D: AHIsub_Update start\n" ));
-  if ( oldAudioCtrl ) {
-
-    LOG_V(( "V: Old ctrl 0x%08lx - "
-            "Size %lu Samples %lu Min %lu Max %lu Type %lu\n",
-            oldAudioCtrl,
-            oldAudioCtrl->ahiac_BuffSize,
-            oldAudioCtrl->ahiac_BuffSamples,
-            oldAudioCtrl->ahiac_MinBuffSamples,
-            oldAudioCtrl->ahiac_MaxBuffSamples,
-            oldAudioCtrl->ahiac_BuffType ));
-  } else {
-
-    LOG_V(( "V: Old ctrl 0x%08lx\n", oldAudioCtrl ));
-  }
-  LOG_V(( "V: New ctrl 0x%08lx - "
+  LOG_V(( "V: New ctrl 0x%08lx driver data 0x%08lx - "
           "Size %lu Samples %lu Min %lu Max %lu Type %lu\n",
-          newAudioCtrl,
-          newAudioCtrl->ahiac_BuffSize,
-          newAudioCtrl->ahiac_BuffSamples,
-          newAudioCtrl->ahiac_MinBuffSamples,
-          newAudioCtrl->ahiac_MaxBuffSamples,
-          newAudioCtrl->ahiac_BuffType ));
-  AmiGUSBase->agb_AudioCtrl = newAudioCtrl;
+          aAudioCtrl,
+          driverData,
+          aAudioCtrl->ahiac_BuffSize,
+          aAudioCtrl->ahiac_BuffSamples,
+          aAudioCtrl->ahiac_MinBuffSamples,
+          aAudioCtrl->ahiac_MaxBuffSamples,
+          aAudioCtrl->ahiac_BuffType ));
 
-  if ( AHISF_PLAY & aFlags ) {
+  if ( !driverData ) {
 
-    struct AmiGUSPcmPlayback *playback = &AmiGUSBase->agb_Playback;
+    LOG_V(( "V: Missing driver data!\n" ));
+
+  } else if ( AHISF_PLAY & aFlags ) {
+
+    struct AmiGUSPcmPlayback *playback = &driverData->agdd_Playback;
     UBYTE sampleToByte = playback->agpp_AhiSampleShift;
     UWORD hwSampleSize = 
       AmiGUSPlaybackSampleSizes[ playback->agpp_HwSampleFormatId ];
     ULONG alignedSamples = 
-      AlignByteSizeForSamples( newAudioCtrl->ahiac_BuffSamples )
+      AlignByteSizeForSamples( playback, aAudioCtrl->ahiac_BuffSamples )
         >> sampleToByte;
     ULONG alignedSamplesHwWordSize =
       UMult32( alignedSamples, hwSampleSize ) >> 1;
 
-    newAudioCtrl->ahiac_BuffSamples = alignedSamples;
+    aAudioCtrl->ahiac_BuffSamples = alignedSamples;
     /* Finally, adapt watermark, ticking in hardware samples in WORDs! */
     if ( ( AMIGUS_PCM_PLAY_FIFO_WORDS >> 1 ) < alignedSamplesHwWordSize ) {
 
@@ -211,29 +205,30 @@ ASM(VOID) SAVEDS AHIsub_Stop(
   REG(d0, ULONG aFlags),
   REG(a2, struct AHIAudioCtrlDrv *aAudioCtrl)
 ) {
+
+  struct AmiGUSAhiDriverData * driverData = 
+    ( struct AmiGUSAhiDriverData * ) aAudioCtrl->ahiac_DriverData;
+  struct AmiGUSPcmCard * card = driverData->agdd_Card;
+
   LOG_D(( "D: AHIsub_Stop start\n" ));
 
   if ( AHISF_PLAY & aFlags ) {
 
     LOG_D(( "D: Read final playback FIFO level %04lx, stopping now.\n",
-            ReadReg16(
-              AmiGUSBase->agb_CardBase,
-              AMIGUS_PCM_PLAY_FIFO_USAGE ) ));
+            ReadReg16( card->agpc_CardBase, AMIGUS_PCM_PLAY_FIFO_USAGE ) ));
 
-    StopAmiGusPcmPlayback();
-    DestroyPlaybackBuffers();
+    StopAmiGusPcmPlayback( driverData );
+    DestroyPlaybackBuffers( driverData );
   }
   if ( AHISF_RECORD & aFlags ) {
 
     LOG_D(( "D: Read final recording FIFO level %04lx, stopping now.\n",
-            ReadReg16(
-              AmiGUSBase->agb_CardBase,
-              AMIGUS_PCM_REC_FIFO_USAGE ) ));
-    StopAmiGusPcmRecording();
-    DestroyRecordingBuffers();
+            ReadReg16( card->agpc_CardBase, AMIGUS_PCM_REC_FIFO_USAGE ) ));
+    StopAmiGusPcmRecording( driverData );
+    DestroyRecordingBuffers( driverData );
   }
-  if (!(( AMIGUS_AHI_F_PLAY_STARTED
-        | AMIGUS_AHI_F_REC_STARTED ) & AmiGUSBase->agb_StateFlags )) {
+  if ( !(( AMIGUS_AHI_F_PLAY_STARTED
+        | AMIGUS_AHI_F_REC_STARTED ) & card->agpc_StateFlags ) ) {
 
     LOG_D(( "D: No playback or recording, "
             "ending interrupt handler and worker task.\n" ));
@@ -243,7 +238,7 @@ ASM(VOID) SAVEDS AHIsub_Stop(
   } else {
 
     LOG_D(( "D: Driver still in used state, 0x%lx\n",
-            AmiGUSBase->agb_StateFlags ));
+            card->agpc_StateFlags ));
   }
 
   LOG_D(( "D: AHIsub_Stop done\n" ));

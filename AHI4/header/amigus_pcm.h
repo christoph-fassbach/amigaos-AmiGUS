@@ -19,10 +19,10 @@
 
 LONG FindAmiGusPcm( struct AmiGUSBase *amiGUSBase );
 
-VOID StartAmiGusPcmPlayback( VOID );
-VOID StopAmiGusPcmPlayback( VOID );
+VOID StartAmiGusPcmPlayback( struct AmiGUSAhiDriverData *driverData );
+VOID StopAmiGusPcmPlayback( struct AmiGUSAhiDriverData *driverData );
 
-VOID StartAmiGusPcmRecording( VOID );
-VOID StopAmiGusPcmRecording( VOID );
+VOID StartAmiGusPcmRecording( struct AmiGUSAhiDriverData *driverData );
+VOID StopAmiGusPcmRecording( struct AmiGUSAhiDriverData *driverData );
 
 #endif /* AMIGUS_PCM_H */

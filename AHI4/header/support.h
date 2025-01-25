@@ -42,4 +42,6 @@ VOID LogTicks( UBYTE bitmask );
  */
 VOID Sleep( ULONG millis );
 
+VOID NonConflictingNewMinList( struct MinList * list );
+
 #endif /* SUPPORT_H */

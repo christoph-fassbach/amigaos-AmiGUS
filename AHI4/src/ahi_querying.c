@@ -127,9 +127,12 @@ ASM(LONG) SAVEDS AHIsub_GetAttr(
     }
     case AHIDB_MaxRecordSamples: {
 
+      struct AmiGUSAhiDriverData * driverData = 
+        ( struct AmiGUSAhiDriverData * ) aAudioCtrl->ahiac_DriverData;
       const LONG sampleRate = 
-        AmiGUSSampleRates[ AmiGUSBase->agb_HwSampleRateId ];
-      const ULONG byteSize = getRecordingBufferSize( sampleRate );
+        AmiGUSSampleRates[ driverData->agdd_HwSampleRateId ];
+      const ULONG byteSize =
+        getRecordingBufferSize( &( driverData->agdd_Recording ), sampleRate );
       result = byteSize >> 2; /* in 16bit stereo AKA long samples */
       LOG_V(( "V: AHIDB_MaxRecordSamples returning %ld BYTEs / %ld samples \n",
         byteSize, result ));
@@ -195,9 +198,9 @@ ASM(LONG) SAVEDS AHIsub_GetAttr(
 
 /* Mixer functions */
 
-Fixed getAhiVolumeFromAmiGUS( ULONG volumeRegisterOffset ) {
+Fixed getAhiVolumeFromAmiGUS( APTR cardBase, ULONG volumeRegisterOffset ) {
 
-  ULONG volume = ReadReg16( AmiGUSBase->agb_CardBase, volumeRegisterOffset );
+  ULONG volume = ReadReg16( cardBase, volumeRegisterOffset );
   if ( 0 != volume ) {
 
     ++volume;
@@ -205,7 +208,10 @@ Fixed getAhiVolumeFromAmiGUS( ULONG volumeRegisterOffset ) {
   return (Fixed) volume;
 }
 
-VOID setAhiVolumeToAmiGUS( Fixed volume, ULONG volumeRegisterOffset ) {
+VOID setAhiVolumeToAmiGUS(
+  APTR cardBase,
+  Fixed volume,
+  ULONG volumeRegisterOffset ) {
 
   if ( 0 != volume ) {
 
@@ -213,7 +219,7 @@ VOID setAhiVolumeToAmiGUS( Fixed volume, ULONG volumeRegisterOffset ) {
   }
   volume &= 0x0000FFff;
   volume |= volume << 16;
-  WriteReg32( AmiGUSBase->agb_CardBase, volumeRegisterOffset, volume );
+  WriteReg32( cardBase, volumeRegisterOffset, volume );
 }
 
 ASM(LONG) SAVEDS AHIsub_HardwareControl(
@@ -222,8 +228,12 @@ ASM(LONG) SAVEDS AHIsub_HardwareControl(
   REG(a2, struct AHIAudioCtrlDrv *aAudioCtrl)
 ) {
 
+  struct AmiGUSAhiDriverData * driverData = 
+    ( struct AmiGUSAhiDriverData * ) aAudioCtrl->ahiac_DriverData;
+  APTR cardBase = driverData->agdd_Card->agpc_CardBase;
+
   LONG result = FALSE;
-  if ( !AmiGUSBase->agb_CardBase ) {
+  if ( !driverData ) {
 
     /* No card - not supported! */
     LOG_W(( "W: AHIsub_HardwareControl - No card found!\n" ));
@@ -233,12 +243,12 @@ ASM(LONG) SAVEDS AHIsub_HardwareControl(
     case AHIC_OutputVolume_Query: {
 
       result =
-        (LONG) getAhiVolumeFromAmiGUS( AMIGUS_PCM_PLAY_VOLUME_LEFT );
+        (LONG) getAhiVolumeFromAmiGUS( cardBase, AMIGUS_PCM_PLAY_VOLUME_LEFT );
       break;
     }
     case AHIC_OutputVolume: {
       
-      setAhiVolumeToAmiGUS( aArgument, AMIGUS_PCM_PLAY_VOLUME );
+      setAhiVolumeToAmiGUS( cardBase, aArgument, AMIGUS_PCM_PLAY_VOLUME );
       result = TRUE;
       break;
     }
@@ -250,24 +260,24 @@ ASM(LONG) SAVEDS AHIsub_HardwareControl(
     case AHIC_InputGain_Query: {
 
       result =
-        (LONG) getAhiVolumeFromAmiGUS( AMIGUS_PCM_REC_VOLUME_LEFT );
+        (LONG) getAhiVolumeFromAmiGUS( cardBase, AMIGUS_PCM_REC_VOLUME_LEFT );
       break;
     }
     case AHIC_InputGain: {
       
-      setAhiVolumeToAmiGUS( aArgument, AMIGUS_PCM_REC_VOLUME );
+      setAhiVolumeToAmiGUS( cardBase, aArgument, AMIGUS_PCM_REC_VOLUME );
       result = TRUE;
       break;
     }
     case AHIC_Input: {
 
-      AmiGUSBase->agb_Recording.agpr_HwSourceId = ( UWORD )aArgument;
+      driverData->agdd_Recording.agpr_HwSourceId = ( UWORD )aArgument;
+      result = TRUE;
       break;
     }
     case AHIC_Input_Query: {
 
-      result = AmiGUSBase->agb_Recording.agpr_HwSourceId;
-      result = TRUE;
+      result = driverData->agdd_Recording.agpr_HwSourceId;
       break;
     }
     case AHIC_Output:

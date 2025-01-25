@@ -14,6 +14,8 @@
  * along with AmiGUS.audio driver.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <proto/alib.h>
+#include <proto/exec.h>
 #include <proto/expansion.h>
 
 #include "amigus_ahi_sub.h"
@@ -21,65 +23,67 @@
 #include "amigus_pcm.h"
 #include "debug.h"
 #include "errors.h"
+#include "support.h"
 
 LONG FindAmiGusPcm( struct AmiGUSBase *amiGUSBase ) {
 
-  struct ConfigDev *configDevice = 0;
-  ULONG serial = 0;
-  UBYTE minute = 0;
-  UBYTE hour   = 0;
-  UBYTE day    = 0;
-  UBYTE month  = 0;
-  UWORD year   = 0;
+  struct ConfigDev *configDevice = NULL;
 
-  configDevice = FindConfigDev( configDevice,
-                                AMIGUS_MANUFACTURER_ID,
-                                AMIGUS_MAIN_PRODUCT_ID );
-  if ( !configDevice ) {
+  NonConflictingNewMinList( &( amiGUSBase->agb_CardList ) );
+
+  while ( configDevice = FindConfigDev( configDevice,
+                                        AMIGUS_MANUFACTURER_ID,
+                                        AMIGUS_MAIN_PRODUCT_ID )) {
+
+    struct AmiGUSPcmCard * card;
+    ULONG serial;
+
+    if ( ( AMIGUS_MANUFACTURER_ID != configDevice->cd_Rom.er_Manufacturer )
+      || ( AMIGUS_MAIN_PRODUCT_ID != configDevice->cd_Rom.er_Product ) ) {
+
+      LOG_E(("E: AmiGUS detection failed\n"));
+      return EAmiGUSDetectError;
+    }
+
+    serial = configDevice->cd_Rom.er_SerialNumber;
+    if ( AMIGUS_AHI_FIRMWARE_MINIMUM > serial ) {
+
+      LOG_E(( "E: AmiGUS firmware expected %08lx, actual %08lx\n",
+              AMIGUS_AHI_FIRMWARE_MINIMUM,
+              serial ));
+      return EAmiGUSFirmwareOutdated;
+    }
+
+    LOG_V(( "V: AmiGUS firmware %08lx\n", serial ));
+    LOG_I(( "I: AmiGUS firmware date %04ld-%02ld-%02ld, %02ld:%02ld\n",
+            ( UWORD ) (( serial & 0xFFF00000ul ) >> 20 ) /* year */,
+            ( UBYTE ) (( serial & 0x000F0000ul ) >> 16 ) /* month */,
+            ( UBYTE ) (( serial & 0x0000F800ul ) >> 11 ) /* day */,
+            ( UBYTE ) (( serial & 0x000007C0ul ) >>  6 ) /* hour */,
+            ( UBYTE ) (( serial & 0x0000003Ful )       ) /* minute */ ));
+
+    card = ( struct AmiGUSPcmCard * ) AllocVec( sizeof( struct AmiGUSPcmCard ),
+                                                MEMF_FAST | MEMF_CLEAR ); // TODO: where to free!?!
+    card->agpc_CardBase = configDevice->cd_BoardAddr;
+    LOG_I(( "I: AmiGUS found at 0x%08lx\n", card->agpc_CardBase ));
+
+    AddHead( ( struct List * ) &( amiGUSBase->agb_CardList ),
+             ( struct Node * ) card );
+  }
+  if ( !IsListEmpty( ( struct List * ) &( amiGUSBase->agb_CardList ) ) ) {
 
     LOG_E(("E: AmiGUS not found\n"));
     return EAmiGUSNotFound;
   }
-  if (   ( AMIGUS_MANUFACTURER_ID != configDevice->cd_Rom.er_Manufacturer )
-      || ( AMIGUS_MAIN_PRODUCT_ID != configDevice->cd_Rom.er_Product ) 
-     ) {
-
-    LOG_E(("E: AmiGUS detection failed\n"));
-    return EAmiGUSDetectError;
-  }
-
-  serial = configDevice->cd_Rom.er_SerialNumber;
-  if ( AMIGUS_AHI_FIRMWARE_MINIMUM > serial ) {
-
-    LOG_E(("E: AmiGUS firmware expected %08lx, actual %08lx\n",
-           AMIGUS_AHI_FIRMWARE_MINIMUM, serial));
-    return EAmiGUSFirmwareOutdated;
-  }
-
-  LOG_V(("V: AmiGUS firmware %08lx\n", serial));
-  minute = (UBYTE)((serial & 0x0000003Ful)      );
-  hour   = (UBYTE)((serial & 0x000007C0ul) >>  6);
-  day    = (UBYTE)((serial & 0x0000F800ul) >> 11);
-  month  = (UBYTE)((serial & 0x000F0000ul) >> 16);
-  year   = (UWORD)((serial & 0xFFF00000ul) >> 20);
-  LOG_I(("I: AmiGUS firmware date %04ld-%02ld-%02ld, %02ld:%02ld\n",
-         year, month, day, hour, minute));
-
-  amiGUSBase->agb_CardBase = (struct AmiGUS *)configDevice->cd_BoardAddr;
-  LOG_I(( "I: AmiGUS found at 0x%08lx\n",
-          amiGUSBase->agb_CardBase ));
-  LOG_V(( "V: AmiGUS address stored at 0x%08lx\n",
-          &(amiGUSBase->agb_CardBase )));
-  amiGUSBase->agb_UsageCounter = 0;
 
   return ENoError;
 }
 
-VOID StartAmiGusPcmPlayback( VOID ) {
+VOID StartAmiGusPcmPlayback( struct AmiGUSAhiDriverData *driverData ) {
 
   ULONG i;
   ULONG prefillSize = 12; /* in LONGs */ 
-  APTR amiGUS = AmiGUSBase->agb_CardBase;
+  APTR amiGUS = NULL;// TODO: APTR amiGUS = AmiGUSBase->agb_CardBase;
   LOG_D(("D: Init & start AmiGUS PCM playback @ 0x%08lx\n", amiGUS));
 
   WriteReg16( amiGUS,
@@ -126,21 +130,21 @@ VOID StartAmiGusPcmPlayback( VOID ) {
   // Use correct sample settings, prefill is selected to match all
   WriteReg16( amiGUS,
               AMIGUS_PCM_PLAY_SAMPLE_FORMAT,
-              AmiGUSBase->agb_Playback.agpp_HwSampleFormatId );
+              driverData->agdd_Playback.agpp_HwSampleFormatId );
 
   // Start playback finally
-  AmiGUSBase->agb_StateFlags &= AMIGUS_AHI_F_PLAY_STOP_MASK;
-  AmiGUSBase->agb_StateFlags |= AMIGUS_AHI_F_PLAY_STARTED;
+  driverData->agdd_Card->agpc_StateFlags &= AMIGUS_AHI_F_PLAY_STOP_MASK;
+  driverData->agdd_Card->agpc_StateFlags |= AMIGUS_AHI_F_PLAY_STARTED;
   WriteReg16( amiGUS,
               AMIGUS_PCM_PLAY_SAMPLE_RATE,
-              AmiGUSBase->agb_HwSampleRateId
+              driverData->agdd_HwSampleRateId
             | AMIGUS_PCM_S_PLAY_F_INTERPOLATE
             | AMIGUS_PCM_SAMPLE_F_ENABLE );
 }
 
-VOID StopAmiGusPcmPlayback( VOID ) {
+VOID StopAmiGusPcmPlayback( struct AmiGUSAhiDriverData *driverData ) {
 
-  APTR amiGUS = AmiGUSBase->agb_CardBase;
+  APTR amiGUS = NULL; // TODO: APTR amiGUS = AmiGUSBase->agb_CardBase;
   LOG_D(("D: Stop AmiGUS PCM playback @ 0x%08lx\n", amiGUS));
 
   WriteReg16( amiGUS, 
@@ -161,13 +165,13 @@ VOID StopAmiGusPcmPlayback( VOID ) {
   WriteReg16( amiGUS,
               AMIGUS_PCM_PLAY_FIFO_RESET,
               AMIGUS_PCM_FIFO_RESET );
-  AmiGUSBase->agb_StateFlags &= AMIGUS_AHI_F_PLAY_STOP_MASK;
+  driverData->agdd_Card->agpc_StateFlags &= AMIGUS_AHI_F_PLAY_STOP_MASK;
 }
 
-VOID StartAmiGusPcmRecording( VOID ) {
+VOID StartAmiGusPcmRecording( struct AmiGUSAhiDriverData *driverData ) {
 
-  APTR amiGUS = AmiGUSBase->agb_CardBase;
-  struct AmiGUSPcmRecording *recording = &AmiGUSBase->agb_Recording;
+  APTR amiGUS = NULL;// TODO: APTR amiGUS = AmiGUSBase->agb_CardBase;
+  struct AmiGUSPcmRecording *recording = &driverData->agdd_Recording;
   UWORD flags16;
   ULONG flags32;
 
@@ -209,24 +213,24 @@ VOID StartAmiGusPcmRecording( VOID ) {
   WriteReg32( amiGUS, AMIGUS_PCM_REC_VOLUME, flags32 ); 
   LOG_V(( "V: Set AMIGUS_PCM_REC_VOLUME = 0x%08lx\n", flags32 ));
 
-  flags16 = AmiGUSBase->agb_Recording.agpr_HwSampleFormatId;
+  flags16 = driverData->agdd_Recording.agpr_HwSampleFormatId;
   WriteReg16( amiGUS, AMIGUS_PCM_REC_SAMPLE_FORMAT, flags16 );
   LOG_V(( "V: Set AMIGUS_PCM_REC_SAMPLE_FORMAT = 0x%04lx\n", flags16 ));
 
   // Start recording finally
-  AmiGUSBase->agb_StateFlags &= AMIGUS_AHI_F_REC_STOP_MASK;
-  AmiGUSBase->agb_StateFlags |= AMIGUS_AHI_F_REC_STARTED;
+  driverData->agdd_Card->agpc_StateFlags &= AMIGUS_AHI_F_REC_STOP_MASK;
+  driverData->agdd_Card->agpc_StateFlags |= AMIGUS_AHI_F_REC_STARTED;
 
-  flags16 = AmiGUSBase->agb_HwSampleRateId
+  flags16 = driverData->agdd_HwSampleRateId
           | AmiGUSInputFlags[ recording->agpr_HwSourceId ]
           | AMIGUS_PCM_SAMPLE_F_ENABLE;
   WriteReg16( amiGUS, AMIGUS_PCM_REC_SAMPLE_RATE, flags16 );
   LOG_V(( "V: Set AMIGUS_PCM_REC_SAMPLE_RATE = 0x%04lx\n", flags16 ));
 }
 
-VOID StopAmiGusPcmRecording( VOID ) {
+VOID StopAmiGusPcmRecording( struct AmiGUSAhiDriverData *driverData ) {
 
-  APTR amiGUS = AmiGUSBase->agb_CardBase;
+  APTR amiGUS = NULL;// TODO: APTR amiGUS = AmiGUSBase->agb_CardBase;
   LOG_D(("D: Stop AmiGUS PCM recording @ 0x%08lx\n", amiGUS));
 
   WriteReg16( amiGUS, 
@@ -249,5 +253,5 @@ VOID StopAmiGusPcmRecording( VOID ) {
   WriteReg16( amiGUS,
               AMIGUS_PCM_REC_FIFO_RESET,
               AMIGUS_PCM_FIFO_RESET );
-  AmiGUSBase->agb_StateFlags &= AMIGUS_AHI_F_REC_STOP_MASK;
+  driverData->agdd_Card->agpc_StateFlags &= AMIGUS_AHI_F_REC_STOP_MASK;
 }

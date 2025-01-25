@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <proto/alib.h>
 #include <proto/dos.h>
 #include <proto/exec.h>
 #include <proto/timer.h>
@@ -82,6 +83,112 @@ BOOL testSleep( VOID ) {
   return failed;
 }
 
+BOOL testNewList( VOID ) {
+
+  ULONG exp0;
+  ULONG exp1;
+  ULONG exp2;
+
+  BOOL failed = FALSE;
+
+  struct MinList myList;
+  
+  myList.mlh_Head = NULL;
+  myList.mlh_Tail = NULL;
+  myList.mlh_TailPred = NULL;
+
+  NewList(( struct List * ) &myList );
+  exp0 = ( ULONG ) myList.mlh_Head;
+  exp1 = ( ULONG ) myList.mlh_Tail;
+  exp2 = ( ULONG ) myList.mlh_TailPred;
+
+  myList.mlh_Head = NULL;
+  myList.mlh_Tail = NULL;
+  myList.mlh_TailPred = NULL;
+
+  NonConflictingNewMinList( &myList );
+
+  failed |= (( ULONG ) myList.mlh_Head != exp0 );
+  failed |= (( ULONG ) myList.mlh_Tail != exp1 );
+  failed |= (( ULONG ) myList.mlh_TailPred != exp2 );
+  
+  printf( "NewList @ %08lx -                                             %s\n"
+          "Head     expected %08lx actual %08lx \n"
+          "Tail     expected %08lx actual %08lx \n"
+          "TailPred expected %08lx actual %08lx \n",
+          ( ULONG ) &myList, (!failed) ? "passed" : "FAIL!!",
+          exp0, ( ULONG ) myList.mlh_Head,
+          exp1, ( ULONG ) myList.mlh_Tail,
+          exp2, ( ULONG ) myList.mlh_TailPred);
+
+  return failed;
+}
+
+BOOL testUseList( VOID ) {
+
+  BOOL failed = FALSE;
+
+  struct MinList myList;
+
+  struct MinNode * node;
+  struct MinNode node0;
+  struct MinNode node1;
+  struct MinNode node2;
+
+  LONG act0 = 0;
+  LONG act1 = 0;
+  BOOL tst0;
+  BOOL tst1;
+
+  NonConflictingNewMinList( &myList );
+  AddHead(( struct List * ) &myList,
+          ( struct Node * ) &node2 );
+  AddHead(( struct List * ) &myList,
+          ( struct Node * ) &node1 );
+  AddHead(( struct List * ) &myList,
+          ( struct Node * ) &node0 );
+
+  printf( "List @ %08lx - head %08lx tail %08lx tailpre %08lx \nforward:\n",
+          ( ULONG ) &myList,
+          ( ULONG ) myList.mlh_Head,
+          ( ULONG ) myList.mlh_Tail,
+          ( ULONG ) myList.mlh_TailPred );
+
+  // Iterate Forward
+  node = myList.mlh_Head;
+  while ( node->mln_Succ ) {
+
+    printf( "Node @ %08lx - pred %08lx succ %08lx \n",
+          ( ULONG ) node,
+          ( ULONG ) node->mln_Pred,
+          ( ULONG ) node->mln_Succ );
+    ++act0;
+    node = node->mln_Succ;
+  }
+  tst0 = ( 3 == act0 );
+  failed |= !tst0;
+  printf( "Iterate List @ %08lx forward expected %ld actual %ld -            %s\n"
+          "backward:\n",
+          ( ULONG ) &myList, 3, act0, (tst0) ? "passed" : "FAIL!!" );
+  // Iterate Backward
+  node = myList.mlh_TailPred;
+  while ( node->mln_Pred ) {
+
+    printf( "Node @ %08lx - pred %08lx succ %08lx \n",
+          ( ULONG ) node,
+          ( ULONG ) node->mln_Pred,
+          ( ULONG ) node->mln_Succ );
+    ++act1;
+    node = node->mln_Pred;
+  }
+  tst1 = ( 3 == act1 );
+  failed |= !tst1;
+  printf( "Iterate List @ %08lx backward expected %ld actual %ld -           %s\n",
+          ( ULONG ) &myList, 3, act1, (tst1) ? "passed" : "FAIL!!" );
+
+  return failed;
+}
+
 /******************************************************************************
  * Finally, main triggering all tests:
  *****************************************************************************/
@@ -128,6 +235,8 @@ int main(int argc, char const *argv[]) {
   DOSBase = amiGUSBase->agb_DOSBase;
 
   failed |= testSleep();
+  failed |= testNewList();
+  failed |= testUseList();
 
   if ( amiGUSBase->agb_LogFile ) {
 
