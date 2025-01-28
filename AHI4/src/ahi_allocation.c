@@ -218,9 +218,12 @@ ASM(ULONG) SAVEDS AHIsub_AllocAudio(
     DisplayError( EOutOfMemory );
     return AHISF_ERROR;
   }
+  aAudioCtrl->ahiac_DriverData = driverData;
+  recording = &( driverData->agdd_Recording );
+  playback = &( driverData->agdd_Playback );
+
   driverData->agdd_HwSampleRateId = sampleRateId;
 
-  playback = &( driverData->agdd_Playback );
   playback->agpp_Buffer[ 0 ] = NULL;
   playback->agpp_Buffer[ 1 ] = NULL;
   playback->agpp_BufferIndex[ 0 ] = 0;
@@ -235,7 +238,6 @@ ASM(ULONG) SAVEDS AHIsub_AllocAudio(
   playback->agpp_HwSampleFormatId = playHwSampleFormatId;
   playback->agpp_AhiSampleShift = playSampleBytesShift;
 
-  recording = &( driverData->agdd_Recording );
   recording->agpr_Buffer[ 0 ] = NULL;
   recording->agpr_Buffer[ 1 ] = NULL;
   recording->agpr_BufferIndex[ 0 ] = 0;
