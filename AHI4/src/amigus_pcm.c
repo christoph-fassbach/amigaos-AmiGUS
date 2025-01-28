@@ -25,7 +25,7 @@
 #include "errors.h"
 #include "support.h"
 
-LONG FindAmiGusPcm( struct AmiGUSBase *amiGUSBase ) {
+LONG FindAmiGusPcm( struct AmiGUSBase * amiGUSBase ) {
 
   struct ConfigDev *configDevice = NULL;
 
@@ -79,11 +79,11 @@ LONG FindAmiGusPcm( struct AmiGUSBase *amiGUSBase ) {
   return ENoError;
 }
 
-VOID StartAmiGusPcmPlayback( struct AmiGUSAhiDriverData *driverData ) {
+VOID StartAmiGusPcmPlayback( struct AmiGUSAhiDriverData * driverData ) {
 
   ULONG i;
   ULONG prefillSize = 12; /* in LONGs */ 
-  APTR amiGUS = NULL;// TODO: APTR amiGUS = AmiGUSBase->agb_CardBase;
+  APTR amiGUS = driverData->agdd_Card->agpc_CardBase;
   LOG_D(("D: Init & start AmiGUS PCM playback @ 0x%08lx\n", amiGUS));
 
   WriteReg16( amiGUS,
@@ -142,9 +142,9 @@ VOID StartAmiGusPcmPlayback( struct AmiGUSAhiDriverData *driverData ) {
             | AMIGUS_PCM_SAMPLE_F_ENABLE );
 }
 
-VOID StopAmiGusPcmPlayback( struct AmiGUSAhiDriverData *driverData ) {
+VOID StopAmiGusPcmPlayback( struct AmiGUSAhiDriverData * driverData ) {
 
-  APTR amiGUS = NULL; // TODO: APTR amiGUS = AmiGUSBase->agb_CardBase;
+  APTR amiGUS = driverData->agdd_Card->agpc_CardBase;
   LOG_D(("D: Stop AmiGUS PCM playback @ 0x%08lx\n", amiGUS));
 
   WriteReg16( amiGUS, 
@@ -168,9 +168,9 @@ VOID StopAmiGusPcmPlayback( struct AmiGUSAhiDriverData *driverData ) {
   driverData->agdd_Card->agpc_StateFlags &= AMIGUS_AHI_F_PLAY_STOP_MASK;
 }
 
-VOID StartAmiGusPcmRecording( struct AmiGUSAhiDriverData *driverData ) {
+VOID StartAmiGusPcmRecording( struct AmiGUSAhiDriverData * driverData ) {
 
-  APTR amiGUS = NULL;// TODO: APTR amiGUS = AmiGUSBase->agb_CardBase;
+  APTR amiGUS = driverData->agdd_Card->agpc_CardBase;
   struct AmiGUSPcmRecording *recording = &driverData->agdd_Recording;
   UWORD flags16;
   ULONG flags32;
@@ -228,9 +228,9 @@ VOID StartAmiGusPcmRecording( struct AmiGUSAhiDriverData *driverData ) {
   LOG_V(( "V: Set AMIGUS_PCM_REC_SAMPLE_RATE = 0x%04lx\n", flags16 ));
 }
 
-VOID StopAmiGusPcmRecording( struct AmiGUSAhiDriverData *driverData ) {
+VOID StopAmiGusPcmRecording( struct AmiGUSAhiDriverData * driverData ) {
 
-  APTR amiGUS = NULL;// TODO: APTR amiGUS = AmiGUSBase->agb_CardBase;
+  APTR amiGUS = driverData->agdd_Card->agpc_CardBase;
   LOG_D(("D: Stop AmiGUS PCM recording @ 0x%08lx\n", amiGUS));
 
   WriteReg16( amiGUS, 
