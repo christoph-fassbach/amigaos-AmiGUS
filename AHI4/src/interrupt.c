@@ -27,19 +27,19 @@
 INLINE VOID HandlePlayback( struct AmiGUSAhiDriverData * driverData ) {
 
   struct AmiGUSPcmPlayback * playback = &( driverData->agdd_Playback );
-  APTR cardBase = driverData->agdd_Card->agpc_CardBase;
+  const APTR cardBase = driverData->agdd_Card->agpc_CardBase;
 
   ULONG *current = &( playback->agpp_CurrentBuffer );
   BOOL canSwap = TRUE;
   LONG copied = 0;        /* Sum of BYTEs actually filled into FIFO this run */
-  ULONG watermark = playback->agpp_Watermark;
-  LONG reminder =               /* Read-back remaining FIFO samples in BYTES */
+  const ULONG watermark = playback->agpp_Watermark;
+  const LONG reminder =         /* Read-back remaining FIFO samples in BYTES */
     ReadReg16( cardBase, AMIGUS_PCM_PLAY_FIFO_USAGE ) << 1;
-  LONG minHwSampleSize =  /* Size of a single (mono / stereo) sample in BYTEs*/
+  const LONG minHwSampleSize =  /* Size of a single (mono / stereo) sample in BYTEs*/
     AmiGUSPlaybackSampleSizes[ playback->agpp_HwSampleFormatId ];
 
   /* Target amount of BYTEs to fill into FIFO during this interrupt run,     */
-  LONG target =                                     /* taken from watermark, */
+  const LONG target =                               /* taken from watermark, */
     ( watermark << 2 )      /* converted <<1 to BYTEs, want <<1 2x watermark */
     - reminder                                      /* deduct remaining FIFO */
     - minHwSampleSize;         /* and provide headroom for ALL sample sizes! */
@@ -187,7 +187,6 @@ ASM(LONG) /* __entry for vbcc ? */ SAVEDS INTERRUPT handleInterrupt (
   return result;
 }
 
-
 // TRUE = failure
 BOOL CreateInterruptHandler( VOID ) {
 
@@ -200,9 +199,9 @@ BOOL CreateInterruptHandler( VOID ) {
   LOG_D(("D: Creating INT server\n"));
   Disable();
 
-  AmiGUSBase->agb_Interrupt = (struct Interrupt *)
+  AmiGUSBase->agb_Interrupt = ( struct Interrupt * )
       AllocMem(
-          sizeof(struct Interrupt),
+          sizeof( struct Interrupt ),
           MEMF_CLEAR | MEMF_PUBLIC
       );
   if ( AmiGUSBase->agb_Interrupt ) {
