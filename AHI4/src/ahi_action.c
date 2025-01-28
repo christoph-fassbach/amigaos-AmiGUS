@@ -88,6 +88,13 @@ ASM(ULONG) SAVEDS AHIsub_Start(
   
   LOG_D(("D: AHIsub_Start start\n"));
 
+// TODO: incorrect hack! Need to iterate and pick a card here!
+driverData->agdd_Card = ( struct AmiGUSPcmCard * ) AmiGUSBase->agb_CardList.mlh_Head;
+driverData->agdd_Card->agpc_PlaybackCtrl = aAudioCtrl;
+driverData->agdd_Card->agpc_RecordingCtrl = aAudioCtrl;
+// TODO: select next free card depending on flags and so on!!!
+// TODO: see ahi_allocation.c / l.75
+
   AHIsub_Update( aFlags, aAudioCtrl );
 
   if ( AHISF_PLAY & aFlags ) {
@@ -124,6 +131,7 @@ ASM(ULONG) SAVEDS AHIsub_Start(
     LOG_D(( "D: No worker, failed.\n" ));
     return AHIE_UNKNOWN;
   }
+
   if ( CreateInterruptHandler() ) {
   
     LOG_D(( "D: No INT handler, failed.\n" ));
