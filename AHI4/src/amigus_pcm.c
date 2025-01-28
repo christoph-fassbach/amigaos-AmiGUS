@@ -70,7 +70,7 @@ LONG FindAmiGusPcm( struct AmiGUSBase *amiGUSBase ) {
     AddHead( ( struct List * ) &( amiGUSBase->agb_CardList ),
              ( struct Node * ) card );
   }
-  if ( !IsListEmpty( ( struct List * ) &( amiGUSBase->agb_CardList ) ) ) {
+  if ( IsListEmpty( ( struct List * ) &( amiGUSBase->agb_CardList ) ) ) {
 
     LOG_E(("E: AmiGUS not found\n"));
     return EAmiGUSNotFound;

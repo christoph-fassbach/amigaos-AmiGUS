@@ -175,6 +175,7 @@ LONG CustomLibInit( struct BaseLibrary * base, struct ExecBase * sysBase ) {
   if ( error ) {
 
     DisplayError( error );
+    return error;
   }
   return ENoError;
 }
