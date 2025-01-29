@@ -82,7 +82,7 @@ LONG FindAmiGusPcm( struct AmiGUSBase * amiGUSBase ) {
 VOID StartAmiGusPcmPlayback( struct AmiGUSAhiDriverData * driverData ) {
 
   ULONG i;
-  ULONG prefillSize = 12; /* in LONGs */ 
+  ULONG prefillSize = 1200; /* in LONGs */ 
   APTR amiGUS = driverData->agdd_Card->agpc_CardBase;
   LOG_D(("D: Init & start AmiGUS PCM playback @ 0x%08lx\n", amiGUS));
 

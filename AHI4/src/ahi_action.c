@@ -92,6 +92,7 @@ ASM(ULONG) SAVEDS AHIsub_Start(
 driverData->agdd_Card = ( struct AmiGUSPcmCard * ) AmiGUSBase->agb_CardList.mlh_Head;
 driverData->agdd_Card->agpc_PlaybackCtrl = aAudioCtrl;
 driverData->agdd_Card->agpc_RecordingCtrl = aAudioCtrl;
+driverData->agdd_Card->agpc_StateFlags = AMIGUS_AHI_F_PLAY_STARTED;
 // TODO: select next free card depending on flags and so on!!!
 // TODO: see ahi_allocation.c / l.75
 

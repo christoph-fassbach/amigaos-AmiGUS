@@ -44,6 +44,12 @@ INLINE VOID HandlePlayback( struct AmiGUSAhiDriverData * driverData ) {
     - reminder                                      /* deduct remaining FIFO */
     - minHwSampleSize;         /* and provide headroom for ALL sample sizes! */
 
+  LOG_INT(( "INT: Playback pre bufs i0 %5ld m0 %5ld i1 %5ld m1 %5ld\n",
+            playback->agpp_BufferIndex[ 0 ],
+            playback->agpp_BufferMax[ 0 ],
+            playback->agpp_BufferIndex[ 1 ],
+            playback->agpp_BufferMax[ 1 ] ));
+
   while ( copied < target ) {
 
     if ( playback->agpp_BufferIndex[ *current ] 
@@ -66,9 +72,10 @@ INLINE VOID HandlePlayback( struct AmiGUSAhiDriverData * driverData ) {
     }
   }
   WriteReg16( cardBase, AMIGUS_PCM_PLAY_FIFO_WATERMARK, watermark );
-  LOG_INT(( "INT: Playback t %4ld c %4ld wm %4ld wr %ld\n",
+  LOG_INT(( "INT: Playback t %4ld c %4ld r %4ld wm %4ld wr %ld\n",
             target,
             copied,
+            reminder,
             watermark,
             AmiGUSBase->agb_WorkerReady ));
 }
@@ -128,7 +135,8 @@ INLINE LONG HandleCard( struct AmiGUSPcmCard * card ) {
 
     return 0;
   }
-
+  LOG_INT(( "INT: Handling card 0x%08lx status 0x%04lx flags 0x%02lx\n",
+            cardBase, status, card->agpc_StateFlags ));
   if ( AMIGUS_AHI_F_PLAY_STARTED & card->agpc_StateFlags ) {
 
     HandlePlayback(( struct AmiGUSAhiDriverData * )
@@ -142,6 +150,8 @@ INLINE LONG HandleCard( struct AmiGUSPcmCard * card ) {
        triggered a full playback init cycle to make us run again.
       */
       card->agpc_StateFlags |= AMIGUS_AHI_F_PLAY_UNDERRUN;
+      LOG_INT(( "INT: Underrun - new flags 0x%02lx\n",
+                card->agpc_StateFlags ));
     }
   }
   if ( AMIGUS_AHI_F_REC_STARTED & card->agpc_StateFlags ) {

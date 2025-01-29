@@ -145,6 +145,13 @@ INLINE VOID HandlePlayback( struct AmiGUSPcmCard * card ) {
 
   ULONG i;
   ULONG k = playback->agpp_CurrentBuffer;
+
+  LOG_INT(( "WORKER: Playback pre buf i0 %5ld m0 %5ld i1 %5ld m1 %5ld\n",
+            playback->agpp_BufferIndex[ 0 ],
+            playback->agpp_BufferMax[ 0 ],
+            playback->agpp_BufferIndex[ 1 ],
+            playback->agpp_BufferMax[ 1 ] ));
+
   for ( i = 0; 2 > i; ++i ) {
     
     if ( playback->agpp_BufferIndex[ k ] 
@@ -154,6 +161,8 @@ INLINE VOID HandlePlayback( struct AmiGUSPcmCard * card ) {
     }
     k ^= 0x00000001;
   }
+  LOG_INT(( "WORKER: Handling card 0x%08lx flags 0x%02lx\n",
+            card->agpc_CardBase, card->agpc_StateFlags ));
   if ( AMIGUS_AHI_F_PLAY_UNDERRUN & card->agpc_StateFlags ) {
 
     LOG_W(( "W: Recovering from playback buffer underrun.\n" ));
@@ -168,7 +177,7 @@ INLINE VOID HandlePlayback( struct AmiGUSPcmCard * card ) {
     StartAmiGusPcmPlayback( driverData );
   }
 
-  LOG_INT(( "WORKER: Playback i0 %5ld m0 %5ld i1 %5ld m1 %5ld\n",
+  LOG_INT(( "WORKER: Playback post buf i0 %5ld m0 %5ld i1 %5ld m1 %5ld\n",
             playback->agpp_BufferIndex[ 0 ],
             playback->agpp_BufferMax[ 0 ],
             playback->agpp_BufferIndex[ 1 ],
