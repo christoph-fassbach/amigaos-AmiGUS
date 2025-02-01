@@ -82,9 +82,16 @@ LONG FindAmiGusPcm( struct AmiGUSBase * amiGUSBase ) {
 VOID StartAmiGusPcmPlayback( struct AmiGUSAhiDriverData * driverData ) {
 
   ULONG i;
-  ULONG prefillSize = 1200; /* in LONGs */ 
+#ifdef USE_MEM_LOGGING
+  // Mem logging enables LOG_INT level, and that is slow as f*ck,
+  // so we need more prefil to not time out before the INT handler is ready.
+  ULONG prefillSize = 1200; /* in LONGs */
+#else
+  ULONG prefillSize = 12; /* in LONGs */
+#endif
   APTR amiGUS = driverData->agdd_Card->agpc_CardBase;
-  LOG_D(("D: Init & start AmiGUS PCM playback @ 0x%08lx\n", amiGUS));
+  LOG_D(( "D: Init & start AmiGUS PCM playback @ 0x%08lx with prefill %ld\n",
+          amiGUS, prefillSize ));
 
   WriteReg16( amiGUS,
               AMIGUS_PCM_PLAY_SAMPLE_RATE,
