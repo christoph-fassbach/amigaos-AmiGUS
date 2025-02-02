@@ -295,7 +295,7 @@ ASM(void) SAVEDS AHIsub_FreeAudio(
    * Part 4: Free slave task communication.
    * ------------------------------------------------------
    */
-  if (( !AmiGUSBase->agb_Interrupt ) && ( AmiGUSBase->agb_WorkerProcess )) {
+  if (( !AmiGUSBase->agb_Interrupt ) && ( !AmiGUSBase->agb_WorkerProcess )) {
 
     /* Freeing a non-alloc`ed signal, i.e. -1, is harmless */
     FreeSignal( AmiGUSBase->agb_MainSignal );
