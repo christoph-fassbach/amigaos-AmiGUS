@@ -85,20 +85,31 @@ ASM(ULONG) SAVEDS AHIsub_Start(
 ) {
   struct AmiGUSAhiDriverData * driverData = 
     ( struct AmiGUSAhiDriverData * ) aAudioCtrl->ahiac_DriverData;
-  
-  LOG_D(("D: AHIsub_Start start\n"));
 
-// TODO: incorrect hack! Need to iterate and pick a card here!
-driverData->agdd_Card = ( struct AmiGUSPcmCard * ) AmiGUSBase->agb_CardList.mlh_Head;
-driverData->agdd_Card->agpc_PlaybackCtrl = aAudioCtrl;
-driverData->agdd_Card->agpc_RecordingCtrl = aAudioCtrl;
-driverData->agdd_Card->agpc_StateFlags = AMIGUS_AHI_F_PLAY_STARTED;
-// TODO: select next free card depending on flags and so on!!!
-// TODO: see ahi_allocation.c / l.75
+  LOG_D(("D: AHIsub_Start start\n"));
 
   AHIsub_Update( aFlags, aAudioCtrl );
 
   if ( AHISF_PLAY & aFlags ) {
+    /*
+     * Okay, we had a free AmiGUS during allocation, but no clue what for.
+     * Now we now, so we can finally decide here... fingers crossed.
+     */
+    struct AmiGUSPcmCard * card = ( struct AmiGUSPcmCard * )
+      AmiGUSBase->agb_CardList.mlh_Head;
+    while ( card->agpc_PlaybackCtrl ) {
+
+      if ( !( card->agpc_Node.mln_Succ )) {
+
+        LOG_E(( "E: No AmiGUS for playback available.\n" ));
+        DisplayError( ECardsInUse );
+        return AHIE_UNKNOWN;
+      }
+      card = ( struct AmiGUSPcmCard * ) card->agpc_Node.mln_Succ;
+    }
+    driverData->agdd_Playback.agpp_Card = card;
+    card->agpc_PlaybackCtrl = aAudioCtrl;
+    card->agpc_StateFlags |= AMIGUS_AHI_F_PLAY_STARTED;
 
     LOG_D(("D: Creating playback buffers\n" ));
     if ( CreatePlaybackBuffers( aAudioCtrl ) ) {
@@ -110,6 +121,24 @@ driverData->agdd_Card->agpc_StateFlags = AMIGUS_AHI_F_PLAY_STARTED;
   }
 
  if ( AHISF_RECORD & aFlags ) {
+    /*
+     * Again!!!
+     */
+    struct AmiGUSPcmCard * card = ( struct AmiGUSPcmCard * )
+      AmiGUSBase->agb_CardList.mlh_Head;
+    while ( card->agpc_RecordingCtrl ) {
+
+      if ( !( card->agpc_Node.mln_Succ )) {
+
+        LOG_E(( "E: No AmiGUS for recording available.\n" ));
+        DisplayError( ECardsInUse );
+        return AHIE_UNKNOWN;
+      }
+      card = ( struct AmiGUSPcmCard * ) card->agpc_Node.mln_Succ;
+    }
+    driverData->agdd_Recording.agpr_Card = card;
+    card->agpc_RecordingCtrl = aAudioCtrl;
+    card->agpc_StateFlags |= AMIGUS_AHI_F_REC_STARTED;
 
     if ( !driverData->agdd_Recording.agpr_CopyFunction ) {
       
@@ -217,11 +246,15 @@ ASM(VOID) SAVEDS AHIsub_Stop(
 
   struct AmiGUSAhiDriverData * driverData = 
     ( struct AmiGUSAhiDriverData * ) aAudioCtrl->ahiac_DriverData;
-  struct AmiGUSPcmCard * card = driverData->agdd_Card;
+  struct AmiGUSPcmCard * card = ( struct AmiGUSPcmCard * )
+      AmiGUSBase->agb_CardList.mlh_Head;
+  BOOL inUse = FALSE;
 
   LOG_D(( "D: AHIsub_Stop start\n" ));
 
   if ( AHISF_PLAY & aFlags ) {
+
+    struct AmiGUSPcmCard * card = driverData->agdd_Playback.agpp_Card;
 
     LOG_D(( "D: Read final playback FIFO level %04lx, stopping now.\n",
             ReadReg16( card->agpc_CardBase, AMIGUS_PCM_PLAY_FIFO_USAGE ) ));
@@ -231,23 +264,32 @@ ASM(VOID) SAVEDS AHIsub_Stop(
   }
   if ( AHISF_RECORD & aFlags ) {
 
+    struct AmiGUSPcmCard * card = driverData->agdd_Recording.agpr_Card;
+
     LOG_D(( "D: Read final recording FIFO level %04lx, stopping now.\n",
             ReadReg16( card->agpc_CardBase, AMIGUS_PCM_REC_FIFO_USAGE ) ));
     StopAmiGusPcmRecording( driverData );
     DestroyRecordingBuffers( driverData );
   }
-  if ( !(( AMIGUS_AHI_F_PLAY_STARTED
-        | AMIGUS_AHI_F_REC_STARTED ) & card->agpc_StateFlags ) ) {
+
+  while ( card->agpc_Node.mln_Succ ) {
+
+    inUse |= ( card->agpc_StateFlags &
+      ( AMIGUS_AHI_F_PLAY_STARTED | AMIGUS_AHI_F_REC_STARTED ));
+    card = ( struct AmiGUSPcmCard * ) card->agpc_Node.mln_Succ;
+  }
+
+  if ( inUse ) {
+
+    LOG_D(( "D: Driver still in used state, 0x%lx\n",
+            card->agpc_StateFlags ));
+
+  } else {
 
     LOG_D(( "D: No playback or recording, "
             "ending interrupt handler and worker task.\n" ));
     DestroyInterruptHandler();
-    DestroyWorkerProcess();
-
-  } else {
-
-    LOG_D(( "D: Driver still in used state, 0x%lx\n",
-            card->agpc_StateFlags ));
+    DestroyWorkerProcess();    
   }
 
   LOG_D(( "D: AHIsub_Stop done\n" ));

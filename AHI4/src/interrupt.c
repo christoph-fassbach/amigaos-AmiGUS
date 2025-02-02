@@ -27,7 +27,7 @@
 INLINE VOID HandlePlayback( struct AmiGUSAhiDriverData * driverData ) {
 
   struct AmiGUSPcmPlayback * playback = &( driverData->agdd_Playback );
-  const APTR cardBase = driverData->agdd_Card->agpc_CardBase;
+  const APTR cardBase = playback->agpp_Card->agpc_CardBase;
 
   ULONG *current = &( playback->agpp_CurrentBuffer );
   BOOL canSwap = TRUE;
@@ -83,7 +83,7 @@ INLINE VOID HandlePlayback( struct AmiGUSAhiDriverData * driverData ) {
 INLINE VOID HandleRecording( struct AmiGUSAhiDriverData * driverData ) {
 
   struct AmiGUSPcmRecording * recording = &( driverData->agdd_Recording );
-  APTR cardBase = driverData->agdd_Card->agpc_CardBase;
+  APTR cardBase = recording->agpr_Card->agpc_CardBase;
 
   ULONG *current = &( recording->agpr_CurrentBuffer );
   BOOL canSwap = TRUE;

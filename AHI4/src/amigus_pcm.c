@@ -89,38 +89,39 @@ VOID StartAmiGusPcmPlayback( struct AmiGUSAhiDriverData * driverData ) {
 #else
   ULONG prefillSize = 12; /* in LONGs */
 #endif
-  APTR amiGUS = driverData->agdd_Card->agpc_CardBase;
+  struct AmiGUSPcmCard * card = driverData->agdd_Playback.agpp_Card;
+  APTR cardBase = card->agpc_CardBase;
   LOG_D(( "D: Init & start AmiGUS PCM playback @ 0x%08lx with prefill %ld\n",
-          amiGUS, prefillSize ));
+          cardBase, prefillSize ));
 
-  WriteReg16( amiGUS,
+  WriteReg16( cardBase,
               AMIGUS_PCM_PLAY_SAMPLE_RATE,
               AMIGUS_PCM_SAMPLE_F_DISABLE );
-  WriteReg16( amiGUS,
+  WriteReg16( cardBase,
               AMIGUS_PCM_PLAY_FIFO_RESET,
               AMIGUS_PCM_FIFO_RESET );
   // Idea: Watermark is here 6 words aka 3 longs,
   //       2 24bit samples, ... 
   // Cool, always a fit for all sample widths.
-  WriteReg16( amiGUS,
+  WriteReg16( cardBase,
               AMIGUS_PCM_PLAY_FIFO_WATERMARK,
               // Watermark is WORDs, so using LONG value means half
               prefillSize );
-  WriteReg16( amiGUS, 
+  WriteReg16( cardBase, 
               AMIGUS_PCM_MAIN_INT_CONTROL, 
               /* Clear interrupt flag bits */
               AMIGUS_INT_F_CLEAR
             | AMIGUS_INT_F_PLAY_FIFO_EMPTY
             | AMIGUS_INT_F_PLAY_FIFO_FULL
             | AMIGUS_INT_F_PLAY_FIFO_WATERMARK );
-  WriteReg16( amiGUS,
+  WriteReg16( cardBase,
               AMIGUS_PCM_MAIN_INT_ENABLE,
               /* Clear interrupt mask bits */
               AMIGUS_INT_F_CLEAR
             | AMIGUS_INT_F_PLAY_FIFO_EMPTY
             | AMIGUS_INT_F_PLAY_FIFO_FULL
             | AMIGUS_INT_F_PLAY_FIFO_WATERMARK );
-  WriteReg16( amiGUS,
+  WriteReg16( cardBase,
               AMIGUS_PCM_MAIN_INT_ENABLE,
               /* Now set some! */
               AMIGUS_INT_F_SET
@@ -130,19 +131,19 @@ VOID StartAmiGusPcmPlayback( struct AmiGUSAhiDriverData * driverData ) {
   // Now write twice the amount of data into FIFO to kick off playback
   for ( i = prefillSize; 0 < i; --i ) {
 
-    WriteReg32( amiGUS,
+    WriteReg32( cardBase,
                 AMIGUS_PCM_PLAY_FIFO_WRITE,
                 0L );
   }
   // Use correct sample settings, prefill is selected to match all
-  WriteReg16( amiGUS,
+  WriteReg16( cardBase,
               AMIGUS_PCM_PLAY_SAMPLE_FORMAT,
               driverData->agdd_Playback.agpp_HwSampleFormatId );
 
   // Start playback finally
-  driverData->agdd_Card->agpc_StateFlags &= AMIGUS_AHI_F_PLAY_STOP_MASK;
-  driverData->agdd_Card->agpc_StateFlags |= AMIGUS_AHI_F_PLAY_STARTED;
-  WriteReg16( amiGUS,
+  card->agpc_StateFlags &= AMIGUS_AHI_F_PLAY_STOP_MASK;
+  card->agpc_StateFlags |= AMIGUS_AHI_F_PLAY_STARTED;
+  WriteReg16( cardBase,
               AMIGUS_PCM_PLAY_SAMPLE_RATE,
               driverData->agdd_HwSampleRateId
             | AMIGUS_PCM_S_PLAY_F_INTERPOLATE
@@ -151,65 +152,67 @@ VOID StartAmiGusPcmPlayback( struct AmiGUSAhiDriverData * driverData ) {
 
 VOID StopAmiGusPcmPlayback( struct AmiGUSAhiDriverData * driverData ) {
 
-  APTR amiGUS = driverData->agdd_Card->agpc_CardBase;
-  LOG_D(("D: Stop AmiGUS PCM playback @ 0x%08lx\n", amiGUS));
+  struct AmiGUSPcmCard * card = driverData->agdd_Playback.agpp_Card;
+  APTR cardBase = card->agpc_CardBase;
+  LOG_D(( "D: Stop AmiGUS PCM playback @ 0x%08lx\n", cardBase ));
 
-  WriteReg16( amiGUS, 
+  WriteReg16( cardBase, 
               AMIGUS_PCM_PLAY_SAMPLE_RATE, 
               AMIGUS_PCM_SAMPLE_F_DISABLE );
-  WriteReg16( amiGUS, 
+  WriteReg16( cardBase, 
               AMIGUS_PCM_MAIN_INT_CONTROL, 
               /* Clear interrupt flag bits */
               AMIGUS_INT_F_PLAY_FIFO_EMPTY
             | AMIGUS_INT_F_PLAY_FIFO_FULL
             | AMIGUS_INT_F_PLAY_FIFO_WATERMARK );
-  WriteReg16( amiGUS,
+  WriteReg16( cardBase,
               AMIGUS_PCM_MAIN_INT_ENABLE,
               /* Clear interrupt mask bits */
               AMIGUS_INT_F_PLAY_FIFO_EMPTY
             | AMIGUS_INT_F_PLAY_FIFO_FULL
             | AMIGUS_INT_F_PLAY_FIFO_WATERMARK );
-  WriteReg16( amiGUS,
+  WriteReg16( cardBase,
               AMIGUS_PCM_PLAY_FIFO_RESET,
               AMIGUS_PCM_FIFO_RESET );
-  driverData->agdd_Card->agpc_StateFlags &= AMIGUS_AHI_F_PLAY_STOP_MASK;
+  card->agpc_StateFlags &= AMIGUS_AHI_F_PLAY_STOP_MASK;
 }
 
 VOID StartAmiGusPcmRecording( struct AmiGUSAhiDriverData * driverData ) {
 
-  APTR amiGUS = driverData->agdd_Card->agpc_CardBase;
+  struct AmiGUSPcmCard * card = driverData->agdd_Recording.agpr_Card;
+  APTR cardBase = card->agpc_CardBase;
   struct AmiGUSPcmRecording *recording = &driverData->agdd_Recording;
   UWORD flags16;
   ULONG flags32;
 
-  LOG_D(("D: Init & start AmiGUS PCM recording @ 0x%08lx\n", amiGUS));
+  LOG_D(( "D: Init & start AmiGUS PCM recording @ 0x%08lx\n", cardBase ));
 
-  WriteReg16( amiGUS,
+  WriteReg16( cardBase,
               AMIGUS_PCM_REC_SAMPLE_RATE,
               AMIGUS_PCM_SAMPLE_F_DISABLE );
-  WriteReg16( amiGUS,
+  WriteReg16( cardBase,
               AMIGUS_PCM_REC_FIFO_RESET,
               AMIGUS_PCM_FIFO_RESET );
   // Idea: Watermark is half the FIFO size, much smaller here anyway
-  WriteReg16( amiGUS,
+  WriteReg16( cardBase,
               AMIGUS_PCM_REC_FIFO_WATERMARK,
               // Watermark is WORDs, so using LONG value means half
               AMIGUS_PCM_REC_FIFO_LONGS );
-  WriteReg16( amiGUS, 
+  WriteReg16( cardBase, 
               AMIGUS_PCM_MAIN_INT_CONTROL, 
               /* Clear interrupt flag bits */
               AMIGUS_INT_F_CLEAR
             | AMIGUS_INT_F_REC_FIFO_EMPTY
             | AMIGUS_INT_F_REC_FIFO_FULL
             | AMIGUS_INT_F_REC_FIFO_WATERMARK );
-  WriteReg16( amiGUS,
+  WriteReg16( cardBase,
               AMIGUS_PCM_MAIN_INT_ENABLE,
               /* Clear interrupt mask bits */
               AMIGUS_INT_F_CLEAR
             | AMIGUS_INT_F_REC_FIFO_EMPTY
             | AMIGUS_INT_F_REC_FIFO_FULL
             | AMIGUS_INT_F_REC_FIFO_WATERMARK );
-  WriteReg16( amiGUS,
+  WriteReg16( cardBase,
               AMIGUS_PCM_MAIN_INT_ENABLE,
               /* Now set some! */
               AMIGUS_INT_F_SET
@@ -217,48 +220,49 @@ VOID StartAmiGusPcmRecording( struct AmiGUSAhiDriverData * driverData ) {
             | AMIGUS_INT_F_REC_FIFO_WATERMARK );
 
   flags32 = 0xffFFffFF; // TODO: Input Gain here!
-  WriteReg32( amiGUS, AMIGUS_PCM_REC_VOLUME, flags32 ); 
+  WriteReg32( cardBase, AMIGUS_PCM_REC_VOLUME, flags32 ); 
   LOG_V(( "V: Set AMIGUS_PCM_REC_VOLUME = 0x%08lx\n", flags32 ));
 
   flags16 = driverData->agdd_Recording.agpr_HwSampleFormatId;
-  WriteReg16( amiGUS, AMIGUS_PCM_REC_SAMPLE_FORMAT, flags16 );
+  WriteReg16( cardBase, AMIGUS_PCM_REC_SAMPLE_FORMAT, flags16 );
   LOG_V(( "V: Set AMIGUS_PCM_REC_SAMPLE_FORMAT = 0x%04lx\n", flags16 ));
 
   // Start recording finally
-  driverData->agdd_Card->agpc_StateFlags &= AMIGUS_AHI_F_REC_STOP_MASK;
-  driverData->agdd_Card->agpc_StateFlags |= AMIGUS_AHI_F_REC_STARTED;
+  card->agpc_StateFlags &= AMIGUS_AHI_F_REC_STOP_MASK;
+  card->agpc_StateFlags |= AMIGUS_AHI_F_REC_STARTED;
 
   flags16 = driverData->agdd_HwSampleRateId
           | AmiGUSInputFlags[ recording->agpr_HwSourceId ]
           | AMIGUS_PCM_SAMPLE_F_ENABLE;
-  WriteReg16( amiGUS, AMIGUS_PCM_REC_SAMPLE_RATE, flags16 );
+  WriteReg16( cardBase, AMIGUS_PCM_REC_SAMPLE_RATE, flags16 );
   LOG_V(( "V: Set AMIGUS_PCM_REC_SAMPLE_RATE = 0x%04lx\n", flags16 ));
 }
 
 VOID StopAmiGusPcmRecording( struct AmiGUSAhiDriverData * driverData ) {
 
-  APTR amiGUS = driverData->agdd_Card->agpc_CardBase;
-  LOG_D(("D: Stop AmiGUS PCM recording @ 0x%08lx\n", amiGUS));
+  struct AmiGUSPcmCard * card = driverData->agdd_Recording.agpr_Card;
+  APTR cardBase = card->agpc_CardBase;
+  LOG_D(("D: Stop AmiGUS PCM recording @ 0x%08lx\n", cardBase));
 
-  WriteReg16( amiGUS, 
+  WriteReg16( cardBase, 
               AMIGUS_PCM_REC_SAMPLE_RATE, 
               AMIGUS_PCM_SAMPLE_F_DISABLE );
-  WriteReg16( amiGUS, 
+  WriteReg16( cardBase, 
               AMIGUS_PCM_MAIN_INT_CONTROL, 
               /* Clear interrupt flag bits */
               AMIGUS_INT_F_CLEAR
             | AMIGUS_INT_F_REC_FIFO_EMPTY
             | AMIGUS_INT_F_REC_FIFO_FULL
             | AMIGUS_INT_F_REC_FIFO_WATERMARK );
-  WriteReg16( amiGUS,
+  WriteReg16( cardBase,
               AMIGUS_PCM_MAIN_INT_ENABLE,
               /* Clear interrupt mask bits */
               AMIGUS_INT_F_CLEAR
             | AMIGUS_INT_F_REC_FIFO_EMPTY
             | AMIGUS_INT_F_REC_FIFO_FULL
             | AMIGUS_INT_F_REC_FIFO_WATERMARK );
-  WriteReg16( amiGUS,
+  WriteReg16( cardBase,
               AMIGUS_PCM_REC_FIFO_RESET,
               AMIGUS_PCM_FIFO_RESET );
-  driverData->agdd_Card->agpc_StateFlags &= AMIGUS_AHI_F_REC_STOP_MASK;
+  card->agpc_StateFlags &= AMIGUS_AHI_F_REC_STOP_MASK;
 }

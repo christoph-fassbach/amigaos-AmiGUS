@@ -34,7 +34,7 @@ enum TErrorCodes
   EOpenTimerDevice,
   EOpenLogFile,
   EAllocateLogMem,
-  EDriverInUse,
+  ECardsInUse,
   EDriverNotInUse,
   EOutOfMemory,
   EAllocatePlaybackBuffers,

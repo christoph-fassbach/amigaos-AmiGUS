@@ -72,10 +72,10 @@ ASM(ULONG) SAVEDS AHIsub_AllocAudio(
   Disable();
   while (( card->agpc_PlaybackCtrl ) && ( card->agpc_RecordingCtrl )) {
 
-    if ( !( card->agpc_Node.mln_Succ ) ) {
+    if ( !( card->agpc_Node.mln_Succ )) {
 
       Enable();
-      DisplayError( EDriverInUse );
+      DisplayError( ECardsInUse );
       return AHISF_ERROR;
     }
     card = ( struct AmiGUSPcmCard * )card->agpc_Node.mln_Succ;
@@ -285,7 +285,8 @@ ASM(void) SAVEDS AHIsub_FreeAudio(
 
   struct AmiGUSAhiDriverData * driverData = 
     ( struct AmiGUSAhiDriverData * ) aAudioCtrl->ahiac_DriverData;
-  struct AmiGUSPcmCard * card = driverData->agdd_Card;
+  struct AmiGUSPcmCard * playCard = driverData->agdd_Playback.agpp_Card;
+  struct AmiGUSPcmCard * recCard = driverData->agdd_Recording.agpr_Card;
 
   LOG_D(( "D: AHIsub_FreeAudio start\n" ));
 
@@ -294,30 +295,26 @@ ASM(void) SAVEDS AHIsub_FreeAudio(
    * Part 4: Free slave task communication.
    * ------------------------------------------------------
    */
-  /* Freeing a non-alloc`ed signal, i.e. -1, is harmless */
-  FreeSignal( AmiGUSBase->agb_MainSignal );
-  AmiGUSBase->agb_MainSignal = -1;
-  LOG_D(( "D: Free`ed main signal\n" ));
-  // TODO: nope, cannot do that here! Only for last one!
+  if (( !AmiGUSBase->agb_Interrupt ) && ( AmiGUSBase->agb_WorkerProcess )) {
+
+    /* Freeing a non-alloc`ed signal, i.e. -1, is harmless */
+    FreeSignal( AmiGUSBase->agb_MainSignal );
+    AmiGUSBase->agb_MainSignal = -1;
+    LOG_D(( "D: Free`ed main signal\n" ));
+  }
 
   /*
    * ------------------------------------------------------
    * Part 3: Free driver data.
    * ------------------------------------------------------
    */
+  playCard->agpc_PlaybackCtrl = NULL;
+  playCard->agpc_StateFlags &= AMIGUS_AHI_F_PLAY_STOP_MASK;
+  recCard->agpc_RecordingCtrl = NULL;
+  recCard->agpc_StateFlags &= AMIGUS_AHI_F_REC_STOP_MASK;
+
   FreeVec( aAudioCtrl->ahiac_DriverData );
   aAudioCtrl->ahiac_DriverData = NULL;
-  // TODO: should that be in stop only?
-  if ( aAudioCtrl == card->agpc_PlaybackCtrl ) {
-
-    card->agpc_PlaybackCtrl = NULL;
-    card->agpc_StateFlags &= AMIGUS_AHI_F_PLAY_STOP_MASK;
-  }
-  if ( aAudioCtrl == card->agpc_RecordingCtrl ) {
-
-    card->agpc_RecordingCtrl = NULL;
-    card->agpc_StateFlags &= AMIGUS_AHI_F_REC_STOP_MASK;
-  }
 
   /*
    * ------------------------------------------------------
@@ -326,7 +323,8 @@ ASM(void) SAVEDS AHIsub_FreeAudio(
    * ------------------------------------------------------
    */
   Disable();
-  driverData->agdd_Card = NULL;
+  driverData->agdd_Playback.agpp_Card = NULL;
+  driverData->agdd_Recording.agpr_Card = NULL;
   Enable();
   LOG_D(( "D: Free`ed AmiGUS AHI hardware\n" ));
 

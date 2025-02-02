@@ -81,6 +81,7 @@ struct AmiGUSPcmCard {
 
 /** Playback sub-structure of the driver data                                */
 struct AmiGUSPcmPlayback {
+  struct AmiGUSPcmCard        * agpp_Card;           /* Attached card        */
   /* Mixing/playback double-buffers to be copied to FIFO alternatingly       */
   ULONG                       * agpp_Buffer[2];      /* Fully LONG aligned!  */
   ULONG                         agpp_BufferIndex[2]; /* Next LONG index each */
@@ -99,6 +100,7 @@ struct AmiGUSPcmPlayback {
 
 /** Recording sub-structure of the driver data                               */
 struct AmiGUSPcmRecording {
+  struct AmiGUSPcmCard        * agpr_Card;           /* Attached card        */
   /* Recording double-buffers filled from FIFO/emptied by AHI alternatingly  */
   ULONG                       * agpr_Buffer[2];      /* Fully LONG aligned!  */
   ULONG                         agpr_BufferIndex[2]; /* Next LONG index each */
@@ -120,7 +122,6 @@ struct AmiGUSPcmRecording {
 struct AmiGUSAhiDriverData {
   struct AmiGUSPcmPlayback      agdd_Playback;       /* Playback vars group  */
   struct AmiGUSPcmRecording     agdd_Recording;      /* Recording vars group */
-  struct AmiGUSPcmCard        * agdd_Card;           /* Driver attached card */
   UWORD                         agdd_HwSampleRateId; /* HW sample rate ID    */
   UWORD                         agdd_Reserved0;      /* for alignment        */
 };

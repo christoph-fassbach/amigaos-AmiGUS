@@ -230,7 +230,6 @@ ASM(LONG) SAVEDS AHIsub_HardwareControl(
 
   struct AmiGUSAhiDriverData * driverData = 
     ( struct AmiGUSAhiDriverData * ) aAudioCtrl->ahiac_DriverData;
-  APTR cardBase = driverData->agdd_Card->agpc_CardBase;
 
   LONG result = FALSE;
   if ( !driverData ) {
@@ -242,12 +241,14 @@ ASM(LONG) SAVEDS AHIsub_HardwareControl(
   switch ( aAttribute ) {
     case AHIC_OutputVolume_Query: {
 
+      APTR cardBase = driverData->agdd_Playback.agpp_Card->agpc_CardBase;
       result =
         (LONG) getAhiVolumeFromAmiGUS( cardBase, AMIGUS_PCM_PLAY_VOLUME_LEFT );
       break;
     }
     case AHIC_OutputVolume: {
-      
+
+      APTR cardBase = driverData->agdd_Playback.agpp_Card->agpc_CardBase;
       setAhiVolumeToAmiGUS( cardBase, aArgument, AMIGUS_PCM_PLAY_VOLUME );
       result = TRUE;
       break;
@@ -259,12 +260,14 @@ ASM(LONG) SAVEDS AHIsub_HardwareControl(
     }
     case AHIC_InputGain_Query: {
 
+      APTR cardBase = driverData->agdd_Recording.agpr_Card->agpc_CardBase;
       result =
         (LONG) getAhiVolumeFromAmiGUS( cardBase, AMIGUS_PCM_REC_VOLUME_LEFT );
       break;
     }
     case AHIC_InputGain: {
-      
+
+      APTR cardBase = driverData->agdd_Recording.agpr_Card->agpc_CardBase;
       setAhiVolumeToAmiGUS( cardBase, aArgument, AMIGUS_PCM_REC_VOLUME );
       result = TRUE;
       break;
