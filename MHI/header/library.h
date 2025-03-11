@@ -23,11 +23,6 @@
 
 #include <libraries/dos.h>
 
-#ifdef LIBRARY_VERSION
-// For NDK 1.3 compatibility ...
-#undef LIBRARY_VERSION
-#endif
-
 /* Need 2 staged helpers to concat version strings and ints together... :/   */
 #define GSTR_HELPER( x ) #x
 #define GSTR( x )        GSTR_HELPER( x )
@@ -37,7 +32,7 @@
  * will be used in library.c.
  *****************************************************************************/
 
-#define LIBRARY_FUNCTIONS ( APTR ) MHIAllocDecoder, \
+#define LIB_FUNCTIONS     ( APTR ) MHIAllocDecoder, \
                           ( APTR ) MHIFreeDecoder, \
                           ( APTR ) MHIQueueBuffer, \
                           ( APTR ) MHIGetEmpty, \
@@ -52,41 +47,41 @@
  * Define your library's properties here,
  * will be used in library.c.
  *****************************************************************************/
-#define LIBRARY_NAME      "mhiAmiGUS.library"
-#define LIBRARY_VERSION   1
-#define LIBRARY_REVISION  2
-#define LIBRARY_DATETXT	  __AMIGADATE__
-#define LIBRARY_VERSTXT	 GSTR( LIBRARY_VERSION ) ".00" GSTR( LIBRARY_REVISION )
+#define LIB_NAME          "mhiAmiGUS.library"
+#define LIB_VERSION       1
+#define LIB_REVISION      2
+#define LIB_DATETXT       __AMIGADATE__
+#define LIB_VERSTXT       GSTR( LIB_VERSION ) ".00" GSTR( LIB_REVISION )
 
 #if defined( _M68060 )
-  #define LIBRARY_CPUTXT  " 060"
+  #define LIB_CPUTXT      " 060"
 #elif defined( _M68040 )
-  #define LIBRARY_CPUTXT  " 040"
+  #define LIB_CPUTXT      " 040"
 #elif defined( _M68030 )
-  #define LIBRARY_CPUTXT  " 030"
+  #define LIB_CPUTXT      " 030"
 #elif defined( _M68020 )
-  #define LIBRARY_CPUTXT  " 020"
+  #define LIB_CPUTXT      " 020"
 #elif defined( __MORPHOS__ )
-  #define LIBRARY_CPUTXT  " MorphOS"
+  #define LIB_CPUTXT      " MorphOS"
 #else
-  #define LIBRARY_CPUTXT  " 000"
+  #define LIB_CPUTXT      " 000"
 #endif
 
 #if defined( __VBCC__ )
-  #define LIBRARY_COMPILERTXT " vbcc"
+  #define LIB_COMPILERTXT " vbcc"
 #elif defined( __SASC )
-  #define LIBRARY_COMPILERTXT " SAS/C"
+  #define LIB_COMPILERTXT " SAS/C"
 #endif
 
 #ifdef CROSS_TOOLCHAIN
-  #define LIBRARY_HOSTTXT " cross"
+  #define LIB_HOSTTXT     " cross"
 #else
-  #define LIBRARY_HOSTTXT " native"
+  #define LIB_HOSTTXT     " native"
 #endif
 
-#define LIBRARY_IDSTRING \
-  LIBRARY_NAME " " LIBRARY_VERSTXT " " LIBRARY_DATETXT \
-  LIBRARY_CPUTXT LIBRARY_COMPILERTXT LIBRARY_HOSTTXT
+#define LIB_IDSTRING \
+  LIB_NAME " " LIB_VERSTXT " " LIB_DATETXT \
+  LIB_CPUTXT LIB_COMPILERTXT LIB_HOSTTXT
 
 /******************************************************************************
  * SegList pointer definition

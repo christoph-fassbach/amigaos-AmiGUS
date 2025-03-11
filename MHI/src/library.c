@@ -80,11 +80,11 @@ const struct Resident RomTag = {
   RTF_PPC|
 #endif
   RTF_AUTOINIT,                    /* Set up shall be according to table.    */
-  LIBRARY_VERSION,                 /* Version of this Library.               */
+  LIB_VERSION,                     /* Version of this Library.               */
   NT_LIBRARY,                      /* Defines this module as a Library.      */
   0,                               /* (Unused) Initialization priority.      */
-  LIBRARY_NAME,                    /* Points to the name of the Library.     */
-  LIBRARY_IDSTRING,                /* Identification string of this Library. */
+  LIB_NAME,                        /* Points to the name of the Library.     */
+  LIB_IDSTRING,                    /* Identification string of this Library. */
   ( APTR ) &LibInitTable           /* Table is for initializing the Library. */
 };
 
@@ -193,7 +193,7 @@ static const APTR LibVectors[] = {
   (APTR) LibExpunge,
   (APTR) LibReserved,
 
-  LIBRARY_FUNCTIONS,
+  LIB_FUNCTIONS,
 
   (APTR) -1
 };
@@ -201,11 +201,11 @@ static const APTR LibVectors[] = {
 static const struct LibInitData LibInitData = {
 
   0xA0,   (UBYTE) OFFSET(Node,    ln_Type),      NT_LIBRARY,                0,
-  0xC000, (UBYTE) OFFSET(Node,    ln_Name),      LIBRARY_NAME,
+  0xC000, (UBYTE) OFFSET(Node,    ln_Name),      LIB_NAME,
   0xA0,   (UBYTE) OFFSET(Library, lib_Flags),    LIBF_SUMUSED|LIBF_CHANGED, 0,
-  0x90,   (UBYTE) OFFSET(Library, lib_Version),  LIBRARY_VERSION,
-  0x90,   (UBYTE) OFFSET(Library, lib_Revision), LIBRARY_REVISION,
-  0xC000, (UBYTE) OFFSET(Library, lib_IdString), LIBRARY_IDSTRING,
+  0x90,   (UBYTE) OFFSET(Library, lib_Version),  LIB_VERSION,
+  0x90,   (UBYTE) OFFSET(Library, lib_Revision), LIB_REVISION,
+  0xC000, (UBYTE) OFFSET(Library, lib_IdString), LIB_IDSTRING,
   0
 };
 
