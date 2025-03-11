@@ -13,7 +13,8 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with mhiAmiGUS.library.  If not, see <http://www.gnu.org/licenses/>.
  */
-
+#include <stdio.h>
+#undef NULL
 #include <proto/dos.h>
 #include <proto/exec.h>
 
@@ -95,36 +96,31 @@ VOID debug_fprintf( STRPTR format, ... ) {
   UBYTE buffer[512];
   UBYTE * printBuffer = buffer;
 
-#ifdef INCLUDE_VERSION
-  if ( 36 <= (( struct Library *) DOSBase)->lib_Version) {
+  if ( !AmiGUSBase->agb_LogFile ) {
+    if ( errorShown ) {
 
-    LONG i = GetVar( "AmiGUS-MHI-LOG-FILEPATH", buffer, sizeof(buffer), 0 );
-    if (( i > 0 ) && (i <= 512 )) {
-
-      logFilePath = buffer;
+      return;
     }
-  }
+
+#ifdef INCLUDE_VERSION
+    if ( 36 <= (( struct Library *) DOSBase)->lib_Version) {
+
+      LONG i = GetVar( "AmiGUS-MHI-LOG-FILEPATH", buffer, sizeof(buffer), 0 );
+      if (( i > 0 ) && (i <= 512 )) {
+
+        logFilePath = buffer;
+      }
+    }
 #endif
-  if (( !AmiGUSBase->agb_LogFile ) || ( errorShown )) {
+
     AmiGUSBase->agb_LogFile = Open( logFilePath, MODE_NEWFILE );
     if ( !AmiGUSBase->agb_LogFile ) {
+
       DisplayError( EOpenLogFile );
       errorShown = TRUE;
       return;
     }
   }
-#if 0
-  VFPrintf(
-    AmiGUSBase->agb_LogFile,
-    format,
-    /*
-    /----+--------------------> Cast to required APTR 
-    |    |  /----+------------> Nice math in LONGs to make it work 
-    |    |  |    | /-----+----> STRPTR, address of format, first argument
-    |    |  |    | |     | /+-> 4 bytes later, the next argument follows
-    |    |  |    | |     | ||   */
-    (APTR) ((LONG) &format +4) );
-#endif
   RawDoFmt(
     format,
     /*
