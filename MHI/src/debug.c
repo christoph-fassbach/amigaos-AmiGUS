@@ -13,8 +13,7 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with mhiAmiGUS.library.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <stdio.h>
-#undef NULL
+
 #include <proto/dos.h>
 #include <proto/exec.h>
 
@@ -118,6 +117,7 @@ VOID debug_fprintf( STRPTR format, ... ) {
 
       DisplayError( EOpenLogFile );
       errorShown = TRUE;
+      debug_kprintf( "AmiGUS Log giving up...\n" );
       return;
     }
   }
@@ -144,76 +144,99 @@ VOID debug_mprintf( STRPTR format, ... ) {
    * Used to ensure to only try allocating buffer exactly once,
    * even if it fails.
    */
-  static BOOL attempted = FALSE;
-  
+  static BOOL errorShown = FALSE;
+
   if ( !AmiGUSBase->agb_LogMem ) {
 
     // Yep, defaults to 
-    LONG size = 32<<20;             // 32MB somewhere
-    APTR where = (APTR) 0x0a000000; // in 3/4000 CPU board space
-    UBYTE buffer[64];
-    LONG i;
+    LONG size = 32 << 20;             // 32MB somewhere
+    APTR where = ( APTR ) 0;          // in 3/4000 CPU board space
 
-    if ( attempted ) {
+    if ( errorShown ) {
 
-      debug_kprintf( "AmiGUS Log gave up...\n" );
       return;
     }    
-    attempted = TRUE;
 
 #ifdef INCLUDE_VERSION
     if ( 36 <= (( struct Library *) DOSBase)->lib_Version) {
-      i = GetVar( "AmiGUS-MHI-LOG-ADDRESS", buffer, sizeof(buffer), 0 );
-      if ( i > 0 ) {
-        StrToLong( buffer, (LONG *) &where );
-      }
 
+      UBYTE buffer[ 64 ];
+      LONG i = GetVar( "AmiGUS-MHI-LOG-ADDRESS", buffer, sizeof( buffer ), 0 );
       /*
        * UAE:  setenv AmiGUS-MHI-LOG-ADDRESS 1207959552 -> 0x48000000
        * 3/4k: setenv AmiGUS-MHI-LOG-ADDRESS 167772160  -> 0x0a000000
+       * 2k:   setenv AmiGUS-MHI-LOG-ADDRESS 4194304    -> 0x00400000
        */
-      i = GetVar( "AmiGUS-MHI-LOG-SIZE", buffer, sizeof(buffer), 0 );
+
       if ( i > 0 ) {
+
+        StrToLong( buffer, (LONG *) &where );
+      }
+
+      i = GetVar( "AmiGUS-MHI-LOG-SIZE", buffer, sizeof( buffer ), 0 );
+      if ( i > 0 ) {
+
         StrToLong( buffer, &size );
       }
     }
 #endif
 
     debug_kprintf(
-      "AmiGUS-MHI-LOG-ADDRESS %lx = %lu (requested)\nAmiGUS-MHI-LOG-SIZE %ld\n", 
-      (ULONG)where,
-      (ULONG)where,
+      "AmiGUS-MHI-LOG-ADDRESS %lx = %ld (requested)\n"
+      "AmiGUS-MHI-LOG-SIZE %ld\n",
+      ( LONG ) where,
+      ( LONG ) where,
       size
     );
 
     if ( 0 < (LONG) where ) {
+
       AmiGUSBase->agb_LogMem = AllocAbs( size, where );
-      if ( AmiGUSBase->agb_LogMem ) {
-        for ( i = 0; i < size; i += 4 ) {
-          *(ULONG *)((LONG) where + i) = 0;
-        }
-      }
-    } else {
-      AmiGUSBase->agb_LogMem = AllocMem(
-        size, 
-        MEMF_CLEAR | MEMF_PUBLIC );
     }
     if ( !AmiGUSBase->agb_LogMem ) {
-    
+
+      AmiGUSBase->agb_LogMem = AllocAbs( size, ( APTR ) 0x0a000000 );
+    }
+    if ( !AmiGUSBase->agb_LogMem ) {
+
+      AmiGUSBase->agb_LogMem = AllocAbs( size, ( APTR ) 0x00400000 );
+    }
+    if ( !AmiGUSBase->agb_LogMem ) {
+
+      AmiGUSBase->agb_LogMem = AllocAbs( size, ( APTR ) 0x48000000 );
+    }
+    if ( !AmiGUSBase->agb_LogMem ) {
+
+      size = 2 << 20;
+      AmiGUSBase->agb_LogMem = AllocAbs( size, ( APTR ) 0x00400000 );
+    }
+    if ( AmiGUSBase->agb_LogMem ) {
+
+      LONG i;
+      for ( i = 0; i < size; i += 4 ) {
+        *(ULONG *)((LONG) AmiGUSBase->agb_LogMem + i) = 0;
+      }
+    } else {
+
+      AmiGUSBase->agb_LogMem = AllocMem( size, MEMF_CLEAR | MEMF_PUBLIC );
+    }
+    if ( !AmiGUSBase->agb_LogMem ) {
+
       DisplayError( EAllocateLogMem );
+      errorShown = TRUE;
       debug_kprintf( "AmiGUS Log giving up...\n" );
       return;
     }
     debug_kprintf(
-      "AmiGUS Log @ 0x%lx = %lu (retrieved)\n",
-      AmiGUSBase->agb_LogMem,
-      AmiGUSBase->agb_LogMem
-    );
-    RawDoFmt(
-      AMIGUS_MEM_LOG_MARKER,
-      NULL,
-      &debug_mPutChProc,
-      &AmiGUSBase->agb_LogMem );
+      "AmiGUS Log @ 0x%08lx = %ld (retrieved), size %ld\n",
+      ( LONG ) AmiGUSBase->agb_LogMem,
+      ( LONG ) AmiGUSBase->agb_LogMem,
+      size );
+
+    RawDoFmt( AMIGUS_MEM_LOG_MARKER,
+              NULL,
+              &debug_mPutChProc,
+              &AmiGUSBase->agb_LogMem );
     /* Move mem blob pointer back to overwrite trailing zero next comment */
     AmiGUSBase->agb_LogMem = ( APTR )(( ULONG ) AmiGUSBase->agb_LogMem - 1 );
     debug_kprintf( "AmiGUS Log ready\n" );
