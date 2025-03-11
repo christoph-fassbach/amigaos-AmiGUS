@@ -14,11 +14,11 @@
  * along with mhiAmiGUS.library.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <exec/types.h>
 #include <intuition/intuitionbase.h>
 #include <libraries/expansionbase.h>
 #include <proto/dos.h>
 #include <proto/exec.h>
-#include <proto/utility.h>
 
 #include "amigus_codec.h"
 #include "amigus_mhi.h"
@@ -139,7 +139,7 @@ LONG CustomLibInit( struct BaseLibrary * base, struct ExecBase * sysBase ) {
     return EOpenExpansionBase;
   }
   amiGUSBase->agb_TimerRequest = AllocMem( sizeof(struct IORequest),
-                                           MEMF_ANY | MEMF_CLEAR );
+                                           MEMF_PUBLIC | MEMF_CLEAR );
   if( !(amiGUSBase->agb_TimerRequest) ) {
 
     return EAllocateTimerRequest;

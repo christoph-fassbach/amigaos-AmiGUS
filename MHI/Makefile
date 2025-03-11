@@ -90,6 +90,23 @@ ifdef USEVBCC
   # add -v below to see what vbcc does under the hood :)
   CC            = vc +aos68k
   LD            = vc +aos68k
+else ifdef USEVBCC13
+  ifdef AMIGAOS
+    LDIR        = vlibos3:
+  endif
+  ifdef LINUX
+    LDIR        = $(VBCC)/targets/m68k-amigaos/lib/
+  endif
+  
+  CFLAGS        = -O2 -c -I$(MHI_INCLUDE) -I$(HDIR)                          \
+                  -D__NOLIBBASE__ -D$(HOST_TOOLCHAIN) -o
+  LFLAGS        = -nostdlib -o
+  LFLAGS1       =
+  LFLAGST1      = $(LDIR)startup.o
+  LFLAGST2      = $(LDIR)auto.lib $(LDIR)vc.lib
+  # add -v below to see what vbcc does under the hood :)
+  CC            = vc +kick13
+  LD            = vc +kick13
 else
   DEAC_CFLAGS   = RESETOPTIONS DEFINE=__NOLIBBASE__ DEFINE=$(HOST_TOOLCHAIN)  \
                   PARAMETERS=REGISTER DATA=FAR CODE=FAR                       \

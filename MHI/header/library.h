@@ -17,8 +17,16 @@
 #ifndef LIBRARY_H
 #define LIBRARY_H
 
-#include <dos/dos.h>
+#include <exec/types.h>
+#include <exec/execbase.h>
 #include <exec/libraries.h>
+
+#include <libraries/dos.h>
+
+#ifdef LIBRARY_VERSION
+// For NDK 1.3 compatibility ...
+#undef LIBRARY_VERSION
+#endif
 
 /* Need 2 staged helpers to concat version strings and ints together... :/   */
 #define GSTR_HELPER( x ) #x

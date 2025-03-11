@@ -76,6 +76,16 @@ VOID debug_kprintf( STRPTR format, ... ) {
 
 #endif
 
+#if defined( USE_FILE_LOGGING ) | defined( USE_MEM_LOGGING )
+
+ASM(VOID) debug_mPutChProc( REG(d0, UBYTE c), REG(a3, UBYTE ** target) ) {
+
+  **target = c;
+  ++(*target);
+}
+
+#endif
+
 #ifdef USE_FILE_LOGGING
 
 VOID debug_fprintf( STRPTR format, ... ) {
@@ -83,12 +93,18 @@ VOID debug_fprintf( STRPTR format, ... ) {
   static BOOL errorShown = FALSE;
   STRPTR logFilePath = "ram:AmiGUS-MHI.log";
   UBYTE buffer[512];
-  LONG i;
-  
-  i = GetVar( "AmiGUS-MHI-LOG-FILEPATH", buffer, sizeof(buffer), 0 );
-  if (( i > 0 ) && (i <= 512 )) {
-    logFilePath = buffer;
+  UBYTE * printBuffer = buffer;
+
+#ifdef INCLUDE_VERSION
+  if ( 36 <= (( struct Library *) DOSBase)->lib_Version) {
+
+    LONG i = GetVar( "AmiGUS-MHI-LOG-FILEPATH", buffer, sizeof(buffer), 0 );
+    if (( i > 0 ) && (i <= 512 )) {
+
+      logFilePath = buffer;
+    }
   }
+#endif
   if (( !AmiGUSBase->agb_LogFile ) || ( errorShown )) {
     AmiGUSBase->agb_LogFile = Open( logFilePath, MODE_NEWFILE );
     if ( !AmiGUSBase->agb_LogFile ) {
@@ -97,6 +113,7 @@ VOID debug_fprintf( STRPTR format, ... ) {
       return;
     }
   }
+#if 0
   VFPrintf(
     AmiGUSBase->agb_LogFile,
     format,
@@ -107,16 +124,23 @@ VOID debug_fprintf( STRPTR format, ... ) {
     |    |  |    | |     | /+-> 4 bytes later, the next argument follows
     |    |  |    | |     | ||   */
     (APTR) ((LONG) &format +4) );
+#endif
+  RawDoFmt(
+    format,
+    /*
+    /----+--------------------> Cast to required APTR 
+    |    |  /----+------------> Nice math in LONGs to make it work 
+    |    |  |    | /-----+----> STRPTR, address of format, first argument
+    |    |  |    | |     | /+-> 4 bytes later, the next argument follows
+    |    |  |    | |     | ||   */
+    (APTR) ((LONG) &format +4),
+    &debug_mPutChProc,
+    &printBuffer );
+  Write( AmiGUSBase->agb_LogFile, buffer, printBuffer - buffer - 1 );
 }
 
 #endif /* USE_FILE_LOGGING */
 #ifdef USE_MEM_LOGGING
-
-ASM(VOID) debug_mPutChProc( REG(d0, UBYTE c), REG(a3, UBYTE ** target) ) {
-
-  **target = c;
-  ++(*target);
-}
 
 VOID debug_mprintf( STRPTR format, ... ) {
 
@@ -141,18 +165,23 @@ VOID debug_mprintf( STRPTR format, ... ) {
     }    
     attempted = TRUE;
 
-    i = GetVar( "AmiGUS-MHI-LOG-ADDRESS", buffer, sizeof(buffer), 0 );
-    if ( i > 0 ) {
-      StrToLong( buffer, (LONG *) &where );
+#ifdef INCLUDE_VERSION
+    if ( 36 <= (( struct Library *) DOSBase)->lib_Version) {
+      i = GetVar( "AmiGUS-MHI-LOG-ADDRESS", buffer, sizeof(buffer), 0 );
+      if ( i > 0 ) {
+        StrToLong( buffer, (LONG *) &where );
+      }
+
+      /*
+       * UAE:  setenv AmiGUS-MHI-LOG-ADDRESS 1207959552 -> 0x48000000
+       * 3/4k: setenv AmiGUS-MHI-LOG-ADDRESS 167772160  -> 0x0a000000
+       */
+      i = GetVar( "AmiGUS-MHI-LOG-SIZE", buffer, sizeof(buffer), 0 );
+      if ( i > 0 ) {
+        StrToLong( buffer, &size );
+      }
     }
-    /*
-     * UAE:  setenv AmiGUS-MHI-LOG-ADDRESS 1207959552 -> 0x48000000
-     * 3/4k: setenv AmiGUS-MHI-LOG-ADDRESS 167772160  -> 0x0a000000
-     */
-    i = GetVar( "AmiGUS-MHI-LOG-SIZE", buffer, sizeof(buffer), 0 );
-    if ( i > 0 ) {
-      StrToLong( buffer, &size );
-    }
+#endif
 
     debug_kprintf(
       "AmiGUS-MHI-LOG-ADDRESS %lx = %lu (requested)\nAmiGUS-MHI-LOG-SIZE %ld\n", 

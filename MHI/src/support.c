@@ -14,6 +14,7 @@
  * along with mhiAmiGUS.library.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <exec/types.h>
 #include <devices/timer.h>
 #include <exec/alerts.h>
 #include <proto/exec.h>
@@ -24,6 +25,15 @@
 #include "debug.h"
 #include "errors.h"
 #include "support.h"
+
+#ifndef INCLUDE_VERSION
+/* Patches to make this compile in NDK1.3 */
+#define Alert13Compat( x )        Alert( x, NULL )
+#define AN_Unknown                0x35000000
+#define AO_Unknown                0x00008035
+#else
+#define Alert13Compat( x )        Alert( x )
+#endif
 
 /**
  * Type for error message declarations.
@@ -96,6 +106,8 @@ VOID DisplayError( ULONG aError ) {
   message = errors[ i ].iMessage;
 
   if ( IntuitionBase ) {
+#if 0
+TODO
     struct EasyStruct req;
 
     req.es_StructSize = sizeof( struct EasyStruct );
@@ -105,16 +117,17 @@ VOID DisplayError( ULONG aError ) {
     req.es_GadgetFormat = errors[ i ].iButton;
 
     EasyRequest( NULL, &req, NULL, aError, message );
-
+#endif
   } else {
 
-    Alert( AN_Unknown | AG_OpenLib | AO_Unknown );
+    Alert13Compat( AN_Unknown | AG_OpenLib | AO_Unknown );
   }
   LOG_E(("E: AmiGUS %ld - %s\n", aError, message));
 }
 
 VOID LogTicks( UBYTE bitmask ) {
-
+#if 0
+TODO
   struct EClockVal ecv;
   ULONG ef = ReadEClock( &ecv );
 
@@ -137,10 +150,12 @@ VOID LogTicks( UBYTE bitmask ) {
       LOG_I(("I: Tick freq %ld low %ld high %ld\n", ef, ecv.ev_lo, ecv.ev_hi));
       break;
   }
+#endif
 }
 
 VOID Sleep( UWORD pseudomillis ) {
-
+#if 0
+TODO: fix sleep
   struct EClockVal ecv;
   ULONG ef = ReadEClock( &ecv );
   UWORD milli_ticks = ef >> 10;                          // ef -> ticks / milli
@@ -173,6 +188,7 @@ VOID Sleep( UWORD pseudomillis ) {
     ReadEClock( &ecv );
   }
   LOG_V(( "V: Slept until %ld %ld\n", ecv.ev_hi, ecv.ev_lo ));
+#endif
 }
 
 VOID NonConflictingNewMinList( struct MinList * list ) {

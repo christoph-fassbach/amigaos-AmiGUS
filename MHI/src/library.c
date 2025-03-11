@@ -20,6 +20,7 @@
 /* This file cannot cope with BASE_REDEFINE, blocking that permanently here. */
 #define NO_BASE_REDEFINE
 
+#include <exec/types.h>
 #include <exec/execbase.h>
 #include <exec/resident.h>
 #include <proto/exec.h>
@@ -73,8 +74,8 @@ extern const ULONG LibInitTable[4]; /* the prototype */
 const struct Resident RomTag = {
 
   RTC_MATCHWORD,                   /* Marker value.                          */
-  (struct Resident *)&RomTag,      /* This points back to itself.            */
-  (struct Resident *)LibInitTable, /* Points somewhere behind this marker.   */
+  ( struct Resident * ) &RomTag,   /* This points back to itself.            */
+  ( APTR ) LibInitTable,           /* Points somewhere behind this marker.   */
 #ifdef __MORPHOS__
   RTF_PPC|
 #endif
@@ -84,7 +85,7 @@ const struct Resident RomTag = {
   0,                               /* (Unused) Initialization priority.      */
   LIBRARY_NAME,                    /* Points to the name of the Library.     */
   LIBRARY_IDSTRING,                /* Identification string of this Library. */
-  (APTR)&LibInitTable              /* Table is for initializing the Library. */
+  ( APTR ) &LibInitTable           /* Table is for initializing the Library. */
 };
 
 /*****************************************************************************/
