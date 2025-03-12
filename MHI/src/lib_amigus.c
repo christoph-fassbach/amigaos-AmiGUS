@@ -42,19 +42,19 @@ struct AmiGUSBase        * AmiGUSBase        = 0;
 /* Closes all the libraries opened by LibInit() */
 VOID CustomLibClose( struct BaseLibrary * base ) {
 
-  struct AmiGUSBase * amiGUSBase = (struct AmiGUSBase *)base;
+  struct AmiGUSBase * amiGUSBase = ( struct AmiGUSBase * ) base;
 
 #ifndef BASE_GLOBAL
   struct ExecBase *SysBase = AmiGUSBase->agb_SysBase;
 #endif
 
-  if( amiGUSBase->agb_TimerBase ) {
+  if ( amiGUSBase->agb_TimerBase ) {
 
     CloseDevice( amiGUSBase->agb_TimerRequest );
   }
-  if( amiGUSBase->agb_TimerRequest ) {
+  if ( amiGUSBase->agb_TimerRequest ) {
 
-    FreeMem( amiGUSBase->agb_TimerRequest, sizeof(struct IORequest) );
+    FreeMem( amiGUSBase->agb_TimerRequest, sizeof( struct IORequest ));
   }  
   if ( amiGUSBase->agb_LogFile ) {
 
@@ -69,43 +69,43 @@ VOID CustomLibClose( struct BaseLibrary * base ) {
   }    
   */
 
-  if( amiGUSBase->agb_DOSBase ) {
+  if ( amiGUSBase->agb_DOSBase ) {
 
-    CloseLibrary( (struct Library *) amiGUSBase->agb_DOSBase );
+    CloseLibrary(( struct Library * ) amiGUSBase->agb_DOSBase );
   }
-  if( amiGUSBase->agb_IntuitionBase ) {
+  if ( amiGUSBase->agb_IntuitionBase ) {
 
-    CloseLibrary( (struct Library *) amiGUSBase->agb_IntuitionBase );
+    CloseLibrary(( struct Library * ) amiGUSBase->agb_IntuitionBase );
   }
-  if( amiGUSBase->agb_ExpansionBase ) {
+  if ( amiGUSBase->agb_ExpansionBase ) {
 
-    CloseLibrary( (struct Library *) amiGUSBase->agb_ExpansionBase );
+    CloseLibrary(( struct Library * ) amiGUSBase->agb_ExpansionBase );
   }
 }
 
 LONG CustomLibInit( struct BaseLibrary * base, struct ExecBase * sysBase ) {
 
-  struct AmiGUSBase * amiGUSBase = (struct AmiGUSBase *)base;
+  struct AmiGUSBase * amiGUSBase = ( struct AmiGUSBase * ) base;
   LONG error;
-
+LOG_I(( "1\n" ));
   /* Prevent use of customized library versions on CPUs not targetted. */
 #ifdef _M68060
-  if( !(sysBase->AttnFlags & AFF_68060) ) {
+  if ( !( sysBase->AttnFlags & AFF_68060 )) {
 
     return EWrongDriverCPUVersion;
   }
-#elif defined (_M68040)
-  if( !(sysBase->AttnFlags & AFF_68040) ) {
+#elif defined ( _M68040 )
+  if ( !( sysBase->AttnFlags & AFF_68040 )) {
 
     return EWrongDriverCPUVersion;
   }
-#elif defined (_M68030)
-  if( !(sysBase->AttnFlags & AFF_68030) ) {
+#elif defined ( _M68030 )
+  if ( !( sysBase->AttnFlags & AFF_68030 )) {
 
     return EWrongDriverCPUVersion;
   }
-#elif defined (_M68020)
-  if( !(sysBase->AttnFlags & AFF_68020) ) {
+#elif defined ( _M68020 )
+  if ( !( sysBase->AttnFlags & AFF_68020 )) {
 
     return EWrongDriverCPUVersion;
   }
@@ -119,31 +119,35 @@ LONG CustomLibInit( struct BaseLibrary * base, struct ExecBase * sysBase ) {
 
   amiGUSBase->agb_LogFile = NULL;
   amiGUSBase->agb_LogMem = NULL;
-
+  LOG_I(( "2\n" ));
   amiGUSBase->agb_DOSBase =
-    (struct DosLibrary *) OpenLibrary("dos.library", 34);
-  if( !(amiGUSBase->agb_DOSBase) ) {
+    ( struct DosLibrary * ) OpenLibrary( "dos.library", 34 );
+  if ( !( amiGUSBase->agb_DOSBase )) {
 
     return EOpenDosBase;
   }
+  LOG_I(( "3\n" ));
   amiGUSBase->agb_IntuitionBase =
-    (struct IntuitionBase *) OpenLibrary("intuition.library", 34);
-  if( !(amiGUSBase->agb_IntuitionBase) ) {
+    ( struct IntuitionBase * ) OpenLibrary( "intuition.library", 34 );
+  if ( !( amiGUSBase->agb_IntuitionBase )) {
 
     return EOpenIntuitionBase;
   }
+  LOG_I(( "4\n" ));
   amiGUSBase->agb_ExpansionBase =
-    (struct Library *) OpenLibrary("expansion.library", 34);
-  if( !(amiGUSBase->agb_ExpansionBase) ) {
+    ( struct Library * ) OpenLibrary( "expansion.library", 34 );
+  if ( !( amiGUSBase->agb_ExpansionBase )) {
 
     return EOpenExpansionBase;
   }
-  amiGUSBase->agb_TimerRequest = AllocMem( sizeof(struct IORequest),
+  LOG_I(( "5\n" ));
+  amiGUSBase->agb_TimerRequest = AllocMem( sizeof( struct IORequest ),
                                            MEMF_PUBLIC | MEMF_CLEAR );
-  if( !(amiGUSBase->agb_TimerRequest) ) {
+  if ( !( amiGUSBase->agb_TimerRequest )) {
 
     return EAllocateTimerRequest;
   }
+  LOG_I(( "6\n" ));
   error = OpenDevice("timer.device", 0, amiGUSBase->agb_TimerRequest, 0);
   if ( error ) {
 
@@ -158,12 +162,15 @@ LONG CustomLibInit( struct BaseLibrary * base, struct ExecBase * sysBase ) {
   TimerBase     = amiGUSBase->agb_TimerBase;
   AmiGUSBase    = amiGUSBase;
 #endif
-
-  LOG_D(("D: AmiGUS base ready @ 0x%08lx\n", amiGUSBase));
+  LOG_I(( "7\n" ));
+  LOG_D(( "D: AmiGUS base ready @ 0x%08lx\n", amiGUSBase ));
   error = FindAmiGusCodec( amiGUSBase );
+#if 0
   if ( error ) {
 
     DisplayError( error );
   }
+#endif
+  LOG_I(( "8\n" ));
   return ENoError;
 }
