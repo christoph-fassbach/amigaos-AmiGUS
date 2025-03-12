@@ -29,7 +29,7 @@
 
 // Comes with a tiny performance impact,
 // so... rather not do it.
-ASM(VOID) RawPutCharC( REG(d0, UBYTE putCh ) {
+ASM( VOID ) RawPutCharC( REG( d0, UBYTE putCh ) {
 
   RawPutChar(putCh);
 }
@@ -37,7 +37,7 @@ ASM(VOID) RawPutCharC( REG(d0, UBYTE putCh ) {
 VOID debug_kprintf( STRPTR format, ... ) {
 
   RawIOInit();
-  RawDoFmt( format, 0, (VOID (*)())&RawPutCharC, 0 );
+  RawDoFmt( format, 0, ( VOID ( * )()) &RawPutCharC, 0 );
   RawMayGetChar();
 } 
 
@@ -51,12 +51,12 @@ VOID debug_kvprintf( STRPTR format, APTR vargs ) {
     format,
     vargs,
     /*
-    /----------+----------------------> Cast to void(*)() function pointer
-    |          |  /----+--------------> Address math in LONG works better
-    |          |  |    | /-----+------> Exec kick1.2 function using SysBase
-    |          |  |    | |     | /--+-> RawPutChar is -516 (see above)
-    |          |  |    | |     | |  |   */
-    (VOID (*)()) ((LONG) SysBase -516),
+    /-------------+-------------------------> Cast void(*)() function pointer
+    |             |  /------+---------------> Address math in LONG is better
+    |             |  |      | /-----+-------> Exec kick1.2 functions -> SysBase
+    |             |  |      | |     | /---+-> RawPutChar is -516 (see above)
+    |             |  |      | |     | |   |   */
+    ( VOID ( * )()) (( LONG ) SysBase - 516 ),
     0 );
   RawMayGetChar();
 }
@@ -66,22 +66,22 @@ VOID debug_kprintf( STRPTR format, ... ) {
   debug_kvprintf(
     format,
     /*
-    /----+--------------------> Cast to required APTR 
-    |    |  /----+------------> Nice math in LONGs to make it work 
-    |    |  |    | /-----+----> STRPTR, address of format, first argument
-    |    |  |    | |     | /+-> 4 bytes later, the next argument follows
-    |    |  |    | |     | ||   */
-    (APTR) ((LONG) &format +4) );
+    /------+-----------------------> Cast to required APTR 
+    |      |  /------+-------------> Nice math in LONGs to make it work 
+    |      |  |      | /-----+-----> STRPTR, address of format, first argument
+    |      |  |      | |     | /-+-> 4 bytes later, the next argument follows
+    |      |  |      | |     | | |   */
+    ( APTR ) (( LONG ) &format + 4 ));
 }
 
 #endif
 
 #if defined( USE_FILE_LOGGING ) | defined( USE_MEM_LOGGING )
 
-ASM(VOID) debug_mPutChProc( REG(d0, UBYTE c), REG(a3, UBYTE ** target) ) {
+ASM( VOID ) debug_mPutChProc( REG( d0, UBYTE c ), REG( a3, UBYTE ** target )) {
 
   **target = c;
-  ++(*target);
+  ++( *target );
 }
 
 #endif
@@ -102,10 +102,13 @@ VOID debug_fprintf( STRPTR format, ... ) {
     }
 
 #ifdef INCLUDE_VERSION
-    if ( 36 <= (( struct Library *) DOSBase)->lib_Version) {
+    if ( 36 <= (( struct Library *) DOSBase )->lib_Version ) {
 
-      LONG i = GetVar( "AmiGUS-MHI-LOG-FILEPATH", buffer, sizeof(buffer), 0 );
-      if (( i > 0 ) && (i <= 512 )) {
+      LONG i = GetVar( "AmiGUS-MHI-LOG-FILEPATH",
+                       buffer,
+                       sizeof( buffer ),
+                       0 );
+      if (( i > 0 ) && ( i < 512 )) {
 
         logFilePath = buffer;
       }
@@ -124,12 +127,12 @@ VOID debug_fprintf( STRPTR format, ... ) {
   RawDoFmt(
     format,
     /*
-    /----+--------------------> Cast to required APTR 
-    |    |  /----+------------> Nice math in LONGs to make it work 
-    |    |  |    | /-----+----> STRPTR, address of format, first argument
-    |    |  |    | |     | /+-> 4 bytes later, the next argument follows
-    |    |  |    | |     | ||   */
-    (APTR) ((LONG) &format +4),
+    /------+-----------------------> Cast to required APTR 
+    |      |  /------+-------------> Nice math in LONGs to make it work 
+    |      |  |      | /-----+-----> STRPTR, address of format, first argument
+    |      |  |      | |     | /-+-> 4 bytes later, the next argument follows
+    |      |  |      | |     | | |   */
+    ( APTR ) (( LONG ) &format + 4 ),
     &debug_mPutChProc,
     &printBuffer );
   Write( AmiGUSBase->agb_LogFile, buffer, printBuffer - buffer - 1 );
@@ -158,7 +161,7 @@ VOID debug_mprintf( STRPTR format, ... ) {
     }    
 
 #ifdef INCLUDE_VERSION
-    if ( 36 <= (( struct Library *) DOSBase)->lib_Version) {
+    if ( 36 <= (( struct Library * ) DOSBase )->lib_Version) {
 
       UBYTE buffer[ 64 ];
       LONG i = GetVar( "AmiGUS-MHI-LOG-ADDRESS", buffer, sizeof( buffer ), 0 );
@@ -170,7 +173,7 @@ VOID debug_mprintf( STRPTR format, ... ) {
 
       if ( i > 0 ) {
 
-        StrToLong( buffer, (LONG *) &where );
+        StrToLong( buffer, ( LONG * ) &where );
       }
 
       i = GetVar( "AmiGUS-MHI-LOG-SIZE", buffer, sizeof( buffer ), 0 );
@@ -181,15 +184,13 @@ VOID debug_mprintf( STRPTR format, ... ) {
     }
 #endif
 
-    debug_kprintf(
-      "AmiGUS-MHI-LOG-ADDRESS %lx = %ld (requested)\n"
-      "AmiGUS-MHI-LOG-SIZE %ld\n",
-      ( LONG ) where,
-      ( LONG ) where,
-      size
-    );
+    debug_kprintf( "AmiGUS-MHI-LOG-ADDRESS %lx = %ld (requested)\n"
+                   "AmiGUS-MHI-LOG-SIZE %ld\n",
+                   ( LONG ) where,
+                   ( LONG ) where,
+                   size );
 
-    if ( 0 < (LONG) where ) {
+    if ( 0 < ( LONG ) where ) {
 
       AmiGUSBase->agb_LogMem = AllocAbs( size, where );
     }
@@ -214,7 +215,7 @@ VOID debug_mprintf( STRPTR format, ... ) {
 
       LONG i;
       for ( i = 0; i < size; i += 4 ) {
-        *(ULONG *)((LONG) AmiGUSBase->agb_LogMem + i) = 0;
+        *( ULONG * )(( LONG ) AmiGUSBase->agb_LogMem + i ) = 0;
       }
     } else {
 
@@ -227,11 +228,10 @@ VOID debug_mprintf( STRPTR format, ... ) {
       debug_kprintf( "AmiGUS Log giving up...\n" );
       return;
     }
-    debug_kprintf(
-      "AmiGUS Log @ 0x%08lx = %ld (retrieved), size %ld\n",
-      ( LONG ) AmiGUSBase->agb_LogMem,
-      ( LONG ) AmiGUSBase->agb_LogMem,
-      size );
+    debug_kprintf( "AmiGUS Log @ 0x%08lx = %ld (retrieved), size %ld\n",
+                   ( LONG ) AmiGUSBase->agb_LogMem,
+                   ( LONG ) AmiGUSBase->agb_LogMem,
+                   size );
 
     RawDoFmt( AMIGUS_MEM_LOG_MARKER,
               NULL,
@@ -245,12 +245,12 @@ VOID debug_mprintf( STRPTR format, ... ) {
   RawDoFmt(
     format,
     /*
-    /----+--------------------> Cast to required APTR 
-    |    |  /----+------------> Nice math in LONGs to make it work 
-    |    |  |    | /-----+----> STRPTR, address of format, first argument
-    |    |  |    | |     | /+-> 4 bytes later, the next argument follows
-    |    |  |    | |     | ||   */
-    (APTR) ((LONG) &format +4),
+    /------+-----------------------> Cast to required APTR 
+    |      |  /------+-------------> Nice math in LONGs to make it work 
+    |      |  |      | /-----+-----> STRPTR, address of format, first argument
+    |      |  |      | |     | /-+-> 4 bytes later, the next argument follows
+    |      |  |      | |     | | |   */
+    ( APTR ) (( LONG ) &format + 4 ),
     &debug_mPutChProc,
     &AmiGUSBase->agb_LogMem );
   /* Move mem blob pointer back to overwrite trailing zero next comment */
