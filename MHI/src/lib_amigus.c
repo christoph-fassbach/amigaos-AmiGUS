@@ -27,6 +27,11 @@
 #include "library.h"
 #include "support.h"
 
+#ifdef LOG_I
+#undef LOG_I
+#define LOG_I(X)
+#endif
+
 #ifdef BASE_GLOBAL
 
 struct ExecBase          * SysBase           = 0;
