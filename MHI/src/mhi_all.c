@@ -343,7 +343,7 @@ ASM( ULONG ) SAVEDS MHIQuery(
   switch ( query ) {
     case MHIQ_DECODER_NAME: {
 
-      result = ( ULONG ) "AmiGUS VS1063a codec";
+      result = ( ULONG ) AMIGUS_MHI_DECODER;
       break;
     }
     case MHIQ_DECODER_VERSION: {

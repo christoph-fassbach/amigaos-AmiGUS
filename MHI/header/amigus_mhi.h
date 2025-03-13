@@ -47,6 +47,7 @@
 #define AMIGUS_MHI_ANNOTATION       "Thanks to: Oliver Achten (AmiGUS), " \
                                     "Frank Wille (vbcc), "                \
                                     "Thomas Wenzel et al. (MHI)"
+#define AMIGUS_MHI_DECODER          "AmiGUS VS1063a codec"
 #define AMIGUS_MHI_VERSION          LIB_IDSTRING
 
 #define AMIGUS_MHI_FIRMWARE_MINIMUM ( ( 2024 << 20 ) /* year   */ \
