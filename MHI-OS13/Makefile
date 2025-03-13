@@ -4,11 +4,8 @@ REVISION=           0
 
 LIBFILE=            $(MODNAME).library
 
-FD_CONV=            SC:C/FD2PRAGMA
 FD_FILE=            header/$(MODNAME)_lib.fd
 PRAGMA_FILE=        header/$(MODNAME)_pragmas.h
-
-LINKER=             SC:C/SLINK
 
 LIBS=               LIB:sc.lib LIB:amiga.lib
 
@@ -69,6 +66,10 @@ HDIR   = header/
 
 LIB_DST         = $(DDIR)$(LIBFILE)
 
+MHI_INCLUDE     = include
+NDK_ASM_INCLUDE = $(NDK)Include_I
+NDK_C_INCLUDE   = $(NDK)Include_H
+
 C_SRCS          = $(wildcard $(SDIR)$(WILDCARD).c)
 BDIR_C_SRCS     = $(foreach C_SRC,$(C_SRCS),$(subst $(SDIR),$(BDIR),$(C_SRC)))
 BDIR_C_OBJS     = $(BDIR_C_SRCS:%c=%o)
@@ -86,38 +87,40 @@ CFLAGS          = STREQ STRMER NOSTKCHK LIBCODE                           \
 CC            = $(RUNNER) sc
 AS            = $(RUNNER) sc
 LD            = $(RUNNER) slink
+FD            = $(RUNNER) sc:c/fd2pragma
 
 ##################################
 
 all: FOLDERS $(LIB_DST) $(PRAGMA_FILE)
 
-FOLDERS:
-	-@$(MKDIR) $(DDIR) $(MKDIR_SUFFIX)
-	-@$(MKDIR) $(BDIR) $(MKDIR_SUFFIX)
-
 $(LIB_DST): $(LIBFILE)
 	$(CP) $(LIBFILE) $(LIB_DST)
 	$(RM) $(LIBFILE) $(RM_SUFFIX)
 
-##############################################################################
-# Build the library...
+FOLDERS:
+	-@$(MKDIR) $(DDIR) $(MKDIR_SUFFIX)
+	-@$(MKDIR) $(BDIR) $(MKDIR_SUFFIX)
 
-$(LIBFILE): $(OBJECTS) $(LIBS) $(PRAGMA_FILE)
-	$(LINKER) NOICONS \
-TO $(LIBFILE) \
-FROM $(LIBENT) $(LIBINIT) $(OBJECTS) \
-LIBFD $(FD_FILE) \
-LIBPREFIX $(LIBPREFIX) \
-LIBVERSION $(VERSION) \
-LIBREVISION $(REVISION) \
-LIB $(LIBS)
+clean:
+	-@$(RM) $(LIBFILE) $(RM_SUFFIX)
+	-@$(RM) $(OBJECTS) $(RM_SUFFIX)
+	-@$(RM) $(MODNAME).map $(RM_SUFFIX)
+	-@$(RM) $(PRAGMA_FILE) $(RM_SUFFIX)
+
+###############################################################################
+
+$(LIBFILE): $(OBJECTS) $(PRAGMA_FILE)
+	$(LD) NOICONS \
+		TO $(LIBFILE) \
+		FROM $(LIBENT) $(LIBINIT) $(OBJECTS) \
+		LIBFD $(FD_FILE) LIBPREFIX $(LIBPREFIX) \
+		LIBVERSION $(VERSION) LIBREVISION $(REVISION) \
+		LIB $(LIBS)
 
 $(PRAGMA_FILE): $(FD_FILE)
-	$(FD_CONV) $(FD_FILE) $(PRAGMA_FILE)
+	$(FD) $(FD_FILE) $(PRAGMA_FILE)
 
-##############################################################################
-# Default rules...
-#
+###############################################################################
 
 $(BDIR)%.o: $(SDIR)%.c $(HDIR)*
 	$(CC) $(CFLAGS) $@ $<
@@ -125,25 +128,8 @@ $(BDIR)%.o: $(SDIR)%.c $(HDIR)*
 $(BDIR)%.o: $(SDIR)%.asm $(HDIR)*
 	$(AS) $(AFLAGS) $@ $<
 
-##############################################################################
-# Delete all object files
-#
-clean:
-	@$(RM) $(LIBFILE)(|.info) $(RM_SUFFIX)
-	@$(RM) $(OBJECTS) $(RM_SUFFIX)
-	@$(RM) $(MODNAME).map(|.info) $(RM_SUFFIX)
-	@$(RM) $(PRAGMA_FILE) $(RM_SUFFIX)
-
-##############################################################################
-# Load the new library into the system
-#
-reload:
-	@copy $(LIBFILE) LIBS:
-	@copy $(FD_FILE) FD:
-	@flushlibs
-	@version $(LIBFILE)
+###############################################################################
 
 test_library: $(PRAGMA_FILE)
-	$(CC) data=far nominc strmer streq nostkchk saveds ign=73 IDIR=$(HDIR) OBJNAME $(BDIR)test_library.o test/test_library.c 
-	$(LD) FROM LIB:c.o,$(BDIR)test_library.o TO test/test_library LIB LIB:SC.lib,LIB:Amiga.lib 
- 
+	$(CC) DATA=far NOMINC STRMER STREQ NOSTKCHK SAVEDS IGN=73 IDIR=$(HDIR) OBJNAME $(BDIR)$@.o test/$@.c
+	$(LD) NOICONS FROM LIB:c.o,$(BDIR)$@.o TO test/$@ LIB $(LIBS) 
