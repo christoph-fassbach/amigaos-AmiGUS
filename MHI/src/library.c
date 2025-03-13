@@ -29,6 +29,12 @@
 #include "library.h"
 #include "debug.h"
 
+#ifdef LOG_I
+// TODO
+#undef LOG_I
+#define LOG_I(X)
+#endif
+
 #ifdef __MORPHOS__
 #ifndef RTF_PPC
 #define RTF_PPC (1<<3) /* rt_Init points to a PPC function */

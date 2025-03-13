@@ -28,6 +28,7 @@
 #include "support.h"
 
 #ifdef LOG_I
+// TODO
 #undef LOG_I
 #define LOG_I(X)
 #endif
