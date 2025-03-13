@@ -1,19 +1,18 @@
-MODNAME=            mhiamigus
-VERSION=            1
-REVISION=           0
-
-LIBFILE=            $(MODNAME).library
-
-FD_FILE=            header/$(MODNAME)_lib.fd
-PRAGMA_FILE=        header/$(MODNAME)_pragmas.h
-
-LIBS=               LIB:sc.lib LIB:amiga.lib
-
-LIBENT=             LIB:libent.o
-LIBINIT=            LIB:libinitr.o
-LIBPREFIX=          _LIB_
-
-###########################
+#
+# This file is part of the mhiAmiGUS.library.
+#
+# mhiAmiGUS.library is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, version 3 of the License only.
+#
+# mhiAmiGUS.library is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU LesserGeneral Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with mhiAmiGUS.library.  If not, see <http://www.gnu.org/licenses/>.
+#
 
 ifeq ($(findstring /home,$(HOME)), /home)
   LINUX          = 1
@@ -64,7 +63,29 @@ BDIR   = build/
 SDIR   = src/
 HDIR   = header/
 
-LIB_DST         = $(DDIR)$(LIBFILE)
+MODNAME         = mhiamigus
+VERSION         = 1
+REVISION        = 0
+
+LIB_FILE        = $(MODNAME).library
+LIB_DST         = $(DDIR)$(LIB_FILE)
+
+FD_FILE         = $(HDIR)$(MODNAME)_lib.fd
+PRAGMA_FILE     = $(HDIR)$(MODNAME)_pragmas.h
+
+LIB_PREFIX         = _LIB_
+LIB_ENT            = LIB:libent.o
+ifeq (1, 1)
+# just put all into NEAR section
+  LIB_LIBS         =
+  LIB_INIT         = LIB:libinit.o
+else
+# also have a FAR section
+  LIB_LIBS         = LIB:sc.lib
+  LIB_INIT         = LIB:libinitr.o
+endif
+
+###########################
 
 MHI_INCLUDE     = include
 NDK_ASM_INCLUDE = $(NDK)Include_I
@@ -78,7 +99,7 @@ A_SRCS          = $(wildcard $(SDIR)$(WILDCARD).asm)
 BDIR_A_SRCS     = $(foreach A_SRC,$(A_SRCS),$(subst $(SDIR),$(BDIR),$(A_SRC)))
 BDIR_A_OBJS     = $(BDIR_A_SRCS:%asm=%o)
 
-OBJECTS         = $(BDIR_C_OBJS) $(BDIR_A_OBJS)
+LIB_OBJS        = $(BDIR_C_OBJS) $(BDIR_A_OBJS)
 
 CFLAGS          = STREQ STRMER NOSTKCHK LIBCODE                           \
                   IDIR=$(MHI_INCLUDE) IDIR=$(NDK_C_INCLUDE) IDIR=$(HDIR) \
@@ -93,29 +114,33 @@ FD            = $(RUNNER) sc:c/fd2pragma
 
 all: FOLDERS $(LIB_DST) $(PRAGMA_FILE)
 
-$(LIB_DST): $(LIBFILE)
-	$(CP) $(LIBFILE) $(LIB_DST)
-	$(RM) $(LIBFILE) $(RM_SUFFIX)
+install: all
+	$(INSTALL0)
+	$(INSTALL1)
+
+$(LIB_DST): $(LIB_FILE)
+	$(CP) $(LIB_FILE) $(LIB_DST)
+	$(RM) $(LIB_FILE) $(RM_SUFFIX)
 
 FOLDERS:
 	-@$(MKDIR) $(DDIR) $(MKDIR_SUFFIX)
 	-@$(MKDIR) $(BDIR) $(MKDIR_SUFFIX)
 
 clean:
-	-@$(RM) $(LIBFILE) $(RM_SUFFIX)
-	-@$(RM) $(OBJECTS) $(RM_SUFFIX)
+	-@$(RM) $(LIB_FILE) $(RM_SUFFIX)
+	-@$(RM) $(LIB_OBJS) $(RM_SUFFIX)
 	-@$(RM) $(MODNAME).map $(RM_SUFFIX)
 	-@$(RM) $(PRAGMA_FILE) $(RM_SUFFIX)
 
 ###############################################################################
 
-$(LIBFILE): $(OBJECTS) $(PRAGMA_FILE)
+$(LIB_FILE): $(LIB_OBJS) $(PRAGMA_FILE)
 	$(LD) NOICONS \
-		TO $(LIBFILE) \
-		FROM $(LIBENT) $(LIBINIT) $(OBJECTS) \
-		LIBFD $(FD_FILE) LIBPREFIX $(LIBPREFIX) \
+		TO $(LIB_FILE) \
+		FROM $(LIB_ENT) $(LIB_INIT) $(LIB_OBJS) \
+		LIBFD $(FD_FILE) LIBPREFIX $(LIB_PREFIX) \
 		LIBVERSION $(VERSION) LIBREVISION $(REVISION) \
-		LIB $(LIBS)
+		LIB $(LIB_LIBS)
 
 $(PRAGMA_FILE): $(FD_FILE)
 	$(FD) $(FD_FILE) $(PRAGMA_FILE)
@@ -132,4 +157,4 @@ $(BDIR)%.o: $(SDIR)%.asm $(HDIR)*
 
 test_library: $(PRAGMA_FILE)
 	$(CC) DATA=far NOMINC STRMER STREQ NOSTKCHK SAVEDS IGN=73 IDIR=$(HDIR) OBJNAME $(BDIR)$@.o test/$@.c
-	$(LD) NOICONS FROM LIB:c.o,$(BDIR)$@.o TO test/$@ LIB $(LIBS) 
+	$(LD) NOICONS FROM LIB:c.o,$(BDIR)$@.o TO test/$@ LIB LIB:sc.lib,LIB:amiga.lib
