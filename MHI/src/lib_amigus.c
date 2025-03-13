@@ -122,7 +122,7 @@ LOG_I(( "1\n" ));
 #ifdef BASE_GLOBAL
   SysBase = sysBase;
 #endif
-
+#if 0
   amiGUSBase->agb_LogFile = NULL;
   amiGUSBase->agb_LogMem = NULL;
   LOG_I(( "2\n" ));
@@ -171,12 +171,17 @@ LOG_I(( "1\n" ));
   LOG_I(( "7\n" ));
   LOG_D(( "D: AmiGUS base ready @ 0x%08lx\n", amiGUSBase ));
   error = FindAmiGusCodec( amiGUSBase );
-#if 0
   if ( error ) {
 
     DisplayError( error );
+    return error; // TODO: test?
   }
+#else
+AmiGUSBase    = amiGUSBase;
 #endif
+
   LOG_I(( "8\n" ));
   return ENoError;
 }
+
+const ULONG AmiGUSBaseSize = sizeof( struct AmiGUSBase );
