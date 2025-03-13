@@ -106,13 +106,13 @@ VOID DisplayError( ULONG aError ) {
   message = errors[ i ].iMessage;
 
   if ( IntuitionBase ) {
-#if 0
-TODO
+#if 1
+// TODO
     struct EasyStruct req;
 
     req.es_StructSize = sizeof( struct EasyStruct );
     req.es_Flags = 0;
-    req.es_Title = LIBRARY_NAME;
+    req.es_Title = LIB_NAME;
     req.es_TextFormat = "Error %ld : %s";
     req.es_GadgetFormat = errors[ i ].iButton;
 
@@ -126,8 +126,8 @@ TODO
 }
 
 VOID LogTicks( UBYTE bitmask ) {
-#if 0
-TODO
+#if 1
+// TODO
   struct EClockVal ecv;
   ULONG ef = ReadEClock( &ecv );
 
@@ -154,8 +154,8 @@ TODO
 }
 
 VOID Sleep( UWORD pseudomillis ) {
-#if 0
-TODO: fix sleep
+#if 1
+// TODO: fix sleep
   struct EClockVal ecv;
   ULONG ef = ReadEClock( &ecv );
   UWORD milli_ticks = ef >> 10;                          // ef -> ticks / milli
