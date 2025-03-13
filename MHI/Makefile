@@ -34,8 +34,8 @@ ifeq ($(findstring /home,$(HOME)), /home)
   # ~/.netrc format:
   # machine <ip> login username password pass
   # Could do --user username:pass instead - but not cool in repo ;)
-  INSTALL0       = curl --netrc --upload-file $(LIB_DST)       ftp://192.168.0.4/cf0/Libs/MHI/
-  INSTALL1       =
+  INSTALL1       = curl --netrc --upload-file $(LIB_DST)       ftp://192.168.0.4/cf0/Libs/MHI/
+  INSTALL0       = cp $(LIB_DST) ~/Documents/FS-UAE/Shared/MHI/
 else
   AMIGAOS       = 1
   
@@ -65,11 +65,18 @@ MHI_INCLUDE     = include
 NDK_ASM_INCLUDE = $(NDK)Include_I
 NDK_C_INCLUDE   = $(NDK)Include_H
 
-SRCS            = $(wildcard $(SDIR)$(WILDCARD).c)
-BDIR_SRCS       = $(foreach SRC,$(SRCS),$(subst $(SDIR),$(BDIR),$(SRC)))
-BDIR_OBJS       = $(BDIR_SRCS:%c=%o)
+C_SRCS          = $(wildcard $(SDIR)$(WILDCARD).c)
+BDIR_C_SRCS     = $(foreach C_SRC,$(C_SRCS),$(subst $(SDIR),$(BDIR),$(C_SRC)))
+BDIR_C_OBJS     = $(BDIR_C_SRCS:%c=%o)
+
+A_SRCS          = $(wildcard $(SDIR)$(WILDCARD).asm)
+BDIR_A_SRCS     = $(foreach A_SRC,$(A_SRCS),$(subst $(SDIR),$(BDIR),$(A_SRC)))
+BDIR_A_OBJS     = $(BDIR_A_SRCS:%asm=%o)
+
 LIB_OBJS        = $(BDIR)library.o \
-                  $(filter-out %/library.o,$(BDIR_OBJS))
+                  $(filter-out %/library.o,$(BDIR_C_OBJS)) \
+                  $(filter-out %/library.o,$(BDIR_A_OBJS))
+
 LIB_DST         = $(DDIR)mhiAmiGUS.library
 
 # activate VBCC builds by adding `USEVBCC=1` to the make call!
@@ -83,12 +90,16 @@ ifdef USEVBCC
   
   CFLAGS        = -O2 -c -I$(MHI_INCLUDE) -I$(HDIR)                          \
                   -D__NOLIBBASE__ -D$(HOST_TOOLCHAIN) -o
+
+  AFLAGS        = -I$(NDK_ASM_INCLUDE) -quiet -phxass -Fhunk -o
+
   LFLAGS        = -nostdlib -o
   LFLAGS1       =
   LFLAGST1      = $(LDIR)startup.o
   LFLAGST2      = $(LDIR)auto.lib $(LDIR)vc.lib
   # add -v below to see what vbcc does under the hood :)
   CC            = vc +aos68k
+  AS            = vasmm68k_mot
   LD            = vc +aos68k
 else ifdef USEVBCC13
   ifdef AMIGAOS
@@ -100,12 +111,16 @@ else ifdef USEVBCC13
   
   CFLAGS        = -O2 -c -I$(MHI_INCLUDE) -I$(HDIR)                          \
                   -D__NOLIBBASE__ -D$(HOST_TOOLCHAIN) -o
+
+  AFLAGS        = -I$(NDK_ASM_INCLUDE) -quiet -phxass -Fhunk -o
+
   LFLAGS        = -nostdlib -o
   LFLAGS1       =
   LFLAGST1      = $(LDIR)startup.o
   LFLAGST2      = $(LDIR)auto.lib $(LDIR)vc.lib
   # add -v below to see what vbcc does under the hood :)
   CC            = vc +kick13
+  AS            = vasmm68k_mot
   LD            = vc +kick13
 else
   DEAC_CFLAGS   = RESETOPTIONS DEFINE=__NOLIBBASE__ DEFINE=$(HOST_TOOLCHAIN)  \
@@ -123,30 +138,40 @@ else
                   OPTIMIZERLOOP OPTIMIZERPEEPHOLE OPTIMIZERSCHEDULE           \
                   OBJNAME
 
+  AFLAGS        = RESETOPTIONS DEFINE=__NOLIBBASE__ DEFINE=$(HOST_TOOLCHAIN)  \
+                  IDIR=$(MHI_INCLUDE) IDIR=NDK_3.2:Include_I IDIR=$(HDIR)     \
+                  OBJNAME
+
   LFLAGS        = NOICONS SMALLDATA SMALLCODE STRIPDEBUG \
                   TO 
   LFLAGS1       = FROM
   LFLAGST1      = LIB:c.o
   LFLAGST2      = LIBRARY LIB:sc.lib LIB:amiga.lib
   CC            = $(RUNNER) sc
+  AS            = $(RUNNER) sc
   LD            = $(RUNNER) slink
 endif
 
 .PHONY: all install test INCLUDES FOLDERS clean dist-clean dist
 
-all: FOLDERS $(MODE_FILE_DST) $(LIB_DST)
+all: FOLDERS $(LIB_DST)
 
 ECHO:
-	echo $(SRCS)
-
-$(MODE_FILE_DST): $(MODE_FILE_SRC)
-	$(MODE_FILE_ASM) $(MODE_FILE_FLAGS) $^ -o $@
+	@echo "C_SRCS =" $(C_SRCS)
+	@echo "BDIR_C_SRCS =" $(BDIR_C_SRCS)
+	@echo "BDIR_C_OBJS =" $(BDIR_C_OBJS)
+	@echo "A_SRCS =" $(A_SRCS)
+	@echo "BDIR_A_SRCS =" $(BDIR_A_SRCS)
+	@echo "BDIR_A_OBJS =" $(BDIR_A_OBJS)
 
 $(LIB_DST): $(LIB_OBJS)
 	$(LD) $(LFLAGS) $@ $(LFLAGS1) $^
-	
+
 $(BDIR)%.o: $(SDIR)%.c $(HDIR)*
 	$(CC) $(CFLAGS) $@ $<
+
+$(BDIR)%.o: $(SDIR)%.asm $(HDIR)*
+	$(AS) $(AFLAGS) $@ $<
 
 install: all
 	$(INSTALL0)
