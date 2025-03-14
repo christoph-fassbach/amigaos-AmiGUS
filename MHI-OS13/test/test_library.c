@@ -8,7 +8,7 @@
 
 #include    <stdio.h>
 
-#include    "mhiamigus_protos.h"
+#include    "SDI_mhi_protos.h"
 #include    "mhiamigus_pragmas.h"
 
 extern struct ExecBase *SysBase;

@@ -17,6 +17,49 @@
 #ifndef AMIGUS_MHI_H
 #define AMIGUS_MHI_H
 
+/* 
+ * MHI driver library header.
+ *
+ * To be used only internally - but there in all .c files!
+ * If you are using some of the library base addresses from
+ * BASE_REDEFINE directly, e.g. in libinit.c,
+ * do a #define NO_BASE_REDEFINE before including this file.
+ */
+
+/* Activate / De-activate this define to toggle lib base mode! */
+#define BASE_GLOBAL /**/
+
+#ifndef BASE_GLOBAL 
+#ifndef NO_BASE_REDEFINE
+/* 
+    either this is active for everything except libinit.c
+    or BASE_GLOBAL is active everywhere
+*/
+#define BASE_REDEFINE
+#endif
+#endif
+
+#include "library.h"
+#include "SDI_mhi_protos.h"
+
+#define AMIGUS_MHI_AUTHOR           "Christoph `Chritoph` Fassbach"
+#define AMIGUS_MHI_COPYRIGHT        "(c) 2025 Christoph Fassbach / LGPL3"
+#define AMIGUS_MHI_ANNOTATION       "Thanks to: Oliver Achten (AmiGUS), " \
+                                    "Frank Wille (vbcc), "                \
+                                    "Thomas Wenzel et al. (MHI)"
+#define AMIGUS_MHI_DECODER          "AmiGUS VS1063a codec"
+#define AMIGUS_MHI_VERSION          LIB_IDSTRING
+
+#define AMIGUS_MHI_FIRMWARE_MINIMUM ( ( 2024 << 20 ) /* year   */ \
+                                    + (   12 << 16 ) /* month  */ \
+                                    + (    8 << 11 ) /* day    */ \
+                                    + (   22 <<  6 ) /* hour   */ \
+                                    + (   38 <<  0 ) /* minute */ )
+
+#define AMIGUS_MEM_LOG_MARKER        "********************************"   \
+                                     " AmiGUS "                           \
+                                     "********************************\n"
+
 /******************************************************************************
  * Library base structure components
  *****************************************************************************/
@@ -74,5 +117,25 @@ struct AmiGUSmhi {
   BPTR                          agb_LogFile;       /* Debug log file handle  */
   APTR                          agb_LogMem;        /* Debug log memory blob  */
 };
+
+#if defined(BASE_GLOBAL)
+  extern struct AmiGUSmhi         * AmiGUSmhiBase;
+  extern struct DosLibrary        * DOSBase;
+  extern struct Library           * ExpansionBase;
+  extern struct IntuitionBase     * IntuitionBase;
+  extern struct ExecBase          * SysBase;
+  extern struct Device            * TimerBase;
+#elif defined(BASE_REDEFINE)
+  #define AmiGUSmhiBase             (amiGUSmhiBase)
+  #define DOSBase                   amiGUSmhiBase->agb_DOSBase
+  #define ExpansionBase             amiGUSmhiBase->agb_ExpansionBase
+  #define IntuitionBase             amiGUSmhiBase->agb_IntuitionBase
+  #define SysBase                   amiGUSmhiBase->agb_SysBase
+  #define TimerBase                 amiGUSmhiBase->TimerBase
+#endif
+
+/******************************************************************************
+ * Library flag definitions
+ *****************************************************************************/
 
 #endif /* AMIGUS_MHI_H */

@@ -115,8 +115,8 @@ FD            = $(RUNNER) sc:c/fd2pragma
 all: FOLDERS $(LIB_DST) $(PRAGMA_FILE)
 
 install: all
-	$(INSTALL0)
-	$(INSTALL1)
+	-$(INSTALL0)
+	-$(INSTALL1)
 
 $(LIB_DST): $(LIB_FILE)
 	$(CP) $(LIB_FILE) $(LIB_DST)
