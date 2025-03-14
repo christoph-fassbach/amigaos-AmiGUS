@@ -39,7 +39,8 @@
 #endif
 #endif
 
-#include "library.h"
+#include <dos/dos.h>
+
 #include "SDI_mhi_protos.h"
 
 #define AMIGUS_MHI_AUTHOR           "Christoph `Chritoph` Fassbach"
@@ -48,7 +49,9 @@
                                     "Frank Wille (vbcc), "                \
                                     "Thomas Wenzel et al. (MHI)"
 #define AMIGUS_MHI_DECODER          "AmiGUS VS1063a codec"
-#define AMIGUS_MHI_VERSION          LIB_IDSTRING
+#define AMIGUS_MHI_VERSION          LIB_FILE " " \
+                                    LIB_VERSION ".00" LIB_REVISION LIB_DATE   \
+                                    LIB_CPU " " LIB_COMPILER " " LIB_HOST
 
 #define AMIGUS_MHI_FIRMWARE_MINIMUM ( ( 2024 << 20 ) /* year   */ \
                                     + (   12 << 16 ) /* month  */ \
@@ -92,7 +95,7 @@ struct AmiGUSClientHandle {
 the private fields! */
 struct AmiGUSmhi {
   /* Library base stuff */
-  struct BaseLibrary            agb_BaseLibrary;
+  struct Library                agb_BaseLibrary;
 
   struct ExecBase             * agb_SysBase;
   struct DosLibrary           * agb_DOSBase;
@@ -121,7 +124,7 @@ struct AmiGUSmhi {
 #if defined(BASE_GLOBAL)
   extern struct AmiGUSmhi         * AmiGUSmhiBase;
   extern struct DosLibrary        * DOSBase;
-  extern struct Library           * ExpansionBase;
+//TODO  extern struct Library           * ExpansionBase;
   extern struct IntuitionBase     * IntuitionBase;
   extern struct ExecBase          * SysBase;
   extern struct Device            * TimerBase;

@@ -18,9 +18,9 @@
 #define AMIGUS_CODEC_H
 
 /* Forward declaration here. */
-struct AmiGUSBase;
+struct AmiGUSmhi;
 
-LONG FindAmiGusCodec( struct AmiGUSBase *amiGUSBase );
+LONG FindAmiGusCodec( struct AmiGUSmhi * amiGUSBase );
 VOID StartAmiGusCodecPlayback( VOID );
 VOID StopAmiGusCodecPlayback( VOID );
 

@@ -15,28 +15,28 @@
 #
 
 ifeq ($(findstring /home,$(HOME)), /home)
-  LINUX          = 1
+  LINUX         = 1
 
-  NDK            = $(VBCC)/NDK3.2/
-  WILDCARD       = *
+  NDK           = $(VBCC)/NDK3.2/
+  WILDCARD      = *
 
-  MKDIR          = mkdir -p
-  MKDIR_SUFFIX   =
-  RM             = rm -rf
-  RM_SUFFIX      =
-  CP             = cp
-  RUNNER         = vamos
-  IGNORE_VAMOS   = -
-  LHA            = jlha
+  MKDIR         = mkdir -p
+  MKDIR_SUFFIX  =
+  RM            = rm -rf
+  RM_SUFFIX     =
+  CP            = cp
+  RUNNER        = vamos
+  IGNORE_VAMOS  = -
+  LHA           = jlha
 
-  HOST_TOOLCHAIN = CROSS_TOOLCHAIN
+  LIB_HOST      = cross
 
   # Use .netrc to store passwords! 
   # ~/.netrc format:
   # machine <ip> login username password pass
   # Could do --user username:pass instead - but not cool in repo ;)
-  INSTALL1       = curl --netrc --upload-file $(LIB_DST)       ftp://192.168.0.4/cf0/Libs/MHI/
-  INSTALL0       = cp $(LIB_DST) ~/Documents/FS-UAE/Shared/MHI/
+  INSTALL1      = curl --netrc --upload-file $(LIB_FILE_DEST)       ftp://192.168.0.4/cf0/Libs/MHI/
+  INSTALL0      = cp $(LIB_FILE_DEST) ~/Documents/FS-UAE/Shared/MHI/
 else
   AMIGAOS       = 1
   
@@ -52,10 +52,10 @@ else
   IGNORE_VAMOS  =
   LHA           = lha
 
-  HOST_TOOLCHAIN = NATIVE_TOOLCHAIN
+  LIB_HOST      = native
 
-  INSTALL0       = copy FROM $(LIB_DST)	TO	Libs:MHI/		CLONE
-  INSTALL1       = avail flush >NIL:
+  INSTALL0      = copy FROM $(LIB_FILE_DEST)	TO	Libs:MHI/		CLONE
+  INSTALL1      = avail flush >NIL:
 endif
 
 DDIR   = target/
@@ -63,26 +63,25 @@ BDIR   = build/
 SDIR   = src/
 HDIR   = header/
 
-MODNAME         = mhiamigus
-VERSION         = 1
-REVISION        = 0
+LIB_NAME        = mhiamigus
+LIB_FILE        = $(LIB_NAME).library
+LIB_FILE_DEST   = $(DDIR)$(LIB_FILE)
+LIB_VERSION     = 1
+LIB_REVISION    = 2
 
-LIB_FILE        = $(MODNAME).library
-LIB_DST         = $(DDIR)$(LIB_FILE)
+FD_FILE         = $(HDIR)$(LIB_NAME)_lib.fd
+PRAGMA_FILE     = $(HDIR)$(LIB_NAME)_pragmas.h
 
-FD_FILE         = $(HDIR)$(MODNAME)_lib.fd
-PRAGMA_FILE     = $(HDIR)$(MODNAME)_pragmas.h
-
-LIB_PREFIX         = _LIB_
-LIB_ENT            = LIB:libent.o
+LIB_PREFIX      = _LIB_
+LIB_ENT         = LIB:libent.o
 ifeq (1, 1)
 # just put all into NEAR section
-  LIB_LIBS         =
-  LIB_INIT         = LIB:libinit.o
+  LIB_LIBS      =
+  LIB_INIT      = LIB:libinit.o
 else
 # also have a FAR section
-  LIB_LIBS         = LIB:sc.lib
-  LIB_INIT         = LIB:libinitr.o
+  LIB_LIBS      = LIB:sc.lib
+  LIB_INIT      = LIB:libinitr.o
 endif
 
 ###########################
@@ -101,25 +100,29 @@ BDIR_A_OBJS     = $(BDIR_A_SRCS:%asm=%o)
 
 LIB_OBJS        = $(BDIR_C_OBJS) $(BDIR_A_OBJS)
 
-CFLAGS          = STREQ STRMER NOSTKCHK LIBCODE                           \
-                  IDIR=$(MHI_INCLUDE) IDIR=$(NDK_C_INCLUDE) IDIR=$(HDIR) \
+CFLAGS          = STREQ STRMER NOSTKCHK LIBCODE                                \
+                  IDIR=$(MHI_INCLUDE) IDIR=$(NDK_C_INCLUDE) IDIR=$(HDIR)       \
+                  DEF LIB_FILE=\"$(LIB_FILE)\" DEF LIB_DATE=__AMIGADATE__      \
+                  DEF LIB_VERSION=\"$(LIB_VERSION)\" DEF BASE_GLOBAL           \
+                  DEF LIB_REVISION=\"$(LIB_REVISION)\" DEF LIB_CPU=\"000\"     \
+                  DEF LIB_COMPILER=\"SAS/C\" DEF LIB_HOST=\"$(LIB_HOST)\"      \
                   OBJNAME
 
-CC            = $(RUNNER) sc
-AS            = $(RUNNER) sc
-LD            = $(RUNNER) slink
-FD            = $(RUNNER) sc:c/fd2pragma
+CC              = $(RUNNER) sc
+AS              = $(RUNNER) sc
+LD              = $(RUNNER) slink
+FD              = $(RUNNER) sc:c/fd2pragma
 
 ##################################
 
-all: FOLDERS $(LIB_DST) $(PRAGMA_FILE)
+all: FOLDERS $(LIB_FILE_DEST) $(PRAGMA_FILE)
 
 install: all
 	-$(INSTALL0)
 	-$(INSTALL1)
 
-$(LIB_DST): $(LIB_FILE)
-	$(CP) $(LIB_FILE) $(LIB_DST)
+$(LIB_FILE_DEST): $(LIB_FILE)
+	$(CP) $(LIB_FILE) $(LIB_FILE_DEST)
 	$(RM) $(LIB_FILE) $(RM_SUFFIX)
 
 FOLDERS:
@@ -129,7 +132,7 @@ FOLDERS:
 clean:
 	-@$(RM) $(LIB_FILE) $(RM_SUFFIX)
 	-@$(RM) $(LIB_OBJS) $(RM_SUFFIX)
-	-@$(RM) $(MODNAME).map $(RM_SUFFIX)
+	-@$(RM) $(LIB_NAME).map $(RM_SUFFIX)
 	-@$(RM) $(PRAGMA_FILE) $(RM_SUFFIX)
 
 ###############################################################################
@@ -139,7 +142,7 @@ $(LIB_FILE): $(LIB_OBJS) $(PRAGMA_FILE)
 		TO $(LIB_FILE) \
 		FROM $(LIB_ENT) $(LIB_INIT) $(LIB_OBJS) \
 		LIBFD $(FD_FILE) LIBPREFIX $(LIB_PREFIX) \
-		LIBVERSION $(VERSION) LIBREVISION $(REVISION) \
+		LIBVERSION $(LIB_VERSION) LIBREVISION $(LIB_REVISION) \
 		LIB $(LIB_LIBS)
 
 $(PRAGMA_FILE): $(FD_FILE)
