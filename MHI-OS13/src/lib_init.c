@@ -156,7 +156,7 @@ LONG CustomLibInit( struct AmiGUSmhi * amiGUSBase, struct ExecBase * sysBase ) {
 
     return EOpenTimerDevice;
   }
-  amiGUSBase->agb_TimerBase = amiGUSBase->agb_TimerRequest->io_Device;
+  amiGUSBase->agb_TimerBase = amiGUSBase->agb_TimerRequest->tr_node.io_Device;
 
 #ifdef BASE_GLOBAL
   DOSBase       = amiGUSBase->agb_DOSBase;
