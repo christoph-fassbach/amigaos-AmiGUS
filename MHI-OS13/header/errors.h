@@ -31,6 +31,7 @@ enum TErrorCodes
   EOpenIntuitionBase,
   EOpenUtilityBase,
   EOpenExpansionBase,
+  EAllocateTimerPort,
   EAllocateTimerRequest,
   EOpenTimerDevice,
   EOpenLogFile,

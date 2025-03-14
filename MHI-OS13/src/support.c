@@ -26,15 +26,6 @@
 #include "errors.h"
 #include "support.h"
 
-#ifndef INCLUDE_VERSION
-/* Patches to make this compile in NDK1.3 */
-#define Alert13Compat( x )        Alert( x, NULL )
-#define AN_Unknown                0x35000000
-#define AO_Unknown                0x00008035
-#else
-#define Alert13Compat( x )        Alert( x )
-#endif
-
 /**
  * Type for error message declarations.
  */
@@ -93,7 +84,6 @@ struct TErrorMessage errors[] = {
 VOID DisplayError( ULONG aError ) {
 
   ULONG i = ENoError;
-  STRPTR message;
 
   if ( !aError ) {
     return;
@@ -104,26 +94,16 @@ VOID DisplayError( ULONG aError ) {
         ) {
     i++;
   }
-  message = errors[ i ].iMessage;
 
   if ( IntuitionBase ) {
-#if OS_1_3_READY
-// TODO
-    struct EasyStruct req;
 
-    req.es_StructSize = sizeof( struct EasyStruct );
-    req.es_Flags = 0;
-    req.es_Title = LIB_FILE;
-    req.es_TextFormat = "Error %ld : %s";
-    req.es_GadgetFormat = errors[ i ].iButton;
+    ShowError( LIB_FILE, errors[ i ].iMessage, errors[ i ].iButton );
 
-    EasyRequest( NULL, &req, NULL, aError, message );
-#endif
   } else {
 
-    Alert13Compat( AN_Unknown | AG_OpenLib | AO_Unknown );
+    ShowAlert( AN_Unknown | AG_OpenLib | AO_Unknown );
   }
-  LOG_E(("E: AmiGUS %ld - %s\n", aError, message));
+  LOG_E(( "E: AmiGUS %ld - %s\n", aError, errors[ i ].iMessage ));
 }
 
 VOID LogTicks( UBYTE bitmask ) {
@@ -154,42 +134,24 @@ VOID LogTicks( UBYTE bitmask ) {
 #endif
 }
 
-VOID Sleep( UWORD pseudomillis ) {
-#if OS_1_3_READY
-// TODO: fix sleep
-  struct EClockVal ecv;
-  ULONG ef = ReadEClock( &ecv );
-  UWORD milli_ticks = ef >> 10;                          // ef -> ticks / milli
-  ULONG needed_ticks = milli_ticks * pseudomillis;       //    -> target inc
-  /*
-   * Real seconds would be:
-   * ULONG milli_ticks = UDivMod32( ef, 1000 );          // ef -> ticks / milli
-   * ULONG needed_ticks = UMult32( milli_ticks, millis );//    -> target inc
-   *
-   * Higher precision, but 32bit not wide enough:
-   * ULONG second_ticks = UMult32( ef, millis );
-   * ULONG needed_ticks = UDivMod32( second_ticks, 1000 );
-  */
-  const ULONG current_lo = ecv.ev_lo;
-  const ULONG current_hi = ecv.ev_hi;
-  const ULONG target_lo = current_lo + needed_ticks;
-  const ULONG target_hi = ( current_lo > target_lo )
-                          ? ( current_hi + 1 )
-                          : ( current_hi );
+VOID Sleep( ULONG seconds, ULONG micros ) {
 
-  LOG_V(( "V: Tick freq %ld current: %ld %ld needed: %ld target: %ld %ld\n",
-          ef,
-          current_hi,
-          current_lo,
-          needed_ticks,
-          target_hi,
-          target_lo ));
-  while (( target_lo > ecv.ev_lo ) || ( target_hi > ecv.ev_hi )) {
+  struct timerequest sleepRequest;
 
-    ReadEClock( &ecv );
-  }
-  LOG_V(( "V: Slept until %ld %ld\n", ecv.ev_hi, ecv.ev_lo ));
-#endif
+  LOG_V(( "V: Sleeping for %ld %ld\n", seconds, micros ));
+
+  CopyMemQuick( AmiGUSmhiBase->agb_TimerRequest,
+                &sleepRequest,
+                sizeof( struct timerequest ));
+  sleepRequest.tr_node.io_Command = TR_ADDREQUEST;
+  sleepRequest.tr_time.tv_secs = seconds;
+  sleepRequest.tr_time.tv_micro = micros;
+
+  SendIO(( struct IORequest * ) &sleepRequest );
+  Wait( 1 << sleepRequest.tr_node.io_Message.mn_ReplyPort->mp_SigBit );
+  WaitIO(( struct IORequest * ) &sleepRequest );
+
+  LOG_V(( "V: Woke up\n" ));
 }
 
 VOID NonConflictingNewMinList( struct MinList * list ) {
@@ -197,4 +159,80 @@ VOID NonConflictingNewMinList( struct MinList * list ) {
   list->mlh_Head = ( struct MinNode * ) &list->mlh_Tail;
   list->mlh_Tail = NULL;
   list->mlh_TailPred = ( struct MinNode * ) list;
+}
+
+struct MsgPort * CreatePort( BYTE * name, LONG priority ) {
+
+  struct MsgPort * result;
+  BYTE signal = AllocSignal( -1L );
+
+  if ( -1 == signal ) {
+
+    return NULL;
+  }
+
+  result = ( struct MsgPort * ) AllocMem( sizeof( struct MsgPort ),
+                                          MEMF_PUBLIC | MEMF_CLEAR );
+  if ( !result ) {
+
+    FreeSignal( signal );
+    return NULL;
+  }
+  result->mp_Node.ln_Name = name;
+  result->mp_Node.ln_Pri  = priority;
+  result->mp_Node.ln_Type = NT_MSGPORT;
+  result->mp_Flags        = PA_SIGNAL;
+  result->mp_SigBit       = signal;
+  result->mp_SigTask      = ( struct Task * ) FindTask( 0 ); // Current task!
+  if ( name ) {
+
+    AddPort(result);
+
+  } else {
+
+    NonConflictingNewMinList(( struct MinList * )&( result->mp_MsgList ));
+  }
+  return result;
+}
+
+VOID DeletePort( struct MsgPort * port ) {
+
+  if ( !port ) {
+
+    return;
+  }
+  if ( port->mp_Node.ln_Name ) {
+
+    RemPort(port);
+  }
+  if (( port->mp_Flags & PF_ACTION ) == PA_SIGNAL ) {
+
+    FreeSignal( port->mp_SigBit );
+    port->mp_Flags = PA_IGNORE;
+  }
+  FreeMem( port, sizeof( struct MsgPort ));
+}
+
+struct IORequest * CreateExtIO( struct MsgPort * port, ULONG ioSize ) {
+
+  struct IORequest * result = NULL;
+  if ( port ) {
+    result = AllocMem( ioSize, MEMF_PUBLIC | MEMF_CLEAR );
+	if ( result ) {
+	    result->io_Message.mn_ReplyPort = port;
+	    result->io_Message.mn_Length = ioSize;
+	    result->io_Message.mn_Node.ln_Type = NT_REPLYMSG;
+	}
+  }
+  return( result );
+}
+
+VOID DeleteExtIO( struct IORequest * ioReq ) {
+
+  if ( ioReq ) {
+
+    ioReq->io_Message.mn_Node.ln_Succ = NULL;
+    ioReq->io_Device = NULL;
+    FreeMem( ioReq, ioReq->io_Message.mn_Length);
+  }
 }

@@ -103,7 +103,8 @@ struct AmiGUSmhi {
   struct Library              * agb_ExpansionBase;
 
   struct Device               * agb_TimerBase;
-  struct IORequest            * agb_TimerRequest;
+  struct timerequest          * agb_TimerRequest;
+  struct MsgPort              * agb_TimerPort;
   /* AmiGUS specific member variables */
   struct ConfigDev            * agb_ConfigDevice;
   APTR                          agb_CardBase;
