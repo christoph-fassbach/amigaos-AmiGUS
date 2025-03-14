@@ -107,7 +107,7 @@ VOID DisplayError( ULONG aError ) {
   message = errors[ i ].iMessage;
 
   if ( IntuitionBase ) {
-#if 1
+#if OS_1_3_READY
 // TODO
     struct EasyStruct req;
 
@@ -127,7 +127,7 @@ VOID DisplayError( ULONG aError ) {
 }
 
 VOID LogTicks( UBYTE bitmask ) {
-#if 1
+#if OS_1_3_READY
 // TODO
   struct EClockVal ecv;
   ULONG ef = ReadEClock( &ecv );
@@ -155,7 +155,7 @@ VOID LogTicks( UBYTE bitmask ) {
 }
 
 VOID Sleep( UWORD pseudomillis ) {
-#if 1
+#if OS_1_3_READY
 // TODO: fix sleep
   struct EClockVal ecv;
   ULONG ef = ReadEClock( &ecv );
