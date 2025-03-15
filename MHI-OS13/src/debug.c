@@ -95,7 +95,7 @@ VOID debug_fprintf( STRPTR format, ... ) {
   UBYTE buffer[512];
   UBYTE * printBuffer = buffer;
 
-  if ( !AmiGUSBase->agb_LogFile ) {
+  if ( !AmiGUSmhiBase->agb_LogFile ) {
     if ( errorShown ) {
 
       return;
@@ -115,8 +115,8 @@ VOID debug_fprintf( STRPTR format, ... ) {
     }
 #endif
 
-    AmiGUSBase->agb_LogFile = Open( logFilePath, MODE_NEWFILE );
-    if ( !AmiGUSBase->agb_LogFile ) {
+    AmiGUSmhiBase->agb_LogFile = Open( logFilePath, MODE_NEWFILE );
+    if ( !AmiGUSmhiBase->agb_LogFile ) {
 
       DisplayError( EOpenLogFile );
       errorShown = TRUE;
@@ -135,7 +135,7 @@ VOID debug_fprintf( STRPTR format, ... ) {
     ( APTR ) (( LONG ) &format + 4 ),
     &debug_mPutChProc,
     &printBuffer );
-  Write( AmiGUSBase->agb_LogFile, buffer, printBuffer - buffer - 1 );
+  Write( AmiGUSmhiBase->agb_LogFile, buffer, printBuffer - buffer - 1 );
 }
 
 #endif /* USE_FILE_LOGGING */
@@ -149,7 +149,7 @@ VOID debug_mprintf( STRPTR format, ... ) {
    */
   static BOOL errorShown = FALSE;
 
-  if ( !AmiGUSBase->agb_LogMem ) {
+  if ( !AmiGUSmhiBase->agb_LogMem ) {
 
     // Yep, defaults to 
     LONG size = 32 << 20;             // 32MB somewhere
@@ -192,36 +192,36 @@ VOID debug_mprintf( STRPTR format, ... ) {
 
     if ( 0 < ( LONG ) where ) {
 
-      AmiGUSBase->agb_LogMem = AllocAbs( size, where );
+      AmiGUSmhiBase->agb_LogMem = AllocAbs( size, where );
     }
-    if ( !AmiGUSBase->agb_LogMem ) {
+    if ( !AmiGUSmhiBase->agb_LogMem ) {
 
-      AmiGUSBase->agb_LogMem = AllocAbs( size, ( APTR ) 0x0a000000 );
+      AmiGUSmhiBase->agb_LogMem = AllocAbs( size, ( APTR ) 0x0a000000 );
     }
-    if ( !AmiGUSBase->agb_LogMem ) {
+    if ( !AmiGUSmhiBase->agb_LogMem ) {
 
-      AmiGUSBase->agb_LogMem = AllocAbs( size, ( APTR ) 0x00400000 );
+      AmiGUSmhiBase->agb_LogMem = AllocAbs( size, ( APTR ) 0x00400000 );
     }
-    if ( !AmiGUSBase->agb_LogMem ) {
+    if ( !AmiGUSmhiBase->agb_LogMem ) {
 
-      AmiGUSBase->agb_LogMem = AllocAbs( size, ( APTR ) 0x48000000 );
+      AmiGUSmhiBase->agb_LogMem = AllocAbs( size, ( APTR ) 0x48000000 );
     }
-    if ( !AmiGUSBase->agb_LogMem ) {
+    if ( !AmiGUSmhiBase->agb_LogMem ) {
 
       size = 2 << 20;
-      AmiGUSBase->agb_LogMem = AllocAbs( size, ( APTR ) 0x00400000 );
+      AmiGUSmhiBase->agb_LogMem = AllocAbs( size, ( APTR ) 0x00400000 );
     }
-    if ( AmiGUSBase->agb_LogMem ) {
+    if ( AmiGUSmhiBase->agb_LogMem ) {
 
       LONG i;
       for ( i = 0; i < size; i += 4 ) {
-        *( ULONG * )(( LONG ) AmiGUSBase->agb_LogMem + i ) = 0;
+        *( ULONG * )(( LONG ) AmiGUSmhiBase->agb_LogMem + i ) = 0;
       }
     } else {
 
-      AmiGUSBase->agb_LogMem = AllocMem( size, MEMF_CLEAR | MEMF_PUBLIC );
+      AmiGUSmhiBase->agb_LogMem = AllocMem( size, MEMF_CLEAR | MEMF_PUBLIC );
     }
-    if ( !AmiGUSBase->agb_LogMem ) {
+    if ( !AmiGUSmhiBase->agb_LogMem ) {
 
       DisplayError( EAllocateLogMem );
       errorShown = TRUE;
@@ -229,16 +229,16 @@ VOID debug_mprintf( STRPTR format, ... ) {
       return;
     }
     debug_kprintf( "AmiGUS Log @ 0x%08lx = %ld (retrieved), size %ld\n",
-                   ( LONG ) AmiGUSBase->agb_LogMem,
-                   ( LONG ) AmiGUSBase->agb_LogMem,
+                   ( LONG ) AmiGUSmhiBase->agb_LogMem,
+                   ( LONG ) AmiGUSmhiBase->agb_LogMem,
                    size );
 
     RawDoFmt( AMIGUS_MEM_LOG_MARKER,
               NULL,
               &debug_mPutChProc,
-              &AmiGUSBase->agb_LogMem );
+              &AmiGUSmhiBase->agb_LogMem );
     /* Move mem blob pointer back to overwrite trailing zero next comment */
-    AmiGUSBase->agb_LogMem = ( APTR )(( ULONG ) AmiGUSBase->agb_LogMem - 1 );
+    AmiGUSmhiBase->agb_LogMem = ( APTR )(( ULONG ) AmiGUSmhiBase->agb_LogMem - 1 );
     debug_kprintf( "AmiGUS Log ready\n" );
   }
 
@@ -252,9 +252,9 @@ VOID debug_mprintf( STRPTR format, ... ) {
     |      |  |      | |     | | |   */
     ( APTR ) (( LONG ) &format + 4 ),
     &debug_mPutChProc,
-    &AmiGUSBase->agb_LogMem );
+    &AmiGUSmhiBase->agb_LogMem );
   /* Move mem blob pointer back to overwrite trailing zero next comment */
-  AmiGUSBase->agb_LogMem = ( APTR )(( ULONG ) AmiGUSBase->agb_LogMem - 1 );
+  AmiGUSmhiBase->agb_LogMem = ( APTR )(( ULONG ) AmiGUSmhiBase->agb_LogMem - 1 );
 }
 
 #endif /* USE_MEM_LOGGING */
