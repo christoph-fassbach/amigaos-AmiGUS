@@ -100,7 +100,7 @@ BDIR_A_OBJS     = $(BDIR_A_SRCS:%asm=%o)
 
 LIB_OBJS        = $(BDIR_C_OBJS) $(BDIR_A_OBJS)
 
-CFLAGS          = STREQ STRMER NOSTKCHK LIBCODE                                \
+CFLAGS          = STREQ STRMER NOSTKCHK                                        \
                   IDIR=$(MHI_INCLUDE) IDIR=$(NDK_C_INCLUDE) IDIR=$(HDIR)       \
                   DEF LIB_FILE=\"$(LIB_FILE)\" DEF LIB_DATE=__AMIGADATE__      \
                   DEF LIB_VERSION=\"$(LIB_VERSION)\" DEF BASE_GLOBAL           \
@@ -151,7 +151,7 @@ $(PRAGMA_FILE): $(FD_FILE)
 ###############################################################################
 
 $(BDIR)%.o: $(SDIR)%.c $(HDIR)*
-	$(CC) $(CFLAGS) $@ $<
+	$(CC) LIBCODE $(CFLAGS) $@ $<
 
 $(BDIR)%.o: $(SDIR)%.asm $(HDIR)*
 	$(AS) $(AFLAGS) $@ $<
@@ -159,5 +159,7 @@ $(BDIR)%.o: $(SDIR)%.asm $(HDIR)*
 ###############################################################################
 
 test_library: $(PRAGMA_FILE)
-	$(CC) DATA=far NOMINC STRMER STREQ NOSTKCHK SAVEDS IGN=73 IDIR=$(HDIR) OBJNAME $(BDIR)$@.o test/$@.c
+	$(CC) DATA=far NOMINC $(CFLAGS) SAVEDS IGN=73 OBJNAME $(BDIR)$@.o test/$@.c
 	$(LD) NOICONS FROM LIB:c.o,$(BDIR)$@.o TO test/$@ LIB LIB:sc.lib,LIB:amiga.lib
+	-cp test/$@ ~/Documents/FS-UAE/Shared/MHI/
+	-curl --netrc --upload-file test/test_library       ftp://192.168.0.4/cf0/Expansion/AmiGUS/

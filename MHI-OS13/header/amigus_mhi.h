@@ -49,8 +49,9 @@
                                     "Frank Wille (vbcc), "                \
                                     "Thomas Wenzel et al. (MHI)"
 #define AMIGUS_MHI_DECODER          "AmiGUS VS1063a codec"
-#define AMIGUS_MHI_VERSION          LIB_FILE " " \
-                                    LIB_VERSION ".00" LIB_REVISION LIB_DATE   \
+#define AMIGUS_MHI_VERSION          LIB_FILE " "                              \
+                                    LIB_VERSION ".00" LIB_REVISION " "        \
+                                    LIB_DATE " "                              \
                                     LIB_CPU " " LIB_COMPILER " " LIB_HOST
 
 #define AMIGUS_MHI_FIRMWARE_MINIMUM ( ( 2024 << 20 ) /* year   */ \
