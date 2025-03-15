@@ -218,11 +218,11 @@ struct IORequest * CreateExtIO( struct MsgPort * port, ULONG ioSize ) {
   struct IORequest * result = NULL;
   if ( port ) {
     result = AllocMem( ioSize, MEMF_PUBLIC | MEMF_CLEAR );
-	if ( result ) {
-	    result->io_Message.mn_ReplyPort = port;
-	    result->io_Message.mn_Length = ioSize;
-	    result->io_Message.mn_Node.ln_Type = NT_REPLYMSG;
-	}
+    if ( result ) {
+        result->io_Message.mn_ReplyPort = port;
+        result->io_Message.mn_Length = ioSize;
+        result->io_Message.mn_Node.ln_Type = NT_REPLYMSG;
+    }
   }
   return( result );
 }
