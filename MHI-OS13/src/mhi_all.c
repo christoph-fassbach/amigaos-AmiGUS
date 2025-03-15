@@ -29,12 +29,6 @@
 #include "support.h"
 #include "SDI_compiler.h"
 
-#if defined(__VBCC__)
-  #define AMIGA_INTERRUPT __amigainterrupt
-#elif defined(__SASC)
-  #define AMIGA_INTERRUPT __interrupt
-#endif
-
 VOID FlushAllBuffers( struct AmiGUSClientHandle * clientHandle ) {
 
   struct List * buffers = ( struct List * )&clientHandle->agch_Buffers;

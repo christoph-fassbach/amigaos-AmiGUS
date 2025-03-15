@@ -19,6 +19,8 @@
 
 #include <exec/types.h>
 
+#include "lib_init.h"
+
 #ifndef IDCMP_GADGETUP
 #define IDCMP_GADGETUP 0x00000040
 #endif /* IDCMP_GADGETUP */

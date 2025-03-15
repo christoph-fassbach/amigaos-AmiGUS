@@ -100,7 +100,8 @@ BDIR_A_OBJS     = $(BDIR_A_SRCS:%asm=%o)
 
 LIB_OBJS        = $(BDIR_C_OBJS) $(BDIR_A_OBJS)
 
-CFLAGS          = STREQ STRMER NOSTKCHK                                        \
+CFLAGS          = PARAMETERS=REGISTER DATA=FAR CODE=FAR DEFINE=__NOLIBBASE__ \
+                  STREQ STRMER NOSTACKCHECK NOMULTIPLEINCLUDES NOCHECKABORT NOICONS   \
                   IDIR=$(MHI_INCLUDE) IDIR=$(NDK_C_INCLUDE) IDIR=$(HDIR)       \
                   DEF LIB_FILE=\"$(LIB_FILE)\" DEF LIB_DATE=__AMIGADATE__      \
                   DEF LIB_VERSION=\"$(LIB_VERSION)\" DEF BASE_GLOBAL           \

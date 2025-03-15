@@ -44,7 +44,7 @@ VOID CustomLibClose( struct AmiGUSmhi * amiGUSBase ) {
 
   if ( amiGUSBase->agb_TimerBase ) {
 
-    CloseDevice( amiGUSBase->agb_TimerRequest );
+    CloseDevice(( struct IORequest * ) amiGUSBase->agb_TimerRequest );
   }
   if ( amiGUSBase->agb_TimerRequest ) {
 
@@ -151,7 +151,10 @@ LONG CustomLibInit( struct AmiGUSmhi * amiGUSBase, struct ExecBase * sysBase ) {
     return EAllocateTimerRequest;
   }
   LOG_I(( "6\n" ));
-  error = OpenDevice( "timer.device", 0, amiGUSBase->agb_TimerRequest, 0 );
+  error = OpenDevice( "timer.device",
+                      0,
+                      ( struct IORequest * ) amiGUSBase->agb_TimerRequest,
+                      0 );
   if ( error ) {
 
     return EOpenTimerDevice;

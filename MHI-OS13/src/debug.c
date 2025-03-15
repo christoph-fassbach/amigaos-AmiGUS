@@ -208,7 +208,7 @@ VOID debug_mprintf( STRPTR format, ... ) {
     }
     if ( !AmiGUSmhiBase->agb_LogMem ) {
 
-      size = 2 << 20;
+      size = ( 2 << 19 ) - 4;
       AmiGUSmhiBase->agb_LogMem = AllocAbs( size, ( APTR ) 0x00400000 );
     }
     if ( AmiGUSmhiBase->agb_LogMem ) {
@@ -223,9 +223,9 @@ VOID debug_mprintf( STRPTR format, ... ) {
     }
     if ( !AmiGUSmhiBase->agb_LogMem ) {
 
-      DisplayError( EAllocateLogMem );
-      errorShown = TRUE;
       debug_kprintf( "AmiGUS Log giving up...\n" );
+      errorShown = TRUE;
+      DisplayError( EAllocateLogMem );
       return;
     }
     debug_kprintf( "AmiGUS Log @ 0x%08lx = %ld (retrieved), size %ld\n",

@@ -52,7 +52,7 @@ extern long getreg(int);
 
 #endif
 
-int __saveds __UserLibInit( VOID ) {
+int __saveds __stdargs __UserLibInit( VOID ) {
 
   struct AmiGUSmhi * ownBase = ( struct AmiGUSmhi * ) getreg( REG_A6 );
   struct ExecBase * sysBase = *(( struct ExecBase ** ) 4 );
@@ -62,7 +62,7 @@ SysBase = sysBase;
   return result;
 }
 
-VOID __saveds __UserLibCleanup( VOID ) {
+VOID __saveds __stdargs __UserLibCleanup( VOID ) {
 
 //  CustomLibClose( AmiGUSmhiBase );
   LOG_I(( "I: " LIB_FILE " de-initialized\n" ));
