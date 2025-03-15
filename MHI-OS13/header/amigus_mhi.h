@@ -101,7 +101,7 @@ struct AmiGUSmhi {
   struct ExecBase             * agb_SysBase;
   struct DosLibrary           * agb_DOSBase;
   struct IntuitionBase        * agb_IntuitionBase;
-  struct Library              * agb_ExpansionBase;
+  struct ExpansionBase        * agb_ExpansionBase;
 
   struct Device               * agb_TimerBase;
   struct timerequest          * agb_TimerRequest;
@@ -126,7 +126,7 @@ struct AmiGUSmhi {
 #if defined(BASE_GLOBAL)
   extern struct AmiGUSmhi         * AmiGUSmhiBase;
   extern struct DosLibrary        * DOSBase;
-//TODO  extern struct Library           * ExpansionBase;
+  extern struct ExpansionBase     * ExpansionBase;
   extern struct IntuitionBase     * IntuitionBase;
   extern struct ExecBase          * SysBase;
   extern struct Device            * TimerBase;

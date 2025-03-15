@@ -30,7 +30,7 @@
 struct ExecBase          * SysBase           = NULL;
 struct DosLibrary        * DOSBase           = NULL;
 struct IntuitionBase     * IntuitionBase     = NULL;
-struct Library           * ExpansionBase     = NULL;
+struct ExpansionBase     * ExpansionBase     = NULL;
 struct Device            * TimerBase         = NULL;
 struct AmiGUSmhi         * AmiGUSmhiBase     = NULL;
 #endif
@@ -132,7 +132,7 @@ LONG CustomLibInit( struct AmiGUSmhi * amiGUSBase, struct ExecBase * sysBase ) {
   }
   LOG_I(( "4\n" ));
   amiGUSBase->agb_ExpansionBase =
-    ( struct Library * ) OpenLibrary( "expansion.library", 34 );
+    ( struct ExpansionBase * ) OpenLibrary( "expansion.library", 34 );
   if ( !( amiGUSBase->agb_ExpansionBase )) {
 
     return EOpenExpansionBase;
