@@ -90,7 +90,6 @@ LONG CustomLibInit( struct AmiGUSmhi * amiGUSBase, struct ExecBase * sysBase ) {
 #endif
   amiGUSBase->agb_SysBase = sysBase;
 
-  LOG_I(( "1\n" ));
   /* Prevent use of customized library versions on CPUs not targetted. */
 #ifdef _M68060
   if ( !( sysBase->AttnFlags & AFF_68060 )) {
@@ -116,41 +115,41 @@ LONG CustomLibInit( struct AmiGUSmhi * amiGUSBase, struct ExecBase * sysBase ) {
 
   amiGUSBase->agb_LogFile = NULL;
   amiGUSBase->agb_LogMem = NULL;
-  LOG_I(( "2\n" ));
+
   amiGUSBase->agb_DOSBase =
     ( struct DosLibrary * ) OpenLibrary( "dos.library", 34 );
   if ( !( amiGUSBase->agb_DOSBase )) {
 
     return EOpenDosBase;
   }
-  LOG_I(( "3\n" ));
+
   amiGUSBase->agb_IntuitionBase =
     ( struct IntuitionBase * ) OpenLibrary( "intuition.library", 34 );
   if ( !( amiGUSBase->agb_IntuitionBase )) {
 
     return EOpenIntuitionBase;
   }
-  LOG_I(( "4\n" ));
+
   amiGUSBase->agb_ExpansionBase =
     ( struct ExpansionBase * ) OpenLibrary( "expansion.library", 34 );
   if ( !( amiGUSBase->agb_ExpansionBase )) {
 
     return EOpenExpansionBase;
   }
-  LOG_I(( "5\n" ));
+
   amiGUSBase->agb_TimerPort = CreatePort( NULL, 0 );
   if ( !( amiGUSBase->agb_TimerPort )) {
 
     return EAllocateTimerPort;
   }
-  LOG_I(( "5a\n" ));
+
   amiGUSBase->agb_TimerRequest = ( struct timerequest * )
     CreateExtIO( amiGUSBase->agb_TimerPort, sizeof( struct timerequest ));
   if ( !( amiGUSBase->agb_TimerRequest )) {
 
     return EAllocateTimerRequest;
   }
-  LOG_I(( "6\n" ));
+
   error = OpenDevice( "timer.device",
                       0,
                       ( struct IORequest * ) amiGUSBase->agb_TimerRequest,
@@ -169,7 +168,6 @@ LONG CustomLibInit( struct AmiGUSmhi * amiGUSBase, struct ExecBase * sysBase ) {
   AmiGUSmhiBase = amiGUSBase;
 #endif
 
-  LOG_I(( "7\n" ));
   LOG_D(( "D: AmiGUS base ready @ 0x%08lx\n", amiGUSBase ));
   error = FindAmiGusCodec( amiGUSBase );
   if ( error ) {
@@ -177,6 +175,5 @@ LONG CustomLibInit( struct AmiGUSmhi * amiGUSBase, struct ExecBase * sysBase ) {
     DisplayError( error );
   }
 
-  LOG_I(( "8\n" ));
   return ENoError;
 }

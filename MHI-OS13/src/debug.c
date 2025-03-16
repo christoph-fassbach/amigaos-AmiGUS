@@ -95,6 +95,12 @@ VOID debug_fprintf( STRPTR format, ... ) {
   UBYTE buffer[512];
   UBYTE * printBuffer = buffer;
 
+  if (( !SysBase ) || ( !DOSBase )) {
+
+    debug_kprintf( "E: Tried sending log to file before opening libs!\n" );
+    return;
+  }
+
   if ( !AmiGUSmhiBase->agb_LogFile ) {
     if ( errorShown ) {
 
@@ -116,11 +122,11 @@ VOID debug_fprintf( STRPTR format, ... ) {
 #endif
 
     AmiGUSmhiBase->agb_LogFile = Open( logFilePath, MODE_NEWFILE );
+
     if ( !AmiGUSmhiBase->agb_LogFile ) {
 
-      DisplayError( EOpenLogFile );
       errorShown = TRUE;
-      debug_kprintf( "AmiGUS Log giving up...\n" );
+      DisplayError( EOpenLogFile );
       return;
     }
   }
