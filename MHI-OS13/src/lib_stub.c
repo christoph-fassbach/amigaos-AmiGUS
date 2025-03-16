@@ -57,13 +57,13 @@ int __saveds __stdargs __UserLibInit( VOID ) {
   struct AmiGUSmhi * ownBase = ( struct AmiGUSmhi * ) getreg( REG_A6 );
   struct ExecBase * sysBase = *(( struct ExecBase ** ) 4 );
   LONG result = CustomLibInit( ownBase, sysBase );
-SysBase = sysBase;
+
   LOG_I(( "I: " LIB_FILE " initialized\n" ));
   return result;
 }
 
 VOID __saveds __stdargs __UserLibCleanup( VOID ) {
 
-//  CustomLibClose( AmiGUSmhiBase );
-  LOG_I(( "I: " LIB_FILE " de-initialized\n" ));
+  LOG_I(( "I: " LIB_FILE " de-initializing...\n" ));
+  CustomLibClose( AmiGUSmhiBase );
 }

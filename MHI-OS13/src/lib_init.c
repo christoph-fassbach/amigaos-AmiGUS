@@ -35,6 +35,18 @@ struct Device            * TimerBase         = NULL;
 struct AmiGUSmhi         * AmiGUSmhiBase     = NULL;
 #endif
 
+VOID UpdateGlobals( struct AmiGUSmhi * amiGUSBase ) {
+
+#ifdef BASE_GLOBAL
+  SysBase = amiGUSBase->agb_SysBase;
+  DOSBase = amiGUSBase->agb_DOSBase;
+  IntuitionBase = amiGUSBase->agb_IntuitionBase;
+  ExpansionBase = amiGUSBase->agb_ExpansionBase;
+  TimerBase = amiGUSBase->agb_TimerBase;
+  AmiGUSmhiBase = amiGUSBase;
+#endif
+}
+
 /* Closes all the libraries opened by LibInit() */
 VOID CustomLibClose( struct AmiGUSmhi * amiGUSBase ) {
 
@@ -49,14 +61,17 @@ VOID CustomLibClose( struct AmiGUSmhi * amiGUSBase ) {
   if ( amiGUSBase->agb_TimerRequest ) {
 
     DeleteExtIO(( struct IORequest * ) amiGUSBase->agb_TimerRequest );
+    amiGUSBase->agb_TimerRequest = NULL;
   }
   if ( amiGUSBase->agb_TimerPort ) {
 
     DeletePort( amiGUSBase->agb_TimerPort );
+    amiGUSBase->agb_TimerPort = NULL;
   }
   if ( amiGUSBase->agb_LogFile ) {
 
     Close( amiGUSBase->agb_LogFile );
+    amiGUSBase->agb_LogFile = NULL;
   }
   /*
   Remember: memory cannot be overwritten if we do not return it. :)
@@ -70,15 +85,20 @@ VOID CustomLibClose( struct AmiGUSmhi * amiGUSBase ) {
   if ( amiGUSBase->agb_DOSBase ) {
 
     CloseLibrary(( struct Library * ) amiGUSBase->agb_DOSBase );
+    amiGUSBase->agb_DOSBase = NULL;
   }
   if ( amiGUSBase->agb_IntuitionBase ) {
 
     CloseLibrary(( struct Library * ) amiGUSBase->agb_IntuitionBase );
+    amiGUSBase->agb_IntuitionBase = NULL;
   }
   if ( amiGUSBase->agb_ExpansionBase ) {
 
     CloseLibrary(( struct Library * ) amiGUSBase->agb_ExpansionBase );
+    amiGUSBase->agb_ExpansionBase = NULL;
   }
+
+  UpdateGlobals( amiGUSBase );
 }
 
 LONG CustomLibInit( struct AmiGUSmhi * amiGUSBase, struct ExecBase * sysBase ) {
@@ -160,13 +180,7 @@ LONG CustomLibInit( struct AmiGUSmhi * amiGUSBase, struct ExecBase * sysBase ) {
   }
   amiGUSBase->agb_TimerBase = amiGUSBase->agb_TimerRequest->tr_node.io_Device;
 
-#ifdef BASE_GLOBAL
-  DOSBase       = amiGUSBase->agb_DOSBase;
-  IntuitionBase = amiGUSBase->agb_IntuitionBase;
-  ExpansionBase = amiGUSBase->agb_ExpansionBase;
-  TimerBase     = amiGUSBase->agb_TimerBase;
-  AmiGUSmhiBase = amiGUSBase;
-#endif
+  UpdateGlobals( amiGUSBase );
 
   LOG_D(( "D: AmiGUS base ready @ 0x%08lx\n", amiGUSBase ));
   error = FindAmiGusCodec( amiGUSBase );
