@@ -101,7 +101,8 @@ ifdef USEVBCC
   ifdef LINUX
     LDIR        = $(VBCC)/targets/m68k-amigaos/lib/
   endif
-  
+
+  AFLAGS        = -I$(NDK_ASM_INCLUDE) -quiet -phxass -Fhunk -o
   CFLAGS        = -O2 -c                                           \
                   -I$(MHI_INCLUDE) -I$(HDIR)                       \
                   -D__NOLIBBASE__                                  \
@@ -116,8 +117,11 @@ ifdef USEVBCC
   LFLAGST2      = $(LDIR)auto.lib $(LDIR)vc.lib
   # add -v below to see what vbcc does under the hood :)
   CC            = vc +aos68k
+  AS            = vasmm68k_mot
   LD            = vc +aos68k
 else
+  AFLAGS        = RESETOPTIONS DEFINE=__NOLIBBASE__ DEFINE=$(HOST_TOOLCHAIN)   \
+                  IDIR=$(MHI_INCLUDE) IDIR=NDK_3.2:Include_I IDIR=$(HDIR)      \
   CFLAGS        = RESETOPTIONS                                                 \
                   PARAMETERS=REGISTER DATA=FAR CODE=FAR                        \
                   NOSTACKCHECK NOCHECKABORT NOICONS                            \
@@ -138,8 +142,12 @@ else
   LFLAGST1      = LIB:c.o
   LFLAGST2      = LIBRARY LIB:sc.lib LIB:amiga.lib
   CC            = $(RUNNER) sc
+  AS            = $(RUNNER) sc
   LD            = $(RUNNER) slink
+  FD            = $(RUNNER) sc:c/fd2pragma
 endif
+
+##################################
 
 .PHONY: all install test INCLUDES FOLDERS clean dist-clean dist
 

@@ -19,6 +19,9 @@
 #include "debug.h"
 #include "lib_init.h"
 
+#define STR_VALUE(x)      #x
+#define STR(x) STR_VALUE(x)
+
 // Since the file is meant only for SASC, let's assume we are in SASC!
 #ifndef getreg
 
@@ -58,12 +61,12 @@ int __saveds __stdargs __UserLibInit( VOID ) {
   struct ExecBase * sysBase = *(( struct ExecBase ** ) 4 );
   LONG result = CustomLibInit( ownBase, sysBase );
 
-  LOG_I(( "I: " LIB_FILE " initialized\n" ));
+  LOG_I(( "I: " STR( LIB_FILE ) " initialized\n" ));
   return result;
 }
 
 VOID __saveds __stdargs __UserLibCleanup( VOID ) {
 
-  LOG_I(( "I: " LIB_FILE " de-initializing...\n" ));
+  LOG_I(( "I: " STR( LIB_FILE ) " de-initializing...\n" ));
   CustomLibClose( AmiGUSmhiBase );
 }

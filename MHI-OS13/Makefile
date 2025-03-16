@@ -103,13 +103,15 @@ LIB_OBJS        = $(BDIR_C_OBJS) $(BDIR_A_OBJS)
 
 ###########################
 
-CFLAGS          = PARAMETERS=REGISTER DATA=FAR CODE=FAR DEFINE=__NOLIBBASE__ \
+AFLAGS          = -I$(NDK_ASM_INCLUDE) -quiet -phxass -Fhunk -o
+CFLAGS          = PARAMETERS=REGISTER DATA=FAR CODE=FAR                               \
                   STREQ STRMER NOSTACKCHECK NOMULTIPLEINCLUDES NOCHECKABORT NOICONS   \
-                  IDIR=$(MHI_INCLUDE) IDIR=$(NDK_C_INCLUDE) IDIR=$(HDIR)       \
-                  DEF LIB_FILE=\"$(LIB_FILE)\" DEF LIB_DATE=__AMIGADATE__      \
-                  DEF LIB_VERSION=\"$(LIB_VERSION)\" DEF BASE_GLOBAL           \
-                  DEF LIB_REVISION=\"$(LIB_REVISION)\" DEF LIB_CPU=\"000\"     \
-                  DEF LIB_COMPILER=\"SAS/C\" DEF LIB_HOST=\"$(LIB_HOST)\"      \
+                  IDIR=$(MHI_INCLUDE) IDIR=$(NDK_C_INCLUDE) IDIR=$(HDIR)              \
+                  DEF __NOLIBBASE__                                                   \
+                  DEF LIB_FILE=$(LIB_FILE) DEF LIB_DATE=__AMIGADATE__                 \
+                  DEF LIB_VERSION=$(LIB_VERSION) DEF BASE_GLOBAL                      \
+                  DEF LIB_REVISION=$(LIB_REVISION) DEF LIB_CPU=000                    \
+                  DEF LIB_COMPILER=SAS/C DEF LIB_HOST=$(LIB_HOST)                     \
                   OBJNAME
 
 CC              = $(RUNNER) sc
@@ -130,6 +132,15 @@ install: all
 	-$(INSTALL0)
 	-$(INSTALL1)
 
+clean:
+	-$(RM) $(DDIR) $(BDIR) $(RM_SUFFIX)
+
+dist-clean: clean
+	make -f Makefile-Includes clean
+
+dist: all
+	$(LHA) a target/MHIbin.lha target/$(WILDCARD)
+
 INCLUDES:
 	make -f Makefile-Includes all 
 
@@ -140,14 +151,6 @@ FOLDERS:
 $(LIB_FILE_DEST): $(LIB_FILE)
 	$(CP) $(LIB_FILE) $(LIB_FILE_DEST)
 	$(RM) $(LIB_FILE) $(RM_SUFFIX)
-
-clean:
-	-@$(RM) $(LIB_FILE) $(RM_SUFFIX)
-	-@$(RM) $(LIB_OBJS) $(RM_SUFFIX)
-	-@$(RM) $(LIB_NAME).map $(RM_SUFFIX)
-	-@$(RM) $(PRAGMA_FILE) $(RM_SUFFIX)
-
-###############################################################################
 
 $(LIB_FILE): $(LIB_OBJS) $(PRAGMA_FILE)
 	$(LD) NOICONS \

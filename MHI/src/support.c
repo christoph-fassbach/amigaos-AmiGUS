@@ -97,7 +97,7 @@ VOID DisplayError( ULONG aError ) {
 
   if ( IntuitionBase ) {
 
-    ShowError( "LIB_FILE", errors[ i ].iMessage, errors[ i ].iButton );
+    ShowError( STR( LIB_FILE ), errors[ i ].iMessage, errors[ i ].iButton );
 
   } else {
 
