@@ -122,6 +122,8 @@ ifdef USEVBCC
 else
   AFLAGS        = RESETOPTIONS DEFINE=__NOLIBBASE__ DEFINE=$(HOST_TOOLCHAIN)   \
                   IDIR=$(MHI_INCLUDE) IDIR=NDK_3.2:Include_I IDIR=$(HDIR)      \
+                  OBJNAME
+
   CFLAGS        = RESETOPTIONS                                                 \
                   PARAMETERS=REGISTER DATA=FAR CODE=FAR                        \
                   NOSTACKCHECK NOCHECKABORT NOICONS                            \

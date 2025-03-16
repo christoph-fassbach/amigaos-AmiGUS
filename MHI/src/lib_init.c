@@ -53,7 +53,7 @@ VOID CustomLibClose( struct AmiGUSmhi * amiGUSBase ) {
 #ifndef BASE_GLOBAL
   struct ExecBase *SysBase = AmiGUSBase->agb_SysBase;
 #endif
-
+  LOG_D(( "D: Closing AmiGUS base @ 0x%08lx\n", amiGUSBase ));
   if ( amiGUSBase->agb_TimerBase ) {
 
     CloseDevice(( struct IORequest * ) amiGUSBase->agb_TimerRequest );

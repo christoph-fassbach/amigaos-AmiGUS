@@ -104,6 +104,7 @@ LIB_OBJS        = $(BDIR_C_OBJS) $(BDIR_A_OBJS)
 ###########################
 
 AFLAGS          = -I$(NDK_ASM_INCLUDE) -quiet -phxass -Fhunk -o
+
 CFLAGS          = PARAMETERS=REGISTER DATA=FAR CODE=FAR                               \
                   STREQ STRMER NOSTACKCHECK NOMULTIPLEINCLUDES NOCHECKABORT NOICONS   \
                   IDIR=$(MHI_INCLUDE) IDIR=$(NDK_C_INCLUDE) IDIR=$(HDIR)              \
