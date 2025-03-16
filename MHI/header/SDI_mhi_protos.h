@@ -14,10 +14,10 @@
  * along with mhiAmiGUS.library.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+// TO NEVER BE USED OUTSIDE THE LIBRARY CODE !!!
+
 #ifndef SDI_MHI_PROTOS_H
 #define SDI_MHI_PROTOS_H
-
-#include <exec/tasks.h>
 
 #include "SDI_compiler.h"
 
@@ -27,62 +27,39 @@
   #define AMIGA_INTERRUPT __interrupt
 #endif
 
-/* Forward declaration here. */
-struct AmiGUSBase;
+ASM( APTR ) SAVEDS LIB_MHIAllocDecoder( REG( a0, struct Task * task ),
+                                        REG( d0, ULONG signal ),
+                                        REG( a6, struct AmiGUSmhi * base ));
 
-ASM( APTR ) SAVEDS MHIAllocDecoder(
-  REG( a0, struct Task * task ),
-  REG( d0, ULONG signal ),
-  REG( a6, struct AmiGUSBase * amiGUSBase ) 
-);
+ASM( VOID ) SAVEDS LIB_MHIFreeDecoder( REG( a3, APTR handle ),
+                                       REG( a6, struct AmiGUSmhi * base ));
 
-ASM( VOID ) SAVEDS MHIFreeDecoder(
-  REG( a3, APTR handle ), 
-  REG( a6, struct AmiGUSBase * amiGUSBase )
-);
+ASM( BOOL ) SAVEDS LIB_MHIQueueBuffer( REG( a3, APTR handle ),
+                                      REG( a0, APTR buffer ),
+                                      REG( d0, ULONG size ),
+                                      REG( a6, struct AmiGUSmhi * base ));
 
-ASM( BOOL ) SAVEDS MHIQueueBuffer(
-  REG( a3, APTR handle ),
-  REG( a0, APTR buffer ),
-  REG( d0, ULONG size),
-  REG( a6, struct AmiGUSBase * amiGUSBase )
-);
+ASM( APTR ) SAVEDS LIB_MHIGetEmpty( REG( a3, APTR handle ),
+                                    REG( a6, struct AmiGUSmhi * base ));
 
-ASM( APTR ) SAVEDS MHIGetEmpty(
-  REG( a3, APTR handle ),
-  REG( a6, struct AmiGUSBase * amiGUSBase )
-);
+ASM( UBYTE ) SAVEDS LIB_MHIGetStatus( REG( a3, APTR handle ),
+                                      REG( a6, struct AmiGUSmhi * base ));
 
-ASM( UBYTE ) SAVEDS MHIGetStatus(
-  REG( a3, APTR handle ),
-  REG( a6, struct AmiGUSBase * amiGUSBase )
-);
+ASM( VOID ) SAVEDS LIB_MHIPlay( REG( a3, APTR handle ),
+                                REG( a6, struct AmiGUSmhi * base ));
 
-ASM( VOID ) SAVEDS MHIPlay(
-  REG( a3, APTR handle ),
-  REG( a6, struct AmiGUSBase * amiGUSBase )
-);
+ASM( VOID ) SAVEDS LIB_MHIStop( REG( a3, APTR handle ),
+                                REG( a6, struct AmiGUSmhi * base ));
 
-ASM( VOID ) SAVEDS MHIStop(
-  REG( a3, APTR handle ),
-  REG( a6, struct AmiGUSBase * amiGUSBase )
-);
+ASM( VOID ) SAVEDS LIB_MHIPause( REG( a3, APTR handle ),
+                                 REG( a6, struct AmiGUSmhi * base ));
 
-ASM( VOID ) SAVEDS MHIPause(
-  REG( a3, APTR handle ),
-  REG( a6, struct AmiGUSBase * amiGUSBase )
-);
+ASM( ULONG ) SAVEDS LIB_MHIQuery( REG( d1, ULONG query ),
+                                  REG( a6, struct AmiGUSmhi * base ));
 
-ASM( ULONG ) SAVEDS MHIQuery(
-  REG( d1, ULONG query ),
-  REG( a6, struct AmiGUSBase * amiGUSBase )
-);
-
-ASM( VOID ) SAVEDS MHISetParam(
-  REG( a3, APTR handle ),
-  REG( d0, UWORD param ),
-  REG( d1, ULONG value ),
-  REG( a6, struct AmiGUSBase * amiGUSBase )
-);
+ASM( VOID ) SAVEDS LIB_MHISetParam( REG( a3, APTR handle ),
+                                    REG( d0, UWORD param ),
+                                    REG( d1, ULONG value ),
+                                    REG( a6, struct AmiGUSmhi * base ));
 
 #endif /* SDI_MHI_PROTOS_H */

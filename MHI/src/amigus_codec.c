@@ -25,7 +25,7 @@
 #include "interrupt.h"
 #include "support.h"
 
-LONG FindAmiGusCodec( struct AmiGUSBase * amiGUSBase ) {
+LONG FindAmiGusCodec( struct AmiGUSmhi * amiGUSBase ) {
 
   struct ConfigDev *configDevice = 0;
   ULONG serial;
@@ -85,7 +85,7 @@ LONG FindAmiGusCodec( struct AmiGUSBase * amiGUSBase ) {
 
 VOID StartAmiGusCodecPlayback( VOID ) {
 
-  APTR amiGUS = AmiGUSBase->agb_CardBase;
+  APTR amiGUS = AmiGUSmhiBase->agb_CardBase;
   WriteReg16( amiGUS,
               AMIGUS_CODEC_FIFO_RESET,
               AMIGUS_CODEC_FIFO_F_RESET_STROBE );
@@ -121,7 +121,7 @@ VOID StartAmiGusCodecPlayback( VOID ) {
 
 VOID StopAmiGusCodecPlayback( VOID ) {
 
-  APTR amiGUS = AmiGUSBase->agb_CardBase;
+  APTR amiGUS = AmiGUSmhiBase->agb_CardBase;
 
   // Original AmiGUS "stop playback" functionality
   WriteReg16( amiGUS,

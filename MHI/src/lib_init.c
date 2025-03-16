@@ -24,31 +24,31 @@
 #include "amigus_mhi.h"
 #include "debug.h"
 #include "errors.h"
-#include "library.h"
 #include "support.h"
 
-#ifdef LOG_I
-// TODO
-#undef LOG_I
-#define LOG_I(X)
+#ifdef BASE_GLOBAL
+struct ExecBase          * SysBase           = NULL;
+struct DosLibrary        * DOSBase           = NULL;
+struct IntuitionBase     * IntuitionBase     = NULL;
+struct ExpansionBase     * ExpansionBase     = NULL;
+struct Device            * TimerBase         = NULL;
+struct AmiGUSmhi         * AmiGUSmhiBase     = NULL;
 #endif
+
+VOID UpdateGlobals( struct AmiGUSmhi * amiGUSBase ) {
 
 #ifdef BASE_GLOBAL
-
-struct ExecBase          * SysBase           = 0;
-struct DosLibrary        * DOSBase           = 0;
-struct IntuitionBase     * IntuitionBase     = 0;
-struct Library           * UtilityBase       = 0;
-struct Library           * ExpansionBase     = 0;
-struct Device            * TimerBase         = 0;
-struct AmiGUSBase        * AmiGUSBase        = 0;
-
+  SysBase = amiGUSBase->agb_SysBase;
+  DOSBase = amiGUSBase->agb_DOSBase;
+  IntuitionBase = amiGUSBase->agb_IntuitionBase;
+  ExpansionBase = amiGUSBase->agb_ExpansionBase;
+  TimerBase = amiGUSBase->agb_TimerBase;
+  AmiGUSmhiBase = amiGUSBase;
 #endif
+}
 
 /* Closes all the libraries opened by LibInit() */
-VOID CustomLibClose( struct BaseLibrary * base ) {
-
-  struct AmiGUSBase * amiGUSBase = ( struct AmiGUSBase * ) base;
+VOID CustomLibClose( struct AmiGUSmhi * amiGUSBase ) {
 
 #ifndef BASE_GLOBAL
   struct ExecBase *SysBase = AmiGUSBase->agb_SysBase;
@@ -56,15 +56,22 @@ VOID CustomLibClose( struct BaseLibrary * base ) {
 
   if ( amiGUSBase->agb_TimerBase ) {
 
-    CloseDevice( amiGUSBase->agb_TimerRequest );
+    CloseDevice(( struct IORequest * ) amiGUSBase->agb_TimerRequest );
   }
   if ( amiGUSBase->agb_TimerRequest ) {
 
-    FreeMem( amiGUSBase->agb_TimerRequest, sizeof( struct IORequest ));
-  }  
+    DeleteExtIO(( struct IORequest * ) amiGUSBase->agb_TimerRequest );
+    amiGUSBase->agb_TimerRequest = NULL;
+  }
+  if ( amiGUSBase->agb_TimerPort ) {
+
+    DeletePort( amiGUSBase->agb_TimerPort );
+    amiGUSBase->agb_TimerPort = NULL;
+  }
   if ( amiGUSBase->agb_LogFile ) {
 
     Close( amiGUSBase->agb_LogFile );
+    amiGUSBase->agb_LogFile = NULL;
   }
   /*
   Remember: memory cannot be overwritten if we do not return it. :)
@@ -78,22 +85,31 @@ VOID CustomLibClose( struct BaseLibrary * base ) {
   if ( amiGUSBase->agb_DOSBase ) {
 
     CloseLibrary(( struct Library * ) amiGUSBase->agb_DOSBase );
+    amiGUSBase->agb_DOSBase = NULL;
   }
   if ( amiGUSBase->agb_IntuitionBase ) {
 
     CloseLibrary(( struct Library * ) amiGUSBase->agb_IntuitionBase );
+    amiGUSBase->agb_IntuitionBase = NULL;
   }
   if ( amiGUSBase->agb_ExpansionBase ) {
 
     CloseLibrary(( struct Library * ) amiGUSBase->agb_ExpansionBase );
+    amiGUSBase->agb_ExpansionBase = NULL;
   }
+
+  UpdateGlobals( amiGUSBase );
 }
 
-LONG CustomLibInit( struct BaseLibrary * base, struct ExecBase * sysBase ) {
+LONG CustomLibInit( struct AmiGUSmhi * amiGUSBase, struct ExecBase * sysBase ) {
 
-  struct AmiGUSBase * amiGUSBase = ( struct AmiGUSBase * ) base;
   LONG error;
-LOG_I(( "1\n" ));
+
+#ifdef BASE_GLOBAL
+  SysBase = sysBase;
+#endif
+  amiGUSBase->agb_SysBase = sysBase;
+
   /* Prevent use of customized library versions on CPUs not targetted. */
 #ifdef _M68060
   if ( !( sysBase->AttnFlags & AFF_68060 )) {
@@ -117,71 +133,61 @@ LOG_I(( "1\n" ));
   }
 #endif
 
-  amiGUSBase->agb_SysBase = sysBase;
-
-#ifdef BASE_GLOBAL
-  SysBase = sysBase;
-#endif
-#if 0
   amiGUSBase->agb_LogFile = NULL;
   amiGUSBase->agb_LogMem = NULL;
-  LOG_I(( "2\n" ));
+
   amiGUSBase->agb_DOSBase =
     ( struct DosLibrary * ) OpenLibrary( "dos.library", 34 );
   if ( !( amiGUSBase->agb_DOSBase )) {
 
     return EOpenDosBase;
   }
-  LOG_I(( "3\n" ));
+
   amiGUSBase->agb_IntuitionBase =
     ( struct IntuitionBase * ) OpenLibrary( "intuition.library", 34 );
   if ( !( amiGUSBase->agb_IntuitionBase )) {
 
     return EOpenIntuitionBase;
   }
-  LOG_I(( "4\n" ));
+
   amiGUSBase->agb_ExpansionBase =
-    ( struct Library * ) OpenLibrary( "expansion.library", 34 );
+    ( struct ExpansionBase * ) OpenLibrary( "expansion.library", 34 );
   if ( !( amiGUSBase->agb_ExpansionBase )) {
 
     return EOpenExpansionBase;
   }
-  LOG_I(( "5\n" ));
-  amiGUSBase->agb_TimerRequest = AllocMem( sizeof( struct IORequest ),
-                                           MEMF_PUBLIC | MEMF_CLEAR );
+
+  amiGUSBase->agb_TimerPort = CreatePort( NULL, 0 );
+  if ( !( amiGUSBase->agb_TimerPort )) {
+
+    return EAllocateTimerPort;
+  }
+
+  amiGUSBase->agb_TimerRequest = ( struct timerequest * )
+    CreateExtIO( amiGUSBase->agb_TimerPort, sizeof( struct timerequest ));
   if ( !( amiGUSBase->agb_TimerRequest )) {
 
     return EAllocateTimerRequest;
   }
-  LOG_I(( "6\n" ));
-  error = OpenDevice("timer.device", 0, amiGUSBase->agb_TimerRequest, 0);
+
+  error = OpenDevice( "timer.device",
+                      0,
+                      ( struct IORequest * ) amiGUSBase->agb_TimerRequest,
+                      0 );
   if ( error ) {
 
     return EOpenTimerDevice;
   }
-  amiGUSBase->agb_TimerBase = amiGUSBase->agb_TimerRequest->io_Device;
+  amiGUSBase->agb_TimerBase = amiGUSBase->agb_TimerRequest->tr_node.io_Device;
 
-#ifdef BASE_GLOBAL
-  DOSBase       = amiGUSBase->agb_DOSBase;
-  IntuitionBase = amiGUSBase->agb_IntuitionBase;
-  ExpansionBase = amiGUSBase->agb_ExpansionBase;
-  TimerBase     = amiGUSBase->agb_TimerBase;
-  AmiGUSBase    = amiGUSBase;
-#endif
-  LOG_I(( "7\n" ));
+  UpdateGlobals( amiGUSBase );
+
   LOG_D(( "D: AmiGUS base ready @ 0x%08lx\n", amiGUSBase ));
   error = FindAmiGusCodec( amiGUSBase );
   if ( error ) {
 
     DisplayError( error );
-    return error; // TODO: test?
   }
-#else
-AmiGUSBase    = amiGUSBase;
-#endif
 
-  LOG_I(( "8\n" ));
   return ENoError;
 }
-
-const ULONG AmiGUSBaseSize = sizeof( struct AmiGUSBase );

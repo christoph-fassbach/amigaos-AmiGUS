@@ -17,11 +17,8 @@
 #ifndef LIBRARY_H
 #define LIBRARY_H
 
-#include <exec/types.h>
-#include <exec/execbase.h>
+#include <dos/dos.h>
 #include <exec/libraries.h>
-
-#include <libraries/dos.h>
 
 /* Need 2 staged helpers to concat version strings and ints together... :/   */
 #define GSTR_HELPER( x ) #x
@@ -32,56 +29,56 @@
  * will be used in library.c.
  *****************************************************************************/
 
-#define LIB_FUNCTIONS     ( APTR ) MHIAllocDecoder, \
-                          ( APTR ) MHIFreeDecoder, \
-                          ( APTR ) MHIQueueBuffer, \
-                          ( APTR ) MHIGetEmpty, \
-                          ( APTR ) MHIGetStatus, \
-                          ( APTR ) MHIPlay, \
-                          ( APTR ) MHIStop, \
-                          ( APTR ) MHIPause, \
-                          ( APTR ) MHIQuery, \
-                          ( APTR ) MHISetParam
+#define LIBRARY_FUNCTIONS ( APTR ) LIB_MHIAllocDecoder, \
+                          ( APTR ) LIB_MHIFreeDecoder, \
+                          ( APTR ) LIB_MHIQueueBuffer, \
+                          ( APTR ) LIB_MHIGetEmpty, \
+                          ( APTR ) LIB_MHIGetStatus, \
+                          ( APTR ) LIB_MHIPlay, \
+                          ( APTR ) LIB_MHIStop, \
+                          ( APTR ) LIB_MHIPause, \
+                          ( APTR ) LIB_MHIQuery, \
+                          ( APTR ) LIB_MHISetParam
 
 /******************************************************************************
  * Define your library's properties here,
  * will be used in library.c.
  *****************************************************************************/
-#define LIB_NAME          "mhiAmiGUS.library"
-#define LIB_VERSION       1
-#define LIB_REVISION      2
-#define LIB_DATETXT       __AMIGADATE__
-#define LIB_VERSTXT       GSTR( LIB_VERSION ) ".00" GSTR( LIB_REVISION )
+#define LIBRARY_NAME      "mhiamigus.library"
+#define LIBRARY_VERSION   1
+#define LIBRARY_REVISION  2
+#define LIBRARY_DATETXT	  __AMIGADATE__
+#define LIBRARY_VERSTXT	 GSTR( LIBRARY_VERSION ) ".00" GSTR( LIBRARY_REVISION )
 
 #if defined( _M68060 )
-  #define LIB_CPUTXT      " 060"
+  #define LIBRARY_CPUTXT  " 060"
 #elif defined( _M68040 )
-  #define LIB_CPUTXT      " 040"
+  #define LIBRARY_CPUTXT  " 040"
 #elif defined( _M68030 )
-  #define LIB_CPUTXT      " 030"
+  #define LIBRARY_CPUTXT  " 030"
 #elif defined( _M68020 )
-  #define LIB_CPUTXT      " 020"
+  #define LIBRARY_CPUTXT  " 020"
 #elif defined( __MORPHOS__ )
-  #define LIB_CPUTXT      " MorphOS"
+  #define LIBRARY_CPUTXT  " MorphOS"
 #else
-  #define LIB_CPUTXT      " 000"
+  #define LIBRARY_CPUTXT  " 000"
 #endif
 
 #if defined( __VBCC__ )
-  #define LIB_COMPILERTXT " vbcc"
+  #define LIBRARY_COMPILERTXT " vbcc"
 #elif defined( __SASC )
-  #define LIB_COMPILERTXT " SAS/C"
+  #define LIBRARY_COMPILERTXT " SAS/C"
 #endif
 
 #ifdef CROSS_TOOLCHAIN
-  #define LIB_HOSTTXT     " cross"
+  #define LIBRARY_HOSTTXT " cross"
 #else
-  #define LIB_HOSTTXT     " native"
+  #define LIBRARY_HOSTTXT " native"
 #endif
 
-#define LIB_IDSTRING \
-  LIB_NAME " " LIB_VERSTXT " " LIB_DATETXT \
-  LIB_CPUTXT LIB_COMPILERTXT LIB_HOSTTXT
+#define LIBRARY_IDSTRING \
+  LIBRARY_NAME " " LIBRARY_VERSTXT " " LIBRARY_DATETXT \
+  LIBRARY_CPUTXT LIBRARY_COMPILERTXT LIBRARY_HOSTTXT
 
 /******************************************************************************
  * SegList pointer definition
@@ -109,7 +106,7 @@ struct BaseLibrary {
 /******************************************************************************
  * Define your library's base type here, will be used in library.c.
  *****************************************************************************/
-#define LIBRARY_TYPE      struct AmiGUSBase
+#define LIBRARY_TYPE      struct AmiGUSmhi
 
 /******************************************************************************
  * Your library's own base structure shall have its own include,

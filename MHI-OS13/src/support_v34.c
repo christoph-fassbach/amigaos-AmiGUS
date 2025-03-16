@@ -74,6 +74,6 @@ VOID ShowError( STRPTR title, STRPTR message, STRPTR button ) {
 
 VOID ShowAlert( ULONG alertNum ) {
 
-    Alert13Compat( alertNum );
+  Alert13Compat( alertNum );
 }
 

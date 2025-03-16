@@ -29,8 +29,8 @@
 
 VOID HandlePlayback( VOID ) {
 
-  APTR amiGUS = AmiGUSBase->agb_CardBase;
-  struct AmiGUSClientHandle * handle = &( AmiGUSBase->agb_ClientHandle );
+  APTR amiGUS = AmiGUSmhiBase->agb_CardBase;
+  struct AmiGUSClientHandle * handle = &( AmiGUSmhiBase->agb_ClientHandle );
   struct AmiGUSMhiBuffer * current = handle->agch_CurrentBuffer;
   const struct MinNode * tail = ( const struct MinNode * )
     &( handle->agch_Buffers.mlh_Tail );
@@ -118,9 +118,9 @@ VOID HandlePlayback( VOID ) {
 }
 
 ASM(LONG) /* __entry for vbcc ? */ SAVEDS INTERRUPT handleInterrupt (
-  REG(a1, struct AmiGUSBasePrivate * amiGUSBase)
+  REG(a1, struct AmiGUSmhi * amiGUSBase)
 ) {
-  const UWORD status = ReadReg16( AmiGUSBase->agb_CardBase,
+  const UWORD status = ReadReg16( AmiGUSmhiBase->agb_CardBase,
                                   AMIGUS_CODEC_INT_CONTROL );
   if ( !( status & ( AMIGUS_CODEC_INT_F_FIFO_EMPTY
                    | AMIGUS_CODEC_INT_F_FIFO_WATERMRK )) ) {
@@ -128,7 +128,7 @@ ASM(LONG) /* __entry for vbcc ? */ SAVEDS INTERRUPT handleInterrupt (
     return 0;
   }
 
-  if ( MHIF_PLAYING == AmiGUSBase->agb_ClientHandle.agch_Status ) {
+  if ( MHIF_PLAYING == AmiGUSmhiBase->agb_ClientHandle.agch_Status ) {
 
     HandlePlayback();
 /*
@@ -145,7 +145,7 @@ ASM(LONG) /* __entry for vbcc ? */ SAVEDS INTERRUPT handleInterrupt (
   }
 
   /* Clear AmiGUS control flags here!!! */
-  WriteReg16( AmiGUSBase->agb_CardBase,
+  WriteReg16( AmiGUSmhiBase->agb_CardBase,
               AMIGUS_CODEC_INT_CONTROL,
               AMIGUS_INT_F_CLEAR
               | AMIGUS_CODEC_INT_F_FIFO_EMPTY
@@ -157,7 +157,7 @@ ASM(LONG) /* __entry for vbcc ? */ SAVEDS INTERRUPT handleInterrupt (
 // TRUE = failure
 BOOL CreateInterruptHandler( VOID ) {
 
-  if (AmiGUSBase->agb_Interrupt) {
+  if (AmiGUSmhiBase->agb_Interrupt) {
 
     LOG_D(("D: INT server in use!\n"));
     return FALSE;
@@ -166,19 +166,19 @@ BOOL CreateInterruptHandler( VOID ) {
   LOG_D(("D: Creating INT server\n"));
   Disable();
 
-  AmiGUSBase->agb_Interrupt = (struct Interrupt *)
+  AmiGUSmhiBase->agb_Interrupt = (struct Interrupt *)
       AllocMem(
           sizeof( struct Interrupt ),
           MEMF_CLEAR | MEMF_PUBLIC
       );
-  if ( AmiGUSBase->agb_Interrupt ) {
+  if ( AmiGUSmhiBase->agb_Interrupt ) {
 
-    AmiGUSBase->agb_Interrupt->is_Node.ln_Pri = 100;
-    AmiGUSBase->agb_Interrupt->is_Node.ln_Name = "AMIGUS_MHI_INT";
-    AmiGUSBase->agb_Interrupt->is_Data = ( APTR ) AmiGUSBase;
-    AmiGUSBase->agb_Interrupt->is_Code = (void (* )())handleInterrupt;
+    AmiGUSmhiBase->agb_Interrupt->is_Node.ln_Pri = 100;
+    AmiGUSmhiBase->agb_Interrupt->is_Node.ln_Name = "AMIGUS_MHI_INT";
+    AmiGUSmhiBase->agb_Interrupt->is_Data = ( APTR ) AmiGUSmhiBase;
+    AmiGUSmhiBase->agb_Interrupt->is_Code = (void (* )())handleInterrupt;
 
-    AddIntServer( INTB_PORTS, AmiGUSBase->agb_Interrupt );
+    AddIntServer( INTB_PORTS, AmiGUSmhiBase->agb_Interrupt );
 
     Enable();
 
@@ -194,7 +194,7 @@ BOOL CreateInterruptHandler( VOID ) {
 
 VOID DestroyInterruptHandler( VOID ) {
 
-  if ( !AmiGUSBase->agb_Interrupt ) {
+  if ( !AmiGUSmhiBase->agb_Interrupt ) {
 
     LOG_D(("D: No INT server to destroy!\n"));
     return;
@@ -203,11 +203,11 @@ VOID DestroyInterruptHandler( VOID ) {
   LOG_D(("D: Destroying INT server\n"));
 
   Disable();
-  RemIntServer( INTB_PORTS, AmiGUSBase->agb_Interrupt );
+  RemIntServer( INTB_PORTS, AmiGUSmhiBase->agb_Interrupt );
   Enable();
 
-  FreeMem( AmiGUSBase->agb_Interrupt, sizeof( struct Interrupt ) );
-  AmiGUSBase->agb_Interrupt = NULL;
+  FreeMem( AmiGUSmhiBase->agb_Interrupt, sizeof( struct Interrupt ) );
+  AmiGUSmhiBase->agb_Interrupt = NULL;
 
   LOG_D(("D: Destroyed INT server\n"));
 }

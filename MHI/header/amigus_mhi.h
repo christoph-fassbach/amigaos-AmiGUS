@@ -18,13 +18,13 @@
 #define AMIGUS_MHI_H
 
 /* 
-* MHI driver library header.
-*
-* To be used only internally - but there in all .c files!
-* If you are using some of the library base addresses from
-* BASE_REDEFINE directly, e.g. in libinit.c,
-* do a #define NO_BASE_REDEFINE before including this file.
-*/
+ * MHI driver library header.
+ *
+ * To be used only internally - but there in all .c files!
+ * If you are using some of the library base addresses from
+ * BASE_REDEFINE directly, e.g. in libinit.c,
+ * do a #define NO_BASE_REDEFINE before including this file.
+ */
 
 /* Activate / De-activate this define to toggle lib base mode! */
 #define BASE_GLOBAL /**/
@@ -39,8 +39,12 @@
 #endif
 #endif
 
-#include "library.h"
+#include <dos/dos.h>
+
 #include "SDI_mhi_protos.h"
+
+#define STR_VALUE(x)      #x
+#define STR(x) STR_VALUE(x)
 
 #define AMIGUS_MHI_AUTHOR           "Christoph `Chritoph` Fassbach"
 #define AMIGUS_MHI_COPYRIGHT        "(c) 2025 Christoph Fassbach / LGPL3"
@@ -48,7 +52,10 @@
                                     "Frank Wille (vbcc), "                \
                                     "Thomas Wenzel et al. (MHI)"
 #define AMIGUS_MHI_DECODER          "AmiGUS VS1063a codec"
-#define AMIGUS_MHI_VERSION          LIB_IDSTRING
+#define AMIGUS_MHI_VERSION          STR( LIB_FILE )" "                         \
+                                    STR( LIB_VERSION )".00"STR( LIB_REVISION ) \
+                                    " "LIB_DATE" "STR( LIB_CPU )" "            \
+                                    STR( LIB_COMPILER )" "STR( LIB_HOST )
 
 #define AMIGUS_MHI_FIRMWARE_MINIMUM ( ( 2024 << 20 ) /* year   */ \
                                     + (   12 << 16 ) /* month  */ \
@@ -90,17 +97,18 @@ struct AmiGUSClientHandle {
 
 /* This is the private structure. The official one does not contain all
 the private fields! */
-struct AmiGUSBase {
+struct AmiGUSmhi {
   /* Library base stuff */
-  struct BaseLibrary            agb_BaseLibrary;
+  struct Library                agb_BaseLibrary;
 
   struct ExecBase             * agb_SysBase;
   struct DosLibrary           * agb_DOSBase;
   struct IntuitionBase        * agb_IntuitionBase;
-  struct Library              * agb_ExpansionBase;
+  struct ExpansionBase        * agb_ExpansionBase;
 
   struct Device               * agb_TimerBase;
-  struct IORequest            * agb_TimerRequest;
+  struct timerequest          * agb_TimerRequest;
+  struct MsgPort              * agb_TimerPort;
   /* AmiGUS specific member variables */
   struct ConfigDev            * agb_ConfigDevice;
   APTR                          agb_CardBase;
@@ -119,19 +127,19 @@ struct AmiGUSBase {
 };
 
 #if defined(BASE_GLOBAL)
-  extern struct AmiGUSBase        * AmiGUSBase;
+  extern struct AmiGUSmhi         * AmiGUSmhiBase;
   extern struct DosLibrary        * DOSBase;
-  extern struct Library           * ExpansionBase;
+  extern struct ExpansionBase     * ExpansionBase;
   extern struct IntuitionBase     * IntuitionBase;
   extern struct ExecBase          * SysBase;
   extern struct Device            * TimerBase;
 #elif defined(BASE_REDEFINE)
-  #define AmiGUSBase                (amiGUSBase)
-  #define DOSBase                   amiGUSBase->agb_DOSBase
-  #define ExpansionBase             amiGUSBase->agb_ExpansionBase
-  #define IntuitionBase             amiGUSBase->agb_IntuitionBase
-  #define SysBase                   amiGUSBase->agb_SysBase
-  #define TimerBase                 amiGUSBase->TimerBase
+  #define AmiGUSmhiBase             (amiGUSmhiBase)
+  #define DOSBase                   amiGUSmhiBase->agb_DOSBase
+  #define ExpansionBase             amiGUSmhiBase->agb_ExpansionBase
+  #define IntuitionBase             amiGUSmhiBase->agb_IntuitionBase
+  #define SysBase                   amiGUSmhiBase->agb_SysBase
+  #define TimerBase                 amiGUSmhiBase->TimerBase
 #endif
 
 /******************************************************************************

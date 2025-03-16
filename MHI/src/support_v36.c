@@ -14,14 +14,26 @@
  * along with mhiAmiGUS.library.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef AMIGUS_CODEC_H
-#define AMIGUS_CODEC_H
+#include <proto/exec.h>
+#include <proto/intuition.h>
 
-/* Forward declaration here. */
-struct AmiGUSmhi;
+#include "amigus_mhi.h"
+#include "support.h"
 
-LONG FindAmiGusCodec( struct AmiGUSmhi * amiGUSBase );
-VOID StartAmiGusCodecPlayback( VOID );
-VOID StopAmiGusCodecPlayback( VOID );
+VOID ShowError( STRPTR title, STRPTR message, STRPTR button ) {
 
-#endif /* AMIGUS_CODEC_H */
+  struct EasyStruct req;
+
+  req.es_StructSize = sizeof( struct EasyStruct );
+  req.es_Flags = 0;
+  req.es_Title = title;
+  req.es_TextFormat = "Error %ld : %s";
+  req.es_GadgetFormat = button;
+
+  EasyRequest( NULL, &req, NULL, 0, message );
+}
+
+VOID ShowAlert( ULONG alertNum ) {
+
+  Alert( alertNum );
+}

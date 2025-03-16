@@ -25,10 +25,9 @@
 #include "amigus_mhi.h"
 #include "debug.h"
 #include "errors.h"
-#include "library.h"
 #include "interrupt.h"
 #include "support.h"
-#include "SDI_mhi_protos.h"
+#include "SDI_compiler.h"
 
 VOID FlushAllBuffers( struct AmiGUSClientHandle * clientHandle ) {
 
@@ -50,7 +49,7 @@ VOID FlushAllBuffers( struct AmiGUSClientHandle * clientHandle ) {
 
 VOID UpdateEqualizer( UWORD bandLevel, UWORD percent ) {
 
-  APTR amiGUScard = AmiGUSBase->agb_CardBase;
+  APTR amiGUScard = AmiGUSmhiBase->agb_CardBase;
   // -32 .. +32 = ((( 0 .. 100 ) * 2655 ) / 4096 ) - 32
   // gain = percent * 2655 / 4096 - 32
   LONG intermediate = (( percent * 2655 ) >> 12 ) - 32;
@@ -61,38 +60,42 @@ VOID UpdateEqualizer( UWORD bandLevel, UWORD percent ) {
   UpdateVS1063Equalizer( amiGUScard, bandLevel, gain );
 }
 
-ASM( APTR ) SAVEDS MHIAllocDecoder(
+ASM( APTR ) SAVEDS LIB_MHIAllocDecoder(
   REG( a0, struct Task * task ),
   REG( d0, ULONG signal ),
-  REG( a6, struct AmiGUSBase * amiGUSBase ) 
+  REG( a6, struct AmiGUSmhi * base )
 ) {
 
   APTR result = NULL;
   ULONG error = ENoError;
-
   LOG_D(( "D: MHIAllocDecoder start\n" ));
 
+  if ( base != AmiGUSmhiBase ) {
+
+    DisplayError( ELibraryBaseInconsistency );
+  }
+
   Forbid();
-  if ( AmiGUSBase->agb_ConfigDevice->cd_Driver ) {
+  if ( AmiGUSmhiBase->agb_ConfigDevice->cd_Driver ) {
 
     error = EAmiGUSInUseError;
 
-  } else if ( AmiGUSBase->agb_UsageCounter ) {
+  } else if ( AmiGUSmhiBase->agb_UsageCounter ) {
 
     error = EDriverInUse;
 
   } else {
 
     // Now we own the card!
-    ++AmiGUSBase->agb_UsageCounter;
-    AmiGUSBase->agb_ConfigDevice->cd_Driver = ( APTR ) AmiGUSBase;
+    ++AmiGUSmhiBase->agb_UsageCounter;
+    AmiGUSmhiBase->agb_ConfigDevice->cd_Driver = ( APTR ) AmiGUSmhiBase;
   }
   Permit();
 
   if ( !error ) {
  
-    APTR amiGUScard = AmiGUSBase->agb_CardBase;
-    struct AmiGUSClientHandle * handle = &AmiGUSBase->agb_ClientHandle;
+    APTR amiGUScard = AmiGUSmhiBase->agb_CardBase;
+    struct AmiGUSClientHandle * handle = &AmiGUSmhiBase->agb_ClientHandle;
     handle->agch_Task = task;
     handle->agch_Signal = signal;
     handle->agch_Status = MHIF_STOPPED;
@@ -119,9 +122,9 @@ ASM( APTR ) SAVEDS MHIAllocDecoder(
   return result;
 }
 
-ASM( VOID ) SAVEDS MHIFreeDecoder(
-  REG( a3, APTR handle ), 
-  REG( a6, struct AmiGUSBase * amiGUSBase )
+ASM( VOID ) SAVEDS LIB_MHIFreeDecoder(
+  REG( a3, APTR handle ),
+  REG( a6, struct AmiGUSmhi * base )
 ) {
 
   struct AmiGUSClientHandle * clientHandle =
@@ -132,7 +135,7 @@ ASM( VOID ) SAVEDS MHIFreeDecoder(
 
   LOG_D(( "D: MHIFreeDecoder start\n" ));
 
-  if (( &AmiGUSBase->agb_ClientHandle != clientHandle ) ||
+  if (( &AmiGUSmhiBase->agb_ClientHandle != clientHandle ) ||
       ( !task )) {
 
       LOG_W(( "W: AmiGUS MHI does not know task 0x%08lx and signal 0x%08lx"
@@ -143,13 +146,13 @@ ASM( VOID ) SAVEDS MHIFreeDecoder(
   }
 
   Forbid();
-  if (( AmiGUSBase->agb_UsageCounter ) &&
-      ( AmiGUSBase->agb_ConfigDevice->cd_Driver == ( APTR ) AmiGUSBase )) {
+  if (( AmiGUSmhiBase->agb_UsageCounter ) &&
+      ( AmiGUSmhiBase->agb_ConfigDevice->cd_Driver == ( APTR ) AmiGUSmhiBase )) {
 
     clientHandle->agch_Task = NULL;
     clientHandle->agch_Signal = 0;
-    --AmiGUSBase->agb_UsageCounter;
-    AmiGUSBase->agb_ConfigDevice->cd_Driver = NULL;
+    --AmiGUSmhiBase->agb_UsageCounter;
+    AmiGUSmhiBase->agb_ConfigDevice->cd_Driver = NULL;
 
   } else {
 
@@ -172,19 +175,20 @@ ASM( VOID ) SAVEDS MHIFreeDecoder(
   return;
 }
 
-ASM( BOOL ) SAVEDS MHIQueueBuffer(
+ASM( BOOL ) SAVEDS LIB_MHIQueueBuffer(
   REG( a3, APTR handle ),
   REG( a0, APTR buffer ),
   REG( d0, ULONG size),
-  REG( a6, struct AmiGUSBase * amiGUSBase )
+  REG( a6, struct AmiGUSmhi * base )
 ) {
+
   struct AmiGUSClientHandle * clientHandle =
     ( struct AmiGUSClientHandle * ) handle;
   struct List * buffers = ( struct List * )&clientHandle->agch_Buffers;
   struct AmiGUSMhiBuffer * mhiBuffer;
 
   LOG_D(( "D: MHIQueueBuffer start\n" ));
-  if ( &AmiGUSBase->agb_ClientHandle != clientHandle ) {
+  if ( &AmiGUSmhiBase->agb_ClientHandle != clientHandle ) {
 
     LOG_D(( "D: MHIQueueBuffer failed, unknown handle.\n" ));
     return FALSE;
@@ -224,9 +228,9 @@ ASM( BOOL ) SAVEDS MHIQueueBuffer(
   return TRUE;
 }
 
-ASM( APTR ) SAVEDS MHIGetEmpty(
+ASM( APTR ) SAVEDS LIB_MHIGetEmpty(
   REG( a3, APTR handle ),
-  REG( a6, struct AmiGUSBase * amiGUSBase )
+  REG( a6, struct AmiGUSmhi * base )
 ) {
 
   struct AmiGUSClientHandle * clientHandle =
@@ -271,10 +275,11 @@ ASM( APTR ) SAVEDS MHIGetEmpty(
   return NULL;
 }
 
-ASM( UBYTE ) SAVEDS MHIGetStatus(
+ASM( UBYTE ) SAVEDS LIB_MHIGetStatus(
   REG( a3, APTR handle ),
-  REG( a6, struct AmiGUSBase * amiGUSBase )
+  REG( a6, struct AmiGUSmhi * base )
 ) {
+
   struct AmiGUSClientHandle * clientHandle =
     ( struct AmiGUSClientHandle * ) handle;
 
@@ -282,9 +287,9 @@ ASM( UBYTE ) SAVEDS MHIGetStatus(
   return ( UBYTE ) clientHandle->agch_Status;
 }
 
-ASM( VOID ) SAVEDS MHIPlay(
+ASM( VOID ) SAVEDS LIB_MHIPlay(
   REG( a3, APTR handle ),
-  REG( a6, struct AmiGUSBase * amiGUSBase )
+  REG( a6, struct AmiGUSmhi * base )
 ) {
 
   struct AmiGUSClientHandle * clientHandle =
@@ -296,9 +301,9 @@ ASM( VOID ) SAVEDS MHIPlay(
   return;
 }
 
-ASM( VOID ) SAVEDS MHIStop(
+ASM( VOID ) SAVEDS LIB_MHIStop(
   REG( a3, APTR handle ),
-  REG( a6, struct AmiGUSBase * amiGUSBase )
+  REG( a6, struct AmiGUSmhi * base )
 ) {
 
   struct AmiGUSClientHandle * clientHandle =
@@ -311,9 +316,9 @@ ASM( VOID ) SAVEDS MHIStop(
   return;
 }
 
-ASM( VOID ) SAVEDS MHIPause(
+ASM( VOID ) SAVEDS LIB_MHIPause(
   REG( a3, APTR handle ),
-  REG( a6, struct AmiGUSBase * amiGUSBase )
+  REG( a6, struct AmiGUSmhi * base )
 ) {
 
   struct AmiGUSClientHandle * clientHandle =
@@ -332,9 +337,9 @@ ASM( VOID ) SAVEDS MHIPause(
   return;
 }
 
-ASM( ULONG ) SAVEDS MHIQuery(
+ASM( ULONG ) SAVEDS LIB_MHIQuery(
   REG( d1, ULONG query ),
-  REG( a6, struct AmiGUSBase * amiGUSBase )
+  REG( a6, struct AmiGUSmhi * base )
 ) {
 
   ULONG result = MHIF_UNSUPPORTED;
@@ -401,11 +406,11 @@ ASM( ULONG ) SAVEDS MHIQuery(
   return result;
 }
 
-ASM( VOID ) SAVEDS MHISetParam(
+ASM( VOID ) SAVEDS LIB_MHISetParam(
   REG( a3, APTR handle ),
   REG( d0, UWORD param ),
   REG( d1, ULONG value ),
-  REG( a6, struct AmiGUSBase * amiGUSBase )
+  REG( a6, struct AmiGUSmhi * base )
 ) {
 
   struct AmiGUSClientHandle * clientHandle =

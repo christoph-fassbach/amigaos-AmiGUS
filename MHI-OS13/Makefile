@@ -65,14 +65,10 @@ HDIR   = header/
 
 LIB_NAME        = mhiamigus
 LIB_FILE        = $(LIB_NAME).library
-LIB_FILE_DEST   = $(DDIR)$(LIB_FILE)
 LIB_VERSION     = 1
 LIB_REVISION    = 2
-
-FD_FILE         = $(HDIR)$(LIB_NAME)_lib.fd
-PRAGMA_FILE     = $(HDIR)$(LIB_NAME)_pragmas.h
-
 LIB_PREFIX      = _LIB_
+
 LIB_ENT         = LIB:libent.o
 ifeq (1, 1)
 # just put all into NEAR section
@@ -83,6 +79,11 @@ else
   LIB_LIBS      = LIB:sc.lib
   LIB_INIT      = LIB:libinitr.o
 endif
+
+LIB_FILE_DEST   = $(DDIR)$(LIB_FILE)
+
+FD_FILE         = $(HDIR)$(LIB_NAME)_lib.fd
+PRAGMA_FILE     = $(HDIR)$(LIB_NAME)_pragmas.h
 
 ###########################
 
@@ -100,6 +101,8 @@ BDIR_A_OBJS     = $(BDIR_A_SRCS:%asm=%o)
 
 LIB_OBJS        = $(BDIR_C_OBJS) $(BDIR_A_OBJS)
 
+###########################
+
 CFLAGS          = PARAMETERS=REGISTER DATA=FAR CODE=FAR DEFINE=__NOLIBBASE__ \
                   STREQ STRMER NOSTACKCHECK NOMULTIPLEINCLUDES NOCHECKABORT NOICONS   \
                   IDIR=$(MHI_INCLUDE) IDIR=$(NDK_C_INCLUDE) IDIR=$(HDIR)       \
@@ -116,19 +119,27 @@ FD              = $(RUNNER) sc:c/fd2pragma
 
 ##################################
 
+.PHONY: all install test INCLUDES FOLDERS clean dist-clean dist
+
 all: FOLDERS $(LIB_FILE_DEST) $(PRAGMA_FILE)
+
+ECHO:
+	echo $(SRCS)
 
 install: all
 	-$(INSTALL0)
 	-$(INSTALL1)
 
-$(LIB_FILE_DEST): $(LIB_FILE)
-	$(CP) $(LIB_FILE) $(LIB_FILE_DEST)
-	$(RM) $(LIB_FILE) $(RM_SUFFIX)
+INCLUDES:
+	make -f Makefile-Includes all 
 
 FOLDERS:
 	-@$(MKDIR) $(DDIR) $(MKDIR_SUFFIX)
 	-@$(MKDIR) $(BDIR) $(MKDIR_SUFFIX)
+
+$(LIB_FILE_DEST): $(LIB_FILE)
+	$(CP) $(LIB_FILE) $(LIB_FILE_DEST)
+	$(RM) $(LIB_FILE) $(RM_SUFFIX)
 
 clean:
 	-@$(RM) $(LIB_FILE) $(RM_SUFFIX)
