@@ -113,7 +113,7 @@ ULONG GetVS1063EndFill( APTR card ) {
   
   /* Private function definitions: */
   
-  VOID CancelVS1063Playback( APTR card ) {
+  VOID CancelVS1063Playback( struct AmiGUS_MHI * base, APTR card ) {
   
     UWORD sciMode;
     ULONG i;
@@ -173,7 +173,7 @@ ULONG GetVS1063EndFill( APTR card ) {
     if ( sciMode & VS1063_CODEC_F_SM_CANCEL ) {
   
       LOG_V(( "V: End of file failed - reset\n" ));
-      ResetVS1063( card );
+      ResetVS1063( base, card );
     }
     WriteReg16( card,
                 AMIGUS_CODEC_FIFO_CONTROL,
@@ -183,14 +183,14 @@ ULONG GetVS1063EndFill( APTR card ) {
             ReadCodecSPI( card, VS1063_CODEC_SCI_HDAT1 )));
   }
   
-  VOID ResetVS1063( APTR card ) {
+  VOID ResetVS1063( struct AmiGUS_MHI * base, APTR card ) {
   
     LOG_D(( "D: Resetting VS1063 codec...\n"));
     WriteCodecSPI( card,
                    VS1063_CODEC_SCI_MODE,
                    VS1063_CODEC_F_SM_RESET );
     // page 56 - 11.3 Software Reset
-    Sleep( 4 );
+    Sleep( base, 4 );
     /*
     // TODO: do we want / need that?
     LOG_D(( "D: ... patching ...\n"));

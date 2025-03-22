@@ -14,6 +14,9 @@
  * along with mhiAmiGUS.library.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+/* This file cannot cope with BASE_REDEFINE, blocking that permanently here. */
+#define NO_BASE_REDEFINE
+
 #include <intuition/intuitionbase.h>
 #include <libraries/expansionbase.h>
 #include <proto/dos.h>
@@ -45,16 +48,17 @@ VOID CustomLibClose( struct BaseLibrary * libBase ) {
   struct AmiGUS_MHI * base = ( struct AmiGUS_MHI * ) libBase;
 
 #ifndef BASE_GLOBAL
-  struct ExecBase *SysBase = base->agb_SysBase;
+  struct ExecBase * SysBase = base->agb_SysBase;
+  struct DosLibrary * DOSBase = base->agb_DOSBase;
 #endif
 
-  if( base->agb_TimerBase ) {
+  if ( base->agb_TimerBase ) {
 
     CloseDevice( base->agb_TimerRequest );
   }
-  if( base->agb_TimerRequest ) {
+  if ( base->agb_TimerRequest ) {
 
-    FreeMem( base->agb_TimerRequest, sizeof(struct IORequest) );
+    FreeMem( base->agb_TimerRequest, sizeof( struct IORequest ));
   }  
   if ( base->agb_LogFile ) {
 
@@ -69,23 +73,27 @@ VOID CustomLibClose( struct BaseLibrary * libBase ) {
   }    
   */
 
-  if( base->agb_DOSBase ) {
+  if ( base->agb_DOSBase ) {
 
-    CloseLibrary( (struct Library *) base->agb_DOSBase );
+    CloseLibrary(( struct Library * ) base->agb_DOSBase );
   }
-  if( base->agb_IntuitionBase ) {
+  if ( base->agb_IntuitionBase ) {
 
-    CloseLibrary( (struct Library *) base->agb_IntuitionBase );
+    CloseLibrary(( struct Library * ) base->agb_IntuitionBase );
   }
-  if( base->agb_ExpansionBase ) {
+  if ( base->agb_ExpansionBase ) {
 
-    CloseLibrary( (struct Library *) base->agb_ExpansionBase );
+    CloseLibrary(( struct Library * ) base->agb_ExpansionBase );
   }
 }
 
 LONG CustomLibInit( struct BaseLibrary * libBase, struct ExecBase * sysBase ) {
 
   struct AmiGUS_MHI * base = ( struct AmiGUS_MHI * ) libBase;
+#ifndef BASE_GLOBAL
+  struct ExecBase * SysBase = base->agb_SysBase;
+#endif
+
   LONG error;
 
   /* Prevent use of customized library versions on CPUs not targetted. */
@@ -121,30 +129,30 @@ LONG CustomLibInit( struct BaseLibrary * libBase, struct ExecBase * sysBase ) {
   base->agb_LogMem = NULL;
 
   base->agb_DOSBase =
-    (struct DosLibrary *) OpenLibrary("dos.library", 34);
-  if( !(base->agb_DOSBase) ) {
+    ( struct DosLibrary * ) OpenLibrary( "dos.library", 34 );
+  if ( !( base->agb_DOSBase )) {
 
     return EOpenDosBase;
   }
   base->agb_IntuitionBase =
-    (struct IntuitionBase *) OpenLibrary("intuition.library", 36);
-  if( !(base->agb_IntuitionBase) ) {
+    ( struct IntuitionBase * ) OpenLibrary( "intuition.library", 36 );
+  if ( !( base->agb_IntuitionBase )) {
 
     return EOpenIntuitionBase;
   }
   base->agb_ExpansionBase =
-    (struct Library *) OpenLibrary("expansion.library", 34);
-  if( !(base->agb_ExpansionBase) ) {
+    ( struct Library * ) OpenLibrary( "expansion.library", 34 );
+  if ( !( base->agb_ExpansionBase )) {
 
     return EOpenExpansionBase;
   }
-  base->agb_TimerRequest = AllocMem( sizeof(struct IORequest),
+  base->agb_TimerRequest = AllocMem( sizeof( struct IORequest ),
                                      MEMF_ANY | MEMF_CLEAR );
-  if( !(base->agb_TimerRequest) ) {
+  if ( !( base->agb_TimerRequest )) {
 
     return EAllocateTimerRequest;
   }
-  error = OpenDevice("timer.device", 0, base->agb_TimerRequest, 0);
+  error = OpenDevice( "timer.device", 0, base->agb_TimerRequest, 0 );
   if ( error ) {
 
     return EOpenTimerDevice;
@@ -163,7 +171,7 @@ LONG CustomLibInit( struct BaseLibrary * libBase, struct ExecBase * sysBase ) {
   error = FindAmiGusCodec( base );
   if ( error ) {
 
-    DisplayError( error );
+    DisplayError( base, error );
   }
   return ENoError;
 }

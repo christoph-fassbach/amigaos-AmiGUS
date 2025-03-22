@@ -109,13 +109,15 @@ static ASM(struct Library *) LibOpen( REG(a6, struct BaseLibrary * base) ) {
 static ASM(SEGLISTPTR) LibExpunge( REG(a6, struct BaseLibrary * base) ) {
 
   if(!base->LibNode.lib_OpenCnt) {
-
+#ifndef BASE_GLOBAL
+    struct ExecBase * SysBase = ( struct ExecBase * ) 4;
+#endif
     SEGLISTPTR seglist = base->SegList;
     
     CustomLibClose( base );
     
     /* Remove the library from the public list */
-    Remove( (struct Node *) base );
+    Remove(( struct Node * ) base );
 
     /* Free the vector table and the library data */
     FreeMem(
@@ -155,12 +157,12 @@ static struct Library * LibInit(
 static ASM(struct Library *) LibInit(
   REG(a0, SEGLISTPTR seglist),
   REG(d0, struct BaseLibrary * base),
-  REG(a6, struct ExecBase * sysBase) ) {
+  REG(a6, struct ExecBase * SysBase) ) {
 #endif
 
   /* Remember stuff */
   base->SegList = seglist;
-  if ( !CustomLibInit( base, sysBase ) ) {
+  if ( !CustomLibInit( base, SysBase ) ) {
     
     return &base->LibNode;
   }

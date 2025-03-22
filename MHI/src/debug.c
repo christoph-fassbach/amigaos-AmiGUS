@@ -43,7 +43,7 @@ VOID debug_kprintf( STRPTR format, ... ) {
 
 #else
 
-VOID debug_kvprintf( STRPTR format, APTR vargs ) {
+VOID debug_kvprintf( struct AmiGUS_MHI * base, STRPTR format, APTR vargs ) {
 
   RawIOInit();
   // Ugly like hell, but...
@@ -61,9 +61,10 @@ VOID debug_kvprintf( STRPTR format, APTR vargs ) {
   RawMayGetChar();
 }
 
-VOID debug_kprintf( STRPTR format, ... ) {
+VOID debug_kprintf( struct AmiGUS_MHI * base, STRPTR format, ... ) {
 
   debug_kvprintf(
+    base,
     format,
     /*
     /------+-----------------------> Cast to required APTR 
@@ -88,7 +89,7 @@ ASM( VOID ) debug_mPutChProc( REG( d0, UBYTE c ), REG( a3, UBYTE ** target )) {
 
 #ifdef USE_FILE_LOGGING
 
-VOID debug_fprintf( STRPTR format, ... ) {
+VOID debug_fprintf( struct AmiGUS_MHI * base, STRPTR format, ... ) {
 
   static BOOL errorShown = FALSE;
   STRPTR logFilePath = "ram:AmiGUS-MHI.log";

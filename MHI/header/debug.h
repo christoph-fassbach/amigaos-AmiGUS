@@ -54,7 +54,7 @@ VOID RawPutChar(BYTE putCh);
  * All of these will need double ((...)) to workaround a SAS/C insufficiency!
  */
 
-#define USE_MEM_LOGGING
+// #define USE_MEM_LOGGING
 
 #if defined (USE_SERIAL_LOGGING)
 
@@ -109,8 +109,8 @@ VOID RawPutChar(BYTE putCh);
  * Remember: 
  * Whatever parameter you pass in here will ALWAYS be promoted to LONG!
  */
-void debug_kprintf(STRPTR format, ...);
-void debug_fprintf(STRPTR format, ...);
-void debug_mprintf(STRPTR format, ...);
+void debug_kprintf( struct AmiGUS_MHI * base, STRPTR format, ... );
+void debug_fprintf( struct AmiGUS_MHI * base, STRPTR format, ... );
+void debug_mprintf( struct AmiGUS_MHI * base, STRPTR format, ... );
 
 #endif /* DEBUG_H */

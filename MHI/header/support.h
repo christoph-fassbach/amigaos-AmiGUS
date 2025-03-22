@@ -30,18 +30,18 @@
  *              of other libraries from it.
  * @param aError Error Id to display error message for.
  */
-VOID DisplayError( ULONG aError );
+VOID DisplayError( struct AmiGUS_MHI * base, ULONG aError );
 
 /**
  * Prints some time info.
  */
-VOID LogTicks( UBYTE bitmask );
+VOID LogTicks( struct AmiGUS_MHI * base, UBYTE bitmask );
 
 /**
  * Waits for some milli seconds... almost,
  * assuming 1 second has 1024 milliseconds.
  */
-VOID Sleep( UWORD pseudomillis );
+VOID Sleep( struct AmiGUS_MHI * base, UWORD pseudomillis );
 
 /**
  * Correctly initializes an empty, new MinList.

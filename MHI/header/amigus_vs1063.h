@@ -16,6 +16,8 @@
 
 #include <exec/types.h>
 
+#include "amigus_mhi.h"
+
 UWORD ReadVS1063Mem( APTR amiGUS, UWORD address );
 
 VOID WriteVS1063Mem( APTR amiGUS, UWORD address, UWORD value );
@@ -28,6 +30,6 @@ VOID UpdateVS1063Equalizer( APTR amiGUS, UWORD equalizerLevel, WORD value );
 
 ULONG GetVS1063EndFill( APTR amiGUS );
   
-VOID CancelVS1063Playback( APTR amiGUS );
+VOID CancelVS1063Playback( struct AmiGUS_MHI * base, APTR amiGUS );
 
-VOID ResetVS1063( APTR amiGUS );
+VOID ResetVS1063( struct AmiGUS_MHI * base, APTR amiGUS );

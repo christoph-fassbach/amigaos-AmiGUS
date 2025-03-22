@@ -26,7 +26,7 @@
 #include "debug.h"
 #include "interrupt.h"
 
-VOID HandlePlayback( VOID ) {
+VOID HandlePlayback( struct AmiGUS_MHI * base ) {
 
   APTR card = AmiGUS_MHI_Base->agb_CardBase;
   struct AmiGUS_MHI_Handle * handle = &( AmiGUS_MHI_Base->agb_ClientHandle );
@@ -116,7 +116,7 @@ VOID HandlePlayback( VOID ) {
 }
 
 ASM(LONG) /* __entry for vbcc ? */ SAVEDS INTERRUPT handleInterrupt (
-  REG(a1, struct AmiGUS_MHI_Base * base)
+  REG(a1, struct AmiGUS_MHI * base)
 ) {
   const UWORD status = ReadReg16( AmiGUS_MHI_Base->agb_CardBase,
                                   AMIGUS_CODEC_INT_CONTROL );
@@ -128,7 +128,7 @@ ASM(LONG) /* __entry for vbcc ? */ SAVEDS INTERRUPT handleInterrupt (
 
   if ( MHIF_PLAYING == AmiGUS_MHI_Base->agb_ClientHandle.agch_Status ) {
 
-    HandlePlayback();
+    HandlePlayback( base );
 /*
     if ( status & AMIGUS_INT_F_PLAY_FIFO_EMPTY ) {
 
@@ -137,7 +137,7 @@ ASM(LONG) /* __entry for vbcc ? */ SAVEDS INTERRUPT handleInterrupt (
        DMA from FIFO to DAC will stay disabled until worker task prepared some
        buffers and triggered a full playback init cycle to make it run again.
       * /
-      AmiGUS_MHI_Base_Base->agb_StateFlags |= AMIGUS_AHI_F_PLAY_UNDERRUN;
+      AmiGUS_MHI_Base->agb_StateFlags |= AMIGUS_AHI_F_PLAY_UNDERRUN;
     }
 */
   }
@@ -153,9 +153,9 @@ ASM(LONG) /* __entry for vbcc ? */ SAVEDS INTERRUPT handleInterrupt (
 }
 
 // TRUE = failure
-BOOL CreateInterruptHandler( VOID ) {
+BOOL CreateInterruptHandler( struct AmiGUS_MHI * base ) {
 
-  if (AmiGUS_MHI_Base->agb_Interrupt) {
+  if ( AmiGUS_MHI_Base->agb_Interrupt ) {
 
     LOG_D(("D: INT server in use!\n"));
     return FALSE;
@@ -164,7 +164,7 @@ BOOL CreateInterruptHandler( VOID ) {
   LOG_D(("D: Creating INT server\n"));
   Disable();
 
-  AmiGUS_MHI_Base->agb_Interrupt = (struct Interrupt *)
+  AmiGUS_MHI_Base->agb_Interrupt = ( struct Interrupt * )
       AllocMem(
           sizeof( struct Interrupt ),
           MEMF_CLEAR | MEMF_PUBLIC
@@ -190,7 +190,7 @@ BOOL CreateInterruptHandler( VOID ) {
   return TRUE;
 }
 
-VOID DestroyInterruptHandler( VOID ) {
+VOID DestroyInterruptHandler( struct AmiGUS_MHI * base ) {
 
   if ( !AmiGUS_MHI_Base->agb_Interrupt ) {
 

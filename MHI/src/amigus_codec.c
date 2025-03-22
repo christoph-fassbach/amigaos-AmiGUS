@@ -83,7 +83,7 @@ LONG FindAmiGusCodec( struct AmiGUS_MHI * base ) {
   return ENoError;
 }
 
-VOID StartAmiGusCodecPlayback( VOID ) {
+VOID StartAmiGusCodecPlayback( struct AmiGUS_MHI * base ) {
 
   APTR card = AmiGUS_MHI_Base->agb_CardBase;
   WriteReg16( card,
@@ -113,13 +113,13 @@ VOID StartAmiGusCodecPlayback( VOID ) {
               AMIGUS_INT_F_SET
               | AMIGUS_CODEC_INT_F_FIFO_EMPTY
               | AMIGUS_CODEC_INT_F_FIFO_WATERMRK );
-  HandlePlayback();
+  HandlePlayback( base );
   WriteReg16( card,
               AMIGUS_CODEC_FIFO_CONTROL,
               AMIGUS_CODEC_FIFO_F_DMA_ENABLE );
 }
 
-VOID StopAmiGusCodecPlayback( VOID ) {
+VOID StopAmiGusCodecPlayback( struct AmiGUS_MHI * base ) {
 
   APTR card = AmiGUS_MHI_Base->agb_CardBase;
 
@@ -146,5 +146,5 @@ VOID StopAmiGusCodecPlayback( VOID ) {
   WriteReg16( card,
               AMIGUS_CODEC_FIFO_RESET,
               AMIGUS_CODEC_FIFO_F_RESET_STROBE );
-  CancelVS1063Playback( card );
+  CancelVS1063Playback( base, card );
 }

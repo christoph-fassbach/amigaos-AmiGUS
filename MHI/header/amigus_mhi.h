@@ -27,7 +27,7 @@
  */
 
 /* Activate / De-activate this define to toggle lib base mode! */
-#define BASE_GLOBAL /**/
+/* #define BASE_GLOBAL /**/
 
 #ifndef BASE_GLOBAL 
 #ifndef NO_BASE_REDEFINE
@@ -137,7 +137,7 @@ struct AmiGUS_MHI {
   #define ExpansionBase             base->agb_ExpansionBase
   #define IntuitionBase             base->agb_IntuitionBase
   #define SysBase                   base->agb_SysBase
-  #define TimerBase                 base->TimerBase
+  #define TimerBase                 base->agb_TimerBase
 #endif
 
 /******************************************************************************

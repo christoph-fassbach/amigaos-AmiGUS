@@ -28,7 +28,8 @@
 #include "support.h"
 #include "SDI_mhi_protos.h"
 
-VOID FlushAllBuffers( struct AmiGUS_MHI_Handle * clientHandle ) {
+VOID FlushAllBuffers( struct AmiGUS_MHI * base,
+                      struct AmiGUS_MHI_Handle * clientHandle ) {
 
   struct List * buffers = ( struct List * )&clientHandle->agch_Buffers;
   struct Node * buffer;
@@ -46,7 +47,9 @@ VOID FlushAllBuffers( struct AmiGUS_MHI_Handle * clientHandle ) {
   LOG_D(( "D: All buffers flushed.\n" ));
 }
 
-VOID UpdateEqualizer( UWORD bandLevel, UWORD percent ) {
+VOID UpdateEqualizer( struct AmiGUS_MHI * base,
+                      UWORD bandLevel,
+                      UWORD percent ) {
 
   APTR card = AmiGUS_MHI_Base->agb_CardBase;
   // -32 .. +32 = ((( 0 .. 100 ) * 2655 ) / 4096 ) - 32
@@ -72,7 +75,7 @@ ASM( APTR ) SAVEDS MHIAllocDecoder(
 
   if ( base != AmiGUS_MHI_Base ) {
 
-    DisplayError( ELibraryBaseInconsistency );
+    DisplayError( base, ELibraryBaseInconsistency );
   }
   Forbid();
   if ( AmiGUS_MHI_Base->agb_ConfigDevice->cd_Driver ) {
@@ -109,12 +112,12 @@ ASM( APTR ) SAVEDS MHIAllocDecoder(
     LOG_D(( "D: Initializing VS1063 codec\n" ));
     InitVS1063Codec( card );
     InitVS1063Equalizer( card, TRUE, AmiGUSDefaultEqualizer );
-    CreateInterruptHandler();
+    CreateInterruptHandler( base );
 
   } else {
 
     // Takes care of the log entry, too. :)
-    DisplayError( error );
+    DisplayError( base, error );
   }
   
   LOG_D(( "D: MHIAllocDecoder done\n" ));
@@ -160,15 +163,15 @@ ASM( VOID ) SAVEDS MHIFreeDecoder(
   Permit();
   if ( error ) {
 
-    DisplayError( error );
+    DisplayError( base, error );
 
   } else {
 
-    FlushAllBuffers( clientHandle );
+    FlushAllBuffers( base, clientHandle );
 
     LOG_D(( "D: AmiGUS MHI free'd up task 0x%08lx and signal 0x%08lx.\n",
             task, signal ));
-    DestroyInterruptHandler();
+    DestroyInterruptHandler( base );
   }
   LOG_D(( "D: MHIFreeDecoder done\n" ));
   return;
@@ -292,7 +295,7 @@ ASM( VOID ) SAVEDS MHIPlay(
   struct AmiGUS_MHI_Handle * clientHandle =
     ( struct AmiGUS_MHI_Handle * ) handle;
   LOG_D(( "D: MHIPlay start\n" ));
-  StartAmiGusCodecPlayback();
+  StartAmiGusCodecPlayback( base );
   clientHandle->agch_Status = MHIF_PLAYING;
   LOG_D(( "D: MHIPlay done\n" ));
   return;
@@ -306,8 +309,8 @@ ASM( VOID ) SAVEDS MHIStop(
   struct AmiGUS_MHI_Handle * clientHandle =
     ( struct AmiGUS_MHI_Handle * ) handle;
   LOG_D(( "D: MHIStop start\n" ));
-  StopAmiGusCodecPlayback();
-  FlushAllBuffers( clientHandle );
+  StopAmiGusCodecPlayback( base );
+  FlushAllBuffers( base, clientHandle );
   clientHandle->agch_Status = MHIF_STOPPED;
   LOG_D(( "D: MHIStop done\n" ));
   return;
@@ -427,27 +430,27 @@ ASM( VOID ) SAVEDS MHISetParam(
     // 0=max.cut .. 50=unity gain .. 100=max.boost
     case MHIP_BASS: {
       
-      UpdateEqualizer( VS1063_CODEC_ADDRESS_EQ5_LEVEL1, value );
+      UpdateEqualizer( base, VS1063_CODEC_ADDRESS_EQ5_LEVEL1, value );
       break;
     }
     case MHIP_MIDBASS: {
       
-      UpdateEqualizer( VS1063_CODEC_ADDRESS_EQ5_LEVEL2, value );
+      UpdateEqualizer( base, VS1063_CODEC_ADDRESS_EQ5_LEVEL2, value );
       break;
     }
     case MHIP_MID: {
       
-      UpdateEqualizer( VS1063_CODEC_ADDRESS_EQ5_LEVEL3, value );
+      UpdateEqualizer( base, VS1063_CODEC_ADDRESS_EQ5_LEVEL3, value );
       break;
     }
     case MHIP_MIDHIGH: {
       
-      UpdateEqualizer( VS1063_CODEC_ADDRESS_EQ5_LEVEL4, value );
+      UpdateEqualizer( base, VS1063_CODEC_ADDRESS_EQ5_LEVEL4, value );
       break;
     }
     case MHIP_TREBLE: {
       
-      UpdateEqualizer( VS1063_CODEC_ADDRESS_EQ5_LEVEL5, value );
+      UpdateEqualizer( base, VS1063_CODEC_ADDRESS_EQ5_LEVEL5, value );
       break;
     }
     case MHIP_PREFACTOR:

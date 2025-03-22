@@ -80,7 +80,7 @@ struct TErrorMessage errors[] = {
  * a error message defined in errors[]. If a code can not 
  * be resolved, the EUnknownError text is displayed.
  */
-VOID DisplayError( ULONG aError ) {
+VOID DisplayError( struct AmiGUS_MHI * base, ULONG aError ) {
 
   ULONG i = ENoError;
   STRPTR message;
@@ -114,7 +114,7 @@ VOID DisplayError( ULONG aError ) {
   LOG_E(("E: AmiGUS %ld - %s\n", aError, message));
 }
 
-VOID LogTicks( UBYTE bitmask ) {
+VOID LogTicks( struct AmiGUS_MHI * base,  UBYTE bitmask ) {
 
   struct EClockVal ecv;
   ULONG ef = ReadEClock( &ecv );
@@ -140,7 +140,7 @@ VOID LogTicks( UBYTE bitmask ) {
   }
 }
 
-VOID Sleep( UWORD pseudomillis ) {
+VOID Sleep( struct AmiGUS_MHI * base,  UWORD pseudomillis ) {
 
   struct EClockVal ecv;
   ULONG ef = ReadEClock( &ecv );
