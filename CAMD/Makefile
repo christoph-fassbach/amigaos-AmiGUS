@@ -95,11 +95,11 @@ BDIR_C_OBJS     = $(BDIR_C_SRCS:%.c=%-$(LIB_CPU)-$(LIB_LOG).o)
 
 A_SRCS          = $(wildcard $(SDIR)$(WILDCARD).asm)
 BDIR_A_SRCS     = $(foreach A_SRC,$(A_SRCS),$(subst $(SDIR),$(BDIR),$(A_SRC)))
-BDIR_A_OBJS     = $(BDIR_A_SRCS:%.asm=%.o)
+BDIR_A_OBJS     = $(BDIR_A_SRCS:%.asm=%-$(LIB_CPU)-$(LIB_LOG).o)
 
-LIB_OBJS        = $(BDIR)library-$(LIB_CPU)-$(LIB_LOG).o \
-                  $(filter-out %/library-$(LIB_CPU)-$(LIB_LOG).o,$(BDIR_C_OBJS)) \
-                  $(filter-out %/library-$(LIB_CPU)-$(LIB_LOG).o,$(BDIR_A_OBJS))
+LIB_OBJS        = $(BDIR)camd_driver-$(LIB_CPU)-$(LIB_LOG).o \
+                  $(filter-out %/camd_driver-$(LIB_CPU)-$(LIB_LOG).o,$(BDIR_C_OBJS)) \
+                  $(filter-out %/camd_driver-$(LIB_CPU)-$(LIB_LOG).o,$(BDIR_A_OBJS))
 
 ###########################
 
@@ -112,7 +112,10 @@ ifeq (34,$(USEVBCC))
     LDIR        = $(VBCC)/targets/m68k-amigaos/lib/
   endif
 
-  AFLAGS        = -I$(NDK_ASM_INCLUDE) -quiet -phxass -Fhunk -o
+  AFLAGS        = -I$(NDK_ASM_INCLUDE) -quiet -phxass                  \
+                  -DLIB_FILE=$(LIB_FILE) -DLIB_VERSION=$(LIB_VERSION)  \
+                  -DLIB_REVISION=$(LIB_REVISION)                       \
+                  -Fhunk -o
   CFLAGS        = -c -Os -+ -c99 -cpu=68$(LIB_CPU)                     \
                   -I$(CAMD_INCLUDE) -I$(HDIR)                          \
                   -D__NOLIBBASE__ -D$(LIB_LOG)                         \
@@ -137,7 +140,10 @@ else ifdef USEVBCC
     LDIR        = $(VBCC)/targets/m68k-amigaos/lib/
   endif
 
-  AFLAGS        = -I$(NDK_ASM_INCLUDE) -quiet -phxass -Fhunk -o
+  AFLAGS        = -I$(NDK_ASM_INCLUDE) -quiet -phxass                  \
+                  -DLIB_FILE=$(LIB_FILE) -DLIB_VERSION=$(LIB_VERSION)  \
+                  -DLIB_REVISION=$(LIB_REVISION)                       \
+                  -Fhunk -o
   CFLAGS        = -O2 -c -cpu=68$(LIB_CPU)                             \
                   -I$(CAMD_INCLUDE) -I$(HDIR)                          \
                   -D__NOLIBBASE__ -D$(LIB_LOG)                         \
@@ -155,7 +161,9 @@ else ifdef USEVBCC
   AS            = vasmm68k_mot
   LD            = vc +aos68k
 else
-  AFLAGS        = RESETOPTIONS DEFINE=__NOLIBBASE__ DEFINE=$(LIB_HOST)         \
+  AFLAGS        = RESETOPTIONS DEFINE=__NOLIBBASE__ DEF LIB_HOST=$(LIB_HOST)   \
+                  DEF LIB_FILE=$(LIB_FILE) DEF LIB_VERSION=$(LIB_VERSION)      \
+                  DEF LIB_REVISION=$(LIB_REVISION)                             \
                   IDIR=$(CAMD_INCLUDE) IDIR=NDK_3.2:Include_I IDIR=$(HDIR)     \
                   OBJNAME
 
@@ -227,7 +235,7 @@ $(LIB_FILE_DEST): $(LIB_OBJS)
 $(BDIR)%-$(LIB_CPU)-$(LIB_LOG).o: $(SDIR)%.c $(HDIR)*
 	$(CC) $(CFLAGS) $@ $<
 
-$(BDIR)%.o: $(SDIR)%.asm $(HDIR)*
+$(BDIR)%-$(LIB_CPU)-$(LIB_LOG).o: $(SDIR)%.asm $(HDIR)*
 	$(AS) $(AFLAGS) $@ $<
 
 ###############################################################################

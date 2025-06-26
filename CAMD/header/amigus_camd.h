@@ -19,20 +19,23 @@
 #ifndef AMIGUS_CAMD_H
 #define AMIGUS_CAMD_H
 
-/* Activate / De-activate this define to toggle lib base mode! */
-#define BASE_GLOBAL /**/
+#include "dos/dos.h"
 
-#ifndef BASE_GLOBAL 
-#ifndef NO_BASE_REDEFINE
-/* 
- * either this is active for everything except libinit.c
- * or BASE_GLOBAL is active everywhere
- */
-#define BASE_REDEFINE
-#endif
-#endif
+/******************************************************************************
+ * Define the drivers's properties here,
+ * will be used in camd_amigus.c.
+ *****************************************************************************/
 
-#include "library.h"
+#define STR_VALUE(x)      #x
+#define STR(x)            STR_VALUE(x)
+
+#define LIBRARY_NAME      STR( LIB_FILE )
+#define LIBRARY_VERSION   LIB_VERSION
+#define LIBRARY_REVISION  LIB_REVISION
+#define LIBRARY_IDSTRING  STR( LIB_FILE )" "                         \
+                          STR( LIB_VERSION )".00"STR( LIB_REVISION ) \
+                          " "LIB_DATE" "STR( LIB_CPU )" "            \
+                          STR( LIB_COMPILER )" "STR( LIB_HOST )
 
 /*
  * Minimum firmware required to use this version of the CAMD MIDI driver,
@@ -65,13 +68,6 @@
  * list of client handles, logs. Nothing to play around with.
  */
 struct AmiGUS_CAMD {
-  /* Library base stuff */
-  struct BaseLibrary            agb_BaseLibrary;   // Instance of library.h
-
-  struct ExecBase             * agb_SysBase;       // Exec, allocations etc.
-  struct DosLibrary           * agb_DOSBase;       // DOS, logs and so on
-  struct IntuitionBase        * agb_IntuitionBase; // For error messages
-  struct Library              * agb_ExpansionBase; // Finding devices
 
   /* AmiGUS specific member variables */
 
@@ -83,18 +79,10 @@ struct AmiGUS_CAMD {
  * All libraries' base pointers used by the CAMD MIDI driver library.
  * Also used to switch between relying on globals or not.
  */
-#if defined(BASE_GLOBAL)
-  extern struct AmiGUS_CAMD       * AmiGUS_CAMD_Base;
-  extern struct DosLibrary        * DOSBase;
-  extern struct Library           * ExpansionBase;
-  extern struct IntuitionBase     * IntuitionBase;
-  extern struct ExecBase          * SysBase;
-#elif defined(BASE_REDEFINE)
-  #define AmiGUS_CAMD_Base          (base)
-  #define DOSBase                   base->agb_DOSBase
-  #define ExpansionBase             base->agb_ExpansionBase
-  #define IntuitionBase             base->agb_IntuitionBase
-  #define SysBase                   base->agb_SysBase
-#endif
+extern struct AmiGUS_CAMD       * AmiGUS_CAMD_Base;
+extern struct DosLibrary        * DOSBase;
+extern struct Library           * ExpansionBase;
+extern struct IntuitionBase     * IntuitionBase;
+extern struct ExecBase          * SysBase;
 
 #endif /* AMIGUS_CAMD_H */
