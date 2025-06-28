@@ -35,6 +35,7 @@ enum ErrorCodes
   EOpenLogFile,
   EAllocateLogMem,
   EHandleUnknown,
+  EAllocateAmiGUSCAMDBase,
   EAllocateInterrupt,
   EAllocateHandle,
   EAllocateBuffer,

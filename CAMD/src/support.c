@@ -63,13 +63,17 @@ struct ErrorMessage errors[] = {
   { ENoError, "", "" },
 
   /* Insert errors below. */
+  { EWrongDriverCPUVersion, "Wrong driver CPU version for your machine.", "Hmpf" },
   { ELibraryBaseInconsistency, "Library memory somehow damaged, expecting a crash soon.", "Have a nice day!" },
   { EOpenDosBase, "Can not open dos.library.", "What the ...?" },
-  { EOpenLogFile, "Can not create log file RAM:AmiGUS-MHI.log.", "Oops!" },
+  { EOpenIntuitionBase, "Can not open intuition.library.", "What the ...?" },
+  { EOpenExpansionBase, "Can not open expansion.library.", "What the ...?" },
+  { EOpenLogFile, "Can not create log file RAM:AmiGUS-CAMD.log.", "Oops!" },
   { EAllocateLogMem, "Can not allocate memory blob for extra-dirty logging.", "Meh." },
+  { EAllocateAmiGUSCAMDBase, "No base struct - out of memory!", "Shit!" },
   { EAllocateHandle, "No more handles - out of memory!", "Shit!" },
   { EAllocateBuffer, "No more buffers - out of memory!", "Shit!" },
-  { EDriverInUse, "AmiGUS codec part is in use by another driver.", "Oops." },
+  { EDriverInUse, "AmiGUS wavetable part is in use by another driver.", "Oops." },
 
   { EAmiGUSNotFound, "AmiGUS card not found.", "Read?" },
   { EAmiGUSDetectError, "AmiGUS card detection mess.", "Damn!" },

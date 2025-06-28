@@ -15,3 +15,4 @@ Requirements:
 * vbcc/target from http://phoenix.owl.de/vbcc/2022-05-22/vbcc_target_m68k-amigaos.lha
 
 
+http://users.notam02.no/~kjetism/nsm/bin/

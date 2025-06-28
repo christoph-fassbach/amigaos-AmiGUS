@@ -70,6 +70,8 @@
 struct AmiGUS_CAMD {
 
   /* AmiGUS specific member variables */
+  APTR                          agb_CardBase;      // Codec base address
+  struct ConfigDev            * agb_ConfigDevice;  // Expansion device address
 
   BPTR                          agb_LogFile;       // Debug log file handle
   APTR                          agb_LogMem;        // Debug log memory blob

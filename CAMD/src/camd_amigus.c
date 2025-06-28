@@ -24,6 +24,7 @@
 #include <midi/camddevices.h>
 
 #include "amigus_camd.h"
+#include "amigus_wavetable.h"
 #include "debug.h"
 #include "errors.h"
 #include "support.h"
@@ -97,26 +98,32 @@ struct MidiPortData AmiGUS_MidiPortData = { AmiGUS_ActivateXmit };
 
 ASM( BOOL ) SAVEDS AmiGUS_Init( REG( a6, struct ExecBase * sysBase )) {
 
+  LONG error = ENoError;
+
   /* Prevent use of customized library versions on CPUs not targetted. */
 #ifdef _M68060
   if( !(sysBase->AttnFlags & AFF_68060) ) {
 
-    return EWrongDriverCPUVersion;
+    AmiGUS_Expunge();
+    return FALSE;
   }
 #elif defined (_M68040)
   if( !(sysBase->AttnFlags & AFF_68040) ) {
 
-    return EWrongDriverCPUVersion;
+    AmiGUS_Expunge();
+    return FALSE;
   }
 #elif defined (_M68030)
   if( !(sysBase->AttnFlags & AFF_68030) ) {
 
-    return EWrongDriverCPUVersion;
+    AmiGUS_Expunge();
+    return FALSE;
   }
 #elif defined (_M68020)
   if( !(sysBase->AttnFlags & AFF_68020) ) {
 
-    return EWrongDriverCPUVersion;
+    AmiGUS_Expunge();
+    return FALSE;
   }
 #endif
 
@@ -125,27 +132,45 @@ ASM( BOOL ) SAVEDS AmiGUS_Init( REG( a6, struct ExecBase * sysBase )) {
   AmiGUS_CAMD_Base = AllocMem(
     sizeof( struct AmiGUS_CAMD ),
     MEMF_PUBLIC | MEMF_CLEAR );
+  if ( !AmiGUS_CAMD_Base ) {
+
+    DisplayError( EAllocateAmiGUSCAMDBase );
+    AmiGUS_Expunge();
+    return FALSE;
+  }
 
   DOSBase =
     ( struct DosLibrary * ) OpenLibrary( "dos.library", 34 );
-  if ( !( DOSBase )) {
+  if ( !( EOpenDosBase )) {
 
+    DisplayError( EOpenDosBase );
+    AmiGUS_Expunge();
     return FALSE;
   }
   IntuitionBase =
     ( struct IntuitionBase * ) OpenLibrary( "intuition.library", 34 );
   if ( !( IntuitionBase )) {
 
+    DisplayError( EOpenIntuitionBase );
+    AmiGUS_Expunge();
     return FALSE;
   }
   ExpansionBase =
     ( struct Library * ) OpenLibrary( "expansion.library", 34 );
   if ( !( ExpansionBase )) {
 
+    DisplayError( EOpenExpansionBase );
+    AmiGUS_Expunge();
     return FALSE;
   }
 
-  // TODO: Add CAMD specifics here!!
+  error = FindAmiGusWavetable( &( AmiGUS_CAMD_Base->agb_ConfigDevice ));
+  if ( error ) {
+
+    DisplayError( error );
+    AmiGUS_Expunge();
+    return FALSE;
+  }
 
   LOG_D(( "D: AmiGUS base ready @ 0x%08lx\n", AmiGUS_CAMD_Base ));
   return TRUE;
