@@ -69,6 +69,23 @@ typedef VOID ( ASM( * ) ReceiveFunctionType )(
  * CAMD MIDI driver's "public" function forward declarations.
  *****************************************************************************/
 
+/**
+ * This is the initialization routine for the AmiGUS CAMD MIDI driver.
+ *
+ * It initializes any global data needed by the driver and
+ * finds the address of the AmiGUS wavetable hardware.
+ * For multi-card support, it could now determine if multiple boards 
+ * are installed and patch the number of ports field to indicate the
+ * number of ports available.
+ * 
+ * Documentation says it takes no parameters, but as CAMD loads the 
+ * drivers via Exec's LoadSeg() ( *SIGH!!!* ), it is...
+ *
+ * @param sysBase Pointer to Exec / SysBase.
+ *
+ * @return TRUE if loaded everything loaded / openened / found successful,
+ *         FALSE in case of error.
+ */
 ASM( BOOL ) SAVEDS AmiGUS_Init( REG( a6, struct ExecBase * sysBase ));
 
 ASM( VOID ) SAVEDS AmiGUS_Expunge( VOID );
