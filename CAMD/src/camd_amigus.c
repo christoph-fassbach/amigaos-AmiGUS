@@ -50,7 +50,20 @@ STRPTR AmiGUS_Name = LIBRARY_NAME;
  * CAMD internal function,
  * to be called when hardware can send another byte of data.
  * See driver.doc, line 137.
- * TODO
+ *
+ * The instance of this function should be called whenever the hardware is
+ * ready to accept another outgoing byte.
+ * Requires to be called with the userdata sent when the driver port was
+ * opened.
+ *
+ * @param userdata userdata as passed to OpenPort().
+ *
+ * @return Values in both  (!!!!) d0 and d1;
+ *         d0 - Bits 0-7 contain data to be transmitted,
+ *         d1 - FALSE if there is more data pending,
+ *              TRUE if buffer is empty.
+ *                If so, the driver shall not request further data and
+ *                go sleep until CAMD is calling ActivateXMit().
  */
 typedef ULONG ( ASM( * ) TransmitFunctionType )(
   REG( a2, APTR userdata ));
@@ -59,7 +72,15 @@ typedef ULONG ( ASM( * ) TransmitFunctionType )(
  * CAMD internal function,
  * to be called when hardware received a new byte of data.
  * See driver.doc, line 129.
- * TODO
+ *
+ * The instance of this function should be called whenever the hardware has
+ * received a new a new byte of incoming data.
+ *
+ * @param input Bits 0-7 are the received byte of data,
+ *              bits 8-14 shall be ignored,
+ *              bit 15 to be set if there was an overflow error
+ *              and data was lost.
+ * @param userdata userdata as passed to OpenPort().
  */
 typedef VOID ( ASM( * ) ReceiveFunctionType )(
   REG( d0, UWORD input ),
@@ -88,8 +109,38 @@ typedef VOID ( ASM( * ) ReceiveFunctionType )(
  */
 ASM( BOOL ) SAVEDS AmiGUS_Init( REG( a6, struct ExecBase * sysBase ));
 
+/**
+ * This is the de-allocation routine for the AmiGUS CAMD MIDI driver.
+ *
+ * Unfortunately, it is not called if the initialization has failed,
+ * so as a result it has to be called manually in case of an initialization
+ * error.
+ */
 ASM( VOID ) SAVEDS AmiGUS_Expunge( VOID );
 
+/**
+ * Opens a single AmiGUS MIDI driver port and
+ * tries allocating / locking the wavetable hardware.
+ *
+ * @param data Pointer to the struct MidiDeviceData of the driver.
+ * @param portnum Number of the port to open.
+ * @param transmitHandler Needs to be remembered and called whenever the
+ *                        MIDI-2-AmiGUS interface is ready to digest another
+ *                        byte coming from CAMD library to be played back by
+ *                        the AmiGUS.
+ * @param receiveHandler Needs to be remembered and called whenever a new
+ *                       byte of data is received from the hardware and
+ *                       shall be posted into the CAMD library for further
+ *                       handling.
+ *                       AmiGUS does not receive MIDI commands for the time
+ *                       being.
+ * @param userdata Kind of a client identifier for the CAMD library.
+ *                 Needs to be remembered and used to "authenticate" calls
+ *                 to transmitHandler / receiveHandler.
+ *
+ * @return Static AmiGUS_MidiPortData as per below if successful,
+ *         NULL otherwise.
+ */
 ASM( APTR ) SAVEDS AmiGUS_OpenPort (
   REG( a3, struct MidiDeviceData * data ),
   REG( d0, LONG portnum ),
@@ -97,11 +148,30 @@ ASM( APTR ) SAVEDS AmiGUS_OpenPort (
   REG( a1, ReceiveFunctionType receiveHandler ),   /* Receive function        */
   REG( a2, APTR userdata ));
 
+/**
+ * Closes a single AmiGUS MIDI driver port and
+ * releases the wavetable hardware.
+ *
+ * @param data Pointer to the struct MidiDeviceData of the driver.
+ * @param portnum Number of the port to close.
+ */
 ASM( VOID ) SAVEDS AmiGUS_ClosePort (
   REG( a3, struct MidiDeviceData * data ),
   REG( d0, LONG portnum ));
 
-ASM( VOID ) SAVEDS AmiGUS_ActivateXmit( VOID );
+/**
+ * Function to activate transmitter interrupt when idle.
+ *
+ * May also be called when new data arrives even though the "last byte" flag
+ * (d1 in transmitHandler's return values) was never set.
+ *
+ * @param portnum Number of the port to re-activate.
+ * @param userdata userdata as passed to OpenPort().
+ * TODO: maybe wrong!!! drivers.doc says a0, examples say A2. maybe something in a0 too?
+ */
+ASM( VOID ) SAVEDS AmiGUS_ActivateXmit(
+  REG( d0, LONG portnum ),
+  REG( a2, APTR userdata ));
 
 /******************************************************************************
  * CAMD MIDI driver's global data definitions.
@@ -115,7 +185,7 @@ struct MidiPortData AmiGUS_MidiPortData = { AmiGUS_ActivateXmit };
 
 ASM( BOOL ) SAVEDS AmiGUS_Init( REG( a6, struct ExecBase * sysBase )) {
 
-  LONG error = ENoError;
+  LONG error;
 
   /* Prevent use of customized library versions on CPUs not targetted. */
 #ifdef _M68060
@@ -250,7 +320,10 @@ ASM( VOID ) SAVEDS AmiGUS_ClosePort (
           data, portnum ));
 }
 
-ASM( VOID ) SAVEDS AmiGUS_ActivateXmit( VOID ) {
+ASM( VOID ) SAVEDS AmiGUS_ActivateXmit(
+  REG( d0, LONG portnum ),
+  REG( a2, APTR userdata )) {
 
-  LOG_D(( "D: AmiGUS CAMD ActivateXmit called\n" ));
+  LOG_D(( "D: AmiGUS CAMD ActivateXmit called for userdata=0x%08lx port=%ld\n",
+          userdata, portnum ));
 }
