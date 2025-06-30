@@ -41,6 +41,10 @@ enum ErrorCodes
   EAllocateBuffer,
   EDriverInUse,
   EDriverNotInUse,
+  EWorkerProcessCreationFailed,
+  EWorkerProcessDied,
+  EWorkerProcessSignalsFailed,
+  EMainProcessSignalsFailed,
 
   /* Missing implementation 100-199*/
   ESomethingNotImplemented = 100,  

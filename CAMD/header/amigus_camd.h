@@ -19,7 +19,9 @@
 #ifndef AMIGUS_CAMD_H
 #define AMIGUS_CAMD_H
 
-#include "dos/dos.h"
+#include <dos/dos.h>
+
+#include "SDI_compiler.h"
 
 /******************************************************************************
  * Define the drivers's properties here,
@@ -58,6 +60,50 @@
 #define AMIGUS_MEM_LOG_BORDERS      "********************************"
 
 /******************************************************************************
+ * CAMD MIDI driver replacement forward declarations
+ *****************************************************************************/
+
+ /**
+ * CAMD internal function,
+ * to be called when hardware can send another byte of data.
+ * See driver.doc, line 137.
+ *
+ * The instance of this function should be called whenever the hardware is
+ * ready to accept another outgoing byte.
+ * Requires to be called with the userdata sent when the driver port was
+ * opened.
+ *
+ * @param userdata userdata as passed to OpenPort().
+ *
+ * @return Values in both  (!!!!) d0 and d1;
+ *         d0 - Bits 0-7 contain data to be transmitted,
+ *         d1 - FALSE if there is more data pending,
+ *              TRUE if buffer is empty.
+ *                If so, the driver shall not request further data and
+ *                go sleep until CAMD is calling ActivateXMit().
+ */
+typedef ULONG ( ASM( * ) TransmitFunctionType )(
+  REG( a2, APTR userdata ));
+
+/**
+ * CAMD internal function,
+ * to be called when hardware received a new byte of data.
+ * See driver.doc, line 129.
+ *
+ * The instance of this function should be called whenever the hardware has
+ * received a new a new byte of incoming data.
+ *
+ * @param input Bits 0-7 are the received byte of data,
+ *              bits 8-14 shall be ignored,
+ *              bit 15 to be set if there was an overflow error
+ *              and data was lost.
+ * @param userdata userdata as passed to OpenPort().
+ */
+typedef VOID ( ASM( * ) ReceiveFunctionType )(
+  REG( d0, UWORD input ),
+  REG( a2, APTR userdata ));
+
+/******************************************************************************
  * Library base structure
  *****************************************************************************/
 
@@ -72,6 +118,19 @@ struct AmiGUS_CAMD {
   /* AmiGUS specific member variables */
   APTR                          agb_CardBase;      // Codec base address
   struct ConfigDev            * agb_ConfigDevice;  // Expansion device address
+
+  struct Process              * agb_MainProcess;
+  struct Process              * agb_WorkerProcess;
+  LONG                          agb_WorkerReady;
+  BYTE                          agb_MainSignal;
+  BYTE                          agb_WorkerWorkSignal;
+  BYTE                          agb_WorkerStopSignal;
+  BYTE                          agb_Padding0;
+
+  /* CAMD pointers */
+  TransmitFunctionType          agb_TransmitFunction;
+  ReceiveFunctionType           agb_ReceiveFunction;
+  APTR                          agb_CAMD_userdata;
 
   BPTR                          agb_LogFile;       // Debug log file handle
   APTR                          agb_LogMem;        // Debug log memory blob

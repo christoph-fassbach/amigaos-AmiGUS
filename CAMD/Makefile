@@ -66,7 +66,7 @@ SDIR   = src/
 HDIR   = header/
 
 LIB_CPU        ?= 000
-LIB_LOG        ?= FILE_LOG
+LIB_LOG        ?= MEM_LOG
 # NO_LOG
 # SER_LOG
 # FILE_LOG
@@ -244,12 +244,13 @@ test:
 
 ###############################################################################
 
-support: FOLDERS camd_lib_check get_mem_log
+support: FOLDERS get_mem_log
+#camd_lib_check
 
 get_mem_log:
 	$(CC) $(CFLAGS) support/$@.o support/$@.c
 	$(LD) $(LFLAGS) target/$@ $(LFLAGS1) $(LFLAGST1) support/$@.o $(LFLAGST2)
-	-cp target/$@ ~/Documents/FS-UAE/Shared/CAMD/
+	-cp target/$@ ~/Documents/FS-UAE/Shared/CAMD/GetCamdMemLog
 	-curl --netrc --upload-file target/$@       ftp://192.168.0.4/cf0/Expansion/AmiGUS/GetCamdMemLog
 
 camd_lib_check:
