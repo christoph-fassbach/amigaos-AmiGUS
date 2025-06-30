@@ -118,7 +118,7 @@ BOOL CreateWorkerProcess( VOID ) {
 // TODO: Use CreateProc for 1.3
   AmiGUS_CAMD_Base->agb_WorkerProcess =
       CreateNewProcTags( NP_Entry, (ULONG) &WorkerProcess,
-                         NP_Name, (ULONG) STR( LIB_FILE ),
+                         NP_Name, (ULONG) ( STR( LIB_FILE ) " CAMD" ),
                          NP_Priority, (ULONG) 127,
                          TAG_DONE, 0 
                        );
