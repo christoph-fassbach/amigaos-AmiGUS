@@ -24,7 +24,7 @@
 #include "SDI_compiler.h"
 
 /******************************************************************************
- * Define the drivers's properties here,
+ * Define the driver's properties here,
  * will be used in camd_amigus.c.
  *****************************************************************************/
 
@@ -138,7 +138,6 @@ struct AmiGUS_CAMD {
 
 /*
  * All libraries' base pointers used by the CAMD MIDI driver library.
- * Also used to switch between relying on globals or not.
  */
 extern struct AmiGUS_CAMD       * AmiGUS_CAMD_Base;
 extern struct DosLibrary        * DOSBase;

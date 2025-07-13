@@ -185,7 +185,7 @@ ASM( BOOL ) SAVEDS AmiGUS_Init( REG( a6, struct ExecBase * sysBase )) {
 
   DOSBase =
     ( struct DosLibrary * ) OpenLibrary( "dos.library", 34 );
-  if ( !( EOpenDosBase )) {
+  if ( !( DOSBase )) {
 
     DisplayError( EOpenDosBase );
     AmiGUS_Expunge();
