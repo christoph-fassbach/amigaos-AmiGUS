@@ -61,6 +61,7 @@ struct AmiGUS_CAMD_Tool {
   struct Window               * agt_Window;
   APTR                          agt_VisualInfo;
   struct Gadget               * agt_GadgetList;
+  //struct Gadget               * 
 
   /* AmiGUS specific member variables */
 
