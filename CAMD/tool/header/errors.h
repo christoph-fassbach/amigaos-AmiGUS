@@ -31,6 +31,7 @@ enum ErrorCodes
   EOpenDosBase,
   EOpenIntuitionBase,
   EOpenGadToolsBase,
+  EOpenReactionBases,
   EOpenLogFile,
   EAllocateLogMem,
   EAllocateAmiGUSCAMDToolBase,

@@ -31,6 +31,11 @@ struct AmiGUS_CAMD_Tool  * AmiGUS_CAMD_Tool_Base = NULL;
 struct Library           * GadToolsBase          = NULL;
 struct IntuitionBase     * IntuitionBase         = NULL;
 
+struct Library           * LabelBase             = NULL;
+struct Library           * LayoutBase            = NULL;
+struct Library           * ListBrowserBase       = NULL;
+struct Library           * WindowBase            = NULL;
+
 LONG Startup( VOID ) {
 
   if ( !AmiGUS_CAMD_Tool_Base ) {
@@ -65,12 +70,49 @@ LONG Startup( VOID ) {
   }
   if ( !GadToolsBase ) {
 
-    GadToolsBase = OpenLibrary("gadtools.library", 36 );
+    GadToolsBase = OpenLibrary( "gadtools.library", 36 );
   }
   if ( !GadToolsBase ) {
 
     DisplayError( EOpenGadToolsBase );
     return EOpenGadToolsBase;
+  }
+
+  if ( !LabelBase ) {
+
+    LabelBase = OpenLibrary( "images/label.image", 41 );
+  }
+  if ( !LabelBase ) {
+
+    AmiGUS_CAMD_Tool_Base->agt_Flags |= CAMD_TOOL_FLAG_REACTION_FAILED;
+  }
+  if ( !LayoutBase ) {
+
+    LayoutBase = OpenLibrary( "gadget/layout.gadget", 41 );
+  }
+  if ( !LayoutBase ) {
+
+    AmiGUS_CAMD_Tool_Base->agt_Flags |= CAMD_TOOL_FLAG_REACTION_FAILED;
+  }
+  if ( !ListBrowserBase ) {
+
+    ListBrowserBase = OpenLibrary( "gadget/listbrowser.gadget", 41 );
+  }
+  if ( !ListBrowserBase ) {
+
+    AmiGUS_CAMD_Tool_Base->agt_Flags |= CAMD_TOOL_FLAG_REACTION_FAILED;
+  }
+  if ( !WindowBase ) {
+
+    WindowBase = OpenLibrary( "window.class", 41 );
+  }
+  if ( !WindowBase ) {
+
+    AmiGUS_CAMD_Tool_Base->agt_Flags |= CAMD_TOOL_FLAG_REACTION_FAILED;
+  }
+  if ( AmiGUS_CAMD_Tool_Base->agt_Flags & CAMD_TOOL_FLAG_REACTION_FAILED ) {
+
+    LOG_W(( "W: Could not open ReAction - Test button hidden!\n" ));
   }
 
   LOG_I(( "I: " STR( APP_NAME ) " startup complete.\n" ));
@@ -80,7 +122,29 @@ LONG Startup( VOID ) {
 VOID Cleanup( VOID ) {
 
   LOG_I(( "I: " STR( APP_NAME ) " cleanup starting.\n" ));
-  if ( !GadToolsBase ) {
+
+  if ( WindowBase ) {
+
+    CloseLibrary( WindowBase );
+    WindowBase = NULL;
+  }
+  if ( ListBrowserBase ) {
+
+    CloseLibrary( ListBrowserBase );
+    ListBrowserBase = NULL;
+  }
+  if ( LayoutBase ) {
+
+    CloseLibrary( LayoutBase );
+    LayoutBase = NULL;
+  }
+  if ( LabelBase ) {
+
+    CloseLibrary( LabelBase );
+    LabelBase = NULL;
+  }
+
+  if ( GadToolsBase ) {
 
     CloseLibrary( GadToolsBase );
     GadToolsBase = NULL;

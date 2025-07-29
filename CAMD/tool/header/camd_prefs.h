@@ -58,10 +58,11 @@ struct AmiGUS_CAMD_Tool {
 
   /* Tool specific member variables */
   struct Screen               * agt_Screen;
-  struct Window               * agt_Window;
+  struct Window               * agt_MainWindow;
   APTR                          agt_VisualInfo;
   struct Gadget               * agt_GadgetList;
-  //struct Gadget               * 
+  ULONG                         agt_Flags;         /** Bitmask as per below  */ 
+  struct Window               * agt_TestWindow;
 
   /* AmiGUS specific member variables */
 
@@ -71,6 +72,8 @@ struct AmiGUS_CAMD_Tool {
   APTR                          agt_LogMem;        // Debug log memory blob
 };
 
+#define CAMD_TOOL_FLAG_REACTION_FAILED   0x00000001
+
 /*
  * All libraries' base pointers used by the CAMD MIDI driver tool.
  */
@@ -79,5 +82,10 @@ extern struct DosLibrary        * DOSBase;
 extern struct Library           * GadToolsBase;
 extern struct IntuitionBase     * IntuitionBase;
 extern struct ExecBase          * SysBase;
+/* Optional, opened if available, if not, no test window ;) */
+extern struct Library           * LabelBase;
+extern struct Library           * LayoutBase;
+extern struct Library           * ListBrowserBase;
+extern struct Library           * WindowBase;
 
 #endif /* CAMD_PREFS_H */

@@ -25,134 +25,116 @@
 #include "errors.h"
 #include "prefs_window.h"
 #include "support.h"
-
-CONST_STRPTR headerLabelText  = "AmiGUS CAMD/MIDI sound font file:";
-CONST_STRPTR selectButtonText = "Select";
-CONST_STRPTR infoLabelText = "Path: Sys:Expansion/AmiGUS/2MB.sf2\n"
-                       "Instruments: 127/127 Samples: 300 \n"
-                       "Percussions:   81/81 Samples:  81 \n"
-                       "Sample size: 1234444/33554432 bytes";
-STRPTR strategyLabelText  = "Loading strategy:";
-STRPTR strategyUpfrontText  = "All upfront";
-STRPTR strategyRamText  = "RAM cache";
-STRPTR strategyDemandText  = "On demand";
-STRPTR progressLabelText  = "Show progress bar:";
-STRPTR testButtonText = "Test";
-STRPTR applyButtonText = "Use";
-STRPTR saveButtonText = "Save";
-STRPTR cancelButtonText = "Cancel";
+#include "test_window.h"
 
 struct TextAttr topaz8 = { ( STRPTR ) "topaz.font", 8, 0, 1 };
 
-/* Data for gadget structures * /
-struct NewGadget Gadgets[ GADGET_COUNT ] = {
-  {   5, 15, 270, 13, "AmiGUS CAMD/MIDI sound font file:", &topaz8, 1, PLACETEXT_IN, NULL, NULL },
-  { 280, 14,  70, 15, "Select",                            &topaz8, 2, PLACETEXT_IN, NULL, NULL },
-  {  10, 20, 230, 100, "Path: Sys:Expansion/AmiGUS/2MB.sf2\n"
-                       "Instruments: 127/127 Samples: 300 \n"
-                       "Percussions:   81/81 Samples:  81 \n"
-                       "Sample size: 1234444/33554432 bytes", &topaz8, 3, PLACETEXT_IN, NULL,    NULL }
-};
+enum GadgetIds {
 
-ULONG GadgetKinds[ GADGET_COUNT ] = {
-  TEXT_KIND,
-  BUTTON_KIND,
-  TEXT_KIND
+  GADGET_CONTEXT = 0,
+  GADGET_HEADER_LABEL,
+  GADGET_SELECT_BUTTON,
+  GADGET_INFO_BORDER_LABEL,
+  GADGET_INFO_PATH_LABEL,
+  GADGET_INFO_INSTRUMENTS_LABEL,
+  GADGET_INFO_INSTRUMENT_SAMPLES_LABEL,
+  GADGET_INFO_PERCUSSIONS_LABEL,
+  GADGET_INFO_PERCUSSIONS_SAMPLES_LABEL,
+  GADGET_INFO_SAMPLE_SIZE_LABEL,
+  GADGET_INFO_SAMPLE_RAM_LABEL,
+  GADGET_INFO_SAMPLE_MAX_LABEL,
+  GADGET_SAMPLE_STRATEGY_CYCLE,
+  GADGET_SAMPLE_PROGRESS_CHECKBOX,
+  GADGET_TEST_BUTTON,
+  GADGET_SAVE_BUTTON,
+  GADGET_USE_BUTTON,
+  GADGET_CANCEL_BUTTON
 };
-
-
-/* Extra information for gadgets using Tags * /
-ULONG GadgetTags[] = {
-  (GTST_MaxChars), 256, (TAG_DONE),
-  (GTNM_Border), TRUE, (TAG_DONE),
-  (TAG_DONE)
-};
-*/
 
 ULONG GadgetKind1 = TEXT_KIND;
 struct NewGadget GadgetNew1 = {
-  5, 15, 270, 13, "AmiGUS CAMD/MIDI sound font file:", &topaz8, 1, PLACETEXT_IN, NULL, NULL };
+  5, 15, 270, 13, "AmiGUS CAMD/MIDI sound font file:", &topaz8, GADGET_HEADER_LABEL, PLACETEXT_IN, NULL, NULL };
 ULONG GadgetTags1[] = { (TAG_DONE) };
 
 ULONG GadgetKind2 = BUTTON_KIND;
 struct NewGadget GadgetNew2 = {
-    280, 14,  70, 15, "Select", &topaz8, 2, PLACETEXT_IN, NULL, NULL };
+    280, 14,  70, 15, "Select", &topaz8, GADGET_SELECT_BUTTON, PLACETEXT_IN, NULL, NULL };
 ULONG GadgetTags2[] = { (TAG_DONE) };
 
 ULONG GadgetKind3 = TEXT_KIND;
 struct NewGadget GadgetNew3 = {
-  9, 35, 342, 86, NULL, &topaz8, 3, PLACETEXT_IN, NULL, NULL };
+  9, 35, 342, 86, NULL, &topaz8, GADGET_INFO_BORDER_LABEL, PLACETEXT_IN, NULL, NULL };
 ULONG GadgetTags3[] = { GTTX_Border, TRUE, ( TAG_DONE ) };
 
 ULONG GadgetKind4 = TEXT_KIND;
 struct NewGadget GadgetNew4 = {
-  69, 40, 200, 15, "Path:", &topaz8, 4, PLACETEXT_LEFT, NULL, NULL };
+  69, 40, 200, 15, "Path:", &topaz8, GADGET_INFO_PATH_LABEL, PLACETEXT_LEFT, NULL, NULL };
 ULONG GadgetTags4[] = { GTTX_Text, ( ULONG ) "Sys:Expansion/AmiGUS/2MB.sf2", ( TAG_DONE ) };
 
 ULONG GadgetKind5 = TEXT_KIND;
 struct NewGadget GadgetNew5 = {
-  125, 55, 50, 15, "Instruments:", &topaz8, 4, PLACETEXT_LEFT, NULL, NULL };
+  125, 55, 50, 15, "Instruments:", &topaz8, GADGET_INFO_INSTRUMENTS_LABEL, PLACETEXT_LEFT, NULL, NULL };
 ULONG GadgetTags5[] = { GTTX_Text, ( ULONG ) "128", ( TAG_DONE ) };
 
 ULONG GadgetKind6 = TEXT_KIND;
 struct NewGadget GadgetNew6 = {
-  250, 55, 50, 15, "Samples:", &topaz8, 6, PLACETEXT_LEFT, NULL, NULL };
+  250, 55, 50, 15, "Samples:", &topaz8, GADGET_INFO_INSTRUMENT_SAMPLES_LABEL, PLACETEXT_LEFT, NULL, NULL };
 ULONG GadgetTags6[] = { GTTX_Text, ( ULONG ) "1234", ( TAG_DONE ) };
 
 ULONG GadgetKind7 = TEXT_KIND;
 struct NewGadget GadgetNew7 = {
-  125, 70, 50, 15, "Percussions:", &topaz8, 7, PLACETEXT_LEFT, NULL, NULL };
+  125, 70, 50, 15, "Percussions:", &topaz8, GADGET_INFO_PERCUSSIONS_LABEL, PLACETEXT_LEFT, NULL, NULL };
 ULONG GadgetTags7[] = { GTTX_Text, ( ULONG ) "85", ( TAG_DONE ) };
 
 ULONG GadgetKind8 = TEXT_KIND;
 struct NewGadget GadgetNew8 = {
-  250, 70, 50, 15, "Samples:", &topaz8, 8, PLACETEXT_LEFT, NULL, NULL };
+  250, 70, 50, 15, "Samples:", &topaz8, GADGET_INFO_PERCUSSIONS_SAMPLES_LABEL, PLACETEXT_LEFT, NULL, NULL };
 ULONG GadgetTags8[] = { GTTX_Text, ( ULONG ) "19", ( TAG_DONE ) };
 
 ULONG GadgetKind9 = TEXT_KIND;
 struct NewGadget GadgetNew9 = {
-  125, 85, 50, 15, "Sample size:", &topaz8, 9, PLACETEXT_LEFT, NULL, NULL };
+  125, 85, 50, 15, "Sample size:", &topaz8, GADGET_INFO_SAMPLE_SIZE_LABEL, PLACETEXT_LEFT, NULL, NULL };
 ULONG GadgetTags9[] = { GTTX_Text, ( ULONG ) "33554432", ( TAG_DONE ) };
 
 ULONG GadgetKind10 = TEXT_KIND;
 struct NewGadget GadgetNew10 = {
-  285, 85, 50, 15, "/ 33554432", &topaz8, 10, PLACETEXT_LEFT, NULL, NULL };
+  285, 85, 50, 15, "/ 33554432", &topaz8, GADGET_INFO_SAMPLE_MAX_LABEL, PLACETEXT_LEFT, NULL, NULL };
 ULONG GadgetTags10[] = { ( TAG_DONE ) };
 
 ULONG GadgetKind11 = TEXT_KIND;
 struct NewGadget GadgetNew11 = {
-  250, 100, 50, 15, "AmiGUS sample RAM used:", &topaz8, 11, PLACETEXT_LEFT, NULL, NULL };
+  250, 100, 50, 15, "AmiGUS sample RAM used:", &topaz8, GADGET_SAMPLE_STRATEGY_CYCLE, PLACETEXT_LEFT, NULL, NULL };
 ULONG GadgetTags11[] = { ( GTTX_Text ), ( ULONG ) "100%", ( TAG_DONE ) };
 
 STRPTR GadgetOptions12[] = { "Upfront", "RAM", "On Demand", NULL };
 ULONG GadgetKind12 = CYCLE_KIND;
 struct NewGadget GadgetNew12 = {
-  208, 125, 110, 15, "Sample loading strategy:", &topaz8, 12, PLACETEXT_LEFT, NULL, NULL };
+  208, 125, 110, 15, "Sample loading strategy:", &topaz8, GADGET_SAMPLE_STRATEGY_CYCLE, PLACETEXT_LEFT, NULL, NULL };
 ULONG GadgetTags12[] = { ( GTCY_Labels ), ( ULONG ) &GadgetOptions12, ( GTCY_Active ), 1, ( TAG_DONE ) };
 
 ULONG GadgetKind13 = CHECKBOX_KIND;
 struct NewGadget GadgetNew13 = {
-  272, 143, 50, 15, "Show progress bar while loading:", &topaz8, 13, PLACETEXT_LEFT, NULL, NULL };
+  272, 143, 50, 15, "Show progress bar while loading:", &topaz8, GADGET_SAMPLE_PROGRESS_CHECKBOX, PLACETEXT_LEFT, NULL, NULL };
 ULONG GadgetTags13[] = { ( GTCB_Checked ), TRUE, ( TAG_DONE ) };
 
 ULONG GadgetKind14 = BUTTON_KIND;
 struct NewGadget GadgetNew14 = {
-    9, 160,  70, 15, "Test", &topaz8, 14, PLACETEXT_IN, NULL, NULL };
+    9, 160,  70, 15, "Test", &topaz8, GADGET_TEST_BUTTON, PLACETEXT_IN, NULL, NULL };
 ULONG GadgetTags14[] = { (TAG_DONE) };
 
 ULONG GadgetKind15 = BUTTON_KIND;
 struct NewGadget GadgetNew15 = {
-    99, 160,  70, 15, "Save", &topaz8, 15, PLACETEXT_IN, NULL, NULL };
+    99, 160,  70, 15, "Save", &topaz8, GADGET_SAVE_BUTTON, PLACETEXT_IN, NULL, NULL };
 ULONG GadgetTags15[] = { (TAG_DONE) };
 
 ULONG GadgetKind16 = BUTTON_KIND;
 struct NewGadget GadgetNew16 = {
-    189, 160,  70, 15, "Use", &topaz8, 16, PLACETEXT_IN, NULL, NULL };
+    189, 160,  70, 15, "Use", &topaz8, GADGET_USE_BUTTON, PLACETEXT_IN, NULL, NULL };
 ULONG GadgetTags16[] = { (TAG_DONE) };
 
 ULONG GadgetKind17 = BUTTON_KIND;
 struct NewGadget GadgetNew17 = {
-    279, 160,  70, 15, "Cancel", &topaz8, 17, PLACETEXT_IN, NULL, NULL };
+    279, 160,  70, 15, "Cancel", &topaz8, GADGET_CANCEL_BUTTON, PLACETEXT_IN, NULL, NULL };
 ULONG GadgetTags17[] = { (TAG_DONE) };
 
 struct GadgetParams {
@@ -182,38 +164,6 @@ struct GadgetParams Params[] = {
 };
 #define GADGET_COUNT ( sizeof( Params ) / 12 )
 
-
-#if 0
-struct GadgetParams {
-  ULONG kind;
-  struct NewGadget gadget;
-  CONST ULONG * tags;
-};
-
-struct GadgetParams Params[] = {
-  { 
-    TEXT_KIND, 
-    { 5, 15, 270, 13, "AmiGUS CAMD/MIDI sound font file:", &topaz8, 1, PLACETEXT_IN, NULL, NULL }, 
-    { (TAG_DONE) }
-  }, {
-    BUTTON_KIND,
-    { 280, 14,  70, 15, "Select",                            &topaz8, 2, PLACETEXT_IN, NULL, NULL },
-    { (TAG_DONE) }
-  }, {
-    TEXT_KIND,
-    {  10, 20, 230, 100, "Path: Sys:Expansion/AmiGUS/2MB.sf2", &topaz8, 3, PLACETEXT_IN, NULL, NULL },
-    { 1, ( TAG_DONE ) }
-  },{
-    TEXT_KIND,
-    {  10, 20, 230, 100, "Path: Sys:Expansion/AmiGUS/2MB.sf2", &topaz8, 3, PLACETEXT_IN, NULL, NULL },
-                       /*"Instruments: 127/127 Samples: 300 \n"
-                       "Percussions:   81/81 Samples:  81 \n"
-                       "Sample size: 1234444/33554432 bytes", &topaz8, 3, PLACETEXT_IN, NULL, NULL },*/
-    { (TAG_DONE) }
-  }
-};
-#endif 
-
 LONG CreatePrefsUi( struct AmiGUS_CAMD_Tool * base ) {
 
   struct Gadget * gadget;
@@ -241,8 +191,13 @@ LONG CreatePrefsUi( struct AmiGUS_CAMD_Tool * base ) {
   }
 
   // Create all gadgets from static table above:
-  
   for ( i = 0; i < GADGET_COUNT; ++i ) {
+
+    if (( AmiGUS_CAMD_Tool_Base->agt_Flags & CAMD_TOOL_FLAG_REACTION_FAILED )
+      && ( GADGET_TEST_BUTTON == Params[i].gadget->ng_GadgetID )) {
+
+      continue;
+    }
 
     Params[i].gadget->ng_VisualInfo = base->agt_VisualInfo;
     gadget = CreateGadgetA(
@@ -260,17 +215,9 @@ LONG CreatePrefsUi( struct AmiGUS_CAMD_Tool * base ) {
       LOG_W(( "W: Failed to create gadget %ld.\n", i ));
     }
   }
-    /*
-  gadget = CreateGadget(
-    TEXT_KIND, 
-    gadget,
-    (struct NewGadget){  5, 15, 270, 13, "AmiGUS CAMD/MIDI sound font file:", &topaz8, 1, PLACETEXT_IN, NULL, NULL },
-    ( TAG_DONE )
-  );
-  */
 
   // Open window specifying the gadget list:
-  base->agt_Window = OpenWindowTags(
+  base->agt_MainWindow = OpenWindowTags(
     NULL,
     WA_Left, 10,
     WA_Top, 15,
@@ -287,17 +234,17 @@ LONG CreatePrefsUi( struct AmiGUS_CAMD_Tool * base ) {
     WA_Title, "AmiGUS CAMD/MIDI preferences",
     WA_PubScreenName, "Workbench",
     TAG_DONE );
-  GT_RefreshWindow( base->agt_Window, NULL );
+  GT_RefreshWindow( base->agt_MainWindow, NULL );
 
   return ENoError;
 }
 
 VOID CleanupPrefsUi( struct AmiGUS_CAMD_Tool * base ) {
 
-  if ( base->agt_Window ) {
+  if ( base->agt_MainWindow ) {
 
-    CloseWindow( base->agt_Window );
-    base->agt_Window = NULL;
+    CloseWindow( base->agt_MainWindow );
+    base->agt_MainWindow = NULL;
   }
 
   if ( base->agt_GadgetList ) {
@@ -325,14 +272,51 @@ VOID HandlePrefsUiEvents( struct AmiGUS_CAMD_Tool * base ) {
     struct IntuiMessage * message;
     ULONG messageClass;
 
-    Wait( 1L << base->agt_Window->UserPort->mp_SigBit );
-    message = GT_GetIMsg( base->agt_Window->UserPort );
+    Wait( 1L << base->agt_MainWindow->UserPort->mp_SigBit );
+    message = GT_GetIMsg( base->agt_MainWindow->UserPort );
     messageClass = message->Class;
     GT_ReplyIMsg( message );
 
-    if ( IDCMP_CLOSEWINDOW == messageClass ) {
+    switch ( messageClass ) {
+      case IDCMP_GADGETUP: {
 
-      return;
+        struct Gadget * gadget = message->IAddress;
+        if ( !gadget ) {
+
+          LOG_V(( "V: Gadget to handle is NULL\n" ));
+          break;
+        }
+        switch ( gadget->GadgetID ) {
+          case GADGET_TEST_BUTTON: {
+            LOG_V(( "V: Handling test button\n" ));
+            CreateTestUi( base );
+            break;
+          }
+          case GADGET_CANCEL_BUTTON: {
+            LOG_V(( "V: Handling cancel button\n" ));
+            return;
+          }
+          case GADGET_SELECT_BUTTON:
+          case GADGET_SAVE_BUTTON:
+          case GADGET_USE_BUTTON:
+          default: {
+
+            LOG_V(( "V: GadgetID %ld not handled\n", gadget->GadgetID ));
+            break;
+          }
+        }
+        break;
+      }
+      case IDCMP_CLOSEWINDOW: {
+
+        LOG_V(( "V: Handling window close event\n" ));
+        return;
+      }
+      default: {
+
+        LOG_V(( "V: Message class %ld not handled\n", messageClass ));
+        break;
+      }
     }
   }
 }
