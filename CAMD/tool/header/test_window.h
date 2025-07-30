@@ -23,6 +23,6 @@
 
 LONG CreateTestUi( struct AmiGUS_CAMD_Tool * base );
 VOID CleanupTestUi( struct AmiGUS_CAMD_Tool * base );
-VOID HandleTestUiEvents( struct AmiGUS_CAMD_Tool * base );
+BOOL HandleTestUiEvents( struct AmiGUS_CAMD_Tool * base );
 
 #endif /* TEST_WINDOW_H */

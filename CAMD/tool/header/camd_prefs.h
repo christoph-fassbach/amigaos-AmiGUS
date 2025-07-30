@@ -21,6 +21,7 @@
 
 #include <dos/dos.h>
 #include <exec/execbase.h>
+#include <intuition/classes.h>
 #include <intuition/intuitionbase.h>
 
 /******************************************************************************
@@ -62,7 +63,13 @@ struct AmiGUS_CAMD_Tool {
   APTR                          agt_VisualInfo;
   struct Gadget               * agt_GadgetList;
   ULONG                         agt_Flags;         /** Bitmask as per below  */ 
+
   struct Window               * agt_TestWindow;
+  struct MsgPort              * agt_TestWindowPort;
+  ULONG /*temporary - wrong type */ * agt_TestWindowHook;
+  ULONG                         agt_TestWindowSignal;
+  ULONG                         agt_TestContentSignal;
+  Object                      * agt_TestWindowContent;
 
   /* AmiGUS specific member variables */
 

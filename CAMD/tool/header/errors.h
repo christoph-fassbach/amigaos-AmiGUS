@@ -32,6 +32,8 @@ enum ErrorCodes
   EOpenIntuitionBase,
   EOpenGadToolsBase,
   EOpenReactionBases,
+  ECreateMessagePort,
+  EOpenTestWindow,
   EOpenLogFile,
   EAllocateLogMem,
   EAllocateAmiGUSCAMDToolBase,

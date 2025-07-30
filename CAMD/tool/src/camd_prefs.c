@@ -88,7 +88,7 @@ LONG Startup( VOID ) {
   }
   if ( !LayoutBase ) {
 
-    LayoutBase = OpenLibrary( "gadget/layout.gadget", 41 );
+    LayoutBase = OpenLibrary( "gadgets/layout.gadget", 41 );
   }
   if ( !LayoutBase ) {
 
@@ -96,7 +96,7 @@ LONG Startup( VOID ) {
   }
   if ( !ListBrowserBase ) {
 
-    ListBrowserBase = OpenLibrary( "gadget/listbrowser.gadget", 41 );
+    ListBrowserBase = OpenLibrary( "gadgets/listbrowser.gadget", 41 );
   }
   if ( !ListBrowserBase ) {
 
