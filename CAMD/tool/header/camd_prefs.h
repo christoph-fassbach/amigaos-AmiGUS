@@ -93,6 +93,7 @@ extern struct ExecBase          * SysBase;
 extern struct Library           * LabelBase;
 extern struct Library           * LayoutBase;
 extern struct Library           * ListBrowserBase;
+extern struct Library           * VirtualBase;
 extern struct Library           * WindowBase;
 
 #endif /* CAMD_PREFS_H */

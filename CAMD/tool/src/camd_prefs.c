@@ -34,6 +34,7 @@ struct IntuitionBase     * IntuitionBase         = NULL;
 struct Library           * LabelBase             = NULL;
 struct Library           * LayoutBase            = NULL;
 struct Library           * ListBrowserBase       = NULL;
+struct Library           * VirtualBase           = NULL;
 struct Library           * WindowBase            = NULL;
 
 LONG Startup( VOID ) {
@@ -102,6 +103,14 @@ LONG Startup( VOID ) {
 
     AmiGUS_CAMD_Tool_Base->agt_Flags |= CAMD_TOOL_FLAG_REACTION_FAILED;
   }
+  if ( !VirtualBase ) {
+
+    VirtualBase = OpenLibrary( "gadgets/virtual.gadget", 41 );
+  }
+  if ( !VirtualBase ) {
+
+    AmiGUS_CAMD_Tool_Base->agt_Flags |= CAMD_TOOL_FLAG_REACTION_FAILED;
+  }
   if ( !WindowBase ) {
 
     WindowBase = OpenLibrary( "window.class", 41 );
@@ -127,6 +136,11 @@ VOID Cleanup( VOID ) {
 
     CloseLibrary( WindowBase );
     WindowBase = NULL;
+  }
+  if ( VirtualBase ) {
+
+    CloseLibrary( VirtualBase );
+    VirtualBase = NULL;
   }
   if ( ListBrowserBase ) {
 
