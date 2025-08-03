@@ -90,6 +90,7 @@ extern struct Library           * GadToolsBase;
 extern struct IntuitionBase     * IntuitionBase;
 extern struct ExecBase          * SysBase;
 /* Optional, opened if available, if not, no test window ;) */
+extern struct Library           * BevelBase;
 extern struct Library           * LabelBase;
 extern struct Library           * LayoutBase;
 extern struct Library           * ListBrowserBase;

@@ -31,6 +31,7 @@ struct AmiGUS_CAMD_Tool  * AmiGUS_CAMD_Tool_Base = NULL;
 struct Library           * GadToolsBase          = NULL;
 struct IntuitionBase     * IntuitionBase         = NULL;
 
+struct Library           * BevelBase             = NULL;
 struct Library           * LabelBase             = NULL;
 struct Library           * LayoutBase            = NULL;
 struct Library           * ListBrowserBase       = NULL;
@@ -79,6 +80,14 @@ LONG Startup( VOID ) {
     return EOpenGadToolsBase;
   }
 
+  if ( !BevelBase ) {
+
+    BevelBase = OpenLibrary( "images/bevel.image", 41 );
+  }
+  if ( !BevelBase ) {
+
+    AmiGUS_CAMD_Tool_Base->agt_Flags |= CAMD_TOOL_FLAG_REACTION_FAILED;
+  }
   if ( !LabelBase ) {
 
     LabelBase = OpenLibrary( "images/label.image", 41 );
@@ -156,6 +165,11 @@ VOID Cleanup( VOID ) {
 
     CloseLibrary( LabelBase );
     LabelBase = NULL;
+  }
+  if ( BevelBase ) {
+
+    CloseLibrary( BevelBase );
+    BevelBase = NULL;
   }
 
   if ( GadToolsBase ) {
