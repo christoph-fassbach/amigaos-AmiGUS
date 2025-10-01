@@ -87,6 +87,7 @@ struct CAMD_Keyboard {
 extern struct CAMD_Keyboard     * CAMD_Keyboard_Base;
 extern struct DosLibrary        * DOSBase;
 extern struct Library           * GadToolsBase;
+extern struct GfxBase           * GfxBase;
 extern struct IntuitionBase     * IntuitionBase;
 extern struct ExecBase          * SysBase;
 /* Optional, opened if available, if not, no test window ;) */

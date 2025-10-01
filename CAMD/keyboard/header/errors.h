@@ -29,6 +29,7 @@ enum ErrorCodes
   /* Global errors 1-99 */
   EWrongDriverCPUVersion,
   EOpenDosBase,
+  EOpenGfxBase,
   EOpenIntuitionBase,
   EOpenGadToolsBase,
   EOpenReactionBases,
