@@ -33,6 +33,7 @@ enum ErrorCodes
   EOpenIntuitionBase,
   EOpenGadToolsBase,
   EOpenReactionBases,
+  EOpenOctaveKeysBase,
   ECreateMessagePort,
   EOpenTestWindow,
   EOpenLogFile,

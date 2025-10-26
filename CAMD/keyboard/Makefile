@@ -161,7 +161,7 @@ else
                   OBJNAME
 
   CFLAGS        = RESETOPTIONS                                                 \
-                  PARAMETERS=REGISTER DATA=FAR CODE=FAR                        \
+                  PARMS=STACK DATA=FAR CODE=FAR                                \
                   NOSTACKCHECK NOCHECKABORT NOICONS                            \
                   STRINGMERGE UNSIGNEDCHAR CPU=68$(APP_CPU)                    \
                   OPTIMIZE OPTIMIZERGLOBAL OPTIMIZERINLINE OPTIMIZERINLOCAL    \
@@ -174,10 +174,10 @@ else
                   DEF APP_COMPILER=SAS/C DEF APP_HOST=$(APP_HOST)              \
                   OBJNAME
 
-  LFLAGS        = NOICONS SMALLDATA SMALLCODE STRIPDEBUG \
+  LFLAGS        = NOICONS STRIPDEBUG \
                   TO 
   LFLAGS1       = FROM LIB:c.o
-  LFLAGS2       = LIBRARY LIB:sc.lib LIB:amiga.lib
+  LFLAGS2       = LIBRARY LIB:scnb.lib LIB:amiga.lib
   CC            = $(RUNNER) sc
   AS            = $(RUNNER) sc
   LD            = $(RUNNER) slink

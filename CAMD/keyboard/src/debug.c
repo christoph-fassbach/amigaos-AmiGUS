@@ -174,9 +174,9 @@ VOID debug_mprintf( STRPTR format, ... ) {
   static BOOL errorShown = FALSE;
   const STRPTR memMarker[] = {
 
-    AMIGUS_MEM_LOG_BORDERS,
+    MEM_LOG_BORDERS,
     STR( APP_FILE ),
-    AMIGUS_MEM_LOG_BORDERS
+    MEM_LOG_BORDERS
   };
 
   if ( !CAMD_Keyboard_Base->ck_LogMem ) {
@@ -253,12 +253,13 @@ VOID debug_mprintf( STRPTR format, ... ) {
     }
     if ( !CAMD_Keyboard_Base->ck_LogMem ) {
 
-      debug_kprintf( "AmiGUS Log giving up...\n" );
+      debug_kprintf( STR( APP_FILE ) " Log giving up...\n" );
       errorShown = TRUE;
       DisplayError( EAllocateLogMem );
       return;
     }
-    debug_kprintf( "AmiGUS Log @ 0x%08lx = %ld (retrieved), size %ld\n",
+    debug_kprintf( STR( APP_FILE )
+                   " Log @ 0x%08lx = %ld (retrieved), size %ld\n",
                    ( LONG ) CAMD_Keyboard_Base->ck_LogMem,
                    ( LONG ) CAMD_Keyboard_Base->ck_LogMem,
                    size );
@@ -270,7 +271,7 @@ VOID debug_mprintf( STRPTR format, ... ) {
     /* Move mem blob pointer back to overwrite trailing zero next comment */
     CAMD_Keyboard_Base->ck_LogMem =
       ( APTR )(( ULONG ) CAMD_Keyboard_Base->ck_LogMem - 1 );
-    debug_kprintf( "AmiGUS Log ready\n" );
+    debug_kprintf( STR( APP_FILE ) " Log ready\n" );
   }
 
   RawDoFmt(

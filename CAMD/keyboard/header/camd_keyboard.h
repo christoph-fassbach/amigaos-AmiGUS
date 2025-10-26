@@ -44,20 +44,19 @@
  * start marker is not even in the library, no need to unload the library
  * so even with library in memory it should unique in memory.
  */
-#define AMIGUS_MEM_LOG_BORDERS      "********************************"
+#define MEM_LOG_BORDERS         "********************************"
 
 /******************************************************************************
  * Tool base structure
  *****************************************************************************/
 /**
- * Private AmiGUS CAMD MIDI library base structure.
+ * Private CAMD keyboard base structure.
  *
- * There is no public one, pointers to libraries opened, interrupts,
- * list of client handles, logs. Nothing to play around with.
+ * There is no public one, nothing to play around with.
  */
 struct CAMD_Keyboard {
-
   /* Tool specific member variables */
+#if 0
   struct Screen               * ck_Screen;
   struct Window               * ck_MainWindow;
   APTR                          ck_VisualInfo;
@@ -75,27 +74,32 @@ struct CAMD_Keyboard {
 
   /* CAMD pointers */
 
+#endif
+
   BPTR                          ck_LogFile;       // Debug log file handle
   APTR                          ck_LogMem;        // Debug log memory blob
 };
 
-#define CAMD_TOOL_FLAG_REACTION_FAILED   0x00000001
+//#define CAMD_TOOL_FLAG_REACTION_FAILED   0x00000001
 
 /*
  * All libraries' base pointers used by the CAMD MIDI driver tool.
  */
 extern struct CAMD_Keyboard     * CAMD_Keyboard_Base;
 extern struct DosLibrary        * DOSBase;
-extern struct Library           * GadToolsBase;
 extern struct GfxBase           * GfxBase;
 extern struct IntuitionBase     * IntuitionBase;
 extern struct ExecBase          * SysBase;
 /* Optional, opened if available, if not, no test window ;) */
+/*
 extern struct Library           * BevelBase;
 extern struct Library           * LabelBase;
 extern struct Library           * LayoutBase;
 extern struct Library           * ListBrowserBase;
 extern struct Library           * VirtualBase;
 extern struct Library           * WindowBase;
+
+extern Class                    * OctaveKeysBase;
+*/
 
 #endif /* CAMD_KEYBOARD_H */
