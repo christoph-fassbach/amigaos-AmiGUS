@@ -56,19 +56,23 @@
  */
 struct CAMD_Keyboard {
   /* Tool specific member variables */
-#if 0
   struct Screen               * ck_Screen;
+  struct Window               * ck_MainWindow;
+  Object                      * ck_MainWindowContent;
+  ULONG                         ck_MainWindowSignal;
+  #if 0
+  
   struct Window               * ck_MainWindow;
   APTR                          ck_VisualInfo;
   struct Gadget               * ck_GadgetList;
   ULONG                         ck_Flags;         /** Bitmask as per below  */ 
 
-  struct Window               * ck_TestWindow;
+
   struct MsgPort              * ck_TestWindowPort;
   ULONG /*temporary - wrong type */ * ck_TestWindowHook;
   ULONG                         ck_TestWindowSignal;
   ULONG                         ck_TestContentSignal;
-  Object                      * ck_TestWindowContent;
+  
 
   /* AmiGUS specific member variables */
 
@@ -90,16 +94,12 @@ extern struct DosLibrary        * DOSBase;
 extern struct GfxBase           * GfxBase;
 extern struct IntuitionBase     * IntuitionBase;
 extern struct ExecBase          * SysBase;
-/* Optional, opened if available, if not, no test window ;) */
-/*
-extern struct Library           * BevelBase;
-extern struct Library           * LabelBase;
-extern struct Library           * LayoutBase;
-extern struct Library           * ListBrowserBase;
-extern struct Library           * VirtualBase;
-extern struct Library           * WindowBase;
 
-extern Class                    * OctaveKeysBase;
-*/
+extern struct ClassLibrary      * WindowBase;
+extern struct ClassLibrary      * LayoutBase;
+extern struct ClassLibrary      * ButtonBase;
+//extern struct Library           * LabelBase;
+
+extern Class                    * ClavierGadgetClass;
 
 #endif /* CAMD_KEYBOARD_H */

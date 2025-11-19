@@ -16,25 +16,47 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <clib/alib_protos.h>
 #include <graphics/gfxbase.h>
 #include <intuition/intuitionbase.h>
+#include <reaction/reaction_macros.h>
 
 #include <proto/dos.h>
 #include <proto/exec.h>
+#include <proto/intuition.h>
+#include <proto/layout.h>
+#include <proto/window.h>
 
 #include "camd_keyboard.h"
+#include "clavier_gadgetclass.h"
 #include "debug.h"
 #include "errors.h"
 #include "support.h"
 
 /* Globals defined somewhere - here ;) */
-struct CAMD_Keyboard     * CAMD_Keyboard_Base;
+struct CAMD_Keyboard     * CAMD_Keyboard_Base;   // Main app struct
+// System libraries:
 struct GfxBase           * GfxBase;
 struct IntuitionBase     * IntuitionBase;
-
-// And owned by linker libraries:
+// and some more owned by the linker libraries:
 // struct ExecBase       * SysBase;
 // struct DosLibrary     * DOSBase;
+// And for ReAction:
+struct ClassLibrary      * WindowBase;
+struct ClassLibrary      * LayoutBase;
+struct ClassLibrary      * ButtonBase;
+
+Class                    * ClavierGadgetClass;
+
+enum GadgetIds {
+
+  GadgetId_Start = 100,
+  GadgetId_ButtonOK,
+  GadgetId_ButtonCancel,
+  GadgetId_ClavierButton,
+  GadgetId_Clavier,
+  GadgetId_End
+};
 
 ULONG OpenLib( struct Library ** library, STRPTR name, ULONG version, ULONG error ) {
 
@@ -71,10 +93,24 @@ ULONG Startup( VOID ) {
   OpenLib(( struct Library ** )&IntuitionBase, "intuition.library", 36, EOpenIntuitionBase );
   OpenLib(( struct Library ** )&GfxBase, "graphics.library", 36, EOpenGfxBase );
 
+  OpenLib(( struct Library ** )&WindowBase, "window.class", 0, EOpenWindowBase );
+  OpenLib(( struct Library ** )&LayoutBase, "gadgets/layout.gadget", 0, EOpenLayoutBase );
+  OpenLib(( struct Library ** )&ButtonBase, "gadgets/button.gadget", 0, EOpenButtonBase );
+
+  ClavierGadgetClass = InitClavierGadgetClass();
+  if ( !( ClavierGadgetClass )) {
+
+    DisplayError( EInitClavierGadgetClass );
+  }
+
   LOG_I(( "I: " STR( APP_NAME ) " startup complete.\n" ));
 }
 
 VOID Cleanup( VOID ) {
+
+  CloseLib(( struct Library ** )&WindowBase );
+  CloseLib(( struct Library ** )&LayoutBase );
+  CloseLib(( struct Library ** )&ButtonBase );
 
   CloseLib(( struct Library ** )&GfxBase );
   CloseLib(( struct Library ** )&IntuitionBase );
@@ -95,9 +131,166 @@ VOID Cleanup( VOID ) {
   // No logging after this anymore!
 }
 
+VOID OpenWin( VOID ) { // TODO: enable error handling and return values
+
+  CAMD_Keyboard_Base->ck_Screen = LockPubScreen( NULL );
+
+  if ( !CAMD_Keyboard_Base->ck_Screen ) {
+
+    return;
+  }
+
+  CAMD_Keyboard_Base->ck_MainWindowContent = WindowObject,
+    WA_PubScreen, CAMD_Keyboard_Base->ck_Screen,
+    WA_ScreenTitle, "asdf",
+    WA_Title, "test",
+    WA_Activate, TRUE,
+    WA_DepthGadget, TRUE,
+    WA_DragBar, TRUE,
+    WA_CloseGadget, TRUE,
+    WA_SizeGadget, TRUE,
+    WA_Width, 600,
+    WA_Height, 200,
+    WA_SmartRefresh, TRUE,
+//    WA_Flags, WFLG_CLOSEGADGET | WFLG_DRAGBAR | WFLG_DEPTHGADGET | WFLG_SIZEBBOTTOM | WFLG_SIZEGADGET | WFLG_ACTIVATE,
+//    WA_IDCMP, IDCMP_GADGETDOWN | IDCMP_GADGETUP | IDCMP_IDCMPUPDATE | IDCMP_VANILLAKEY,
+				WA_Flags,WFLG_CLOSEGADGET | WFLG_DRAGBAR | WFLG_DEPTHGADGET | WFLG_SIZEBBOTTOM | WFLG_SIZEGADGET | WFLG_ACTIVATE,
+				WA_IDCMP,IDCMP_VANILLAKEY,
+    WINDOW_Position, WPOS_TOPLEFT,
+    WINDOW_IconifyGadget, FALSE,
+    WINDOW_ParentGroup, VLayoutObject,
+      LAYOUT_AddChild, HLayoutObject,
+        LAYOUT_AddChild, ButtonObject,
+          GA_Text, "Ok",
+          GA_ID, GadgetId_ButtonOK,
+          GA_RelVerify, TRUE,
+        ButtonEnd,
+
+        LAYOUT_AddChild, ButtonObject,
+          GA_Text, "Cancel",
+          GA_ID, GadgetId_ButtonCancel,
+          GA_RelVerify, TRUE,
+        ButtonEnd,
+      LayoutEnd,
+
+      LAYOUT_AddChild, ButtonObject,
+        GA_Text, "Clavier",
+        GA_ID, GadgetId_ClavierButton,
+        GA_RelVerify, TRUE,
+      ButtonEnd,
+
+      LAYOUT_AddChild, NewObject( ClavierGadgetClass, NULL,
+        GA_ID, GadgetId_Clavier,
+        GA_RelVerify, TRUE,
+      TAG_END ),
+    LayoutEnd,
+  EndWindow;
+
+  if ( !CAMD_Keyboard_Base->ck_MainWindowContent ) {
+    return;
+  }
+
+  CAMD_Keyboard_Base->ck_MainWindow = ( struct Window * )
+    RA_OpenWindow( CAMD_Keyboard_Base->ck_MainWindowContent );
+
+  if ( !CAMD_Keyboard_Base->ck_MainWindow ) {
+    return;
+  }
+
+  GetAttr( WINDOW_SigMask,
+           CAMD_Keyboard_Base->ck_MainWindowContent, 
+           &( CAMD_Keyboard_Base->ck_MainWindowSignal ));
+
+  return;
+}
+
+VOID HandleEvents( VOID ) {
+
+  BOOL stop = FALSE;
+
+  while ( !( stop )) {
+
+    ULONG signals = Wait( CAMD_Keyboard_Base->ck_MainWindowSignal
+                          | SIGBREAKF_CTRL_C );
+    if ( SIGBREAKF_CTRL_C & signals) {
+      stop = TRUE;
+    }
+
+    for ( ; ; ) {
+
+      WORD windowMessageCode;
+      ULONG windowMessage = DoMethod( CAMD_Keyboard_Base->ck_MainWindowContent,
+                                      WM_HANDLEINPUT, 
+                                      &windowMessageCode );
+
+      if ( WMHI_LASTMSG == windowMessage ) {
+
+        // All messages handled => break for-loop!
+        break;
+      }
+
+      switch ( WMHI_CLASSMASK & windowMessage ) {
+        case WMHI_GADGETUP: {
+          switch ( WMHI_GADGETMASK & windowMessage ) {
+            case GadgetId_ButtonOK:
+            case GadgetId_ButtonCancel: {
+
+              stop = TRUE;
+              break;
+            }
+            case GadgetId_ClavierButton: {
+              Printf( "%ld\n", windowMessageCode );
+              break;
+            }
+            case GadgetId_Clavier: {
+              Printf( "echtes clavier %ld\n", windowMessageCode );
+              break;
+            }
+          }
+          break;
+        }
+        case WMHI_VANILLAKEY: {
+          if (( WMHI_KEYMASK & windowMessage ) == 0x1b) {
+            stop = TRUE;
+          }
+          break;
+        }
+        case WMHI_CLOSEWINDOW: {
+							stop = TRUE;
+							break;
+        }
+        default: {
+          break;
+        }
+      }
+    }
+  }
+}
+
+VOID CloseWin( VOID ) {
+
+  if ( !CAMD_Keyboard_Base ) {
+
+    return;
+  }
+  if ( CAMD_Keyboard_Base->ck_MainWindowContent ) {
+
+    DisposeObject( CAMD_Keyboard_Base->ck_MainWindowContent );
+    CAMD_Keyboard_Base->ck_MainWindowContent = NULL;
+  }
+  if ( CAMD_Keyboard_Base->ck_Screen ) {
+
+    UnlockPubScreen( NULL, CAMD_Keyboard_Base->ck_Screen );
+    CAMD_Keyboard_Base->ck_Screen = NULL;
+  }
+}
+
 int main( VOID ) {
 
   Startup();
+  OpenWin();
+  HandleEvents();
+  CloseWin();
   Cleanup();
 
   return ENoError;
