@@ -26,6 +26,228 @@
 
 #include "clavier_gadgetclass.h"
 
+// Key sizes in mm
+#define BLACK_KEY_PEN            1
+#define BLACK_KEY_LENGTH_MM    900  //originally:  900
+#define BLACK_KEY_WIDTH_MM     200  //originally:  137
+#define WHITE_KEY_PEN            2
+#define WHITE_KEY_LENGTH_MM   1500  //originally: 1500
+#define WHITE_KEY_WIDTH_MM     300  //originally:  235
+
+// Conversion quotient to pixel
+#define MM_TO_PIXEL_QUOTIENT    50
+
+// Key sizes in pixel
+#define BLACK_KEY_HEIGHT_PIXEL  ( BLACK_KEY_LENGTH_MM / MM_TO_PIXEL_QUOTIENT )
+#define BLACK_KEY_WIDTH_PIXEL   ( BLACK_KEY_WIDTH_MM / MM_TO_PIXEL_QUOTIENT )
+#define WHITE_KEY_HEIGHT_PIXEL  ( WHITE_KEY_LENGTH_MM / MM_TO_PIXEL_QUOTIENT )
+#define WHITE_KEY_WIDTH_PIXEL   ( WHITE_KEY_WIDTH_MM / MM_TO_PIXEL_QUOTIENT )
+#define KEY_GAP_HEIGHT_PIXEL    3
+#define KEY_GAP_WIDTH_PIXEL     3
+
+
+#define MAIN_KEYS_PER_OCTAVE     7
+#define KEYS_PER_OCTAVE         12
+#define MAX_MIDI_OCTAVES        11
+
+typedef enum {
+  WhiteLeft = 1,
+  WhiteMid,
+  WhiteRight,
+  Black
+} Key_Visual_Type;
+
+struct Clavier_Key {
+
+  LONG ck_TopY;
+  LONG ck_SplitY;
+  LONG ck_BottomY;
+  LONG ck_TopLeftX;
+  LONG ck_TopRightX;
+  LONG ck_BottomLeftX;
+  LONG ck_BottomRightX;
+
+  ULONG ck_pen;
+  BYTE ck_name[8];
+};
+
+static VOID getClavierKeyProperties( struct Clavier_Key * key,
+                                     BYTE midiNote,
+                                     struct Gadget * gadget ) {
+
+  WORD note = midiNote % KEYS_PER_OCTAVE;
+  WORD octave = ( midiNote / KEYS_PER_OCTAVE ) - 1;
+  WORD nameIndex = 0;
+  Key_Visual_Type keyType;
+  WORD keyBase;
+
+  WORD topY = 0;
+  WORD splitY = ( BLACK_KEY_HEIGHT_PIXEL * gadget->Height )
+                / WHITE_KEY_HEIGHT_PIXEL;
+  WORD bottomY = gadget->Height;
+  WORD whiteKeyWidth = (( WHITE_KEY_WIDTH_PIXEL * gadget->Height )
+                       / WHITE_KEY_HEIGHT_PIXEL )
+                       + 2;
+  WORD blackKeyWidth = ( BLACK_KEY_WIDTH_PIXEL * gadget->Height )
+                       / WHITE_KEY_HEIGHT_PIXEL;
+  WORD blackKeyWidth_2 = blackKeyWidth >> 1;
+
+//  Printf("whiteKeyWidth = %ld\n", whiteKeyWidth);
+//  Printf("blackKeyWidth = %ld\n", blackKeyWidth);
+
+  switch ( note ) {
+    case 0: {
+      keyType = WhiteLeft;
+      keyBase = 0;
+      key->ck_name[ nameIndex++ ] = 'C';
+      break;
+    }
+    case 1: {
+      keyType = Black;
+      keyBase = 1;
+      key->ck_name[ nameIndex++ ] = 'C';
+      key->ck_name[ nameIndex++ ] = '#';
+      break;
+    }
+    case 2: {
+      keyType = WhiteMid;
+      keyBase = 1;
+      key->ck_name[ nameIndex++ ] = 'D';
+      break;
+    }
+    case 3: {
+      keyType = Black;
+      keyBase = 2;
+      key->ck_name[ nameIndex++ ] = 'D';
+      key->ck_name[ nameIndex++ ] = '#';
+      break;
+    }
+    case 4: {
+      keyType = WhiteRight;
+      keyBase = 2;
+      key->ck_name[ nameIndex++ ] = 'E';
+      break;
+    }
+    case 5: {
+      keyType = WhiteLeft;
+      keyBase = 3;
+      key->ck_name[ nameIndex++ ] = 'F';
+      break;
+    }
+    case 6: {
+      keyType = Black;
+      keyBase = 4;
+      key->ck_name[ nameIndex++ ] = 'F';
+      key->ck_name[ nameIndex++ ] = '#';
+      break;
+    }
+    case 7: {
+      keyType = WhiteMid;
+      keyBase = 4;
+      key->ck_name[ nameIndex++ ] = 'G';
+      break;
+    }
+    case 8: {
+      keyType = Black;
+      keyBase = 5;
+      key->ck_name[ nameIndex++ ] = 'G';
+      key->ck_name[ nameIndex++ ] = '#';
+      break;
+    }
+    case 9: {
+      keyType = WhiteMid;
+      keyBase = 5;
+      key->ck_name[ nameIndex++ ] = 'A';
+      break;
+    }
+    case 10: {
+      keyType = Black;
+      keyBase = 6;
+      key->ck_name[ nameIndex++ ] = 'A';
+      key->ck_name[ nameIndex++ ] = '#';
+      break;
+    }
+    case 11:
+    default: {
+      keyBase = 6;
+      keyType = WhiteRight;
+      key->ck_name[ nameIndex++ ] = 'B';
+      break;
+    }
+  }
+
+  if ( octave < 0 ) {
+
+    key->ck_name[ nameIndex++ ] = '-';
+    key->ck_name[ nameIndex++ ] = '1';
+
+  } else {
+
+    key->ck_name[ nameIndex++ ] = '0' + octave;
+  }
+  key->ck_name[ nameIndex++ ] = 0;
+
+  keyBase += ( 1 + octave ) * MAIN_KEYS_PER_OCTAVE;
+
+  switch ( keyType ) {
+    case WhiteLeft: {
+      key->ck_TopY = topY;
+      key->ck_SplitY = splitY + KEY_GAP_HEIGHT_PIXEL;
+      key->ck_BottomY = bottomY;
+      key->ck_TopLeftX = whiteKeyWidth * keyBase;
+      key->ck_BottomLeftX = key->ck_TopLeftX;
+      key->ck_BottomRightX = key->ck_BottomLeftX + whiteKeyWidth - KEY_GAP_WIDTH_PIXEL;
+      key->ck_TopRightX = key->ck_BottomRightX - blackKeyWidth_2;
+      key->ck_pen = WHITE_KEY_PEN;
+      break;
+    }
+    case WhiteMid: {
+      key->ck_TopY = topY;
+      key->ck_SplitY = splitY + KEY_GAP_HEIGHT_PIXEL;
+      key->ck_BottomY = bottomY;
+      key->ck_BottomLeftX = whiteKeyWidth * keyBase;
+      key->ck_TopLeftX = key->ck_BottomLeftX + blackKeyWidth_2;
+      key->ck_BottomRightX = key->ck_BottomLeftX + whiteKeyWidth - KEY_GAP_WIDTH_PIXEL;
+      key->ck_TopRightX = key->ck_BottomRightX - blackKeyWidth_2;
+      key->ck_pen = WHITE_KEY_PEN;
+      break;
+    }
+    case WhiteRight: {
+      key->ck_TopY = topY;
+      key->ck_SplitY = splitY + KEY_GAP_HEIGHT_PIXEL;
+      key->ck_BottomY = bottomY;
+      key->ck_BottomLeftX = whiteKeyWidth * keyBase;
+      key->ck_TopLeftX = key->ck_BottomLeftX + blackKeyWidth_2;
+      key->ck_BottomRightX = key->ck_BottomLeftX + whiteKeyWidth - KEY_GAP_WIDTH_PIXEL;
+      key->ck_TopRightX = key->ck_BottomRightX;
+      key->ck_pen = WHITE_KEY_PEN;
+      break;
+    }
+    case Black: {
+      key->ck_TopY = topY;
+      key->ck_SplitY = splitY;
+      key->ck_BottomY = -1;
+      key->ck_TopLeftX = ( whiteKeyWidth * keyBase ) - blackKeyWidth_2;
+      key->ck_TopRightX = key->ck_TopLeftX + blackKeyWidth - KEY_GAP_WIDTH_PIXEL;
+      key->ck_BottomLeftX = -1;
+      key->ck_BottomRightX = -1;
+      key->ck_pen = BLACK_KEY_PEN;
+      break;
+    }
+    default: {
+      key->ck_TopY = -1;
+      key->ck_SplitY = -1;
+      key->ck_BottomY = -1;
+      key->ck_TopLeftX = -1;
+      key->ck_TopRightX = -1;
+      key->ck_BottomLeftX = -1;
+      key->ck_BottomRightX = -1;
+      key->ck_pen = 0;
+      break;
+    }
+  }
+}
+
 static ULONG Handle_OM_NEW( Class * class,
                             struct Gadget * gadget,
                             struct opSet * message ) {
@@ -55,13 +277,40 @@ static ULONG Handle_GM_RENDER( Class * class,
                                struct gpRender * message ) {
 
   struct RastPort * rastPort = message->gpr_RPort;
+  WORD midiNote;
 
-  SetAPen( rastPort, 3 );
-  RectFill( rastPort,
-            gadget->LeftEdge,
-            gadget->TopEdge,
-            gadget->LeftEdge + 10,
-            gadget->TopEdge + 10);
+  for ( midiNote = 0; midiNote < 12; ++midiNote ) {
+    struct Clavier_Key key;
+    getClavierKeyProperties( &key, midiNote, gadget );
+    /*
+    Printf("%ld top (%ld, %ld) -> (%ld, %ld)\n",
+      midiNote,
+       key.ck_TopLeftX,
+              key.ck_TopY,
+              key.ck_TopRightX,
+              key.ck_SplitY);*/
+    SetAPen( rastPort, key.ck_pen );
+    RectFill( rastPort,
+              gadget->LeftEdge + key.ck_TopLeftX,
+              gadget->TopEdge + key.ck_TopY,
+              gadget->LeftEdge + key.ck_TopRightX,
+              gadget->TopEdge + key.ck_SplitY);
+    if ( 0 < key.ck_BottomY ) {
+      /*
+          Printf("%ld bottom (%ld, %ld) -> (%ld, %ld)\n",
+            midiNote,
+             key.ck_BottomLeftX,
+                key.ck_SplitY,
+                key.ck_BottomRightX,
+                key.ck_BottomY);
+*/
+      RectFill( rastPort,
+                gadget->LeftEdge + key.ck_BottomLeftX,
+                gadget->TopEdge + key.ck_SplitY,
+                gadget->LeftEdge + key.ck_BottomRightX,
+                gadget->TopEdge + key.ck_BottomY );
+    }
+  }
   return 0;
 }
 
@@ -95,19 +344,20 @@ static ULONG Handle_GM_Domain( Class * class,
   switch ( message->gpd_Which ) {
 
     case GDOMAIN_MINIMUM: {
-
       message->gpd_Domain.Left = 0;
       message->gpd_Domain.Top = 0;
-      message->gpd_Domain.Width = 10;
-      message->gpd_Domain.Height = 10;
+      message->gpd_Domain.Width = WHITE_KEY_WIDTH_PIXEL * MAIN_KEYS_PER_OCTAVE;
+      message->gpd_Domain.Height = WHITE_KEY_HEIGHT_PIXEL;
       return 1;
     }
     case GDOMAIN_NOMINAL: {
 
       message->gpd_Domain.Left = 0;
       message->gpd_Domain.Top = 0;
-      message->gpd_Domain.Width = 20;
-      message->gpd_Domain.Height = 20;
+      message->gpd_Domain.Width = WHITE_KEY_WIDTH_PIXEL
+                                  * MAIN_KEYS_PER_OCTAVE
+                                  * MAX_MIDI_OCTAVES;
+      message->gpd_Domain.Height = WHITE_KEY_HEIGHT_PIXEL;
       return 1;
     }
     case GDOMAIN_MAXIMUM: {
@@ -115,7 +365,8 @@ static ULONG Handle_GM_Domain( Class * class,
       message->gpd_Domain.Left = 0;
       message->gpd_Domain.Top = 0;
       message->gpd_Domain.Width = SHRT_MAX;
-      message->gpd_Domain.Height = SHRT_MAX;
+      message->gpd_Domain.Height = ( SHRT_MAX / (WHITE_KEY_WIDTH_PIXEL * MAIN_KEYS_PER_OCTAVE * MAX_MIDI_OCTAVES))
+                                   * WHITE_KEY_HEIGHT_PIXEL;
       return 1;
     }
     default: {
