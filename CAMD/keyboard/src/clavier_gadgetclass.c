@@ -271,7 +271,7 @@ static ULONG Handle_OM_NEW( Class * class,
 
     struct Clavier_Gadget_Data * data = INST_DATA( class, gadget );
     data->cgd_NoteHit = -1;
-    // TODO: init data fields here!
+    data->cgd_NoteActive = -1;
   }
 
   return ( ULONG ) gadget;
@@ -309,20 +309,25 @@ static ULONG Handle_GM_HITTEST( Class * class,
       return GMR_GADGETHIT;
     }
   }
-
-  data->cgd_NoteHit = 1000 + candidate; //-1;  
-  return GMR_GADGETHIT; //GMR_GADGETNOTHIT;
+#if 0
+  data->cgd_NoteHit = 1000 + candidate;
+  return GMR_GADGETHIT; 
+#endif
+  data->cgd_NoteHit = -1;  
+  return GMR_GADGETNOTHIT;
 }
 
 static ULONG Handle_GM_RENDER( Class * class,
                                struct Gadget * gadget,
                                struct gpRender * message ) {
 
+  struct Clavier_Gadget_Data * data = INST_DATA( class, gadget );
   struct RastPort * rastPort = message->gpr_RPort;
   WORD midiNote;
 
   for ( midiNote = 0; midiNote < 64; ++midiNote ) {
     struct Clavier_Key key;
+    ULONG pen;
     getClavierKeyProperties( &key, midiNote, gadget );
     /*
     Printf("%ld top (%ld, %ld) -> (%ld, %ld)\n",
@@ -331,7 +336,16 @@ static ULONG Handle_GM_RENDER( Class * class,
               key.ck_TopY,
               key.ck_TopRightX,
               key.ck_SplitY);*/
-    SetAPen( rastPort, key.ck_pen );
+    if (( midiNote == data->cgd_NoteActive ) &&
+        ( GFLG_SELECTED & gadget->Flags )) {
+
+      pen = 3;
+
+    } else {
+
+      pen = key.ck_pen;
+    }
+    SetAPen( rastPort, pen );
     RectFill( rastPort,
               gadget->LeftEdge + key.ck_TopLeftX,
               gadget->TopEdge + key.ck_TopY,
@@ -359,8 +373,15 @@ static ULONG Handle_GM_RENDER( Class * class,
 static ULONG Handle_GM_GOACTIVE( Class * class,
                                  struct Gadget * gadget,
                                  struct gpInput * message ) {
-  return GMR_MEACTIVE;
-  // return GMR_REUSE;
+
+  struct Clavier_Gadget_Data * data = INST_DATA( class, gadget );
+  if ( data->cgd_NoteHit >= 0 ) {
+
+    data->cgd_NoteActive = data->cgd_NoteHit;
+    return GMR_MEACTIVE;
+  }
+  data->cgd_NoteActive = -1;
+  return GMR_REUSE;
 }
 
 static ULONG Handle_GM_HANDLEINPUT( Class * class,
@@ -375,7 +396,7 @@ static ULONG Handle_GM_HANDLEINPUT( Class * class,
   if ( GMR_VERIFY & result ) {
 
     struct Clavier_Gadget_Data * data = INST_DATA( class, gadget );
-    *( message->gpi_Termination ) = data->cgd_NoteHit;
+    *( message->gpi_Termination ) = data->cgd_NoteActive;
   }
   return result;
 }
@@ -384,6 +405,8 @@ static ULONG Handle_GM_GOINACTIVE( Class * class,
                                  struct Gadget * gadget,
                                  struct gpGoInactive * message ) {
 
+  struct Clavier_Gadget_Data * data = INST_DATA( class, gadget );
+  data->cgd_NoteActive = -1;
   return 0;
 }
 
