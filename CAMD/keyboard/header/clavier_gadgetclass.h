@@ -28,7 +28,6 @@
 
 struct Clavier_Gadget_Data {
     WORD cgd_NoteHit;
-    WORD cgd_NoteActive;
 };
 
 Class * InitClavierGadgetClass( VOID );
