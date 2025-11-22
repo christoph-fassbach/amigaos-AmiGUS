@@ -57,18 +57,18 @@ typedef enum {
   Black
 } Key_Visual_Type;
 
-struct Clavier_KeyBorders {
+struct Clavier_Key {
 
-  LONG ckb_TopY;
-  LONG ckb_SplitY;
-  LONG ckb_BottomY;
-  LONG ckb_TopLeftX;
-  LONG ckb_TopRightX;
-  LONG ckb_BottomLeftX;
-  LONG ckb_BottomRightX;
+  LONG ck_TopY;
+  LONG ck_SplitY;
+  LONG ck_BottomY;
+  LONG ck_TopLeftX;
+  LONG ck_TopRightX;
+  LONG ck_BottomLeftX;
+  LONG ck_BottomRightX;
 
-  ULONG ckb_pen;
-  BYTE ckb_name[8];
+  ULONG ck_pen;
+  BYTE ck_name[8];
 };
 
 static WORD getClavierWhiteKeyWidth( struct Gadget * gadget ) {
@@ -99,7 +99,7 @@ static WORD getClavierBlackKeyHeight( struct Gadget * gadget ) {
   return result;
 }
 
-static VOID getClavierKeyProperties( struct Clavier_KeyBorders * key,
+static VOID getClavierKeyProperties( struct Clavier_Key * key,
                                      BYTE midiNote,
                                      struct Gadget * gadget ) {
 
@@ -117,144 +117,144 @@ static VOID getClavierKeyProperties( struct Clavier_KeyBorders * key,
     case 0: {
       keyType = WhiteLeft;
       keyBase = 0;
-      key->ckb_name[ nameIndex++ ] = 'C';
+      key->ck_name[ nameIndex++ ] = 'C';
       break;
     }
     case 1: {
       keyType = Black;
       keyBase = 1;
-      key->ckb_name[ nameIndex++ ] = 'C';
-      key->ckb_name[ nameIndex++ ] = '#';
+      key->ck_name[ nameIndex++ ] = 'C';
+      key->ck_name[ nameIndex++ ] = '#';
       break;
     }
     case 2: {
       keyType = WhiteMid;
       keyBase = 1;
-      key->ckb_name[ nameIndex++ ] = 'D';
+      key->ck_name[ nameIndex++ ] = 'D';
       break;
     }
     case 3: {
       keyType = Black;
       keyBase = 2;
-      key->ckb_name[ nameIndex++ ] = 'D';
-      key->ckb_name[ nameIndex++ ] = '#';
+      key->ck_name[ nameIndex++ ] = 'D';
+      key->ck_name[ nameIndex++ ] = '#';
       break;
     }
     case 4: {
       keyType = WhiteRight;
       keyBase = 2;
-      key->ckb_name[ nameIndex++ ] = 'E';
+      key->ck_name[ nameIndex++ ] = 'E';
       break;
     }
     case 5: {
       keyType = WhiteLeft;
       keyBase = 3;
-      key->ckb_name[ nameIndex++ ] = 'F';
+      key->ck_name[ nameIndex++ ] = 'F';
       break;
     }
     case 6: {
       keyType = Black;
       keyBase = 4;
-      key->ckb_name[ nameIndex++ ] = 'F';
-      key->ckb_name[ nameIndex++ ] = '#';
+      key->ck_name[ nameIndex++ ] = 'F';
+      key->ck_name[ nameIndex++ ] = '#';
       break;
     }
     case 7: {
       keyType = WhiteMid;
       keyBase = 4;
-      key->ckb_name[ nameIndex++ ] = 'G';
+      key->ck_name[ nameIndex++ ] = 'G';
       break;
     }
     case 8: {
       keyType = Black;
       keyBase = 5;
-      key->ckb_name[ nameIndex++ ] = 'G';
-      key->ckb_name[ nameIndex++ ] = '#';
+      key->ck_name[ nameIndex++ ] = 'G';
+      key->ck_name[ nameIndex++ ] = '#';
       break;
     }
     case 9: {
       keyType = WhiteMid;
       keyBase = 5;
-      key->ckb_name[ nameIndex++ ] = 'A';
+      key->ck_name[ nameIndex++ ] = 'A';
       break;
     }
     case 10: {
       keyType = Black;
       keyBase = 6;
-      key->ckb_name[ nameIndex++ ] = 'A';
-      key->ckb_name[ nameIndex++ ] = '#';
+      key->ck_name[ nameIndex++ ] = 'A';
+      key->ck_name[ nameIndex++ ] = '#';
       break;
     }
     case 11:
     default: {
       keyBase = 6;
       keyType = WhiteRight;
-      key->ckb_name[ nameIndex++ ] = 'B';
+      key->ck_name[ nameIndex++ ] = 'B';
       break;
     }
   }
 
   if ( octave < 0 ) {
 
-    key->ckb_name[ nameIndex++ ] = '-';
-    key->ckb_name[ nameIndex++ ] = '1';
+    key->ck_name[ nameIndex++ ] = '-';
+    key->ck_name[ nameIndex++ ] = '1';
 
   } else {
 
-    key->ckb_name[ nameIndex++ ] = '0' + octave;
+    key->ck_name[ nameIndex++ ] = '0' + octave;
   }
-  key->ckb_name[ nameIndex ] = 0;
+  key->ck_name[ nameIndex ] = 0;
 
   keyBase += ( 1 + octave ) * MAIN_KEYS_PER_OCTAVE;
 
-  key->ckb_TopY = 0;
-  key->ckb_SplitY = getClavierBlackKeyHeight( gadget );
-  key->ckb_BottomY = getClavierWhiteKeyHeight( gadget );
-  key->ckb_TopLeftX = whiteKeyWidth * keyBase;
-  key->ckb_TopRightX = key->ckb_TopLeftX
-                       + whiteKeyWidth
-                       - KEY_GAP_WIDTH_PIXEL;
-  key->ckb_BottomLeftX = key->ckb_TopLeftX;
-  key->ckb_BottomRightX = key->ckb_TopRightX;
+  key->ck_TopY = 0;
+  key->ck_SplitY = getClavierBlackKeyHeight( gadget );
+  key->ck_BottomY = getClavierWhiteKeyHeight( gadget );
+  key->ck_TopLeftX = whiteKeyWidth * keyBase;
+  key->ck_TopRightX = key->ck_TopLeftX
+                      + whiteKeyWidth
+                      - KEY_GAP_WIDTH_PIXEL;
+  key->ck_BottomLeftX = key->ck_TopLeftX;
+  key->ck_BottomRightX = key->ck_TopRightX;
   
   switch ( keyType ) {
     case WhiteLeft: {
-      key->ckb_SplitY += KEY_GAP_HEIGHT_PIXEL;
-      key->ckb_TopRightX -= blackKeyWidth_2;
-      key->ckb_pen = WHITE_KEY_PEN;
+      key->ck_SplitY += KEY_GAP_HEIGHT_PIXEL;
+      key->ck_TopRightX -= blackKeyWidth_2;
+      key->ck_pen = WHITE_KEY_PEN;
       break;
     }
     case WhiteMid: {
-      key->ckb_SplitY += KEY_GAP_HEIGHT_PIXEL;
-      key->ckb_TopLeftX += blackKeyWidth_2;
-      key->ckb_TopRightX -= blackKeyWidth_2;
-      key->ckb_pen = WHITE_KEY_PEN;
+      key->ck_SplitY += KEY_GAP_HEIGHT_PIXEL;
+      key->ck_TopLeftX += blackKeyWidth_2;
+      key->ck_TopRightX -= blackKeyWidth_2;
+      key->ck_pen = WHITE_KEY_PEN;
       break;
     }
     case WhiteRight: {
-      key->ckb_SplitY += KEY_GAP_HEIGHT_PIXEL;
-      key->ckb_TopLeftX += blackKeyWidth_2;
-      key->ckb_pen = WHITE_KEY_PEN;
+      key->ck_SplitY += KEY_GAP_HEIGHT_PIXEL;
+      key->ck_TopLeftX += blackKeyWidth_2;
+      key->ck_pen = WHITE_KEY_PEN;
       break;
     }
     case Black: {
-      key->ckb_BottomY = -1;
-      key->ckb_TopLeftX -=  blackKeyWidth_2;
-      key->ckb_TopRightX = key->ckb_TopLeftX
+      key->ck_BottomY = -1;
+      key->ck_TopLeftX -=  blackKeyWidth_2;
+      key->ck_TopRightX = key->ck_TopLeftX
                            + blackKeyWidth
                            - KEY_GAP_WIDTH_PIXEL;
-      key->ckb_pen = BLACK_KEY_PEN;
+      key->ck_pen = BLACK_KEY_PEN;
       break;
     }
     default: {
-      key->ckb_TopY = -1;
-      key->ckb_SplitY = -1;
-      key->ckb_BottomY = -1;
-      key->ckb_TopLeftX = -1;
-      key->ckb_TopRightX = -1;
-      key->ckb_BottomLeftX = -1;
-      key->ckb_BottomRightX = -1;
-      key->ckb_pen = 0;
+      key->ck_TopY = -1;
+      key->ck_SplitY = -1;
+      key->ck_BottomY = -1;
+      key->ck_TopLeftX = -1;
+      key->ck_TopRightX = -1;
+      key->ck_BottomLeftX = -1;
+      key->ck_BottomRightX = -1;
+      key->ck_pen = 0;
       break;
     }
   }
@@ -287,7 +287,7 @@ static ULONG Handle_GM_HITTEST( Class * class,
   const WORD candidate = ( hitX * KEYS_PER_OCTAVE ) / 
                          ( keyWidth * MAIN_KEYS_PER_OCTAVE );
   WORD i;
-  struct Clavier_KeyBorders key;
+  struct Clavier_Key key;
   struct Clavier_Gadget_Data * data = INST_DATA( class, gadget );
 
   // Not checking all, cause of 
@@ -295,14 +295,14 @@ static ULONG Handle_GM_HITTEST( Class * class,
   //  for ( i = 0; i < 128; ++i ) {
     getClavierKeyProperties( &key, i, gadget );
 
-    if ((( key.ckb_BottomLeftX <= hitX ) &&
-         ( key.ckb_BottomRightX >= hitX ) &&
-         ( key.ckb_SplitY <= hitY ) && 
-         ( key.ckb_BottomY >= hitY )) ||
-        (( key.ckb_TopLeftX <= hitX ) &&
-         ( key.ckb_TopRightX >= hitX ) &&
-         ( key.ckb_TopY <= hitY ) && 
-         ( key.ckb_SplitY >= hitY ))
+    if ((( key.ck_BottomLeftX <= hitX ) &&
+         ( key.ck_BottomRightX >= hitX ) &&
+         ( key.ck_SplitY <= hitY ) && 
+         ( key.ck_BottomY >= hitY )) ||
+        (( key.ck_TopLeftX <= hitX ) &&
+         ( key.ck_TopRightX >= hitX ) &&
+         ( key.ck_TopY <= hitY ) && 
+         ( key.ck_SplitY >= hitY ))
        ) {
 
       data->cgd_NoteHit = i;
@@ -322,35 +322,35 @@ static ULONG Handle_GM_RENDER( Class * class,
   WORD midiNote;
 
   for ( midiNote = 0; midiNote < 64; ++midiNote ) {
-    struct Clavier_KeyBorders key;
+    struct Clavier_Key key;
     getClavierKeyProperties( &key, midiNote, gadget );
     /*
     Printf("%ld top (%ld, %ld) -> (%ld, %ld)\n",
       midiNote,
-       key.ckb_TopLeftX,
-              key.ckb_TopY,
-              key.ckb_TopRightX,
-              key.ckb_SplitY);*/
-    SetAPen( rastPort, key.ckb_pen );
+       key.ck_TopLeftX,
+              key.ck_TopY,
+              key.ck_TopRightX,
+              key.ck_SplitY);*/
+    SetAPen( rastPort, key.ck_pen );
     RectFill( rastPort,
-              gadget->LeftEdge + key.ckb_TopLeftX,
-              gadget->TopEdge + key.ckb_TopY,
-              gadget->LeftEdge + key.ckb_TopRightX,
-              gadget->TopEdge + key.ckb_SplitY);
-    if ( 0 < key.ckb_BottomY ) {
+              gadget->LeftEdge + key.ck_TopLeftX,
+              gadget->TopEdge + key.ck_TopY,
+              gadget->LeftEdge + key.ck_TopRightX,
+              gadget->TopEdge + key.ck_SplitY);
+    if ( 0 < key.ck_BottomY ) {
       /*
           Printf("%ld bottom (%ld, %ld) -> (%ld, %ld)\n",
             midiNote,
-             key.ckb_BottomLeftX,
-                key.ckb_SplitY,
-                key.ckb_BottomRightX,
-                key.ckb_BottomY);
+             key.ck_BottomLeftX,
+                key.ck_SplitY,
+                key.ck_BottomRightX,
+                key.ck_BottomY);
 */
       RectFill( rastPort,
-                gadget->LeftEdge + key.ckb_BottomLeftX,
-                gadget->TopEdge + key.ckb_SplitY,
-                gadget->LeftEdge + key.ckb_BottomRightX,
-                gadget->TopEdge + key.ckb_BottomY );
+                gadget->LeftEdge + key.ck_BottomLeftX,
+                gadget->TopEdge + key.ck_SplitY,
+                gadget->LeftEdge + key.ck_BottomRightX,
+                gadget->TopEdge + key.ck_BottomY );
     }
   }
   return 0;
