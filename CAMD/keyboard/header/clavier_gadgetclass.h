@@ -27,7 +27,7 @@
 #define GMR_GADGETNOTHIT        0
 
 struct Clavier_Gadget_Data {
-    int a;
+    LONG cgd_NoteHit;
 };
 
 Class * InitClavierGadgetClass( VOID );
