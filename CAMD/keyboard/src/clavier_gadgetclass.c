@@ -75,13 +75,13 @@ static WORD getClavierWhiteKeyWidth( struct Gadget * gadget ) {
 
   WORD result = (( WHITE_KEY_WIDTH_PIXEL * gadget->Height )
                 / WHITE_KEY_HEIGHT_PIXEL )
-                + 2;
+                + KEY_GAP_WIDTH_PIXEL;
   return result;
 }
 
 static WORD getClavierWhiteKeyHeight( struct Gadget * gadget ) {
 
-  WORD result = gadget->Height;
+  WORD result = gadget->Height - 1;
   return result;
 }
 
