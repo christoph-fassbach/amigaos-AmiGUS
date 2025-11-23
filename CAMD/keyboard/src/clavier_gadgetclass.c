@@ -71,11 +71,17 @@ struct Clavier_Key {
   BYTE ck_name[8];
 };
 
-static WORD getClavierWhiteKeyWidth( struct Gadget * gadget ) {
+static WORD getClavierWhiteKeyWidthByHeight( WORD height ) {
 
-  WORD result = (( WHITE_KEY_WIDTH_PIXEL * gadget->Height )
+  WORD result = (( WHITE_KEY_WIDTH_PIXEL * height )
                 / WHITE_KEY_HEIGHT_PIXEL )
                 + KEY_GAP_WIDTH_PIXEL;
+  return result;
+}
+
+static WORD getClavierWhiteKeyWidth( struct Gadget * gadget ) {
+
+  WORD result = getClavierWhiteKeyWidthByHeight( gadget->Height );
   return result;
 }
 
@@ -324,7 +330,7 @@ static ULONG Handle_GM_RENDER( Class * class,
   struct RastPort * rastPort = message->gpr_RPort;
   WORD midiNote;
 
-  for ( midiNote = 0; midiNote < 64; ++midiNote ) {
+  for ( midiNote = 0; midiNote < 128; ++midiNote ) {
     struct Clavier_Key key;
     ULONG pen;
     getClavierKeyProperties( &key, midiNote, gadget );
@@ -408,11 +414,31 @@ static ULONG Handle_GM_GOINACTIVE( Class * class,
   return 0;
 }
 
+static ULONG Handle_GM_LAYOUT( Class * class,
+                               struct Gadget * gadget,
+                               struct gpLayout * message ) {
+
+  //Printf("vor h %ld w %ld \n", gadget->Height, gadget->Width );
+  gadget->Width = getClavierWhiteKeyWidth( gadget )
+                  * MAIN_KEYS_PER_OCTAVE 
+                  * KEYS_PER_OCTAVE;
+  gadget->Flags &= GFLG_RELHEIGHT & GFLG_RELWIDTH;
+  SetAttrs( gadget, GA_Width, gadget->Width, TAG_END );
+  //Printf("nach h %ld w %ld \n", gadget->Height, gadget->Width );
+  return 1;
+}
+
 static ULONG Handle_GM_Domain( Class * class,
                                struct gpDomain * message ) {
 
-  switch ( message->gpd_Which ) {
+  WORD heightIn = 43;
+  if ( message->gpd_GInfo ) {
+      heightIn = message->gpd_GInfo->gi_Domain.Height;
+      Printf("ja %ld\n", heightIn);
+  } else Printf("nein %ld \n", message->gpd_Which);
 
+  switch ( message->gpd_Which ) {
+/*
     case GDOMAIN_MINIMUM: {
       message->gpd_Domain.Left = 0;
       message->gpd_Domain.Top = 0;
@@ -420,23 +446,26 @@ static ULONG Handle_GM_Domain( Class * class,
       message->gpd_Domain.Height = WHITE_KEY_HEIGHT_PIXEL;
       return 1;
     }
+*/
+    case GDOMAIN_MINIMUM:
     case GDOMAIN_NOMINAL: {
 
       message->gpd_Domain.Left = 0;
       message->gpd_Domain.Top = 0;
-      message->gpd_Domain.Width = WHITE_KEY_WIDTH_PIXEL
+      message->gpd_Domain.Width = getClavierWhiteKeyWidthByHeight( 43 )
                                   * MAIN_KEYS_PER_OCTAVE
                                   * MAX_MIDI_OCTAVES;
-      message->gpd_Domain.Height = WHITE_KEY_HEIGHT_PIXEL;
+      message->gpd_Domain.Height = 43;
       return 1;
     }
     case GDOMAIN_MAXIMUM: {
 
       message->gpd_Domain.Left = 0;
       message->gpd_Domain.Top = 0;
-      message->gpd_Domain.Width = SHRT_MAX;
-      message->gpd_Domain.Height = ( SHRT_MAX / (WHITE_KEY_WIDTH_PIXEL * MAIN_KEYS_PER_OCTAVE * MAX_MIDI_OCTAVES))
-                                   * WHITE_KEY_HEIGHT_PIXEL;
+      message->gpd_Domain.Width = getClavierWhiteKeyWidthByHeight( 2000 )
+                                  * MAIN_KEYS_PER_OCTAVE
+                                  * MAX_MIDI_OCTAVES;
+      message->gpd_Domain.Height = 2000;
       return 1;
     }
     default: {
@@ -494,6 +523,14 @@ __saveds ULONG DispatchClavierGadgetClass(
                                      ( struct gpGoInactive * ) message );
       break;
     }
+/*
+    case GM_LAYOUT: {
+      result = Handle_GM_LAYOUT( class,
+                                 gadget,
+                                 ( struct gpLayout * ) message );
+      break;
+    }
+*/
     case GM_DOMAIN: {
 
       result = Handle_GM_Domain( class,
