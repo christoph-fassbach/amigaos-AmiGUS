@@ -26,7 +26,6 @@
 #include <proto/intuition.h>
 #include <proto/layout.h>
 #include <proto/scroller.h>
-#include <proto/virtual.h>
 #include <proto/window.h>
 
 #include "camd_keyboard.h"
@@ -47,7 +46,6 @@ struct IntuitionBase     * IntuitionBase;
 struct ClassLibrary      * ButtonBase;
 struct ClassLibrary      * LayoutBase;
 struct ClassLibrary      * ScrollerBase;
-struct ClassLibrary      * VirtualBase;
 struct ClassLibrary      * WindowBase;
 
 Class                    * ClavierGadgetClass;
@@ -58,7 +56,7 @@ enum GadgetIds {
   GadgetId_ButtonOK,
   GadgetId_ButtonCancel,
   GadgetId_ClavierButton,
-  GadgetId_ClavierScrollPane,
+  GadgetId_ClavierScroller,
   GadgetId_Clavier,
   GadgetId_End
 };
@@ -101,7 +99,6 @@ ULONG Startup( VOID ) {
   OpenLib(( struct Library ** )&ButtonBase, "gadgets/button.gadget", 0, EOpenButtonBase );
   OpenLib(( struct Library ** )&LayoutBase, "gadgets/layout.gadget", 0, EOpenLayoutBase );
   OpenLib(( struct Library ** )&ScrollerBase, "gadgets/scroller.gadget", 0, EOpenScrollerBase );
-  OpenLib(( struct Library ** )&VirtualBase, "gadgets/virtual.gadget", 45, EOpenVirtualBase );
   OpenLib(( struct Library ** )&WindowBase, "window.class", 0, EOpenWindowBase );
 
   ClavierGadgetClass = InitClavierGadgetClass();
@@ -116,7 +113,6 @@ ULONG Startup( VOID ) {
 VOID Cleanup( VOID ) {
 
   CloseLib(( struct Library ** )&WindowBase );
-  CloseLib(( struct Library ** )&VirtualBase );
   CloseLib(( struct Library ** )&ScrollerBase );
   CloseLib(( struct Library ** )&LayoutBase );
   CloseLib(( struct Library ** )&ButtonBase );
@@ -195,13 +191,15 @@ VOID OpenWin( VOID ) { // TODO: enable error handling and return values
         GA_ID, GadgetId_ClavierButton,
         GA_RelVerify, TRUE,
       ButtonEnd,
-//      LAYOUT_AddChild, scrollPane,
-      LAYOUT_AddChild, CAMD_Keyboard_Base->ck_ScrollPane = VirtualObject,
-        GA_ID, GadgetId_ClavierScrollPane,
+
+      LAYOUT_AddChild, CAMD_Keyboard_Base->ck_Scroller = ScrollerObject,
+        GA_ID, GadgetId_ClavierScroller,
         GA_RelVerify, TRUE,
+        SCROLLER_Orientation, SCROLLER_HORIZONTAL,
+      ScrollerEnd,
 //        VIRTUALA_ScrollerX, scrollPane,
 //        VIRTUALA_Contents, HLayoutObject,
-#if 0
+#if 1
           LAYOUT_AddChild, ButtonObject,
             GA_Text, "Hallo lieber bernt",
             GA_ID, GadgetId_ClavierButton + 10,
@@ -209,31 +207,19 @@ VOID OpenWin( VOID ) { // TODO: enable error handling and return values
           ButtonEnd,
 #endif
 //          LAYOUT_AddChild, NewObject( ClavierGadgetClass, NULL,
-          VIRTUALA_Contents, CAMD_Keyboard_Base->ck_Clavier = NewObject( ClavierGadgetClass, NULL,
-            GA_ID, GadgetId_Clavier,
+      LAYOUT_AddChild, CAMD_Keyboard_Base->ck_Clavier = NewObject( ClavierGadgetClass, NULL,
+        GA_ID, GadgetId_Clavier,
             //GA_RelSpecial, TRUE,
 //            CHILD_MinHeight, 60,
   //          CHILD_MinWidth, 1260,
-            GA_RelVerify, TRUE,
-
-          TAG_END ),
-#if 0
+        GA_RelVerify, TRUE,
+      TAG_END ),
+#if 1
           LAYOUT_AddChild, ButtonObject,
             GA_Text, "ja das muss sein",
-            GA_ID, GadgetId_ClavierButton + 10,
+            GA_ID, GadgetId_ClavierButton + 11,
             GA_RelVerify, TRUE,
           ButtonEnd,
-#endif
-//        LayoutEnd,
-      VirtualEnd,
-
-
-#if 0
-      LAYOUT_AddChild, ButtonObject,
-        GA_Text, "Clavier",
-        GA_ID, GadgetId_ClavierButton,
-        GA_RelVerify, TRUE,
-      ButtonEnd,
 #endif
     LayoutEnd,
   EndWindow;
@@ -300,6 +286,7 @@ VOID HandleEvents( VOID ) {
             }
             case GadgetId_ClavierButton: {
   //            Printf( "%ld\n", windowMessageCode );
+  /*
   ULONG a, b, c, d, e, f, g, h;
   GetAttr( VIRTUALA_TotalX, CAMD_Keyboard_Base->ck_ScrollPane, &a );
   GetAttr( VIRTUALA_TotalY, CAMD_Keyboard_Base->ck_ScrollPane, &b );
@@ -310,7 +297,7 @@ VOID HandleEvents( VOID ) {
   GetAttr( GA_Width, CAMD_Keyboard_Base->ck_ScrollPane, &g );
   GetAttr( GA_Height, CAMD_Keyboard_Base->ck_ScrollPane, &h );
   Printf("TotalX %ld TotalY %ld TopX %ld TopY %ld VisX %ld VisY %ld w %ld h %ld\n", a, b, c, d, e, f, g, h );
-
+*/
               break;
             }
             case GadgetId_Clavier: {
@@ -343,7 +330,7 @@ VOID HandleEvents( VOID ) {
 
           TAG_END ),
         TAG_END);
-        */
+        
           RethinkVirtualSize(
             CAMD_Keyboard_Base->ck_ScrollPane,
             CAMD_Keyboard_Base->ck_MainWindowContent,
@@ -362,6 +349,7 @@ VOID HandleEvents( VOID ) {
             CAMD_Keyboard_Base->ck_MainWindow,
             NULL
           );
+          */
           break;
         }
         default: {

@@ -60,7 +60,7 @@ struct CAMD_Keyboard {
   struct Window               * ck_MainWindow;
   Object                      * ck_MainWindowContent;
   ULONG                         ck_MainWindowSignal;
-  APTR                          ck_ScrollPane;
+  APTR                          ck_Scroller;
   APTR                          ck_Clavier;
   #if 0
   
@@ -101,7 +101,6 @@ extern struct ExecBase          * SysBase;
 extern struct ClassLibrary      * ButtonBase;
 extern struct ClassLibrary      * LayoutBase;
 extern struct ClassLibrary      * ScrollerBase;
-extern struct ClassLibrary      * VirtualBase;
 extern struct ClassLibrary      * WindowBase;
 //extern struct Library           * LabelBase;
 
