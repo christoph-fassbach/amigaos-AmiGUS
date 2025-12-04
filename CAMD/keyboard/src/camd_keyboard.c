@@ -197,16 +197,7 @@ VOID OpenWin( VOID ) { // TODO: enable error handling and return values
         GA_RelVerify, TRUE,
         SCROLLER_Orientation, SCROLLER_HORIZONTAL,
       ScrollerEnd,
-//        VIRTUALA_ScrollerX, scrollPane,
-//        VIRTUALA_Contents, HLayoutObject,
-#if 1
-          LAYOUT_AddChild, ButtonObject,
-            GA_Text, "Hallo lieber bernt",
-            GA_ID, GadgetId_ClavierButton + 10,
-            GA_RelVerify, TRUE,
-          ButtonEnd,
-#endif
-//          LAYOUT_AddChild, NewObject( ClavierGadgetClass, NULL,
+
       LAYOUT_AddChild, CAMD_Keyboard_Base->ck_Clavier = NewObject( ClavierGadgetClass, NULL,
         GA_ID, GadgetId_Clavier,
             //GA_RelSpecial, TRUE,

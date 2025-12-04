@@ -50,6 +50,10 @@
 #define KEYS_PER_OCTAVE         12
 #define MAX_MIDI_OCTAVES        11
 
+
+#define MAX( a, b ) (( a < b ) ? b : a )
+#define MIN( a, b ) (( a > b ) ? b : a )
+
 typedef enum {
   WhiteLeft = 1,
   WhiteMid,
@@ -118,6 +122,8 @@ static VOID getClavierKeyProperties( struct Clavier_Key * key,
   WORD whiteKeyWidth = getClavierWhiteKeyWidth( gadget );
   WORD blackKeyWidth = getClavierBlackKeyWidth( gadget );
   WORD blackKeyWidth_2 = blackKeyWidth >> 1;
+
+  const WORD offset = 50; // TODO: hittest works fine with 17, not with 50
 
   switch ( note ) {
     case 0: {
@@ -216,7 +222,7 @@ static VOID getClavierKeyProperties( struct Clavier_Key * key,
   key->ck_TopY = 0;
   key->ck_SplitY = getClavierBlackKeyHeight( gadget );
   key->ck_BottomY = getClavierWhiteKeyHeight( gadget );
-  key->ck_TopLeftX = whiteKeyWidth * keyBase;
+  key->ck_TopLeftX = ( whiteKeyWidth * keyBase ) - offset;
   key->ck_TopRightX = key->ck_TopLeftX
                       + whiteKeyWidth
                       - KEY_GAP_WIDTH_PIXEL;
@@ -329,18 +335,18 @@ static ULONG Handle_GM_RENDER( Class * class,
   struct Clavier_Gadget_Data * data = INST_DATA( class, gadget );
   struct RastPort * rastPort = message->gpr_RPort;
   WORD midiNote;
+  BOOL done = FALSE;
 
   for ( midiNote = 0; midiNote < 128; ++midiNote ) {
+
     struct Clavier_Key key;
     ULONG pen;
+    const WORD top = gadget->TopEdge;
+    const WORD left = gadget->LeftEdge;
+    const WORD width = gadget->Width - 1;
+
     getClavierKeyProperties( &key, midiNote, gadget );
-    /*
-    Printf("%ld top (%ld, %ld) -> (%ld, %ld)\n",
-      midiNote,
-       key.ck_TopLeftX,
-              key.ck_TopY,
-              key.ck_TopRightX,
-              key.ck_SplitY);*/
+
     if (( midiNote == data->cgd_NoteHit ) &&
         ( GFLG_SELECTED & gadget->Flags )) {
 
@@ -351,25 +357,30 @@ static ULONG Handle_GM_RENDER( Class * class,
       pen = key.ck_pen;
     }
     SetAPen( rastPort, pen );
+
+    if ( width < key.ck_TopLeftX ) {
+
+      // Left border of key is outside window - abort!!!
+      break;
+    }
+    if (( 0 > key.ck_BottomRightX ) && ( 0 > key.ck_TopRightX )) {
+
+      // Right border ok key is outside window - skip this one!
+      continue;
+    }
     RectFill( rastPort,
-              gadget->LeftEdge + key.ck_TopLeftX,
-              gadget->TopEdge + key.ck_TopY,
-              gadget->LeftEdge + key.ck_TopRightX,
-              gadget->TopEdge + key.ck_SplitY);
+              left + MAX( key.ck_TopLeftX, 0 ),
+              top + key.ck_TopY,
+              left + MIN( key.ck_TopRightX, width ),
+              top + key.ck_SplitY);
+
     if ( 0 < key.ck_BottomY ) {
-      /*
-          Printf("%ld bottom (%ld, %ld) -> (%ld, %ld)\n",
-            midiNote,
-             key.ck_BottomLeftX,
-                key.ck_SplitY,
-                key.ck_BottomRightX,
-                key.ck_BottomY);
-*/
+
       RectFill( rastPort,
-                gadget->LeftEdge + key.ck_BottomLeftX,
-                gadget->TopEdge + key.ck_SplitY,
-                gadget->LeftEdge + key.ck_BottomRightX,
-                gadget->TopEdge + key.ck_BottomY );
+                left + MAX( key.ck_BottomLeftX, 0 ),
+                top + key.ck_SplitY,
+                left + MIN( key.ck_BottomRightX, width ),
+                top + key.ck_BottomY );
     }
   }
   return 0;
@@ -453,8 +464,7 @@ static ULONG Handle_GM_Domain( Class * class,
       message->gpd_Domain.Left = 0;
       message->gpd_Domain.Top = 0;
       message->gpd_Domain.Width = getClavierWhiteKeyWidthByHeight( 43 )
-                                  * MAIN_KEYS_PER_OCTAVE
-                                  * MAX_MIDI_OCTAVES;
+                                  * MAIN_KEYS_PER_OCTAVE;
       message->gpd_Domain.Height = 43;
       return 1;
     }
