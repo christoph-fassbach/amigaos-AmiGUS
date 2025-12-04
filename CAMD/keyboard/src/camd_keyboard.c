@@ -344,6 +344,24 @@ VOID HandleEvents( VOID ) {
           TAG_END ),
         TAG_END);
         */
+          RethinkVirtualSize(
+            CAMD_Keyboard_Base->ck_ScrollPane,
+            CAMD_Keyboard_Base->ck_MainWindowContent,
+            NULL,
+            CAMD_Keyboard_Base->ck_Screen,
+            NULL
+          );
+          RethinkLayout(
+            (struct Gadget *)CAMD_Keyboard_Base->ck_MainWindowContent,
+            CAMD_Keyboard_Base->ck_MainWindow,
+            NULL,
+            TRUE );
+          RefreshVirtualGadget(
+            CAMD_Keyboard_Base->ck_Clavier,
+            CAMD_Keyboard_Base->ck_ScrollPane,
+            CAMD_Keyboard_Base->ck_MainWindow,
+            NULL
+          );
           break;
         }
         default: {
