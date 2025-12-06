@@ -110,20 +110,23 @@ static WORD getClavierBlackKeyHeight( struct Gadget * gadget ) {
 }
 
 static VOID getClavierKeyProperties( struct Clavier_Key * key,
-                                     BYTE midiNote,
-                                     struct Gadget * gadget ) {
+                                     Class * class,
+                                     struct Gadget * gadget,
+                                     BYTE midiNote ) {
 
-  WORD note = midiNote % KEYS_PER_OCTAVE;
-  WORD octave = ( midiNote / KEYS_PER_OCTAVE ) - 1;
+  const WORD note = midiNote % KEYS_PER_OCTAVE;
+  const WORD octave = ( midiNote / KEYS_PER_OCTAVE ) - 1;
+
+  const struct Clavier_Gadget_Data * data = INST_DATA( class, gadget );
+  const WORD offset = data->cgd_OffsetX;
+
+  const WORD whiteKeyWidth = getClavierWhiteKeyWidth( gadget );
+  const WORD blackKeyWidth = getClavierBlackKeyWidth( gadget );
+  const WORD blackKeyWidth_2 = blackKeyWidth >> 1;
+
   WORD nameIndex = 0;
   Key_Visual_Type keyType;
   WORD keyBase;
-
-  WORD whiteKeyWidth = getClavierWhiteKeyWidth( gadget );
-  WORD blackKeyWidth = getClavierBlackKeyWidth( gadget );
-  WORD blackKeyWidth_2 = blackKeyWidth >> 1;
-
-  const WORD offset = 50; // TODO: hittest works fine with 17, not with 50
 
   switch ( note ) {
     case 0: {
@@ -282,6 +285,7 @@ static ULONG Handle_OM_NEW( Class * class,
   if ( gadget ) {
 
     struct Clavier_Gadget_Data * data = INST_DATA( class, gadget );
+    data->cgd_OffsetX = 50;
     data->cgd_NoteHit = -1;
   }
 
@@ -295,16 +299,30 @@ static ULONG Handle_GM_HITTEST( Class * class,
   const UWORD hitX = message->gpht_Mouse.X;
   const UWORD hitY = message->gpht_Mouse.Y;
   const WORD keyWidth = getClavierWhiteKeyWidth( gadget );
-  const WORD candidate = ( hitX * KEYS_PER_OCTAVE ) / 
+#define LIMIT_HIT_TEST
+#ifdef LIMIT_HIT_TEST
+
+  struct Clavier_Gadget_Data * data = INST_DATA( class, gadget );
+  const WORD offset = data->cgd_OffsetX;
+  const WORD candidate = (( hitX + offset ) * KEYS_PER_OCTAVE ) / 
                          ( keyWidth * MAIN_KEYS_PER_OCTAVE );
+
+#endif
   WORD i;
   struct Clavier_Key key;
-  struct Clavier_Gadget_Data * data = INST_DATA( class, gadget );
 
-  // Not checking all, cause of 
+#ifdef LIMIT_HIT_TEST
+
+  // Not checking all, cause of speed
   for ( i = candidate - 2; i <= candidate + 2; ++i ) {
-  //  for ( i = 0; i < 128; ++i ) {
-    getClavierKeyProperties( &key, i, gadget );
+
+#else
+
+  for ( i = 0; i < 128; ++i ) {
+
+#endif
+
+    getClavierKeyProperties( &key, class, gadget, i );
 
     if ((( key.ck_BottomLeftX <= hitX ) &&
          ( key.ck_BottomRightX >= hitX ) &&
@@ -345,7 +363,7 @@ static ULONG Handle_GM_RENDER( Class * class,
     const WORD left = gadget->LeftEdge;
     const WORD width = gadget->Width - 1;
 
-    getClavierKeyProperties( &key, midiNote, gadget );
+    getClavierKeyProperties( &key, class, gadget, midiNote );
 
     if (( midiNote == data->cgd_NoteHit ) &&
         ( GFLG_SELECTED & gadget->Flags )) {
