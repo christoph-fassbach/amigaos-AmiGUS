@@ -18,6 +18,7 @@
 
 #include <clib/alib_protos.h>
 #include <graphics/gfxbase.h>
+#include <intuition/icclass.h>
 #include <intuition/intuitionbase.h>
 #include <reaction/reaction_macros.h>
 
@@ -39,6 +40,7 @@ struct CAMD_Keyboard     * CAMD_Keyboard_Base;   // Main app struct
 // System libraries:
 struct GfxBase           * GfxBase;
 struct IntuitionBase     * IntuitionBase;
+struct UtilityBase       * UtilityBase;
 // and some more owned by the linker libraries:
 // struct ExecBase       * SysBase;
 // struct DosLibrary     * DOSBase;
@@ -95,6 +97,7 @@ ULONG Startup( VOID ) {
   }
   OpenLib(( struct Library ** )&IntuitionBase, "intuition.library", 36, EOpenIntuitionBase );
   OpenLib(( struct Library ** )&GfxBase, "graphics.library", 36, EOpenGfxBase );
+  OpenLib(( struct Library ** )&UtilityBase, UTILITYNAME, 36, EOpenUtilityBase );
 
   OpenLib(( struct Library ** )&ButtonBase, "gadgets/button.gadget", 0, EOpenButtonBase );
   OpenLib(( struct Library ** )&LayoutBase, "gadgets/layout.gadget", 0, EOpenLayoutBase );
@@ -117,6 +120,7 @@ VOID Cleanup( VOID ) {
   CloseLib(( struct Library ** )&LayoutBase );
   CloseLib(( struct Library ** )&ButtonBase );
 
+  CloseLib(( struct Library ** )&UtilityBase );
   CloseLib(( struct Library ** )&GfxBase );
   CloseLib(( struct Library ** )&IntuitionBase );
   LOG_I(( "I: " STR( APP_NAME ) " cleanup starting.\n" ));
@@ -145,7 +149,7 @@ VOID OpenWin( VOID ) { // TODO: enable error handling and return values
       SCROLLER_Visible, 10,
     ScrollerEnd;
 #endif
-
+Object * xxx;
   CAMD_Keyboard_Base->ck_Screen = LockPubScreen( NULL );
 
   if ( !CAMD_Keyboard_Base->ck_Screen ) {
@@ -206,7 +210,7 @@ VOID OpenWin( VOID ) { // TODO: enable error handling and return values
         GA_RelVerify, TRUE,
       TAG_END ),
 #if 1
-          LAYOUT_AddChild, ButtonObject,
+          LAYOUT_AddChild, xxx = ButtonObject,
             GA_Text, "ja das muss sein",
             GA_ID, GadgetId_ClavierButton + 11,
             GA_RelVerify, TRUE,
@@ -214,7 +218,28 @@ VOID OpenWin( VOID ) { // TODO: enable error handling and return values
 #endif
     LayoutEnd,
   EndWindow;
+/*
+  SetAttrs( CAMD_Keyboard_Base->ck_Scroller,
+    ICA_TARGET, CAMD_Keyboard_Base->ck_Clavier,
+    ICA_MAP, SCROLLER_Total,
+    TAG_END );
 
+  SetAttrs( CAMD_Keyboard_Base->ck_Clavier,
+    ICA_TARGET, CAMD_Keyboard_Base->ck_Scroller,
+    ICA_MAP,
+      GA_Width, GA_Text,
+
+    TAG_END );
+*/
+// see https://wiki.amigaos.net/wiki/BOOPSI_-_Object_Oriented_Intuition
+/*
+  SetAttrs( CAMD_Keyboard_Base->ck_Clavier,
+    ICA_TARGET, xxx,
+    ICA_MAP,
+      GA_Width, SCROLLER_Total,
+      TAG_END,
+    TAG_END );
+*/
   if ( !CAMD_Keyboard_Base->ck_MainWindowContent ) {
     return;
   }
@@ -276,6 +301,17 @@ VOID HandleEvents( VOID ) {
               break;
             }
             case GadgetId_ClavierButton: {
+              ULONG w;
+              ULONG x;
+              ULONG y;
+              ULONG z;
+              Printf("da\n");
+              w = GetAttr( CG_OFFSET_X, CAMD_Keyboard_Base->ck_Clavier, &x );
+              y = GetAttr( CG_VIRTUAL_WIDTH, CAMD_Keyboard_Base->ck_Clavier, &z );
+              /*SetAttrs( CAMD_Keyboard_Base->ck_Clavier,
+                        CG_OFFSET_X, x + 10,
+                        TAG_END );*/
+                        Printf( "%ld %ld %ld %ld\n", w, x, y, z );
   //            Printf( "%ld\n", windowMessageCode );
   /*
   ULONG a, b, c, d, e, f, g, h;

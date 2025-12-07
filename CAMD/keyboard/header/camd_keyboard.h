@@ -23,6 +23,7 @@
 #include <exec/execbase.h>
 #include <intuition/classes.h>
 #include <intuition/intuitionbase.h>
+#include <utility/utility.h>
 
 /******************************************************************************
  * Define the tool's properties here,
@@ -95,6 +96,7 @@ extern struct CAMD_Keyboard     * CAMD_Keyboard_Base;
 extern struct DosLibrary        * DOSBase;
 extern struct GfxBase           * GfxBase;
 extern struct IntuitionBase     * IntuitionBase;
+extern struct UtilityBase       * UtilityBase;
 extern struct ExecBase          * SysBase;
 
 
