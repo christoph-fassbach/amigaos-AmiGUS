@@ -26,14 +26,19 @@
 
 #define GMR_GADGETNOTHIT        0
 
+#define CG_OFFSET_X             ( TAG_USER + 1 )
+#define CG_VIRTUAL_WIDTH        ( TAG_USER + 2 )
+
 struct Clavier_Gadget_Data {
-  WORD cgd_OffsetX;
   WORD cgd_NoteHit;
+  WORD cgd_OffsetX;
+  WORD cgd_VirtualWidth;
 };
 
 Class * InitClavierGadgetClass( VOID );
 
 extern struct GfxBase       * GfxBase;
 extern struct IntuitionBase * IntuitionBase;
+extern struct UtilityBase   * UtilityBase;
 
 #endif /* CLAVIER_GADGETCLASS_H */

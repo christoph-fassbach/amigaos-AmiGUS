@@ -23,6 +23,7 @@
 
 #include <proto/graphics.h>
 #include <proto/intuition.h>
+#include <proto/utility.h>
 
 #include "clavier_gadgetclass.h"
 
@@ -285,11 +286,107 @@ static ULONG Handle_OM_NEW( Class * class,
   if ( gadget ) {
 
     struct Clavier_Gadget_Data * data = INST_DATA( class, gadget );
-    data->cgd_OffsetX = 50;
     data->cgd_NoteHit = -1;
+    data->cgd_OffsetX = 50;
+    data->cgd_VirtualWidth = 1000;
   }
 
   return ( ULONG ) gadget;
+}
+
+// Like https://wiki.amigaos.net/wiki/BOOPSI_-_Object_Oriented_Intuition
+static VOID NotifySuper( Class * class,
+                         struct Gadget * gadget,
+                         struct opUpdate * message,
+                         struct TagItem * tag ) {
+
+  ULONG flags = 0;
+  struct TagItem notifyTags[ 2 ];
+
+  notifyTags[ 0 ].ti_Tag = tag->ti_Tag;
+  notifyTags[ 0 ].ti_Data = tag->ti_Data;
+  notifyTags[ 1 ].ti_Tag = TAG_END;
+
+  if ( OM_UPDATE == message->MethodID ) {
+
+    flags = message->opu_Flags;
+  }
+
+  DoSuperMethod( class, ( Object * ) gadget, OM_NOTIFY, notifyTags, flags );
+}
+
+
+static ULONG Handle_OM_SET_OR_UPDATE( Class * class,
+                                      struct Gadget * gadget,
+                                      struct opUpdate * message ) {
+
+  ULONG result = DoSuperMethodA( class,
+                                 ( Object * ) gadget,
+                                 ( Msg ) message );
+
+  struct Clavier_Gadget_Data * data = INST_DATA( class, gadget );
+  struct TagItem * tagState = message->opu_AttrList;
+  struct TagItem * tagItem;
+
+  while ( tagItem = NextTagItem( &tagState )) {
+
+    switch ( tagItem->ti_Tag ) {
+      case CG_OFFSET_X: {
+
+        data->cgd_OffsetX = tagItem->ti_Data;
+        NotifySuper( class, gadget, message, tagItem );
+        result |= 1;
+        break;
+      }
+      case CG_VIRTUAL_WIDTH: {
+
+        data->cgd_VirtualWidth = tagItem->ti_Data;
+        NotifySuper( class, gadget, message, tagItem );
+        result |= 1;
+        break;
+      }
+      default: {
+        break;
+      }
+    }
+  }
+
+  return result;
+}
+
+static ULONG Handle_OM_GET( Class * class,
+                            struct Gadget * gadget,
+                            struct opGet * message ) {
+
+  ULONG result = DoSuperMethodA( class,
+                                 ( Object * ) gadget,
+                                 ( Msg ) message );
+
+  const ULONG attributeId = message->opg_AttrID;
+  struct Clavier_Gadget_Data * data = INST_DATA( class, gadget );
+
+  if ( result ) {
+
+    return result;
+  }
+
+  switch ( attributeId ) {
+    case CG_OFFSET_X: {
+
+      *( message->opg_Storage ) = data->cgd_OffsetX;
+      return 1;
+    }
+    case CG_VIRTUAL_WIDTH: {
+
+      *( message->opg_Storage ) = data->cgd_VirtualWidth;
+      return 1;
+    }
+    default: {
+
+      Printf("Unknown %lx\n", attributeId );
+      return 0;
+    }
+  }
 }
 
 static ULONG Handle_GM_HITTEST( Class * class,
@@ -447,13 +544,12 @@ static ULONG Handle_GM_LAYOUT( Class * class,
                                struct Gadget * gadget,
                                struct gpLayout * message ) {
 
-  //Printf("vor h %ld w %ld \n", gadget->Height, gadget->Width );
-  gadget->Width = getClavierWhiteKeyWidth( gadget )
-                  * MAIN_KEYS_PER_OCTAVE 
-                  * KEYS_PER_OCTAVE;
-  gadget->Flags &= GFLG_RELHEIGHT & GFLG_RELWIDTH;
-  SetAttrs( gadget, GA_Width, gadget->Width, TAG_END );
-  //Printf("nach h %ld w %ld \n", gadget->Height, gadget->Width );
+  WORD virtualWidth = getClavierWhiteKeyWidth( gadget )
+                      * MAIN_KEYS_PER_OCTAVE 
+                      * KEYS_PER_OCTAVE;
+  SetAttrs( gadget,
+            CG_VIRTUAL_WIDTH, virtualWidth,
+            TAG_END );
   return 1;
 }
 
@@ -516,6 +612,24 @@ __saveds ULONG DispatchClavierGadgetClass(
                               ( struct opSet * ) message );
       break;
     }
+    case OM_SET: {
+      result = Handle_OM_SET_OR_UPDATE( class,
+                                        gadget,
+                                        ( struct opUpdate * ) message );
+      break;
+    }
+    case OM_GET: {
+      result = Handle_OM_GET( class,
+                              gadget,
+                              ( struct opGet * ) message );
+      break;
+    }
+    case OM_UPDATE: {
+      result = Handle_OM_SET_OR_UPDATE( class,
+                                        gadget,
+                                        ( struct opUpdate * ) message );
+      break;
+    }
     case GM_HITTEST: {
 
       result = Handle_GM_HITTEST( class,
@@ -551,14 +665,12 @@ __saveds ULONG DispatchClavierGadgetClass(
                                      ( struct gpGoInactive * ) message );
       break;
     }
-/*
     case GM_LAYOUT: {
       result = Handle_GM_LAYOUT( class,
                                  gadget,
                                  ( struct gpLayout * ) message );
       break;
     }
-*/
     case GM_DOMAIN: {
 
       result = Handle_GM_Domain( class,
