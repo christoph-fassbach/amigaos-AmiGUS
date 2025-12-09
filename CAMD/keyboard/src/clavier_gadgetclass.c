@@ -571,9 +571,9 @@ static ULONG Handle_GM_LAYOUT( Class * class,
                                struct Gadget * gadget,
                                struct gpLayout * message ) {
 
-  WORD virtualWidth = getClavierWhiteKeyWidth( gadget )
-                      * MAIN_KEYS_PER_OCTAVE 
-                      * KEYS_PER_OCTAVE;
+  WORD virtualWidth = getClavierWhiteKeyWidth( gadget ) *
+                      (( MAIN_KEYS_PER_OCTAVE 
+                        * MAX_MIDI_OCTAVES ) - 2 );
   SetAttrs( gadget,
             CG_VIRTUAL_WIDTH, virtualWidth,
             CG_VISUAL_WIDTH, gadget->Width,
