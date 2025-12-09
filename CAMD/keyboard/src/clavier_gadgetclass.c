@@ -279,25 +279,6 @@ static VOID getClavierKeyProperties( struct Clavier_Key * key,
   }
 }
 
-static ULONG Handle_OM_NEW( Class * class,
-                            struct Gadget * gadget,
-                            struct opSet * message ) {
-
-  gadget = ( struct Gadget * ) DoSuperMethodA( class,
-                                               ( Object * ) gadget,
-                                               ( Msg ) message );
-  if ( gadget ) {
-
-    struct Clavier_Gadget_Data * data = INST_DATA( class, gadget );
-    data->cgd_NoteHit = -1;
-    data->cgd_OffsetX = 0;
-    data->cgd_VirtualWidth = 1000;
-  }
-
-  return ( ULONG ) gadget;
-}
-
-// Like https://wiki.amigaos.net/wiki/BOOPSI_-_Object_Oriented_Intuition
 static VOID NotifySuper( Class * class,
                          struct Gadget * gadget,
                          struct opUpdate * message,
@@ -318,6 +299,24 @@ static VOID NotifySuper( Class * class,
   DoSuperMethod( class, ( Object * ) gadget, OM_NOTIFY, notifyTags, flags );
 }
 
+static ULONG Handle_OM_NEW( Class * class,
+                            struct Gadget * gadget,
+                            struct opSet * message ) {
+
+  gadget = ( struct Gadget * ) DoSuperMethodA( class,
+                                               ( Object * ) gadget,
+                                               ( Msg ) message );
+  if ( gadget ) {
+
+    struct Clavier_Gadget_Data * data = INST_DATA( class, gadget );
+    data->cgd_NoteHit = -1;
+    data->cgd_OffsetX = 0;
+    data->cgd_VirtualWidth = 1000;
+  }
+
+  return ( ULONG ) gadget;
+}
+
 static ULONG Handle_OM_SET_OR_UPDATE( Class * class,
                                       struct Gadget * gadget,
                                       struct opUpdate * message ) {
@@ -333,7 +332,6 @@ static ULONG Handle_OM_SET_OR_UPDATE( Class * class,
   while ( tagItem = NextTagItem( &tagState )) {
 
     switch ( tagItem->ti_Tag ) {
-//      case TAG_USER + 0x5000000 +0x0005000+1L:
       case CG_OFFSET_X: {
 
         data->cgd_OffsetX = tagItem->ti_Data;
@@ -461,7 +459,6 @@ static ULONG Handle_GM_RENDER( Class * class,
   struct Clavier_Gadget_Data * data = INST_DATA( class, gadget );
   struct RastPort * rastPort = message->gpr_RPort;
   WORD midiNote;
-  BOOL done = FALSE;
   const WORD top = gadget->TopEdge;
   const WORD left = gadget->LeftEdge;
   const WORD width = gadget->Width - 1;
@@ -630,7 +627,7 @@ __saveds ULONG DispatchClavierGadgetClass(
   struct Gadget * gadget,
   Msg message ) {
 
-  ULONG result = 0;
+  ULONG result;
   switch ( message->MethodID ) {
     case OM_NEW: {
 

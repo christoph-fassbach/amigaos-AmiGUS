@@ -52,6 +52,21 @@ struct ClassLibrary      * WindowBase;
 
 Class                    * ClavierGadgetClass;
 
+/* Locals also defined here! */
+
+static const struct TagItem clavier2scroller[] = {
+
+  { CG_VIRTUAL_WIDTH, SCROLLER_Total },
+  { CG_VISUAL_WIDTH, SCROLLER_Visible },
+  { TAG_END, 0 }
+};
+
+static const struct TagItem scroller2clavier[] = {
+
+  { SCROLLER_Top, CG_OFFSET_X },
+  { TAG_END, 0 }
+};
+
 enum GadgetIds {
 
   GadgetId_Start = 100,
@@ -142,15 +157,6 @@ VOID Cleanup( VOID ) {
 
 VOID OpenWin( VOID ) { // TODO: enable error handling and return values
 
-  struct TagItem clavier2scroller[] = {
-    { CG_VIRTUAL_WIDTH, SCROLLER_Total },
-    { CG_VISUAL_WIDTH, SCROLLER_Visible },
-    { TAG_END, 0 }
-  };
-  struct TagItem scroller2clavier[] = {
-    { SCROLLER_Top, CG_OFFSET_X },
-    { TAG_END, 0 }
-  };
   CAMD_Keyboard_Base->ck_Screen = LockPubScreen( NULL );
 
   if ( !CAMD_Keyboard_Base->ck_Screen ) {
@@ -215,16 +221,21 @@ VOID OpenWin( VOID ) { // TODO: enable error handling and return values
     return;
   }
 
+  // ICA_TARGET + ICA_MAP mechanisms see
+  // - https://wiki.amigaos.net/wiki/BOOPSI_-_Object_Oriented_Intuition
+  // - http://amigadev.elowar.com/read/ADCD_2.1/Libraries_Manual_guide/node04CA.html
+  // and remember: doing them on stack does not work,
+  // keeps going invalid in between and won't work, but not crash either.
   SetAttrs(
     CAMD_Keyboard_Base->ck_Scroller,
     ICA_TARGET, CAMD_Keyboard_Base->ck_Clavier,
+    ICA_MAP, scroller2clavier,
     TAG_END );
   SetAttrs(
     CAMD_Keyboard_Base->ck_Clavier,
     ICA_TARGET, CAMD_Keyboard_Base->ck_Scroller,
+    ICA_MAP, clavier2scroller,
     TAG_END );
-
-// see https://wiki.amigaos.net/wiki/BOOPSI_-_Object_Oriented_Intuition
 
   CAMD_Keyboard_Base->ck_MainWindow = ( struct Window * )
     RA_OpenWindow( CAMD_Keyboard_Base->ck_MainWindowContent );
