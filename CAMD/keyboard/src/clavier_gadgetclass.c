@@ -587,22 +587,17 @@ static ULONG Handle_GM_LAYOUT( Class * class,
 static ULONG Handle_GM_Domain( Class * class,
                                struct gpDomain * message ) {
 
-  WORD heightIn = 43;
   if ( message->gpd_GInfo ) {
-      heightIn = message->gpd_GInfo->gi_Domain.Height;
-      Printf("ja %ld\n", heightIn);
-  } else Printf("nein %ld \n", message->gpd_Which);
+
+    Printf( "ja %ld\n", message->gpd_GInfo->gi_Domain.Height );
+
+  } else {
+
+    Printf( "nein %ld \n", message->gpd_Which );
+  }
 
   switch ( message->gpd_Which ) {
-/*
-    case GDOMAIN_MINIMUM: {
-      message->gpd_Domain.Left = 0;
-      message->gpd_Domain.Top = 0;
-      message->gpd_Domain.Width = WHITE_KEY_WIDTH_PIXEL * MAIN_KEYS_PER_OCTAVE;
-      message->gpd_Domain.Height = WHITE_KEY_HEIGHT_PIXEL;
-      return 1;
-    }
-*/
+
     case GDOMAIN_MINIMUM:
     case GDOMAIN_NOMINAL: {
 
@@ -624,6 +619,7 @@ static ULONG Handle_GM_Domain( Class * class,
       return 1;
     }
     default: {
+
       return 0;
     }
   }
