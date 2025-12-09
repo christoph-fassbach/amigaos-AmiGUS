@@ -205,39 +205,24 @@ Object * xxx;
         GA_RelVerify, TRUE,
       ButtonEnd,
 
-      
-
-      LAYOUT_AddChild, CAMD_Keyboard_Base->ck_Clavier = NewObject( ClavierGadgetClass, NULL,
-        GA_ID, GadgetId_Clavier,
-            //GA_RelSpecial, TRUE,
-//            CHILD_MinHeight, 60,
-  //          CHILD_MinWidth, 1260,
-//        ICA_TARGET, CAMD_Keyboard_Base->ck_Scroller,
-//        ICA_MAP, clavier2scroller,
-        GA_RelVerify, TRUE,
-      TAG_END ),
       LAYOUT_AddChild, CAMD_Keyboard_Base->ck_Scroller = ScrollerObject,
         GA_ID, GadgetId_ClavierScroller,
-        ICA_TARGET, CAMD_Keyboard_Base->ck_Clavier,
-//        ICA_MAP, scroller2clavier,
         GA_RelVerify, TRUE,
         SCROLLER_Orientation, SCROLLER_HORIZONTAL,
       ScrollerEnd,
-#if 1
-          LAYOUT_AddChild, xxx = ButtonObject,
-            GA_Text, "ja das muss sein",
-            GA_ID, GadgetId_ClavierButton + 11,
-            GA_RelVerify, TRUE,
-          ButtonEnd,
-#endif
+
+      LAYOUT_AddChild, CAMD_Keyboard_Base->ck_Clavier = NewObject( ClavierGadgetClass, NULL,
+        GA_ID, GadgetId_Clavier,
+        GA_RelVerify, TRUE,
+      TAG_END ),
+
     LayoutEnd,
   EndWindow;
-/*
-  SetAttrs( CAMD_Keyboard_Base->ck_Scroller,
+
+  SetAttrs(
+    CAMD_Keyboard_Base->ck_Scroller,
     ICA_TARGET, CAMD_Keyboard_Base->ck_Clavier,
-    ICA_MAP, SCROLLER_Total,
     TAG_END );
-*/
 
 // see https://wiki.amigaos.net/wiki/BOOPSI_-_Object_Oriented_Intuition
 /*
@@ -251,41 +236,17 @@ Object * xxx;
   if ( !CAMD_Keyboard_Base->ck_MainWindowContent ) {
     return;
   }
-#if 0
-  RethinkVirtualSize(
-    scrollPane, 
-    CAMD_Keyboard_Base->ck_MainWindowContent,
-    NULL,
-    CAMD_Keyboard_Base->ck_Screen,
-    NULL );
-#endif
+
   CAMD_Keyboard_Base->ck_MainWindow = ( struct Window * )
     RA_OpenWindow( CAMD_Keyboard_Base->ck_MainWindowContent );
 
   if ( !CAMD_Keyboard_Base->ck_MainWindow ) {
     return;
   }
-  /*
-  SetGadgetAttrs(
-    CAMD_Keyboard_Base->ck_Clavier,
-    CAMD_Keyboard_Base->ck_MainWindow,
-    NULL,
-    ICA_TARGET, CAMD_Keyboard_Base->ck_Scroller,
-    ICA_MAP, clavier2scroller,
-    TAG_END
-  );
-  SetGadgetAttrs(
-    CAMD_Keyboard_Base->ck_Scroller,
-    CAMD_Keyboard_Base->ck_MainWindow,
-    NULL,
-    ICA_TARGET, CAMD_Keyboard_Base->ck_Clavier,
-    ICA_MAP, scroller2clavier,
-    TAG_END
-  );*/
+
   GetAttr( WINDOW_SigMask,
            CAMD_Keyboard_Base->ck_MainWindowContent, 
            &( CAMD_Keyboard_Base->ck_MainWindowSignal ));
-// RethinkLayout((struct Gadget *)CAMD_Keyboard_Base->ck_MainWindowContent, CAMD_Keyboard_Base->ck_MainWindow, NULL, TRUE);
 
   return;
 }
@@ -353,27 +314,9 @@ VOID HandleEvents( VOID ) {
               );
               Printf( "From Scroller: %ld %ld\n", u, v );
               RefreshGadgets( CAMD_Keyboard_Base->ck_Clavier,
-                CAMD_Keyboard_Base->ck_MainWindow, NULL);
-                RefreshGadgets( CAMD_Keyboard_Base->ck_Scroller,
-                CAMD_Keyboard_Base->ck_MainWindow, NULL);
-
-              /*SetAttrs( CAMD_Keyboard_Base->ck_Clavier,
-                        CG_OFFSET_X, x + 10,
-                        TAG_END );*/
-                        
-  //            Printf( "%ld\n", windowMessageCode );
-  /*
-  ULONG a, b, c, d, e, f, g, h;
-  GetAttr( VIRTUALA_TotalX, CAMD_Keyboard_Base->ck_ScrollPane, &a );
-  GetAttr( VIRTUALA_TotalY, CAMD_Keyboard_Base->ck_ScrollPane, &b );
-  GetAttr( VIRTUALA_TopX, CAMD_Keyboard_Base->ck_ScrollPane, &c );
-  GetAttr( VIRTUALA_TopY, CAMD_Keyboard_Base->ck_ScrollPane, &d );
-  GetAttr( VIRTUALA_VisibleX, CAMD_Keyboard_Base->ck_ScrollPane, &e );
-  GetAttr( VIRTUALA_VisibleY, CAMD_Keyboard_Base->ck_ScrollPane, &f );
-  GetAttr( GA_Width, CAMD_Keyboard_Base->ck_ScrollPane, &g );
-  GetAttr( GA_Height, CAMD_Keyboard_Base->ck_ScrollPane, &h );
-  Printf("TotalX %ld TotalY %ld TopX %ld TopY %ld VisX %ld VisY %ld w %ld h %ld\n", a, b, c, d, e, f, g, h );
-*/
+              CAMD_Keyboard_Base->ck_MainWindow, NULL);
+              RefreshGadgets( CAMD_Keyboard_Base->ck_Scroller,
+              CAMD_Keyboard_Base->ck_MainWindow, NULL);
               break;
             }
             case GadgetId_Clavier: {
