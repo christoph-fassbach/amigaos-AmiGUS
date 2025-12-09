@@ -28,11 +28,13 @@
 
 #define CG_OFFSET_X             ( TAG_USER + 1 )
 #define CG_VIRTUAL_WIDTH        ( TAG_USER + 2 )
+#define CG_VISUAL_WIDTH         ( TAG_USER + 3 )
 
 struct Clavier_Gadget_Data {
   WORD cgd_NoteHit;
   WORD cgd_OffsetX;
   WORD cgd_VirtualWidth;
+  WORD cgd_VisualWidth;
 };
 
 Class * InitClavierGadgetClass( VOID );

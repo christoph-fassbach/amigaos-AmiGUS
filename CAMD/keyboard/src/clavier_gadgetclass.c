@@ -26,6 +26,9 @@
 #include <proto/utility.h>
 
 #include "clavier_gadgetclass.h"
+#include "camd_keyboard.h"
+
+#define LIMIT_ACTIVE_AREA // If defined, only hit and draw active area
 
 // Key sizes in mm
 #define BLACK_KEY_PEN            1
@@ -287,7 +290,7 @@ static ULONG Handle_OM_NEW( Class * class,
 
     struct Clavier_Gadget_Data * data = INST_DATA( class, gadget );
     data->cgd_NoteHit = -1;
-    data->cgd_OffsetX = 50;
+    data->cgd_OffsetX = 0;
     data->cgd_VirtualWidth = 1000;
   }
 
@@ -315,7 +318,6 @@ static VOID NotifySuper( Class * class,
   DoSuperMethod( class, ( Object * ) gadget, OM_NOTIFY, notifyTags, flags );
 }
 
-
 static ULONG Handle_OM_SET_OR_UPDATE( Class * class,
                                       struct Gadget * gadget,
                                       struct opUpdate * message ) {
@@ -331,10 +333,12 @@ static ULONG Handle_OM_SET_OR_UPDATE( Class * class,
   while ( tagItem = NextTagItem( &tagState )) {
 
     switch ( tagItem->ti_Tag ) {
+      case TAG_USER + 0x5000000 +0x0005000+1L:
       case CG_OFFSET_X: {
 
         data->cgd_OffsetX = tagItem->ti_Data;
         NotifySuper( class, gadget, message, tagItem );
+        RefreshGadgets(gadget, CAMD_Keyboard_Base->ck_MainWindow, NULL );
         result |= 1;
         break;
       }
@@ -345,6 +349,11 @@ static ULONG Handle_OM_SET_OR_UPDATE( Class * class,
         result |= 1;
         break;
       }
+      case CG_VISUAL_WIDTH:
+
+        data->cgd_VisualWidth = tagItem->ti_Data;
+        NotifySuper( class, gadget, message, tagItem );
+        result |= 1;
       default: {
         break;
       }
@@ -381,6 +390,11 @@ static ULONG Handle_OM_GET( Class * class,
       *( message->opg_Storage ) = data->cgd_VirtualWidth;
       return 1;
     }
+    case CG_VISUAL_WIDTH: {
+
+      *( message->opg_Storage ) = data->cgd_VisualWidth;
+      return 1;
+    }
     default: {
 
       Printf("Unknown %lx\n", attributeId );
@@ -396,8 +410,8 @@ static ULONG Handle_GM_HITTEST( Class * class,
   const UWORD hitX = message->gpht_Mouse.X;
   const UWORD hitY = message->gpht_Mouse.Y;
   const WORD keyWidth = getClavierWhiteKeyWidth( gadget );
-#define LIMIT_HIT_TEST
-#ifdef LIMIT_HIT_TEST
+
+#ifdef LIMIT_ACTIVE_AREA
 
   struct Clavier_Gadget_Data * data = INST_DATA( class, gadget );
   const WORD offset = data->cgd_OffsetX;
@@ -405,10 +419,11 @@ static ULONG Handle_GM_HITTEST( Class * class,
                          ( keyWidth * MAIN_KEYS_PER_OCTAVE );
 
 #endif
+
   WORD i;
   struct Clavier_Key key;
 
-#ifdef LIMIT_HIT_TEST
+#ifdef LIMIT_ACTIVE_AREA
 
   // Not checking all, cause of speed
   for ( i = candidate - 2; i <= candidate + 2; ++i ) {
@@ -451,14 +466,33 @@ static ULONG Handle_GM_RENDER( Class * class,
   struct RastPort * rastPort = message->gpr_RPort;
   WORD midiNote;
   BOOL done = FALSE;
+  const WORD top = gadget->TopEdge;
+  const WORD left = gadget->LeftEdge;
+  const WORD width = gadget->Width - 1;
+  const WORD height = gadget->Height - 1;
 
-  for ( midiNote = 0; midiNote < 128; ++midiNote ) {
+#ifdef LIMIT_ACTIVE_AREA
+
+  const WORD keyWidth = getClavierWhiteKeyWidth( gadget );
+
+  const WORD offset = data->cgd_OffsetX;
+  const WORD start = (( offset * KEYS_PER_OCTAVE ) / 
+                      ( keyWidth * MAIN_KEYS_PER_OCTAVE ));
+
+#else
+
+  const WORD start = 0;
+
+#endif
+
+  // Flush drawable area with grey background
+  SetAPen( rastPort, 0 );
+  RectFill( rastPort, left, top, left + width, top + height );
+
+  for ( midiNote = start; midiNote < 128; ++midiNote ) {
 
     struct Clavier_Key key;
     ULONG pen;
-    const WORD top = gadget->TopEdge;
-    const WORD left = gadget->LeftEdge;
-    const WORD width = gadget->Width - 1;
 
     getClavierKeyProperties( &key, class, gadget, midiNote );
 
@@ -549,6 +583,7 @@ static ULONG Handle_GM_LAYOUT( Class * class,
                       * KEYS_PER_OCTAVE;
   SetAttrs( gadget,
             CG_VIRTUAL_WIDTH, virtualWidth,
+            CG_VISUAL_WIDTH, gadget->Width,
             TAG_END );
   return 1;
 }

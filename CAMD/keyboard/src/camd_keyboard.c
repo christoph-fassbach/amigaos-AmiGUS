@@ -150,6 +150,15 @@ VOID OpenWin( VOID ) { // TODO: enable error handling and return values
     ScrollerEnd;
 #endif
 Object * xxx;
+  struct TagItem clavier2scroller[] = {
+    { CG_VIRTUAL_WIDTH, SCROLLER_Total },
+    { CG_VISUAL_WIDTH, SCROLLER_Visible },
+    { TAG_END, 0 }
+  };
+  struct TagItem scroller2clavier[] = {
+    { SCROLLER_Top, CG_OFFSET_X },
+    { TAG_END, 0 }
+  };
   CAMD_Keyboard_Base->ck_Screen = LockPubScreen( NULL );
 
   if ( !CAMD_Keyboard_Base->ck_Screen ) {
@@ -196,19 +205,24 @@ Object * xxx;
         GA_RelVerify, TRUE,
       ButtonEnd,
 
-      LAYOUT_AddChild, CAMD_Keyboard_Base->ck_Scroller = ScrollerObject,
-        GA_ID, GadgetId_ClavierScroller,
-        GA_RelVerify, TRUE,
-        SCROLLER_Orientation, SCROLLER_HORIZONTAL,
-      ScrollerEnd,
+      
 
       LAYOUT_AddChild, CAMD_Keyboard_Base->ck_Clavier = NewObject( ClavierGadgetClass, NULL,
         GA_ID, GadgetId_Clavier,
             //GA_RelSpecial, TRUE,
 //            CHILD_MinHeight, 60,
   //          CHILD_MinWidth, 1260,
+//        ICA_TARGET, CAMD_Keyboard_Base->ck_Scroller,
+//        ICA_MAP, clavier2scroller,
         GA_RelVerify, TRUE,
       TAG_END ),
+      LAYOUT_AddChild, CAMD_Keyboard_Base->ck_Scroller = ScrollerObject,
+        GA_ID, GadgetId_ClavierScroller,
+        ICA_TARGET, CAMD_Keyboard_Base->ck_Clavier,
+//        ICA_MAP, scroller2clavier,
+        GA_RelVerify, TRUE,
+        SCROLLER_Orientation, SCROLLER_HORIZONTAL,
+      ScrollerEnd,
 #if 1
           LAYOUT_AddChild, xxx = ButtonObject,
             GA_Text, "ja das muss sein",
@@ -223,14 +237,8 @@ Object * xxx;
     ICA_TARGET, CAMD_Keyboard_Base->ck_Clavier,
     ICA_MAP, SCROLLER_Total,
     TAG_END );
-
-  SetAttrs( CAMD_Keyboard_Base->ck_Clavier,
-    ICA_TARGET, CAMD_Keyboard_Base->ck_Scroller,
-    ICA_MAP,
-      GA_Width, GA_Text,
-
-    TAG_END );
 */
+
 // see https://wiki.amigaos.net/wiki/BOOPSI_-_Object_Oriented_Intuition
 /*
   SetAttrs( CAMD_Keyboard_Base->ck_Clavier,
@@ -257,7 +265,23 @@ Object * xxx;
   if ( !CAMD_Keyboard_Base->ck_MainWindow ) {
     return;
   }
-
+  /*
+  SetGadgetAttrs(
+    CAMD_Keyboard_Base->ck_Clavier,
+    CAMD_Keyboard_Base->ck_MainWindow,
+    NULL,
+    ICA_TARGET, CAMD_Keyboard_Base->ck_Scroller,
+    ICA_MAP, clavier2scroller,
+    TAG_END
+  );
+  SetGadgetAttrs(
+    CAMD_Keyboard_Base->ck_Scroller,
+    CAMD_Keyboard_Base->ck_MainWindow,
+    NULL,
+    ICA_TARGET, CAMD_Keyboard_Base->ck_Clavier,
+    ICA_MAP, scroller2clavier,
+    TAG_END
+  );*/
   GetAttr( WINDOW_SigMask,
            CAMD_Keyboard_Base->ck_MainWindowContent, 
            &( CAMD_Keyboard_Base->ck_MainWindowSignal ));
@@ -301,17 +325,42 @@ VOID HandleEvents( VOID ) {
               break;
             }
             case GadgetId_ClavierButton: {
+              ULONG u;
+              ULONG v;
               ULONG w;
               ULONG x;
               ULONG y;
               ULONG z;
-              Printf("da\n");
-              w = GetAttr( CG_OFFSET_X, CAMD_Keyboard_Base->ck_Clavier, &x );
-              y = GetAttr( CG_VIRTUAL_WIDTH, CAMD_Keyboard_Base->ck_Clavier, &z );
+              u = GetAttr( CG_OFFSET_X, CAMD_Keyboard_Base->ck_Clavier, &v );
+              w = GetAttr( CG_VIRTUAL_WIDTH, CAMD_Keyboard_Base->ck_Clavier, &x );
+              y = GetAttr( CG_VISUAL_WIDTH, CAMD_Keyboard_Base->ck_Clavier, &z );
+              SetGadgetAttrs(
+                CAMD_Keyboard_Base->ck_Scroller,
+                CAMD_Keyboard_Base->ck_MainWindow,
+                NULL,
+                SCROLLER_Visible, z,
+                SCROLLER_Total, x,
+                TAG_END
+              );
+              Printf( "From Clavier: %ld %ld %ld %ld %ld %ld\n", u, v, w, x, y, z );
+              u = GetAttr( SCROLLER_Top, CAMD_Keyboard_Base->ck_Scroller, &v );
+              SetGadgetAttrs(
+                CAMD_Keyboard_Base->ck_Clavier,
+                CAMD_Keyboard_Base->ck_MainWindow,
+                NULL,
+                CG_OFFSET_X, v,
+                TAG_END
+              );
+              Printf( "From Scroller: %ld %ld\n", u, v );
+              RefreshGadgets( CAMD_Keyboard_Base->ck_Clavier,
+                CAMD_Keyboard_Base->ck_MainWindow, NULL);
+                RefreshGadgets( CAMD_Keyboard_Base->ck_Scroller,
+                CAMD_Keyboard_Base->ck_MainWindow, NULL);
+
               /*SetAttrs( CAMD_Keyboard_Base->ck_Clavier,
                         CG_OFFSET_X, x + 10,
                         TAG_END );*/
-                        Printf( "%ld %ld %ld %ld\n", w, x, y, z );
+                        
   //            Printf( "%ld\n", windowMessageCode );
   /*
   ULONG a, b, c, d, e, f, g, h;
