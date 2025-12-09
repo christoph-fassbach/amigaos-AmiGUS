@@ -333,11 +333,10 @@ static ULONG Handle_OM_SET_OR_UPDATE( Class * class,
   while ( tagItem = NextTagItem( &tagState )) {
 
     switch ( tagItem->ti_Tag ) {
-      case TAG_USER + 0x5000000 +0x0005000+1L:
+//      case TAG_USER + 0x5000000 +0x0005000+1L:
       case CG_OFFSET_X: {
 
         data->cgd_OffsetX = tagItem->ti_Data;
-        NotifySuper( class, gadget, message, tagItem );
         RefreshGadgets(gadget, CAMD_Keyboard_Base->ck_MainWindow, NULL );
         result |= 1;
         break;
@@ -410,10 +409,10 @@ static ULONG Handle_GM_HITTEST( Class * class,
   const UWORD hitX = message->gpht_Mouse.X;
   const UWORD hitY = message->gpht_Mouse.Y;
   const WORD keyWidth = getClavierWhiteKeyWidth( gadget );
+  struct Clavier_Gadget_Data * data = INST_DATA( class, gadget );
 
 #ifdef LIMIT_ACTIVE_AREA
-
-  struct Clavier_Gadget_Data * data = INST_DATA( class, gadget );
+  
   const WORD offset = data->cgd_OffsetX;
   const WORD candidate = (( hitX + offset ) * KEYS_PER_OCTAVE ) / 
                          ( keyWidth * MAIN_KEYS_PER_OCTAVE );
@@ -450,10 +449,7 @@ static ULONG Handle_GM_HITTEST( Class * class,
       return GMR_GADGETHIT;
     }
   }
-#if 0
-  data->cgd_NoteHit = 1000 + candidate;
-  return GMR_GADGETHIT; 
-#endif
+
   data->cgd_NoteHit = -1;  
   return GMR_GADGETNOTHIT;
 }
@@ -733,7 +729,7 @@ Class * InitClavierGadgetClass( VOID ) {
 
     struct Hook * hook = &( class->cl_Dispatcher );
     hook->h_Entry = ( HOOKFUNC ) HookEntry;
-	  hook->h_SubEntry = ( HOOKFUNC ) DispatchClavierGadgetClass;
+    hook->h_SubEntry = ( HOOKFUNC ) DispatchClavierGadgetClass;
   }
 
   return class;

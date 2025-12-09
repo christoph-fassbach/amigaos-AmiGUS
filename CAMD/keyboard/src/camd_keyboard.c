@@ -58,7 +58,7 @@ enum GadgetIds {
   GadgetId_ButtonOK,
   GadgetId_ButtonCancel,
   GadgetId_ClavierButton,
-  GadgetId_ClavierScroller,
+  GadgetId_Scroller,
   GadgetId_Clavier,
   GadgetId_End
 };
@@ -141,15 +141,7 @@ VOID Cleanup( VOID ) {
 }
 
 VOID OpenWin( VOID ) { // TODO: enable error handling and return values
-#if 0
-  APTR scrollPane = 
-    ScrollerObject,
-      SCROLLER_Orientation, SCROLLER_HORIZONTAL,
-      SCROLLER_Total, 100,
-      SCROLLER_Visible, 10,
-    ScrollerEnd;
-#endif
-Object * xxx;
+
   struct TagItem clavier2scroller[] = {
     { CG_VIRTUAL_WIDTH, SCROLLER_Total },
     { CG_VISUAL_WIDTH, SCROLLER_Visible },
@@ -206,7 +198,7 @@ Object * xxx;
       ButtonEnd,
 
       LAYOUT_AddChild, CAMD_Keyboard_Base->ck_Scroller = ScrollerObject,
-        GA_ID, GadgetId_ClavierScroller,
+        GA_ID, GadgetId_Scroller,
         GA_RelVerify, TRUE,
         SCROLLER_Orientation, SCROLLER_HORIZONTAL,
       ScrollerEnd,
@@ -219,23 +211,20 @@ Object * xxx;
     LayoutEnd,
   EndWindow;
 
+  if ( !CAMD_Keyboard_Base->ck_MainWindowContent ) {
+    return;
+  }
+
   SetAttrs(
     CAMD_Keyboard_Base->ck_Scroller,
     ICA_TARGET, CAMD_Keyboard_Base->ck_Clavier,
     TAG_END );
+  SetAttrs(
+    CAMD_Keyboard_Base->ck_Clavier,
+    ICA_TARGET, CAMD_Keyboard_Base->ck_Scroller,
+    TAG_END );
 
 // see https://wiki.amigaos.net/wiki/BOOPSI_-_Object_Oriented_Intuition
-/*
-  SetAttrs( CAMD_Keyboard_Base->ck_Clavier,
-    ICA_TARGET, xxx,
-    ICA_MAP,
-      GA_Width, SCROLLER_Total,
-      TAG_END,
-    TAG_END );
-*/
-  if ( !CAMD_Keyboard_Base->ck_MainWindowContent ) {
-    return;
-  }
 
   CAMD_Keyboard_Base->ck_MainWindow = ( struct Window * )
     RA_OpenWindow( CAMD_Keyboard_Base->ck_MainWindowContent );
@@ -337,38 +326,7 @@ VOID HandleEvents( VOID ) {
           break;
         }
         case WMHI_NEWSIZE: {
-          Printf("asdf\n");
-          /*
-          SetAttrs( CAMD_Keyboard_Base->ck_ScrollPane,
-                    VIRTUALA_Contents, CAMD_Keyboard_Base->ck_Clavier = NewObject( ClavierGadgetClass, NULL,
-            GA_ID, GadgetId_Clavier,
-            //GA_RelSpecial, TRUE,
-//            CHILD_MinHeight, 60,
-  //          CHILD_MinWidth, 1260,
-            GA_RelVerify, TRUE,
-
-          TAG_END ),
-        TAG_END);
-        
-          RethinkVirtualSize(
-            CAMD_Keyboard_Base->ck_ScrollPane,
-            CAMD_Keyboard_Base->ck_MainWindowContent,
-            NULL,
-            CAMD_Keyboard_Base->ck_Screen,
-            NULL
-          );
-          RethinkLayout(
-            (struct Gadget *)CAMD_Keyboard_Base->ck_MainWindowContent,
-            CAMD_Keyboard_Base->ck_MainWindow,
-            NULL,
-            TRUE );
-          RefreshVirtualGadget(
-            CAMD_Keyboard_Base->ck_Clavier,
-            CAMD_Keyboard_Base->ck_ScrollPane,
-            CAMD_Keyboard_Base->ck_MainWindow,
-            NULL
-          );
-          */
+          Printf("WMHI_NEWSIZE\n");
           break;
         }
         default: {

@@ -21,14 +21,15 @@
 
 #include <intuition/intuitionbase.h>
 #include <intuition/gadgetclass.h>
+#include <gadgets/scroller.h>
 
 #define CLAVIERGCLASS           "claviergclass"
 
 #define GMR_GADGETNOTHIT        0
 
-#define CG_OFFSET_X             ( TAG_USER + 1 )
-#define CG_VIRTUAL_WIDTH        ( TAG_USER + 2 )
-#define CG_VISUAL_WIDTH         ( TAG_USER + 3 )
+#define CG_OFFSET_X             SCROLLER_Top   //( TAG_USER + 1 )
+#define CG_VIRTUAL_WIDTH        SCROLLER_Total //( TAG_USER + 2 )
+#define CG_VISUAL_WIDTH         SCROLLER_Visible //( TAG_USER + 3 )
 
 struct Clavier_Gadget_Data {
   WORD cgd_NoteHit;
