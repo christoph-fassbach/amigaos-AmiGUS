@@ -58,12 +58,14 @@ static const struct TagItem clavier2scroller[] = {
 
   { CG_VIRTUAL_WIDTH, SCROLLER_Total },
   { CG_VISUAL_WIDTH, SCROLLER_Visible },
+  { GA_ID, 0 }, // Smart: the sender destroys the receivers ID otherwise...
   { TAG_END, 0 }
 };
 
 static const struct TagItem scroller2clavier[] = {
 
   { SCROLLER_Top, CG_OFFSET_X },
+  { GA_ID, 0 }, // Smart: the sender destroys the receivers ID otherwise...
   { TAG_END, 0 }
 };
 
@@ -205,15 +207,16 @@ VOID OpenWin( VOID ) { // TODO: enable error handling and return values
 
       LAYOUT_AddChild, CAMD_Keyboard_Base->ck_Scroller = ScrollerObject,
         GA_ID, GadgetId_Scroller,
-        GA_RelVerify, TRUE,
+        // Do not need the events ATM: GA_RelVerify, TRUE,
         SCROLLER_Orientation, SCROLLER_HORIZONTAL,
       ScrollerEnd,
 
       LAYOUT_AddChild, CAMD_Keyboard_Base->ck_Clavier = NewObject( ClavierGadgetClass, NULL,
         GA_ID, GadgetId_Clavier,
         GA_RelVerify, TRUE,
+        ICA_TARGET, CAMD_Keyboard_Base->ck_Scroller,
+        ICA_MAP, clavier2scroller,
       TAG_END ),
-
     LayoutEnd,
   EndWindow;
 
@@ -221,28 +224,26 @@ VOID OpenWin( VOID ) { // TODO: enable error handling and return values
     return;
   }
 
-  // ICA_TARGET + ICA_MAP mechanisms see
-  // - https://wiki.amigaos.net/wiki/BOOPSI_-_Object_Oriented_Intuition
-  // - http://amigadev.elowar.com/read/ADCD_2.1/Libraries_Manual_guide/node04CA.html
-  // and remember: doing them on stack does not work,
-  // keeps going invalid in between and won't work, but not crash either.
-  SetAttrs(
-    CAMD_Keyboard_Base->ck_Scroller,
-    ICA_TARGET, CAMD_Keyboard_Base->ck_Clavier,
-    ICA_MAP, scroller2clavier,
-    TAG_END );
-  SetAttrs(
-    CAMD_Keyboard_Base->ck_Clavier,
-    ICA_TARGET, CAMD_Keyboard_Base->ck_Scroller,
-    ICA_MAP, clavier2scroller,
-    TAG_END );
-
   CAMD_Keyboard_Base->ck_MainWindow = ( struct Window * )
     RA_OpenWindow( CAMD_Keyboard_Base->ck_MainWindowContent );
 
   if ( !CAMD_Keyboard_Base->ck_MainWindow ) {
     return;
   }
+
+  // ICA_TARGET + ICA_MAP mechanisms see
+  // - https://wiki.amigaos.net/wiki/BOOPSI_-_Object_Oriented_Intuition
+  // - http://amigadev.elowar.com/read/ADCD_2.1/Libraries_Manual_guide/node04CA.html
+  // - https://www.theflatnet.de/pub/cbm/amiga/AmigaDevDocs/lib_12.html
+  // and remember: doing them on stack does not work,
+  // keeps going invalid in between and won't work, but not crash either.
+  SetGadgetAttrs(
+    CAMD_Keyboard_Base->ck_Scroller,
+    CAMD_Keyboard_Base->ck_MainWindow,
+    NULL,
+    ICA_TARGET, CAMD_Keyboard_Base->ck_Clavier,
+    ICA_MAP, scroller2clavier,
+    TAG_END );
 
   GetAttr( WINDOW_SigMask,
            CAMD_Keyboard_Base->ck_MainWindowContent, 
@@ -317,11 +318,21 @@ VOID HandleEvents( VOID ) {
               CAMD_Keyboard_Base->ck_MainWindow, NULL);
               RefreshGadgets( CAMD_Keyboard_Base->ck_Scroller,
               CAMD_Keyboard_Base->ck_MainWindow, NULL);
+              w = GetAttr( GA_ID, CAMD_Keyboard_Base->ck_Clavier, &x );
+              y = GetAttr( GA_ID, CAMD_Keyboard_Base->ck_Scroller, &z );
+              Printf( "Clar: %ld %ld Scr: %ld %ld\n", w, x, y, z );
               break;
             }
             case GadgetId_Clavier: {
               Printf( "echtes clavier %ld\n", windowMessageCode );
               break;
+            }
+            case GadgetId_Scroller: {
+              Printf( "scroller %ld\n", windowMessageCode );
+              break;
+            }
+            default: {
+              Printf( "Unknown Gadget\n" );
             }
           }
           break;

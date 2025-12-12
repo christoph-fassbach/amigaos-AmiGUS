@@ -279,26 +279,6 @@ static VOID getClavierKeyProperties( struct Clavier_Key * key,
   }
 }
 
-static VOID NotifySuper( Class * class,
-                         struct Gadget * gadget,
-                         struct opUpdate * message,
-                         struct TagItem * tag ) {
-
-  ULONG flags = 0;
-  struct TagItem notifyTags[ 2 ];
-
-  notifyTags[ 0 ].ti_Tag = tag->ti_Tag;
-  notifyTags[ 0 ].ti_Data = tag->ti_Data;
-  notifyTags[ 1 ].ti_Tag = TAG_END;
-
-  if ( OM_UPDATE == message->MethodID ) {
-
-    flags = message->opu_Flags;
-  }
-
-  DoSuperMethod( class, ( Object * ) gadget, OM_NOTIFY, notifyTags, flags );
-}
-
 static ULONG Handle_OM_NEW( Class * class,
                             struct Gadget * gadget,
                             struct opSet * message ) {
@@ -342,14 +322,12 @@ static ULONG Handle_OM_SET_OR_UPDATE( Class * class,
       case CG_VIRTUAL_WIDTH: {
 
         data->cgd_VirtualWidth = tagItem->ti_Data;
-        NotifySuper( class, gadget, message, tagItem );
         result |= 1;
         break;
       }
       case CG_VISUAL_WIDTH:
 
         data->cgd_VisualWidth = tagItem->ti_Data;
-        NotifySuper( class, gadget, message, tagItem );
         result |= 1;
       default: {
         break;
@@ -448,7 +426,7 @@ static ULONG Handle_GM_HITTEST( Class * class,
     }
   }
 
-  data->cgd_NoteHit = -1;  
+  data->cgd_NoteHit = -1;
   return GMR_GADGETNOTHIT;
 }
 
@@ -537,6 +515,7 @@ static ULONG Handle_GM_GOACTIVE( Class * class,
 
     return GMR_MEACTIVE;
   }
+
   data->cgd_NoteHit = -1;
   return GMR_REUSE;
 }
@@ -555,6 +534,7 @@ static ULONG Handle_GM_HANDLEINPUT( Class * class,
     struct Clavier_Gadget_Data * data = INST_DATA( class, gadget );
     *( message->gpi_Termination ) = data->cgd_NoteHit;
   }
+
   return result;
 }
 
@@ -564,6 +544,7 @@ static ULONG Handle_GM_GOINACTIVE( Class * class,
 
   struct Clavier_Gadget_Data * data = INST_DATA( class, gadget );
   data->cgd_NoteHit = -1;
+
   return 0;
 }
 
@@ -571,13 +552,24 @@ static ULONG Handle_GM_LAYOUT( Class * class,
                                struct Gadget * gadget,
                                struct gpLayout * message ) {
 
-  WORD virtualWidth = getClavierWhiteKeyWidth( gadget ) *
-                      (( MAIN_KEYS_PER_OCTAVE 
-                        * MAX_MIDI_OCTAVES ) - 2 );
-  SetAttrs( gadget,
-            CG_VIRTUAL_WIDTH, virtualWidth,
-            CG_VISUAL_WIDTH, gadget->Width,
-            TAG_END );
+  const WORD virtualWidth = getClavierWhiteKeyWidth( gadget ) *
+                            (( MAIN_KEYS_PER_OCTAVE 
+                            * MAX_MIDI_OCTAVES ) - 2 );
+  const WORD visualWidth = gadget->Width;
+  struct Clavier_Gadget_Data * data = INST_DATA( class, gadget );
+  struct TagItem notifyTags[ 3 ];
+
+  data->cgd_VirtualWidth = virtualWidth;
+  data->cgd_VisualWidth = visualWidth;
+
+  notifyTags[ 0 ].ti_Tag = CG_VIRTUAL_WIDTH;
+  notifyTags[ 0 ].ti_Data = virtualWidth;
+  notifyTags[ 1 ].ti_Tag = CG_VISUAL_WIDTH;
+  notifyTags[ 1 ].ti_Data = visualWidth;
+  notifyTags[ 2 ].ti_Tag = TAG_END;
+
+  DoSuperMethod( class, ( Object * ) gadget, OM_NOTIFY, notifyTags, 0 );
+
   return 1;
 }
 
@@ -628,9 +620,9 @@ __saveds ULONG DispatchClavierGadgetClass(
   Msg message ) {
 
   ULONG result;
+
   switch ( message->MethodID ) {
     case OM_NEW: {
-
       result = Handle_OM_NEW( class,
                               gadget,
                               ( struct opSet * ) message );
@@ -655,35 +647,30 @@ __saveds ULONG DispatchClavierGadgetClass(
       break;
     }
     case GM_HITTEST: {
-
       result = Handle_GM_HITTEST( class,
                                   gadget,
                                   ( struct gpHitTest * ) message );
       break;
     }
     case GM_RENDER: {
-
       result = Handle_GM_RENDER( class,
                                  gadget,
                                  ( struct gpRender * ) message );
       break;
     }
     case GM_GOACTIVE: {
-
       result = Handle_GM_GOACTIVE( class,
                                    gadget,
                                    ( struct gpInput * ) message );
       break;
     }
     case GM_HANDLEINPUT: {
-
       result = Handle_GM_HANDLEINPUT( class,
                                       gadget,
                                       ( struct gpInput * ) message );
       break;
     }
     case GM_GOINACTIVE: {
-
       result = Handle_GM_GOINACTIVE( class,
                                      gadget,
                                      ( struct gpGoInactive * ) message );
@@ -696,13 +683,11 @@ __saveds ULONG DispatchClavierGadgetClass(
       break;
     }
     case GM_DOMAIN: {
-
       result = Handle_GM_Domain( class,
                                  ( struct gpDomain * ) message );
       break;
     }
     default: {
-
       result = DoSuperMethodA( class, ( Object * ) gadget, message );
       break;
     }
