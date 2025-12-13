@@ -28,6 +28,7 @@ enum ErrorCodes
   /* Insert errors below. */
   /* Global errors 1-99 */
   EWrongDriverCPUVersion,
+  EOpenCamdBase,
   EOpenDosBase,
   EOpenGfxBase,
   EOpenIntuitionBase,

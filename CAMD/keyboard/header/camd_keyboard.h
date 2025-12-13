@@ -93,6 +93,8 @@ struct CAMD_Keyboard {
  * All libraries' base pointers used by the CAMD MIDI driver tool.
  */
 extern struct CAMD_Keyboard     * CAMD_Keyboard_Base;
+
+extern struct Library           * CamdBase;
 extern struct DosLibrary        * DOSBase;
 extern struct GfxBase           * GfxBase;
 extern struct IntuitionBase     * IntuitionBase;

@@ -29,6 +29,10 @@
 #include <proto/scroller.h>
 #include <proto/window.h>
 
+#include "proto/camd.h"
+
+#include "midi/camd.h"
+
 #include "camd_keyboard.h"
 #include "clavier_gadgetclass.h"
 #include "debug.h"
@@ -38,6 +42,7 @@
 /* Globals defined somewhere - here ;) */
 struct CAMD_Keyboard     * CAMD_Keyboard_Base;   // Main app struct
 // System libraries:
+struct Library           * CamdBase;
 struct GfxBase           * GfxBase;
 struct IntuitionBase     * IntuitionBase;
 struct UtilityBase       * UtilityBase;
@@ -112,9 +117,10 @@ ULONG Startup( VOID ) {
     DisplayError( EAllocateAmiGUSCAMDToolBase );
     return EAllocateAmiGUSCAMDToolBase;
   }
+  OpenLib(( struct Library ** )&CamdBase, "camd.library", 37, EOpenCamdBase );
   OpenLib(( struct Library ** )&IntuitionBase, "intuition.library", 36, EOpenIntuitionBase );
   OpenLib(( struct Library ** )&GfxBase, "graphics.library", 36, EOpenGfxBase );
-  OpenLib(( struct Library ** )&UtilityBase, UTILITYNAME, 36, EOpenUtilityBase );
+  OpenLib(( struct Library ** )&UtilityBase, "utility.library", 36, EOpenUtilityBase );
 
   OpenLib(( struct Library ** )&ButtonBase, "gadgets/button.gadget", 0, EOpenButtonBase );
   OpenLib(( struct Library ** )&LayoutBase, "gadgets/layout.gadget", 0, EOpenLayoutBase );
@@ -140,6 +146,7 @@ VOID Cleanup( VOID ) {
   CloseLib(( struct Library ** )&UtilityBase );
   CloseLib(( struct Library ** )&GfxBase );
   CloseLib(( struct Library ** )&IntuitionBase );
+  CloseLib(( struct Library ** )&CamdBase );
   LOG_I(( "I: " STR( APP_NAME ) " cleanup starting.\n" ));
   if ( CAMD_Keyboard_Base ) {
 
