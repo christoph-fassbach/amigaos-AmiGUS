@@ -202,3 +202,14 @@ VOID DisplayError( ULONG error ) {
   }
   LOG_E(( "E: AmiGUS %ld - %s\n", error, errors[ i ].iMessage ));
 }
+
+/******************************************************************************
+ * String helpers - public functions.
+ *****************************************************************************/
+
+LONG C_strlen( STRPTR string ) {
+
+  LONG length = 0;
+  while ( string[ length++ ]);
+  return --length;
+}

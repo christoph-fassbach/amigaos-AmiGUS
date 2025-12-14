@@ -63,6 +63,17 @@
           != ( node_type ) (( struct List * ) list)->lh_Tail ;\
         node = ( node_type ) (( struct Node * ) node)->ln_Succ )
 
+/**
+ * Checks if a List or MinList is empty.
+ *
+ * @param list List or MinList to iterate over.
+ *
+ * @return TRUE if empty, FALSE otherwise.
+ */        
+#define IS_EMPTY_LIST( list ) \
+  ( (( struct List * ) list)->lh_Head->ln_Succ == \
+    (( struct List * ) list)->lh_Tail )
+
 /******************************************************************************
  * Error messaging functions.
  *****************************************************************************/
@@ -78,5 +89,19 @@
  * @param aError Error Id to display error message for.
  */
 VOID DisplayError( ULONG aError );
+
+/******************************************************************************
+ * String helpers - public functions.
+ *****************************************************************************/
+
+/**
+ * Like string.h's strlen.
+ * Returns the length of the C-string, NOT including trailing 0.
+ *
+ * @param string Input string.
+ *
+ * @return Length of the string.
+ */
+LONG C_strlen( STRPTR string );
 
 #endif /* SUPPORT_H */

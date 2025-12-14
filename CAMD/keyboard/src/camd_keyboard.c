@@ -22,9 +22,11 @@
 #include <intuition/intuitionbase.h>
 #include <reaction/reaction_macros.h>
 
+#include <proto/chooser.h>
 #include <proto/dos.h>
 #include <proto/exec.h>
 #include <proto/intuition.h>
+#include <proto/label.h>
 #include <proto/layout.h>
 #include <proto/scroller.h>
 #include <proto/window.h>
@@ -33,6 +35,7 @@
 
 #include "midi/camd.h"
 
+#include "camd_helper.h"
 #include "camd_keyboard.h"
 #include "clavier_gadgetclass.h"
 #include "debug.h"
@@ -51,6 +54,8 @@ struct UtilityBase       * UtilityBase;
 // struct DosLibrary     * DOSBase;
 // And for ReAction:
 struct ClassLibrary      * ButtonBase;
+struct ClassLibrary      * ChooserBase;
+struct ClassLibrary      * LabelBase;
 struct ClassLibrary      * LayoutBase;
 struct ClassLibrary      * ScrollerBase;
 struct ClassLibrary      * WindowBase;
@@ -77,6 +82,7 @@ static const struct TagItem scroller2clavier[] = {
 enum GadgetIds {
 
   GadgetId_Start = 100,
+  GadgetId_DeviceChooser,
   GadgetId_ButtonOK,
   GadgetId_ButtonCancel,
   GadgetId_ClavierButton,
@@ -123,6 +129,8 @@ ULONG Startup( VOID ) {
   OpenLib(( struct Library ** )&UtilityBase, "utility.library", 36, EOpenUtilityBase );
 
   OpenLib(( struct Library ** )&ButtonBase, "gadgets/button.gadget", 0, EOpenButtonBase );
+  OpenLib(( struct Library ** )&ChooserBase, "gadgets/chooser.gadget", 0, EOpenChooserBase );
+  OpenLib(( struct Library ** )&LabelBase, "images/label.image", 0, EOpenLabelBase );
   OpenLib(( struct Library ** )&LayoutBase, "gadgets/layout.gadget", 0, EOpenLayoutBase );
   OpenLib(( struct Library ** )&ScrollerBase, "gadgets/scroller.gadget", 0, EOpenScrollerBase );
   OpenLib(( struct Library ** )&WindowBase, "window.class", 0, EOpenWindowBase );
@@ -133,14 +141,24 @@ ULONG Startup( VOID ) {
     DisplayError( EInitClavierGadgetClass );
   }
 
+  NEW_LIST( &( CAMD_Keyboard_Base->ck_Devices ));
+  NEW_LIST( &( CAMD_Keyboard_Base->ck_DeviceLabels ));
+  ExtractCamdOutputDevices( &( CAMD_Keyboard_Base->ck_Devices ),
+                            &( CAMD_Keyboard_Base->ck_DeviceLabels ));
+
   LOG_I(( "I: " STR( APP_NAME ) " startup complete.\n" ));
 }
 
 VOID Cleanup( VOID ) {
 
+  FreeCamdOutputDevices( &( CAMD_Keyboard_Base->ck_Devices ),
+                         &( CAMD_Keyboard_Base->ck_DeviceLabels ));
+
   CloseLib(( struct Library ** )&WindowBase );
   CloseLib(( struct Library ** )&ScrollerBase );
   CloseLib(( struct Library ** )&LayoutBase );
+  CloseLib(( struct Library ** )&LabelBase );
+  CloseLib(( struct Library ** )&ChooserBase );
   CloseLib(( struct Library ** )&ButtonBase );
 
   CloseLib(( struct Library ** )&UtilityBase );
@@ -185,13 +203,26 @@ VOID OpenWin( VOID ) { // TODO: enable error handling and return values
     WA_Width, 600,
     WA_Height, 200,
     WA_SmartRefresh, TRUE,
-//    WA_Flags, WFLG_CLOSEGADGET | WFLG_DRAGBAR | WFLG_DEPTHGADGET | WFLG_SIZEBBOTTOM | WFLG_SIZEGADGET | WFLG_ACTIVATE,
-//    WA_IDCMP, IDCMP_GADGETDOWN | IDCMP_GADGETUP | IDCMP_IDCMPUPDATE | IDCMP_VANILLAKEY,
-				WA_Flags,WFLG_CLOSEGADGET | WFLG_DRAGBAR | WFLG_DEPTHGADGET | WFLG_SIZEBBOTTOM | WFLG_SIZEGADGET | WFLG_ACTIVATE,
-				WA_IDCMP,IDCMP_VANILLAKEY | IDCMP_NEWSIZE,
+    WA_Flags,WFLG_CLOSEGADGET | WFLG_DRAGBAR | WFLG_DEPTHGADGET | WFLG_SIZEBBOTTOM | WFLG_SIZEGADGET | WFLG_ACTIVATE,
+    WA_IDCMP, IDCMP_VANILLAKEY | IDCMP_NEWSIZE,
     WINDOW_Position, WPOS_TOPLEFT,
     WINDOW_IconifyGadget, FALSE,
+
     WINDOW_ParentGroup, VLayoutObject,
+
+      LAYOUT_AddChild, ChooserObject,
+        GA_ID, GadgetId_DeviceChooser,
+        GA_RelVerify, TRUE,
+        CHOOSER_Labels, &( CAMD_Keyboard_Base->ck_DeviceLabels ),
+        CHOOSER_Selected, 0,
+        CHOOSER_PopUp, TRUE,
+        CHOOSER_AutoFit, TRUE,
+      ChooserEnd,
+      CHILD_NominalSize, TRUE,
+      CHILD_Label, LabelObject,
+        LABEL_Text ,"Target CAMD device: ",
+      LabelEnd,
+
       LAYOUT_AddChild, HLayoutObject,
         LAYOUT_AddChild, ButtonObject,
           GA_Text, "Ok",
@@ -259,6 +290,164 @@ VOID OpenWin( VOID ) { // TODO: enable error handling and return values
   return;
 }
 
+VOID PrintInfos( VOID ) {
+  ULONG u;
+  ULONG v;
+  ULONG w;
+  ULONG x;
+  ULONG y;
+  ULONG z;
+  u = GetAttr( CG_OFFSET_X, CAMD_Keyboard_Base->ck_Clavier, &v );
+  w = GetAttr( CG_VIRTUAL_WIDTH, CAMD_Keyboard_Base->ck_Clavier, &x );
+  y = GetAttr( CG_VISUAL_WIDTH, CAMD_Keyboard_Base->ck_Clavier, &z );
+  SetGadgetAttrs(
+    CAMD_Keyboard_Base->ck_Scroller,
+    CAMD_Keyboard_Base->ck_MainWindow,
+    NULL,
+    SCROLLER_Visible, z,
+    SCROLLER_Total, x,
+    TAG_END
+  );
+  Printf( "From Clavier: %ld %ld %ld %ld %ld %ld\n", u, v, w, x, y, z );
+  u = GetAttr( SCROLLER_Top, CAMD_Keyboard_Base->ck_Scroller, &v );
+  SetGadgetAttrs(
+    CAMD_Keyboard_Base->ck_Clavier,
+    CAMD_Keyboard_Base->ck_MainWindow,
+    NULL,
+    CG_OFFSET_X, v,
+    TAG_END
+  );
+  Printf( "From Scroller: %ld %ld\n", u, v );
+  RefreshGadgets( CAMD_Keyboard_Base->ck_Clavier,
+  CAMD_Keyboard_Base->ck_MainWindow, NULL);
+  RefreshGadgets( CAMD_Keyboard_Base->ck_Scroller,
+  CAMD_Keyboard_Base->ck_MainWindow, NULL);
+  w = GetAttr( GA_ID, CAMD_Keyboard_Base->ck_Clavier, &x );
+  y = GetAttr( GA_ID, CAMD_Keyboard_Base->ck_Scroller, &z );
+  Printf( "Clar: %ld %ld Scr: %ld %ld\n", w, x, y, z );
+}
+
+VOID PrintMidiClusters( VOID ) {
+
+  APTR lock = LockCAMD( CD_Linkages );
+
+  if ( NULL != lock ) {
+
+    struct MidiCluster * cluster;
+
+    Printf( "CAMD locked @ 0x%08lx\n", (ULONG)lock );
+
+    for ( cluster = NextCluster( NULL );
+          cluster;
+          cluster = NextCluster( cluster )) {
+
+      struct MidiLink * next;
+
+      Printf( "Cluster 0x%08lx\n", ( ULONG ) cluster );
+      Printf( "+-> Name %s\n", cluster->mcl_Node.ln_Name );
+      Printf( "+-> Participants %ld\n", cluster->mcl_Participants );
+      Printf( "+-> PublicParticipants %ld\n", cluster->mcl_PublicParticipants );
+      Printf( "+-> Flags 0x%04lx\n", cluster->mcl_Flags );
+      
+      Printf( "+-> Receivers:\n" );
+      FOR_LIST( &cluster->mcl_Receivers, next, struct MidiLink * ) {
+        STRPTR location = NULL;
+        STRPTR name = NULL;
+        STRPTR comment = NULL;
+        Printf( "+---> Link 0x%08lx\n", ( ULONG ) next );
+        GetMidiLinkAttrs( next,
+                          MLINK_Location, &location,
+                          MLINK_Name, &name,
+                          MLINK_Comment, &comment,
+                          TAG_END );
+        if ( location ) {
+          Printf( "+-----> Location %s \n", location );
+        }
+        if ( name ) {
+          Printf( "+-----> Name %s \n", name );
+        }
+        if ( comment ) {
+          Printf( "+-----> Comment %s \n", comment );
+        }
+      }
+      Printf( "+-> Senders:\n" );
+      FOR_LIST( &cluster->mcl_Senders, next, struct MidiLink * ) {
+        STRPTR location = NULL;
+        STRPTR name = NULL;
+        STRPTR comment = NULL;
+        Printf( "+---> Link 0x%08lx\n", ( ULONG ) next );
+        GetMidiLinkAttrs( next,
+                          MLINK_Location, &location,
+                          MLINK_Name, &name,
+                          MLINK_Comment, &comment,
+                          TAG_END );
+        if ( location ) {
+          Printf( "+-----> Location %s \n", location );
+        }
+        if ( name ) {
+          Printf( "+-----> Name %s \n", name );
+        }
+        if ( comment ) {
+          Printf( "+-----> Comment %s \n", comment );
+        }
+      }
+    }
+    UnlockCAMD( lock );
+  }
+}
+
+VOID PrintMidiNodes( VOID ) {
+
+  APTR lock = LockCAMD( CD_Linkages );
+
+  if ( NULL != lock ) {
+
+    struct MidiNode * node;
+
+    Printf( "CAMD locked @ 0x%08lx\n", (ULONG)lock );
+    
+    for ( node = NextMidi( NULL );
+          node;
+          node = NextMidi( node )) {
+
+      struct MidiLink * link;
+      STRPTR name = NULL;
+      ULONG result;
+
+      Printf( "Node 0x%08lx\n", ( ULONG ) node );
+      Printf( "+-> ClientType 0x%08lx\n", node->mi_ClientType );
+      GetMidiAttrs( node, MIDI_Name, &name, TAG_END );
+      if ( name ) {
+        Printf( "+-> Name %s \n", name );
+      }
+
+      link = NextMidiLink( node, NULL, 0xFFFF );
+      while ( link ) {
+
+        STRPTR location = NULL;
+        STRPTR comment = NULL;
+        Printf( "+-> Link 0x%08lx\n", ( ULONG ) link );
+        result = GetMidiLinkAttrs( link,
+                                   MLINK_Location, &location,
+                                   MLINK_Name, &name,
+                                   MLINK_Comment, &comment,
+                                   TAG_END );
+        if ( location ) {
+          Printf( "+---> Location %s \n", location );
+        }
+        if ( name ) {
+          Printf( "+---> Name %s \n", name );
+        }
+        if ( comment ) {
+          Printf( "+---> Comment %s \n", comment );
+        }
+        link = NextMidiLink( node, link, 0xFFFF );
+      }
+    }
+    UnlockCAMD( lock );
+  }
+}
+
 VOID HandleEvents( VOID ) {
 
   BOOL stop = FALSE;
@@ -294,40 +483,9 @@ VOID HandleEvents( VOID ) {
               break;
             }
             case GadgetId_ClavierButton: {
-              ULONG u;
-              ULONG v;
-              ULONG w;
-              ULONG x;
-              ULONG y;
-              ULONG z;
-              u = GetAttr( CG_OFFSET_X, CAMD_Keyboard_Base->ck_Clavier, &v );
-              w = GetAttr( CG_VIRTUAL_WIDTH, CAMD_Keyboard_Base->ck_Clavier, &x );
-              y = GetAttr( CG_VISUAL_WIDTH, CAMD_Keyboard_Base->ck_Clavier, &z );
-              SetGadgetAttrs(
-                CAMD_Keyboard_Base->ck_Scroller,
-                CAMD_Keyboard_Base->ck_MainWindow,
-                NULL,
-                SCROLLER_Visible, z,
-                SCROLLER_Total, x,
-                TAG_END
-              );
-              Printf( "From Clavier: %ld %ld %ld %ld %ld %ld\n", u, v, w, x, y, z );
-              u = GetAttr( SCROLLER_Top, CAMD_Keyboard_Base->ck_Scroller, &v );
-              SetGadgetAttrs(
-                CAMD_Keyboard_Base->ck_Clavier,
-                CAMD_Keyboard_Base->ck_MainWindow,
-                NULL,
-                CG_OFFSET_X, v,
-                TAG_END
-              );
-              Printf( "From Scroller: %ld %ld\n", u, v );
-              RefreshGadgets( CAMD_Keyboard_Base->ck_Clavier,
-              CAMD_Keyboard_Base->ck_MainWindow, NULL);
-              RefreshGadgets( CAMD_Keyboard_Base->ck_Scroller,
-              CAMD_Keyboard_Base->ck_MainWindow, NULL);
-              w = GetAttr( GA_ID, CAMD_Keyboard_Base->ck_Clavier, &x );
-              y = GetAttr( GA_ID, CAMD_Keyboard_Base->ck_Scroller, &z );
-              Printf( "Clar: %ld %ld Scr: %ld %ld\n", w, x, y, z );
+              // PrintInfos();
+              PrintMidiClusters();
+              PrintMidiNodes();
               break;
             }
             case GadgetId_Clavier: {
