@@ -210,6 +210,9 @@ VOID DisplayError( ULONG error ) {
 LONG C_strlen( STRPTR string ) {
 
   LONG length = 0;
-  while ( string[ length++ ]);
-  return --length;
+  while ( string[ length ]) {
+
+    ++length;
+  } 
+  return length;
 }

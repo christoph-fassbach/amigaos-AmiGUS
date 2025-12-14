@@ -35,8 +35,8 @@
 
 #include "midi/camd.h"
 
-#include "camd_helper.h"
 #include "camd_keyboard.h"
+#include "camd_utils.h"
 #include "clavier_gadgetclass.h"
 #include "debug.h"
 #include "errors.h"
@@ -112,6 +112,31 @@ VOID CloseLib( struct Library ** library ) {
   }
 }
 
+VOID CreateChooserLabels( VOID ) {
+
+  struct CAMD_Device_Node * device;
+  FOR_LIST( &( CAMD_Keyboard_Base->ck_Devices ),
+            device,
+            struct CAMD_Device_Node * ) {
+
+    STRPTR name = device->cdn_Name;
+    struct Node * label = AllocChooserNode( CNA_Text, name, TAG_END );
+    AddTail( &( CAMD_Keyboard_Base->ck_DeviceLabels ), label );
+  }
+}
+
+VOID FreeChooserLabels( VOID ) {
+
+  struct Node * node;
+
+  while ( node = RemHead( &( CAMD_Keyboard_Base->ck_DeviceLabels ))) {
+
+    FreeChooserNode( node );
+  }
+  LOG_D(( "V: Labels is empty = %ld\n",
+          IS_EMPTY_LIST( &( CAMD_Keyboard_Base->ck_DeviceLabels ))));
+}
+
 ULONG Startup( VOID ) {
 
   if ( !CAMD_Keyboard_Base ) {
@@ -142,17 +167,18 @@ ULONG Startup( VOID ) {
   }
 
   NEW_LIST( &( CAMD_Keyboard_Base->ck_Devices ));
+  ExtractCamdOutputDevices( &( CAMD_Keyboard_Base->ck_Devices ));
+
   NEW_LIST( &( CAMD_Keyboard_Base->ck_DeviceLabels ));
-  ExtractCamdOutputDevices( &( CAMD_Keyboard_Base->ck_Devices ),
-                            &( CAMD_Keyboard_Base->ck_DeviceLabels ));
+  CreateChooserLabels();
 
   LOG_I(( "I: " STR( APP_NAME ) " startup complete.\n" ));
 }
 
 VOID Cleanup( VOID ) {
 
-  FreeCamdOutputDevices( &( CAMD_Keyboard_Base->ck_Devices ),
-                         &( CAMD_Keyboard_Base->ck_DeviceLabels ));
+  FreeCamdOutputDevices( &( CAMD_Keyboard_Base->ck_Devices ));
+  FreeChooserLabels();
 
   CloseLib(( struct Library ** )&WindowBase );
   CloseLib(( struct Library ** )&ScrollerBase );
