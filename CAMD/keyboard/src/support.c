@@ -83,6 +83,24 @@ struct ErrorMessage errors[] = {
 };
 
 /******************************************************************************
+ * List / MinList helper functions.
+ *****************************************************************************/
+
+struct Node * NodeAtIndex( struct List * list, const LONG index ) {
+
+  struct Node * node;
+  LONG i = -1;
+  FOR_LIST( list, node, struct Node * ) {
+    ++i;
+    if ( index == i ) {
+
+      return node;
+    }
+  }
+  return NULL;
+}
+
+/******************************************************************************
  * Error messaging - private functions.
  *****************************************************************************/
 

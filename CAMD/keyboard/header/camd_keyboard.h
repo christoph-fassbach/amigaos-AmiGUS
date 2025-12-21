@@ -67,26 +67,11 @@ struct CAMD_Keyboard {
   struct List                   ck_Devices;
   struct List                   ck_DeviceLabels;
 
-  #if 0
-  
-  struct Window               * ck_MainWindow;
-  APTR                          ck_VisualInfo;
-  struct Gadget               * ck_GadgetList;
-  ULONG                         ck_Flags;         /** Bitmask as per below  */ 
-
-
-  struct MsgPort              * ck_TestWindowPort;
-  ULONG /*temporary - wrong type */ * ck_TestWindowHook;
-  ULONG                         ck_TestWindowSignal;
-  ULONG                         ck_TestContentSignal;
-  
-
-  /* AmiGUS specific member variables */
-
   /* CAMD pointers */
+  struct MidiNode             * ck_MidiNode;
+  struct MidiLink             * ck_MidiLink;
 
-#endif
-
+  /* Debug output handling */
   BPTR                          ck_LogFile;       // Debug log file handle
   APTR                          ck_LogMem;        // Debug log memory blob
 };

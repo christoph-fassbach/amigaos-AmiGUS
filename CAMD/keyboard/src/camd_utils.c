@@ -26,6 +26,7 @@
 
 #include "camd_utils.h"
 #include "debug.h"
+#include "errors.h"
 #include "support.h"
 
 LONG ExtractCamdOutputDevices( struct List * devices ) {
@@ -47,7 +48,7 @@ LONG ExtractCamdOutputDevices( struct List * devices ) {
 
       LOG_D(( "D: Checking CAMD cluster 0x%08lx -> %s\n",
              ( ULONG ) cluster, cluster->mcl_Node.ln_Name ));
-      FOR_LIST( &cluster->mcl_Senders, next, struct MidiLink * ) {
+      FOR_LIST( &cluster->mcl_Receivers, next, struct MidiLink * ) {
 
         STRPTR location = NULL;
         STRPTR comment = NULL;

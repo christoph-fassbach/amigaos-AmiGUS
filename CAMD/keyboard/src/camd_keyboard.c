@@ -16,12 +16,15 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
+#define ALIB_STDIO
+
 #include <clib/alib_protos.h>
 #include <graphics/gfxbase.h>
 #include <intuition/icclass.h>
 #include <intuition/intuitionbase.h>
 #include <reaction/reaction_macros.h>
 
+#include <proto/alib.h>
 #include <proto/chooser.h>
 #include <proto/dos.h>
 #include <proto/exec.h>
@@ -137,6 +140,66 @@ VOID FreeChooserLabels( VOID ) {
           IS_EMPTY_LIST( &( CAMD_Keyboard_Base->ck_DeviceLabels ))));
 }
 
+LONG OpenMidi( ULONG index ) {
+
+  TEXT linkName[128];
+  STRPTR name = STR( APP_FILE );
+
+  struct CAMD_Keyboard * base = CAMD_Keyboard_Base;
+  struct CAMD_Device_Node * node = ( struct CAMD_Device_Node * )
+    NodeAtIndex( &( base->ck_Devices ), index );
+
+  if ( !node ) {
+
+    return ENoMidiNodes;
+  }
+
+  // Keyboard only supports playback, hence does not need input buffers.
+  base->ck_MidiNode = CreateMidi( MIDI_Name, name,
+                                  MIDI_MsgQueue, 0L, 
+                                  MIDI_SysExSize,0L,
+                                  TAG_END );
+  if ( !( base->ck_MidiNode )) {
+
+    return ECreateMidi;
+  }
+  LOG_D(( "D: Got output node 0x%08lx for %s.\n",
+          base->ck_MidiNode, name ));
+
+  sprintf( linkName, "%s Link", name );
+  base->ck_MidiLink = AddMidiLink( base->ck_MidiNode,
+                                   MLTYPE_Sender,
+                                   MLINK_Comment, linkName,
+                                   MLINK_Parse, TRUE, // TODO: needed?
+                                   MLINK_Location, node->cdn_Location,
+                                   TAG_END );
+  if ( !( base->ck_MidiLink )) {
+
+    return EAddMidiLink;
+  }
+  LOG_D(( "D: Got output link 0x%08lx for %s at %s.\n",
+          base->ck_MidiLink, linkName, node->cdn_Location ));
+
+  return ENoError;
+}
+
+VOID CloseMidi( VOID ) {
+
+  struct CAMD_Keyboard * base = CAMD_Keyboard_Base;
+  if ( base->ck_MidiLink ) {
+
+    RemoveMidiLink( base->ck_MidiLink );
+    LOG_D(( "D: Closed link 0x%08lx.\n", base->ck_MidiLink ));
+    base->ck_MidiLink = NULL;
+  }
+  if ( base->ck_MidiNode ) {
+
+    DeleteMidi( base->ck_MidiNode );
+    LOG_D(( "D: Closed node 0x%08lx.\n", base->ck_MidiNode ));
+    base->ck_MidiNode = NULL;
+  }
+}
+
 ULONG Startup( VOID ) {
 
   if ( !CAMD_Keyboard_Base ) {
@@ -172,11 +235,13 @@ ULONG Startup( VOID ) {
   NEW_LIST( &( CAMD_Keyboard_Base->ck_DeviceLabels ));
   CreateChooserLabels();
 
+  OpenMidi( 0 ); // TODO: error handling if no midi!
   LOG_I(( "I: " STR( APP_NAME ) " startup complete.\n" ));
 }
 
 VOID Cleanup( VOID ) {
 
+  CloseMidi();
   FreeCamdOutputDevices( &( CAMD_Keyboard_Base->ck_Devices ));
   FreeChooserLabels();
 
@@ -477,10 +542,11 @@ VOID PrintMidiNodes( VOID ) {
 VOID HandleEvents( VOID ) {
 
   BOOL stop = FALSE;
+  struct CAMD_Keyboard * base = CAMD_Keyboard_Base;
 
   while ( !( stop )) {
 
-    ULONG signals = Wait( CAMD_Keyboard_Base->ck_MainWindowSignal
+    ULONG signals = Wait( base->ck_MainWindowSignal
                           | SIGBREAKF_CTRL_C );
     if ( SIGBREAKF_CTRL_C & signals) {
       stop = TRUE;
@@ -489,7 +555,7 @@ VOID HandleEvents( VOID ) {
     for ( ; ; ) {
 
       WORD windowMessageCode;
-      ULONG windowMessage = DoMethod( CAMD_Keyboard_Base->ck_MainWindowContent,
+      ULONG windowMessage = DoMethod( base->ck_MainWindowContent,
                                       WM_HANDLEINPUT, 
                                       &windowMessageCode );
 
@@ -502,6 +568,13 @@ VOID HandleEvents( VOID ) {
       switch ( WMHI_CLASSMASK & windowMessage ) {
         case WMHI_GADGETUP: {
           switch ( WMHI_GADGETMASK & windowMessage ) {
+            case GadgetId_DeviceChooser: {
+
+              LOG_D(( "D: Chooser picked item %ld.\n", windowMessageCode ));
+              CloseMidi();
+              OpenMidi( windowMessageCode );
+              break;
+            }
             case GadgetId_ButtonOK:
             case GadgetId_ButtonCancel: {
 

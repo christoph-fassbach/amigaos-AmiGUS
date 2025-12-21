@@ -74,6 +74,16 @@
   ( (( struct List * ) list)->lh_Head->ln_Succ == \
     (( struct List * ) list)->lh_Tail )
 
+/**
+ * Find list node at a given index.
+ *
+ * @param list List or MinList to iterate over.
+ *
+ * @return Node at the given index if any,
+ *         NULL otherwise.
+ */
+struct Node * NodeAtIndex( struct List * list, const LONG index );
+
 /******************************************************************************
  * Error messaging functions.
  *****************************************************************************/
