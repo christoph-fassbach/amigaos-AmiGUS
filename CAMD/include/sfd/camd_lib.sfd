@@ -1,0 +1,56 @@
+==id $Id: camd_lib.sfd,v 1.0 2025/12/21 18:46:06 noname Exp $
+* "camd.library"
+==base _CamdBase
+==basetype struct Library *
+==libname camd.library
+==bias 30
+==public
+==include <exec/types.h>
+==include <midi/camd.h>
+APTR LockCAMD(ULONG locktype) (d0)
+void UnlockCAMD(APTR lock) (a0)
+struct MidiNode * CreateMidiA(struct TagItem * tags) (a0)
+==varargs
+struct MidiNode * CreateMidi(Tag tags, ...) (a0)
+void DeleteMidi(struct MidiNode * mi) (a0)
+BOOL SetMidiAttrsA(struct MidiNode * mi, struct TagItem * tags) (a0,a1)
+==varargs
+BOOL SetMidiAttrs(struct MidiNode * mi, Tag tags, ...) (a0,a1)
+ULONG GetMidiAttrsA(struct MidiNode * mi, struct TagItem * tags) (a0,a1)
+==varargs
+ULONG GetMidiAttrs(struct MidiNode * mi, Tag tags, ...) (a0,a1)
+struct MidiNode * NextMidi(struct MidiNode * mi) (a0)
+struct MidiNode * FindMidi(STRPTR name) (a1)
+void FlushMidi(struct MidiNode * mi) (a0)
+struct MidiLink * AddMidiLinkA(struct MidiNode * mi, LONG type, struct TagItem * tags) (a0,d0,a1)
+==varargs
+struct MidiLink * AddMidiLink(struct MidiNode * mi, LONG type, Tag tags, ...) (a0,d0,a1)
+void RemoveMidiLink(struct MidiLink * ml) (a0)
+BOOL SetMidiLinkAttrsA(struct MidiLink * ml, struct TagItem * tags) (a0,a1)
+==varargs
+BOOL SetMidiLinkAttrs(struct MidiLink * ml, Tag tags, ...) (a0,a1)
+ULONG GetMidiLinkAttrsA(struct MidiLink * ml, struct TagItem * tags) (a0,a1)
+==varargs
+ULONG GetMidiLinkAttrs(struct MidiLink * ml, Tag tags, ...) (a0,a1)
+struct MidiLink * NextClusterLink(struct MidiCluster * mc, struct MidiLink * ml, LONG type) (a0,a1,d0)
+struct MidiLink * NextMidiLink(struct MidiNode * mi, struct MidiLink * ml, LONG type) (a0,a1,d0)
+BOOL MidiLinkConnected(struct MidiLink * ml) (a0)
+struct MidiCluster * NextCluster(struct MidiCluster * mc) (a0)
+struct MidiCluster * FindCluster(STRPTR name) (a0)
+void PutMidi(struct MidiLink * ml, LONG msgdata) (a0,d0)
+BOOL GetMidi(struct MidiNode * mi, MidiMsg * msg) (a0,a1)
+BOOL WaitMidi(struct MidiNode * mi, MidiMsg * msg) (a0,a1)
+void PutSysEx(struct MidiLink * ml, UBYTE * buffer) (a0,a1)
+ULONG GetSysEx(struct MidiNode * mi, UBYTE * buffer, ULONG len) (a0,a1,d0)
+ULONG QuerySysEx(struct MidiNode * mi) (a0)
+void SkipSysEx(struct MidiNode * mi) (a0)
+UBYTE GetMidiErr(struct MidiNode * mi) (a0)
+WORD MidiMsgType(MidiMsg * msg) (a0)
+WORD MidiMsgLen(ULONG status) (d0)
+void ParseMidi(struct MidiLink * ml, UBYTE * buffer, ULONG length) (a0,a1,d0)
+struct MidiDeviceData * OpenMidiDevice(UBYTE * name) (a0)
+void CloseMidiDevice(struct MidiDeviceData * mdd) (a0)
+int RethinkCAMD() ()
+void StartClusterNotify(struct ClusterNotifyNode * node) (a0)
+void EndClusterNotify(struct ClusterNotifyNode * node) (a0)
+==end
