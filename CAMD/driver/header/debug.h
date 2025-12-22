@@ -85,12 +85,13 @@ VOID RawPutChar( BYTE putCh );
 
 #if defined (SER_LOG)
 
+// TODO: All serial logging crashes CAMD 37.1 immediately!
 // LOG_INT(X) would deadlock
 // #define LOG_V(X) debug_kprintf X
-#define LOG_D(X) debug_kprintf X
-#define LOG_I(X) debug_kprintf X
-#define LOG_W(X) debug_kprintf X
-#define LOG_E(X) debug_kprintf X
+// #define LOG_D(X) debug_kprintf X
+// #define LOG_I(X) debug_kprintf X
+// #define LOG_W(X) debug_kprintf X
+// #define LOG_E(X) debug_kprintf X
 
 #elif defined (FILE_LOG)
 
