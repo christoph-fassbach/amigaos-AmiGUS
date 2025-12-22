@@ -57,9 +57,9 @@ ASM( VOID ) debug_mPutChProc( REG( d0, UBYTE c ), REG( a3, UBYTE ** target )) {
 
 // Comes with a tiny performance impact,
 // so... rather not do it.
-ASM( VOID ) RawPutCharC( REG( d0, UBYTE putCh ) {
+ASM( VOID ) RawPutCharC( REG( d0, BYTE putCh )) {
 
-  RawPutChar(putCh);
+  RawPutChar( putCh );
 }
 
 VOID debug_kprintf( STRPTR format, ... ) {
@@ -105,12 +105,12 @@ VOID debug_kprintf( STRPTR format, ... ) {
 #endif
 
 #ifdef FILE_LOG
+UBYTE buffer[512];
 
 VOID debug_fprintf( STRPTR format, ... ) {
 
   static BOOL errorShown = FALSE;
   STRPTR logFilePath = "ram:AmiGUS-CAMD.log";
-  UBYTE buffer[512];
   UBYTE * printBuffer = buffer;
 
   if (( !SysBase ) || ( !DOSBase )) {
@@ -165,6 +165,12 @@ VOID debug_fprintf( STRPTR format, ... ) {
 #endif /* FILE_LOG */
 #ifdef MEM_LOG
 
+// Immediately causes enforcer hits when activated.
+// TODO: why???
+#define NO_SERIAL_MEM_LOG_INFO
+
+UBYTE buffer[ 64 ];
+
 VOID debug_mprintf( STRPTR format, ... ) {
 
   /*
@@ -193,7 +199,6 @@ VOID debug_mprintf( STRPTR format, ... ) {
 #ifdef INCLUDE_VERSION
     if ( 36 <= (( struct Library * ) DOSBase )->lib_Version) {
 
-      UBYTE buffer[ 64 ];
       LONG i = GetVar( "AmiGUS-CAMD-LOG-ADDRESS", buffer, sizeof( buffer ), 0 );
       /*
        * UAE:  setenv AmiGUS-CAMD-LOG-ADDRESS 1207959552 -> 0x48000000
@@ -213,13 +218,13 @@ VOID debug_mprintf( STRPTR format, ... ) {
       }
     }
 #endif
-
+#ifdef SERIAL_MEM_LOG_INFO
     debug_kprintf( "AmiGUS-CAMD-LOG-ADDRESS %lx = %ld (requested)\n"
                    "AmiGUS-CAMD-LOG-SIZE %ld\n",
                    ( LONG ) where,
                    ( LONG ) where,
                    size );
-
+#endif
     if ( 0 < ( LONG ) where ) {
 
       AmiGUS_CAMD_Base->agb_LogMem = AllocAbs( size, where );
@@ -252,17 +257,19 @@ VOID debug_mprintf( STRPTR format, ... ) {
       AmiGUS_CAMD_Base->agb_LogMem = AllocMem( size, MEMF_CLEAR | MEMF_PUBLIC );
     }
     if ( !AmiGUS_CAMD_Base->agb_LogMem ) {
-
+#ifdef SERIAL_MEM_LOG_INFO
       debug_kprintf( "AmiGUS Log giving up...\n" );
+#endif
       errorShown = TRUE;
       DisplayError( EAllocateLogMem );
       return;
     }
+#ifdef SERIAL_MEM_LOG_INFO
     debug_kprintf( "AmiGUS Log @ 0x%08lx = %ld (retrieved), size %ld\n",
                    ( LONG ) AmiGUS_CAMD_Base->agb_LogMem,
                    ( LONG ) AmiGUS_CAMD_Base->agb_LogMem,
                    size );
-
+#endif
     RawDoFmt( "%s %s %s\n",
               ( APTR ) memMarker,
               &debug_mPutChProc,
@@ -270,7 +277,9 @@ VOID debug_mprintf( STRPTR format, ... ) {
     /* Move mem blob pointer back to overwrite trailing zero next comment */
     AmiGUS_CAMD_Base->agb_LogMem =
       ( APTR )(( ULONG ) AmiGUS_CAMD_Base->agb_LogMem - 1 );
-    debug_kprintf( "AmiGUS Log ready\n" );
+#ifdef SERIAL_MEM_LOG_INFO
+    debug_kprintf( "AmiGUS Log ready\n", NULL );
+#endif
   }
 
   RawDoFmt(
