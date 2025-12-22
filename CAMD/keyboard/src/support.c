@@ -66,7 +66,7 @@ struct ErrorMessage errors[] = {
   { EWrongDriverCPUVersion, "Wrong driver CPU version for your machine.", "Hmpf" },
   { EOpenDosBase, "Can not open dos.library.", "What the ...?" },
   { EOpenIntuitionBase, "Can not open intuition.library.", "What the ...?" },
-  { EOpenGadToolsBase, "Can not open gadtools.library.", "What the ...?" },
+  { EInvalidCamdVersion, "Unfortunately, only the old CAMD 37.x is supported.", "Sorry" },
   { EOpenLogFile, "Can not create log file RAM:AmiGUS-CAMD.log.", "Oops!" },
   { EAllocateLogMem, "Can not allocate memory blob for extra-dirty logging.", "Meh." },
   { EAllocateAmiGUSCAMDToolBase, "No base struct - out of memory!", "Shit!" },

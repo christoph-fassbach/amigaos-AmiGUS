@@ -202,6 +202,7 @@ VOID CloseMidi( VOID ) {
 
 ULONG Startup( VOID ) {
 
+  LONG result;
   if ( !CAMD_Keyboard_Base ) {
 
     CAMD_Keyboard_Base = AllocMem( sizeof( struct CAMD_Keyboard ), MEMF_ANY | MEMF_CLEAR );
@@ -211,6 +212,7 @@ ULONG Startup( VOID ) {
     DisplayError( EAllocateAmiGUSCAMDToolBase );
     return EAllocateAmiGUSCAMDToolBase;
   }
+  // TODO: error handling of all the below!
   OpenLib(( struct Library ** )&CamdBase, "camd.library", 37, EOpenCamdBase );
   OpenLib(( struct Library ** )&IntuitionBase, "intuition.library", 36, EOpenIntuitionBase );
   OpenLib(( struct Library ** )&GfxBase, "graphics.library", 36, EOpenGfxBase );
@@ -230,12 +232,26 @@ ULONG Startup( VOID ) {
   }
 
   NEW_LIST( &( CAMD_Keyboard_Base->ck_Devices ));
-  ExtractCamdOutputDevices( &( CAMD_Keyboard_Base->ck_Devices ));
-
   NEW_LIST( &( CAMD_Keyboard_Base->ck_DeviceLabels ));
-  CreateChooserLabels();
 
-  OpenMidi( 0 ); // TODO: error handling if no midi!
+  if ( CamdBase->lib_Version > 37 ) {
+
+    DisplayError( EInvalidCamdVersion );
+
+    return EInvalidCamdVersion;
+  }
+  result = ExtractCamdOutputDevices( &( CAMD_Keyboard_Base->ck_Devices ));
+  if ( result ) {
+
+    CreateChooserLabels();
+    result = OpenMidi( 0 );
+
+    if ( result ) {
+
+      DisplayError( result );
+    }
+  }
+
   LOG_I(( "I: " STR( APP_NAME ) " startup complete.\n" ));
 }
 
