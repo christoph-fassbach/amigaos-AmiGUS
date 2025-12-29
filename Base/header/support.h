@@ -1,17 +1,17 @@
 /*
- * This file is part of the mhiamigus.library.
+ * This file is part of the amigus.library.
  *
- * mhiamigus.library is free software: you can redistribute it and/or modify
+ * amigus.library is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
  * the Free Software Foundation, version 3 of the License only.
  *
- * mhiamigus.library is distributed in the hope that it will be useful,
+ * amigus.library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public License
- * along with mhiamigus.library.
+ * along with amigus.library.
  *
  * If not, see <http://www.gnu.org/licenses/>.
  */
@@ -62,21 +62,5 @@
         ( node_type ) (( struct Node * ) node)->ln_Succ \
           != ( node_type ) (( struct List * ) list)->lh_Tail ;\
         node = ( node_type ) (( struct Node * ) node)->ln_Succ )
-
-/******************************************************************************
- * Error messaging functions.
- *****************************************************************************/
-
-/**
- * Displays an error message in a requester,
- * and writes it to the logs.
- *
- * Displays an error message, showing the error code and
- * a error message defined in errors[]. If a code can not
- * be resolved, the EUnknownError text is displayed.
- *
- * @param aError Error Id to display error message for.
- */
-VOID DisplayError( ULONG aError );
 
 #endif /* SUPPORT_H */
