@@ -83,6 +83,8 @@ LIB_FILE_DEST   = $(DDIR)$(LIB_FILE)-$(LIB_CPU)-$(LIB_LOG)
 FD_FILE         = $(HDIR)$(LIB_NAME)_lib.fd
 PRAGMA_FILE     = $(HDIR)$(LIB_NAME)_pragmas.h
 
+DEV_PACKAGE     = $(DDIR)amigus-dev.lha
+
 ###########################
 
 AMIGUS_INCLUDE  = include/C
@@ -188,7 +190,7 @@ endif
 
 .PHONY: all install test support INCLUDES FOLDERS clean dist-clean dist
 
-all: FOLDERS $(LIB_FILE_DEST)
+all: FOLDERS $(LIB_FILE_DEST) $(DEV_PACKAGE)
 
 ECHO:
 	@echo "C-sources: "$(C_SRCS)
@@ -221,6 +223,9 @@ FOLDERS:
 
 $(LIB_FILE_DEST): $(LIB_OBJS)
 	$(LD) $(LFLAGS) $@ $(LFLAGS1) $^
+
+$(DEV_PACKAGE):
+	$(LHA) c $@ include
 
 ###############################################################################
 
