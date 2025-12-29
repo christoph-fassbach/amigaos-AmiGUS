@@ -63,4 +63,7 @@
           != ( node_type ) (( struct List * ) list)->lh_Tail ;\
         node = ( node_type ) (( struct Node * ) node)->ln_Succ )
 
+#define MAX( a, b ) (( a < b ) ? b : a )
+#define MIN( a, b ) (( a > b ) ? b : a )
+
 #endif /* SUPPORT_H */

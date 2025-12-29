@@ -44,7 +44,7 @@
 #include "library.h"
 
 /*
- * Query-able facts via MHIQuery function:
+ * Query-able facts via MHIQuery function: TODO
  */
 #define AMIGUS_AUTHOR               "Christoph `Chritoph` Fassbach"
 #define AMIGUS_COPYRIGHT            "(c) 2025 Christoph Fassbach / LGPL3"
@@ -67,7 +67,7 @@
  *****************************************************************************/
 
 /**
- * Private AmiGUS MHI library base structure.
+ * Private AmiGUS library base structure.
  *
  * There is no public one, pointers to libraries opened, interrupts,
  * list of client handles, logs. Nothing to play around with.
@@ -78,7 +78,6 @@ struct AmiGUS_Base {
 
   struct ExecBase             * agb_SysBase;       // Exec, allocations etc.
   struct DosLibrary           * agb_DOSBase;       // DOS, logs and so on
-  struct IntuitionBase        * agb_IntuitionBase; // For error messages
   struct Library              * agb_ExpansionBase; // Finding devices
 
   /* AmiGUS specific member variables */
@@ -92,20 +91,18 @@ struct AmiGUS_Base {
 };
 
 /*
- * All libraries' base pointers used by the MHI driver library.
+ * All libraries' base pointers used by the AmiGUS library.
  * Also used to switch between relying on globals or not.
  */
 #if defined(BASE_GLOBAL)
   extern struct AmiGUS_Base       * AmiGUS_Base;
   extern struct DosLibrary        * DOSBase;
   extern struct Library           * ExpansionBase;
-  extern struct IntuitionBase     * IntuitionBase;
   extern struct ExecBase          * SysBase;
 #elif defined(BASE_REDEFINE)
   #define AmiGUS_Base               (base)
   #define DOSBase                   base->agb_DOSBase
   #define ExpansionBase             base->agb_ExpansionBase
-  #define IntuitionBase             base->agb_IntuitionBase
   #define SysBase                   base->agb_SysBase
 #endif
 
