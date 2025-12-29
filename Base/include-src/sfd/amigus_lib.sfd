@@ -1,0 +1,13 @@
+==id $Id: amigus_lib.sfd,v 1.0 2025/12/25 21:06:06 Christoph Fassbach Exp $
+* "amigus.library"
+==base _AmiGUS_Base
+==basetype struct Library *
+==libname amigus.library
+==bias 30
+==public
+==include <amigus/amigus.h>
+ULONG AmiGUS_Alloc( struct AmiGUS * card, ULONG which, ULONG own ) (a0, d0, d1)
+VOID AmiGUS_Free( struct AmiGUS * card ) (a0)
+ULONG AmiGUS_InstallInterrupt( struct AmiGUS * card, ULONG which, AmiGUS_Interrupt handler ) (a0, d0, d1)
+VOID AmiGUS_RemoveInterrupt( struct AmiGUS * card, ULONG which ) (a0, d0)
+==end
