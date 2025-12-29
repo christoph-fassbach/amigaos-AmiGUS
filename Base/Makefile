@@ -66,7 +66,7 @@ SDIR   = src/
 HDIR   = header/
 
 LIB_CPU        ?= 000
-LIB_LOG        ?= NO_LOG
+LIB_LOG        ?= MEM_LOG
 # NO_LOG
 # SER_LOG
 # FILE_LOG
@@ -85,7 +85,7 @@ PRAGMA_FILE     = $(HDIR)$(LIB_NAME)_pragmas.h
 
 ###########################
 
-AMIGUS_INCLUDE  = include
+AMIGUS_INCLUDE  = include/C
 NDK_ASM_INCLUDE = $(NDK)Include_I
 NDK_C_INCLUDE   = $(NDK)Include_H
 
@@ -236,6 +236,18 @@ test: FOLDERS $(LIB_OBJS)
 
 ###############################################################################
 
-support: FOLDERS
+support: FOLDERS amigus_lib_check get_mem_log
+
+get_mem_log:
+	$(CC) $(CFLAGS) support/$@.o support/$@.c
+	$(LD) $(LFLAGS) target/$@ $(LFLAGS1) $(LFLAGST1) support/$@.o $(LFLAGST2)
+	-cp target/$@ ~/Documents/FS-UAE/Shared/Projekte/AmiGUS/
+	-curl --netrc --upload-file target/$@       ftp://192.168.0.4/cf0/Expansion/AmiGUS/GetAmiGUSLibMemLog
+
+amigus_lib_check:
+	$(CC) $(CFLAGS) support/$@.o support/$@.c
+	$(LD) $(LFLAGS) target/$@ $(LFLAGS1) $(LFLAGST1) support/$@.o $(LFLAGST2)
+	-cp target/$@ ~/Documents/FS-UAE/Shared/Projekte/AmiGUS/
+	-curl --netrc --upload-file target/$@       ftp://192.168.0.4/cf0/Expansion/AmiGUS/
 
 ###############################################################################

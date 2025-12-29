@@ -19,6 +19,7 @@
 #include <amigus/amigus.h>
 
 #include "amigus_private.h"
+#include "debug.h"
 #include "SDI_compiler.h"
 
 ASM( ULONG ) SAVEDS AmiGUS_Alloc(
@@ -27,6 +28,7 @@ ASM( ULONG ) SAVEDS AmiGUS_Alloc(
   REG( d1, ULONG own ),
   REG( a6, struct AmiGUS_Base * base )) {
 
+  LOG_W(( "W: Not implemented!\n" ));
   return NULL;
 }
 
@@ -34,6 +36,7 @@ ASM( VOID ) SAVEDS AmiGUS_Free(
   REG( a0, struct AmiGUS * card ),
   REG( a6, struct AmiGUS_Base * base )) {
 
+  LOG_W(( "W: Not implemented!\n" ));
   return;
 }
 
@@ -43,6 +46,7 @@ ASM( ULONG ) SAVEDS AmiGUS_InstallInterrupt(
   REG( d1, AmiGUS_Interrupt handler ),
   REG( a6, struct AmiGUS_Base * base )) {
 
+  LOG_W(( "W: Not implemented!\n" ));
   return FALSE;
 }
 
@@ -50,5 +54,6 @@ ASM( VOID ) SAVEDS AmiGUS_RemoveInterrupt(
   REG( a0, struct AmiGUS * card ),
   REG( a6, struct AmiGUS_Base * base )) {
 
+  LOG_W(( "W: Not implemented!\n" ));
   return;
 }
