@@ -19,6 +19,7 @@
 #include <amigus/amigus.h>
 
 #include "amigus_private.h"
+#include "amigus_zorro2.h"
 #include "debug.h"
 #include "SDI_compiler.h"
 
@@ -28,8 +29,8 @@ ASM( ULONG ) SAVEDS AmiGUS_Alloc(
   REG( d1, ULONG own ),
   REG( a6, struct AmiGUS_Base * base )) {
 
-  LOG_W(( "W: Not implemented!\n" ));
-  return NULL;
+  ULONG result = AmiGusZorro2_Alloc( card, which, own );
+  return result;
 }
 
 ASM( VOID ) SAVEDS AmiGUS_Free(

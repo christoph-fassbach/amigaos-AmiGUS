@@ -16,7 +16,6 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <intuition/intuitionbase.h>
 #include <libraries/expansionbase.h>
 #include <proto/dos.h>
 #include <proto/exec.h>
@@ -32,7 +31,6 @@
 // As declared in amigus_private.h
 struct ExecBase          * SysBase           = 0;
 struct DosLibrary        * DOSBase           = 0;
-struct IntuitionBase     * IntuitionBase     = 0;
 struct Library           * UtilityBase       = 0;
 struct Library           * ExpansionBase     = 0;
 struct AmiGUS_Base       * AmiGUS_Base       = 0;
@@ -83,12 +81,6 @@ LONG CustomLibInit( LIBRARY_TYPE * base, struct ExecBase * sysBase ) {
 
     return EOpenDosBase;
   }
-  base->agb_IntuitionBase =
-    ( struct IntuitionBase * ) OpenLibrary( "intuition.library", 34 );
-  if ( !( base->agb_IntuitionBase )) {
-
-    return EOpenIntuitionBase;
-  }
   base->agb_ExpansionBase =
     ( struct Library * ) OpenLibrary( "expansion.library", 34 );
   if ( !( base->agb_ExpansionBase )) {
@@ -98,7 +90,6 @@ LONG CustomLibInit( LIBRARY_TYPE * base, struct ExecBase * sysBase ) {
 
 #ifdef BASE_GLOBAL
   DOSBase         = base->agb_DOSBase;
-  IntuitionBase   = base->agb_IntuitionBase;
   ExpansionBase   = base->agb_ExpansionBase;
   AmiGUS_Base     = base;
 #endif
@@ -114,6 +105,7 @@ VOID CustomLibClose( LIBRARY_TYPE * base ) {
 #ifndef BASE_GLOBAL
   struct ExecBase *SysBase = base->agb_SysBase;
 #endif
+  LOG_D(("D: AmiGUS base @ 0x%08lx leaving the building\n", base));
 
   if ( base->agb_LogFile ) {
 
@@ -130,10 +122,6 @@ VOID CustomLibClose( LIBRARY_TYPE * base ) {
   if ( base->agb_DOSBase ) {
 
     CloseLibrary(( struct Library *) base->agb_DOSBase );
-  }
-  if ( base->agb_IntuitionBase ) {
-
-    CloseLibrary(( struct Library * ) base->agb_IntuitionBase );
   }
   if ( base->agb_ExpansionBase ) {
 
