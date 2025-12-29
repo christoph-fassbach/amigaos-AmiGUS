@@ -38,7 +38,7 @@ ifeq ($(findstring /home,$(HOME)), /home)
   # machine <ip> login username password pass
   # Could do --user username:pass instead - but not cool in repo ;)
   INSTALL1      = curl --netrc --upload-file $(LIB_FILE_DEST)       ftp://192.168.0.4/cf0/Libs/$(LIB_NAME).library
-  INSTALL0      = cp $(LIB_FILE_DEST) ~/Documents/FS-UAE/Shared/$(LIB_NAME).library
+  INSTALL0      = cp $(LIB_FILE_DEST) ~/Documents/FS-UAE/Shared/Projekte/AmiGUS/$(LIB_NAME).library
 else
   AMIGAOS       = 1
   
@@ -66,7 +66,7 @@ SDIR   = src/
 HDIR   = header/
 
 LIB_CPU        ?= 000
-LIB_LOG        ?= MEM_LOG
+LIB_LOG        ?= SER_LOG
 # NO_LOG
 # SER_LOG
 # FILE_LOG
