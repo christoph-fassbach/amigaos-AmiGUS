@@ -29,7 +29,57 @@
 #include <proto/amigus.h>
 #include <amigus/amigus.h>
 
+#include "errors.h"
+
 struct Library * AmiGUS_Base;
+
+struct AmiGUS card;
+
+/******************************************************************************
+ * Test functions:
+ *****************************************************************************/
+
+VOID testInterruptHandler( APTR data ) {
+
+}
+
+BOOL testAlloc( VOID ) {
+
+  ULONG result = AmiGUS_Alloc(
+    &card,
+    AMIGUS_FLAG_PCM | AMIGUS_FLAG_CODEC | AMIGUS_FLAG_WAVETABLE,
+    AMIGUS_FLAG_PCM | AMIGUS_FLAG_CODEC | AMIGUS_FLAG_WAVETABLE
+  );
+
+  return ( BOOL )( result != ENoError );
+}
+
+BOOL testInstallInterrupt( VOID ) {
+
+  ULONG result = AmiGUS_InstallInterrupt(
+    &card,
+    AMIGUS_FLAG_PCM | AMIGUS_FLAG_CODEC | AMIGUS_FLAG_WAVETABLE,
+    &testInterruptHandler
+  );
+
+  return ( BOOL )( result != ENoError );
+}
+
+BOOL testRemoveInterrupt( VOID ) {
+
+  AmiGUS_RemoveInterrupt(
+    &card,
+    AMIGUS_FLAG_PCM | AMIGUS_FLAG_CODEC | AMIGUS_FLAG_WAVETABLE
+  );
+  return FALSE;
+}
+
+BOOL testFree( VOID ) {
+
+  AmiGUS_Free( &card );
+
+  return FALSE;
+}
 
 /******************************************************************************
  * Finally, main triggering all tests:
@@ -47,7 +97,10 @@ int main(int argc, char const *argv[]) {
   }
   printf( "%s opened\n", libraryName );
 
-  //failed |= testQuery();
+  failed |= testAlloc();
+  failed |= testInstallInterrupt();
+  failed |= testRemoveInterrupt();
+  failed |= testFree();
 
   CloseLibrary( AmiGUS_Base );
   printf( "%s closed\n", libraryName );
