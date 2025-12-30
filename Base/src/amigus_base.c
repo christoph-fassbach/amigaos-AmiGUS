@@ -48,9 +48,8 @@ ASM( struct AmiGUS * ) SAVEDS AmiGUS_FindCard(
   REG( a0, struct AmiGUS * card ),
   REG( a6, struct AmiGUS_Base * base )) {
 
-  struct AmiGUS_Private * card_private;
   struct Node * node;
-  struct AmiGUS * card_public;
+  struct AmiGUS * card_public = NULL;
 
   if ( !( card )) {
 
@@ -58,18 +57,18 @@ ASM( struct AmiGUS * ) SAVEDS AmiGUS_FindCard(
 
   } else {
     
-    card_private = convertPublic2Private( card );
+    struct AmiGUS_Private * card_private = convertPublic2Private( card );
     node = card_private->agp_Node.ln_Succ;
-  }
-  if ( node->ln_Succ == AmiGUS_Base->agb_Cards.lh_Tail ) {
 
-    return NULL;
   }
+  // List empty and end of list are the same!
+  if ( node->ln_Succ != AmiGUS_Base->agb_Cards.lh_Tail ) {
 
-  card_private = ( struct AmiGUS_Private * ) node;
-  card_public = &( card_private->agp_AmiGUS_Public );
-  LOG_D(( "D: Found Amigus @ 0x%08lx / 0x%08lx\n",
-          card_private, card_public ));
+    struct AmiGUS_Private * card_private = ( struct AmiGUS_Private * ) node;
+    card_public = &( card_private->agp_AmiGUS_Public );
+    LOG_D(( "D: Found Amigus @ 0x%08lx / 0x%08lx\n",
+            card_private, card_public ));
+  }
 
   return card_public;
 }
