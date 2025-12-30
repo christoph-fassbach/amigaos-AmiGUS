@@ -47,8 +47,9 @@
  * will be used in library.c.
  *****************************************************************************/
 
-#define LIBRARY_FUNCTIONS ( APTR ) AmiGUS_Alloc, \
-                          ( APTR ) AmiGUS_Free, \
+#define LIBRARY_FUNCTIONS ( APTR ) AmiGUS_FindCard, \
+                          ( APTR ) AmiGUS_ReserveCard, \
+                          ( APTR ) AmiGUS_FreeCard, \
                           ( APTR ) AmiGUS_InstallInterrupt, \
                           ( APTR ) AmiGUS_RemoveInterrupt
 

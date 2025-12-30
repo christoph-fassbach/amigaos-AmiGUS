@@ -63,6 +63,17 @@
           != ( node_type ) (( struct List * ) list)->lh_Tail ;\
         node = ( node_type ) (( struct Node * ) node)->ln_Succ )
 
+/**
+ * Checks if a List or MinList is empty.
+ *
+ * @param list List or MinList to iterate over.
+ *
+ * @return TRUE if empty, FALSE otherwise.
+ */        
+#define IS_EMPTY_LIST( list ) \
+  ( (( struct List * ) list)->lh_Head->ln_Succ == \
+    (( struct List * ) list)->lh_Tail )
+
 #define MAX( a, b ) (( a < b ) ? b : a )
 #define MIN( a, b ) (( a > b ) ? b : a )
 

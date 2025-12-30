@@ -21,13 +21,11 @@
 
 // TO NEVER BE USED OUTSIDE THE LIBRARY CODE !!!
 
+#include <amigus/amigus.h>
 #include <exec/types.h>
 #include <exec/tasks.h>
 
 #include "SDI_compiler.h"
-
-/* Forward declaration here. */
-typedef VOID (*AmiGUS_Interrupt)( APTR data );
 
 /******************************************************************************
  * AmiGUS base library interface functions written in SDI_compiler macros,
@@ -35,13 +33,16 @@ typedef VOID (*AmiGUS_Interrupt)( APTR data );
  * adapting them for AmiGUS library internal usage.
  *****************************************************************************/
 
-ASM( ULONG ) SAVEDS AmiGUS_Alloc(
+ASM( struct AmiGUS * ) SAVEDS AmiGUS_FindCard(
   REG( a0, struct AmiGUS * card ),
-  REG( d0, ULONG which ),
-  REG( d1, ULONG own ),
   REG( a6, struct AmiGUS_Base * base ));
 
-ASM( VOID ) SAVEDS AmiGUS_Free(
+ASM( ULONG ) SAVEDS AmiGUS_ReserveCard(
+  REG( a0, struct AmiGUS * card ),
+  REG( d0, ULONG which ),
+  REG( a6, struct AmiGUS_Base * base ));
+
+ASM( VOID ) SAVEDS AmiGUS_FreeCard(
   REG( a0, struct AmiGUS * card ),
   REG( a6, struct AmiGUS_Base * base ));
 
@@ -53,6 +54,7 @@ ASM( ULONG ) SAVEDS AmiGUS_InstallInterrupt(
 
 ASM( VOID ) SAVEDS AmiGUS_RemoveInterrupt(
   REG( a0, struct AmiGUS * card ),
+  REG( d0, ULONG which ),
   REG( a6, struct AmiGUS_Base * base ));
 
 #endif /* SDI_AMIGUS_PROTOS_H */

@@ -33,8 +33,6 @@
 
 struct Library * AmiGUS_Base;
 
-struct AmiGUS card;
-
 /******************************************************************************
  * Test functions:
  *****************************************************************************/
@@ -45,37 +43,37 @@ VOID testInterruptHandler( APTR data ) {
 
 BOOL testAlloc( VOID ) {
 
-  ULONG result = AmiGUS_Alloc(
-    &card,
-    AMIGUS_FLAG_PCM | AMIGUS_FLAG_CODEC | AMIGUS_FLAG_WAVETABLE,
-    AMIGUS_FLAG_NONE
-  );
-  printf( "AmiGUS_Alloc result is 0x%04lx\n",
-          result );
-  printf( "PCM Base is 0x%08lx\n",
-          card.agus_PcmBase );
-  printf( "WaveTable Base is 0x%08lx\n",
-          card.agus_WavetableBase );
-  printf( "Codec Base is 0x%08lx\n",
-          card.agus_CodecBase );
-  printf( "Card type is %ld / %s\n",
-          card.agus_TypeId,
-          card.agus_TypeName );
-  printf( "Firmware rev is 0x%08lx, %04ld-%02ld-%02ld, %02ld:%02ld\n",
-          card.agus_FirmwareRev,
-          card.agus_Year,
-          card.agus_Month,
-          card.agus_Day,
-          card.agus_Hour,
-          card.agus_Minute );
-  printf( "Hardware rev is ?\n");
-  printf( "FPGA id is ?\n");
+  struct AmiGUS * card = NULL;
+  LONG i = 0;
 
-  return ( BOOL )( result != ENoError );
+  while ( card = AmiGUS_FindCard( card )) {
+
+    printf( "AmiGUS_FindCard result is 0x%08lx\n", card );
+    printf( "PCM Base is 0x%08lx\n",
+            card->agus_PcmBase );
+    printf( "WaveTable Base is 0x%08lx\n",
+            card->agus_WavetableBase );
+    printf( "Codec Base is 0x%08lx\n",
+            card->agus_CodecBase );
+    printf( "Card type is %ld / %s\n",
+            card->agus_TypeId,
+            card->agus_TypeName );
+    printf( "Firmware rev is 0x%08lx, %04ld-%02ld-%02ld, %02ld:%02ld\n",
+            card->agus_FirmwareRev,
+            card->agus_Year,
+            card->agus_Month,
+            card->agus_Day,
+            card->agus_Hour,
+            card->agus_Minute );
+    printf( "Hardware rev is ?\n");
+    printf( "FPGA id is ?\n");
+  }
+
+  return ( BOOL ) ( 0 < i );
 }
 
 BOOL testInstallInterrupt( VOID ) {
-
+/*
   ULONG result = AmiGUS_InstallInterrupt(
     &card,
     AMIGUS_FLAG_PCM | AMIGUS_FLAG_CODEC | AMIGUS_FLAG_WAVETABLE,
@@ -83,21 +81,22 @@ BOOL testInstallInterrupt( VOID ) {
   );
 
   return ( BOOL )( result != ENoError );
+  */
 }
 
 BOOL testRemoveInterrupt( VOID ) {
-
+/*
   AmiGUS_RemoveInterrupt(
     &card,
     AMIGUS_FLAG_PCM | AMIGUS_FLAG_CODEC | AMIGUS_FLAG_WAVETABLE
-  );
+  );*/
   return FALSE;
 }
 
 BOOL testFree( VOID ) {
-
+/*
   AmiGUS_Free( &card );
-
+*/
   return FALSE;
 }
 

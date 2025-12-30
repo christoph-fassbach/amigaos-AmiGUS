@@ -22,6 +22,6 @@
 #include <amigus/amigus.h>
 #include <exec/types.h>
 
-LONG AmiGusZorro2_Alloc( struct AmiGUS * card, ULONG which, ULONG own );
+LONG AmiGusZorro2_AddAll( struct List * cards );
 
 #endif
