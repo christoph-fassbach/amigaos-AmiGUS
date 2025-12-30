@@ -41,6 +41,8 @@
 #endif
 #endif
 
+#include <amigus/amigus.h>
+
 #include "library.h"
 
 /*
@@ -81,13 +83,24 @@ struct AmiGUS_Base {
   struct Library              * agb_ExpansionBase; // Finding devices
 
   /* AmiGUS specific member variables */
-  struct Interrupt            * agb_Interrupt;     // Shared interrupt handler
-
-  /* Client info */
-  struct MinList                agb_Clients;       // AMIGUS_PRIVATE_Handle list
+  struct List                   agb_Cards;
 
   BPTR                          agb_LogFile;       // Debug log file handle
   APTR                          agb_LogMem;        // Debug log memory blob
+};
+
+struct AmiGUS_Private {
+
+  struct Node                   agp_Node;
+  struct AmiGUS                 agp_AmiGUS_Public;
+
+  struct ConfigDev *            agp_PCM_ConfigDev;
+  struct ConfigDev *            agp_Wavetable_ConfigDev;
+  struct ConfigDev *            agp_Codec_ConfigDev;
+
+  AmiGUS_Interrupt              agb_PCM_InterruptHandler;
+  AmiGUS_Interrupt              agb_Wavetable_InterruptHandler;
+  AmiGUS_Interrupt              agb_Codec_InterruptHandler;
 };
 
 /*

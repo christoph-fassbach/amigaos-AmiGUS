@@ -16,24 +16,74 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stddef.h>
+
 #include <amigus/amigus.h>
 
 #include "amigus_private.h"
 #include "amigus_zorro2.h"
 #include "debug.h"
 #include "SDI_compiler.h"
+#include "support.h"
 
-ASM( ULONG ) SAVEDS AmiGUS_Alloc(
-  REG( a0, struct AmiGUS * card ),
-  REG( d0, ULONG which ),
-  REG( d1, ULONG own ),
-  REG( a6, struct AmiGUS_Base * base )) {
+/******************************************************************************
+ * AmiGUS base library - private functions.
+ *****************************************************************************/
 
-  ULONG result = AmiGusZorro2_Alloc( card, which, own );
-  return result;
+struct AmiGUS_Private * convertPublic2Private( struct AmiGUS * card ) {
+
+  ULONG result = ((ULONG ) card );
+
+  result -= offsetof( struct AmiGUS_Private, agp_AmiGUS_Public );
+  LOG_D(( "D: Converted public 0x%08lx to 0x%08lx\n", card, result ));
+
+  return (( struct AmiGUS_Private * ) result );
 }
 
-ASM( VOID ) SAVEDS AmiGUS_Free(
+/******************************************************************************
+ * AmiGUS base library - public functions.
+ *****************************************************************************/
+
+ASM( struct AmiGUS * ) SAVEDS AmiGUS_FindCard(
+  REG( a0, struct AmiGUS * card ),
+  REG( a6, struct AmiGUS_Base * base )) {
+
+  struct AmiGUS_Private * card_private;
+  struct Node * node;
+  struct AmiGUS * card_public;
+
+  if ( !( card )) {
+
+    node = AmiGUS_Base->agb_Cards.lh_Head;
+
+  } else {
+    
+    card_private = convertPublic2Private( card );
+    node = card_private->agp_Node.ln_Succ;
+  }
+  if ( node->ln_Succ == AmiGUS_Base->agb_Cards.lh_Tail ) {
+
+    return NULL;
+  }
+
+  card_private = ( struct AmiGUS_Private * ) node;
+  card_public = &( card_private->agp_AmiGUS_Public );
+  LOG_D(( "D: Found Amigus @ 0x%08lx / 0x%08lx\n",
+          card_private, card_public ));
+
+  return card_public;
+}
+
+ASM( ULONG ) SAVEDS AmiGUS_ReserveCard(
+  REG( a0, struct AmiGUS * card ),
+  REG( d0, ULONG which ),
+  REG( a6, struct AmiGUS_Base * base )) {
+
+  LOG_W(( "W: Not implemented!\n" ));
+  return 0;
+}
+
+ASM( VOID ) SAVEDS AmiGUS_FreeCard(
   REG( a0, struct AmiGUS * card ),
   REG( a6, struct AmiGUS_Base * base )) {
 
@@ -53,6 +103,7 @@ ASM( ULONG ) SAVEDS AmiGUS_InstallInterrupt(
 
 ASM( VOID ) SAVEDS AmiGUS_RemoveInterrupt(
   REG( a0, struct AmiGUS * card ),
+  REG( d0, ULONG which ),
   REG( a6, struct AmiGUS_Base * base )) {
 
   LOG_W(( "W: Not implemented!\n" ));

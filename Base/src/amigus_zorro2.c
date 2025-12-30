@@ -32,152 +32,93 @@
 
 STRPTR AmiGUS_Zorro2_Name = "AmiGUS Zorro2";
 
-LONG HandleProduct(
-  struct AmiGUS * card,
-  ULONG * which,
-  ULONG * own,
-  struct ConfigDev * configDevice,
-  const LONG flag ) {
-
-  Forbid();
-  if ( flag & *( own )) {
-    if ( configDevice->cd_Driver ) {
-
-      LOG_W(( "W: AmiGUS product at 0x%08lx in use\n",
-              configDevice->cd_BoardAddr ));
-      Permit();
-      return ( AmiGUS_DetectError | flag );
-    }
-    *( own ) &= ~flag;
-    configDevice->cd_Driver = card;
-    // TODO: reserve in internal structs here!
-    LOG_I(( "I: AmiGUS product at 0x%08lx reserved\n",
-            configDevice->cd_BoardAddr ));
-  }
-  Permit();
-  if ( flag & *( which )) {
-
-    *( which ) &= ~flag;
-    switch ( flag ) {
-      case AMIGUS_FLAG_PCM: {
-
-        card->agus_PcmBase = configDevice->cd_BoardAddr;
-        break;
-      }
-      case AMIGUS_FLAG_WAVETABLE: {
-
-        card->agus_WavetableBase = configDevice->cd_BoardAddr;
-        break;
-      }
-      case AMIGUS_FLAG_CODEC: {
-
-        card->agus_CodecBase = configDevice->cd_BoardAddr;
-        break;
-      }
-      default: {
-
-        LOG_E(( "E: Flag 0x%04lx not understood!\n", flag ));
-        break;
-      }
-    }
-    card->agus_TypeId = AmiGUS_Zorro2;
-    card->agus_TypeName = AmiGUS_Zorro2_Name;
-    card->agus_FirmwareRev = MIN( card->agus_FirmwareRev,
-                                  configDevice->cd_Rom.er_SerialNumber );
-    LOG_I(( "I: AmiGUS product info at 0x%08lx retrieved\n",
-            configDevice->cd_BoardAddr ));
-  }
-  return AmiGUS_NoError;
-}
-
 /******************************************************************************
  * AmiGUS Zorro2 functions - public function definitions.
  *****************************************************************************/
 
-LONG AmiGusZorro2_Alloc( struct AmiGUS * card, ULONG which, ULONG own ) {
+VOID AmiGusZorro2_AddAll( struct List * cards ) {
 
-  LONG result = AmiGUS_NoError;
-  struct ConfigDev * configDevice = NULL;
-  ULONG remainingWhich = which;
-  ULONG remainingOwn = own;
+  struct ConfigDev * configDevice_PCM = NULL;
+  struct ConfigDev * configDevice_Wavetable = NULL;
+  struct ConfigDev * configDevice_Codec = NULL;
+  
+  for ( ; ; ) {
 
-  card->agus_FirmwareRev = ULONG_MAX;
-  while ( remainingOwn | remainingWhich ) {
+    struct AmiGUS_Private * card_private;
+    struct AmiGUS * card_public;
+    ULONG serial_PCM;
+    ULONG serial_Wavetable;
+    ULONG serial_Codec;
+    ULONG serial;
 
-    configDevice = FindConfigDev( configDevice,
-                                  AMIGUS_MANUFACTURER_ID,
-                                  ANY_PRODUCT_ID );
-    if ( !configDevice ) {
+    configDevice_PCM = FindConfigDev( configDevice_PCM,
+                                      AMIGUS_MANUFACTURER_ID,
+                                      AMIGUS_MAIN_PRODUCT_ID );
+    if ( !( configDevice_PCM )) {
 
-      LOG_I(( "I: No more AmiGUS' found\n" ));
-      return MAX( result, AmiGUS_NotFound );
+      break;
     }
-    if ( AMIGUS_MANUFACTURER_ID != configDevice->cd_Rom.er_Manufacturer ) {
+    configDevice_Wavetable = FindConfigDev( configDevice_Wavetable,
+                                            AMIGUS_MANUFACTURER_ID,
+                                            AMIGUS_HAGEN_PRODUCT_ID );
+    if ( !( configDevice_Wavetable )) {
 
-      LOG_E(( "E: AmiGUS detection failed\n" ));
-      return EAmiGUSDetectError;
+      break;
     }
-    switch ( configDevice->cd_Rom.er_Product ) {
+    configDevice_Codec = FindConfigDev( configDevice_Codec,
+                                        AMIGUS_MANUFACTURER_ID,
+                                        AMIGUS_CODEC_PRODUCT_ID );
+    if ( !( configDevice_Codec )) {
 
-      case AMIGUS_MAIN_PRODUCT_ID: {
-
-        LOG_I(( "I: AmiGUS PCM at 0x%08lx found\n",
-                configDevice->cd_BoardAddr ));
-        result |= HandleProduct(
-          card,
-          &remainingWhich,
-          &remainingOwn,
-          configDevice,
-          AMIGUS_FLAG_PCM );
-        break;
-      }
-      case AMIGUS_HAGEN_PRODUCT_ID: {
-
-        LOG_I(( "I: AmiGUS WaveTable at 0x%08lx found\n",
-                configDevice->cd_BoardAddr ));
-        result |= HandleProduct(
-          card,
-          &remainingWhich,
-          &remainingOwn,
-          configDevice,
-          AMIGUS_FLAG_WAVETABLE );
-        break;
-      }
-      case AMIGUS_CODEC_PRODUCT_ID: {
-
-        LOG_I(( "I: AmiGUS Codec at 0x%08lx found\n",
-                configDevice->cd_BoardAddr ));
-        result |= HandleProduct(
-          card,
-          &remainingWhich,
-          &remainingOwn,
-          configDevice,
-          AMIGUS_FLAG_CODEC );
-        break;
-      }
-      default: {
-
-        LOG_D(( "D: Other 0x0ADE hardware found, product 0x02lx\n",
-                configDevice->cd_Rom.er_Product ));
-        break;
-      }
+      break;
     }
+
+    card_private = AllocMem( sizeof( struct AmiGUS_Private ), MEMF_ANY );
+
+    card_private->agp_PCM_ConfigDev = configDevice_PCM;
+    card_private->agp_Wavetable_ConfigDev = configDevice_Wavetable;
+    card_private->agp_Codec_ConfigDev = configDevice_Codec;
+    card_private->agb_PCM_InterruptHandler = NULL;
+    card_private->agb_Wavetable_InterruptHandler = NULL;
+    card_private->agb_Codec_InterruptHandler = NULL;
+
+    card_public = &( card_private->agp_AmiGUS_Public );
+    card_public->agus_PcmBase = configDevice_PCM->cd_BoardAddr;
+    card_public->agus_WavetableBase = configDevice_Wavetable->cd_BoardAddr;
+    card_public->agus_CodecBase = configDevice_Codec->cd_BoardAddr;
+    card_public->agus_TypeId = AmiGUS_Zorro2;
+    card_public->agus_TypeName = AmiGUS_Zorro2_Name;
+
+    serial_PCM = configDevice_PCM->cd_Rom.er_SerialNumber;
+    serial_Wavetable = configDevice_Wavetable->cd_Rom.er_SerialNumber;
+    serial_Codec = configDevice_Codec->cd_Rom.er_SerialNumber;
+
+    if (( serial_PCM != serial_Wavetable )
+      || ( serial_PCM != serial_Codec )) {
+
+      LOG_W(( "W: Versions 0x%08lx/0x%08lx/0x%08lx of AmiGUSs "
+              "combined into 0x%08lx/0x%08lx do not match!\n",
+              serial_PCM, serial_Wavetable, serial_Codec,
+              card_private, card_public ));
+    }
+
+    serial = MIN( serial_PCM, MIN( serial_Wavetable, serial_Codec ));
+    card_public->agus_FirmwareRev = serial;
+    LOG_V(("I: AmiGUS firmware 0x%08lx\n", serial ));
+
+    card_public->agus_Minute = ( UBYTE )(( serial & 0x0000003Ful )       );
+    card_public->agus_Hour   = ( UBYTE )(( serial & 0x000007C0ul ) >>  6 );
+    card_public->agus_Day    = ( UBYTE )(( serial & 0x0000F800ul ) >> 11 );
+    card_public->agus_Month  = ( UBYTE )(( serial & 0x000F0000ul ) >> 16 );
+    card_public->agus_Year   = ( UWORD )(( serial & 0xFFF00000ul ) >> 20 );
+    LOG_I(( "I: AmiGUS firmware date %04ld-%02ld-%02ld, %02ld:%02ld\n",
+            card_public->agus_Year, 
+            card_public->agus_Month,
+            card_public->agus_Day,
+            card_public->agus_Hour,
+            card_public->agus_Minute ));
+
+    AddTail( cards, &( card_private->agp_Node ));
   }
-  LOG_V(("I: AmiGUS firmware 0x%08lx\n", card->agus_FirmwareRev));
-  if ( ULONG_MAX > card->agus_FirmwareRev ) {
-
-    const ULONG serial = card->agus_FirmwareRev;
-    card->agus_Minute = ( UBYTE )(( serial & 0x0000003Ful )       );
-    card->agus_Hour   = ( UBYTE )(( serial & 0x000007C0ul ) >>  6 );
-    card->agus_Day    = ( UBYTE )(( serial & 0x0000F800ul ) >> 11 );
-    card->agus_Month  = ( UBYTE )(( serial & 0x000F0000ul ) >> 16 );
-    card->agus_Year   = ( UWORD )(( serial & 0xFFF00000ul ) >> 20 );
-  }
-  LOG_I(( "I: AmiGUS firmware date %04ld-%02ld-%02ld, %02ld:%02ld\n",
-          card->agus_Year,
-          card->agus_Month,
-          card->agus_Day,
-          card->agus_Hour,
-          card->agus_Minute ));
-  return result;
+  return;
 }

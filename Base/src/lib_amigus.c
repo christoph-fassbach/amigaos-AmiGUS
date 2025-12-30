@@ -21,6 +21,7 @@
 #include <proto/exec.h>
 
 #include "amigus_private.h"
+#include "amigus_zorro2.h"
 #include "debug.h"
 #include "errors.h"
 #include "library.h"
@@ -94,9 +95,10 @@ LONG CustomLibInit( LIBRARY_TYPE * base, struct ExecBase * sysBase ) {
   AmiGUS_Base     = base;
 #endif
 
-  NEW_LIST( &( base->agb_Clients ));
+  NEW_LIST( &( base->agb_Cards ));
+  AmiGusZorro2_AddAll( &( base->agb_Cards ));
 
-  LOG_D(("D: AmiGUS base ready @ 0x%08lx\n", base));
+  LOG_D(( "D: AmiGUS base ready @ 0x%08lx\n", base ));
   return ENoError;
 }
 
@@ -105,7 +107,14 @@ VOID CustomLibClose( LIBRARY_TYPE * base ) {
 #ifndef BASE_GLOBAL
   struct ExecBase *SysBase = base->agb_SysBase;
 #endif
-  LOG_D(("D: AmiGUS base @ 0x%08lx leaving the building\n", base));
+
+  APTR card;
+  while ( card = RemTail( &( base->agb_Cards ))) {
+
+    FreeMem( card, sizeof( struct AmiGUS_Private ));
+  }
+
+  LOG_D(( "D: AmiGUS base @ 0x%08lx leaving the building\n", base ));
 
   if ( base->agb_LogFile ) {
 

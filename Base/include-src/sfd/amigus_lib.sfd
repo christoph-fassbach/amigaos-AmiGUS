@@ -6,9 +6,9 @@
 ==bias 30
 ==public
 ==include <amigus/amigus.h>
-ULONG AmiGUS_FillCardInfo( struct AmiGUS * card, LONG index ) ( a0, d0 )
-ULONG AmiGUS_ReserveCard( struct AmiGUS * card, ULONG block ) ( a0, d0 )
+struct AmiGUS * AmiGUS_FindCard( struct AmiGUS * card ) ( a0 )
+ULONG AmiGUS_ReserveCard( struct AmiGUS * card, ULONG which ) ( a0, d0 )
 VOID AmiGUS_FreeCard( struct AmiGUS * card ) ( a0 )
-ULONG AmiGUS_InstallInterrupt( struct AmiGUS * card, ULONG block, AmiGUS_Interrupt handler ) ( a0, d0, d1 )
-VOID AmiGUS_RemoveInterrupt( struct AmiGUS * card, ULONG block ) ( a0, d0 )
+ULONG AmiGUS_InstallInterrupt( struct AmiGUS * card, ULONG which, AmiGUS_Interrupt handler ) ( a0, d0, d1 )
+VOID AmiGUS_RemoveInterrupt( struct AmiGUS * card, ULONG which ) ( a0, d0 )
 ==end
