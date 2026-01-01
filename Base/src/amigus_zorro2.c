@@ -38,9 +38,9 @@ STRPTR AmiGUS_Zorro2_Name = "AmiGUS Zorro2";
 
 VOID AmiGusZorro2_AddAll( struct List * cards ) {
 
-  struct ConfigDev * configDevice_PCM = NULL;
-  struct ConfigDev * configDevice_Wavetable = NULL;
-  struct ConfigDev * configDevice_Codec = NULL;
+  struct ConfigDev * cd_PCM = NULL;
+  struct ConfigDev * cd_Wavetable = NULL;
+  struct ConfigDev * cd_Codec = NULL;
   
   for ( ; ; ) {
 
@@ -51,47 +51,50 @@ VOID AmiGusZorro2_AddAll( struct List * cards ) {
     ULONG serial_Codec;
     ULONG serial;
 
-    configDevice_PCM = FindConfigDev( configDevice_PCM,
-                                      AMIGUS_MANUFACTURER_ID,
-                                      AMIGUS_MAIN_PRODUCT_ID );
-    if ( !( configDevice_PCM )) {
+    cd_PCM = FindConfigDev( cd_PCM,
+                            AMIGUS_MANUFACTURER_ID,
+                            AMIGUS_MAIN_PRODUCT_ID );
+    if ( !( cd_PCM )) {
 
       break;
     }
-    configDevice_Wavetable = FindConfigDev( configDevice_Wavetable,
-                                            AMIGUS_MANUFACTURER_ID,
-                                            AMIGUS_HAGEN_PRODUCT_ID );
-    if ( !( configDevice_Wavetable )) {
+    cd_Wavetable = FindConfigDev( cd_Wavetable,
+                                  AMIGUS_MANUFACTURER_ID,
+                                  AMIGUS_HAGEN_PRODUCT_ID );
+    if ( !( cd_Wavetable )) {
 
       break;
     }
-    configDevice_Codec = FindConfigDev( configDevice_Codec,
-                                        AMIGUS_MANUFACTURER_ID,
-                                        AMIGUS_CODEC_PRODUCT_ID );
-    if ( !( configDevice_Codec )) {
+    cd_Codec = FindConfigDev( cd_Codec,
+                              AMIGUS_MANUFACTURER_ID,
+                              AMIGUS_CODEC_PRODUCT_ID );
+    if ( !( cd_Codec )) {
 
       break;
     }
 
     card_private = AllocMem( sizeof( struct AmiGUS_Private ), MEMF_ANY );
 
-    card_private->agp_PCM_ConfigDev = configDevice_PCM;
-    card_private->agp_Wavetable_ConfigDev = configDevice_Wavetable;
-    card_private->agp_Codec_ConfigDev = configDevice_Codec;
-    card_private->agb_PCM_InterruptHandler = NULL;
-    card_private->agb_Wavetable_InterruptHandler = NULL;
-    card_private->agb_Codec_InterruptHandler = NULL;
+    card_private->agp_PCM_OwnerPointer = &( cd_PCM->cd_Driver );
+    card_private->agp_Wavetable_OwnerPointer = &( cd_Wavetable->cd_Driver );
+    card_private->agp_Codec_OwnerPointer = &( cd_Codec->cd_Driver );
+    card_private->agb_PCM_IntHandler = NULL;
+    card_private->agb_PCM_IntData = NULL;
+    card_private->agb_Wavetable_IntHandler = NULL;
+    card_private->agb_Wavetable_IntData = NULL;
+    card_private->agb_Codec_IntHandler = NULL;
+    card_private->agb_Codec_IntData = NULL;
 
     card_public = &( card_private->agp_AmiGUS_Public );
-    card_public->agus_PcmBase = configDevice_PCM->cd_BoardAddr;
-    card_public->agus_WavetableBase = configDevice_Wavetable->cd_BoardAddr;
-    card_public->agus_CodecBase = configDevice_Codec->cd_BoardAddr;
+    card_public->agus_PcmBase = cd_PCM->cd_BoardAddr;
+    card_public->agus_WavetableBase = cd_Wavetable->cd_BoardAddr;
+    card_public->agus_CodecBase = cd_Codec->cd_BoardAddr;
     card_public->agus_TypeId = AmiGUS_Zorro2;
     card_public->agus_TypeName = AmiGUS_Zorro2_Name;
 
-    serial_PCM = configDevice_PCM->cd_Rom.er_SerialNumber;
-    serial_Wavetable = configDevice_Wavetable->cd_Rom.er_SerialNumber;
-    serial_Codec = configDevice_Codec->cd_Rom.er_SerialNumber;
+    serial_PCM = cd_PCM->cd_Rom.er_SerialNumber;
+    serial_Wavetable = cd_Wavetable->cd_Rom.er_SerialNumber;
+    serial_Codec = cd_Codec->cd_Rom.er_SerialNumber;
 
     if (( serial_PCM != serial_Wavetable )
       || ( serial_PCM != serial_Codec )) {

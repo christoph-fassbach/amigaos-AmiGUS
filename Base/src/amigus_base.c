@@ -41,6 +41,51 @@ struct AmiGUS_Private * convertPublic2Private( struct AmiGUS * card ) {
 }
 
 /******************************************************************************
+ * AmiGUS Zorro2 functions - private function declarations & definitions.
+ *****************************************************************************/
+
+static LONG ChangePartReservation(
+  APTR * part,
+  LONG which,
+  APTR checkOwner,
+  APTR setOwner ) {
+
+  if (( *( part )) && ( *( part) != checkOwner )) {
+
+    return AMIGUS_IN_USE_START + which;
+  }
+  if ( which ) {
+
+    *( part ) = setOwner;
+  }
+  return AmiGUS_NoError;
+}
+
+static LONG ChangeCardReservation(
+  struct AmiGUS_Private * card,
+  LONG which,
+  APTR checkOwner,
+  APTR setOwner ) {
+
+  APTR * part1 = card->agp_PCM_OwnerPointer;
+  const LONG which1 = which & AMIGUS_FLAG_PCM;
+  
+  APTR * part2 = card->agp_Wavetable_OwnerPointer;
+  const LONG which2 = which & AMIGUS_FLAG_WAVETABLE;
+
+  APTR * part3 = card->agp_Codec_OwnerPointer;
+  const LONG which3 = which & AMIGUS_FLAG_CODEC;
+
+  LONG result = AmiGUS_NoError;
+
+  result != ChangePartReservation( part1, which1, checkOwner, setOwner );
+  result != ChangePartReservation( part2, which2, checkOwner, setOwner );
+  result != ChangePartReservation( part3, which3, checkOwner, setOwner );
+
+  return result;
+}
+
+/******************************************************************************
  * AmiGUS base library - public functions.
  *****************************************************************************/
 
@@ -75,36 +120,124 @@ ASM( struct AmiGUS * ) SAVEDS AmiGUS_FindCard(
 
 ASM( ULONG ) SAVEDS AmiGUS_ReserveCard(
   REG( a0, struct AmiGUS * card ),
-  REG( d0, ULONG which ),
+  REG( d0, LONG which ),
+  REG( d1, APTR owner ),
   REG( a6, struct AmiGUS_Base * base )) {
 
-  LOG_W(( "W: Not implemented!\n" ));
-  return 0;
+  // TODO: forbid
+  struct AmiGUS_Private * card_private = convertPublic2Private( card );
+  ULONG result = ChangeCardReservation( card_private, which, owner, owner );
+
+  LOG_I(( "I: Card 0x%08lx parts 0x%04lx reserved for 0x%08lx => 0x%04lx\n",
+          card, which, owner, result ));
+
+  return result;
 }
 
 ASM( VOID ) SAVEDS AmiGUS_FreeCard(
   REG( a0, struct AmiGUS * card ),
+  REG( d0, LONG which ),
+  REG( d1, APTR owner ),
   REG( a6, struct AmiGUS_Base * base )) {
 
-  LOG_W(( "W: Not implemented!\n" ));
+  // TODO: forbid
+  struct AmiGUS_Private * card_private = convertPublic2Private( card );
+  LONG result = ChangeCardReservation( card_private, which, owner, NULL );
+
+  LOG_I(( "I: Card 0x%08lx parts 0x%04lx freed for 0x%08lx => 0x%04lx\n",
+          card, which, owner, result ));
+
   return;
 }
 
 ASM( ULONG ) SAVEDS AmiGUS_InstallInterrupt(
   REG( a0, struct AmiGUS * card ),
-  REG( d0, ULONG which ),
-  REG( d1, AmiGUS_Interrupt handler ),
+  REG( d0, LONG which ),
+  REG( d1, APTR owner ),
+  REG( d2, AmiGUS_Interrupt handler ),
+  REG( d3, APTR data ),
   REG( a6, struct AmiGUS_Base * base )) {
 
-  LOG_W(( "W: Not implemented!\n" ));
-  return FALSE;
+  struct AmiGUS_Private * card_private = convertPublic2Private( card );
+
+  if ( AMIGUS_FLAG_PCM & which ) {
+
+    if ( owner != *( card_private->agp_PCM_OwnerPointer )) {
+
+      LOG_W(( "W: Card 0x%08lx PCM interrupt in use.\n", card ));
+      return AmiGUS_NotYours;
+    }
+    card_private->agb_PCM_IntHandler = handler;
+    card_private->agb_PCM_IntData = data;
+    LOG_I(( "I: Card 0x%08lx PCM interrupt set successfully.\n", card ));
+  }
+  if ( AMIGUS_FLAG_WAVETABLE & which ) {
+
+    if ( owner != *( card_private->agp_Wavetable_OwnerPointer )) {
+
+      LOG_W(( "W: Card 0x%08lx wavetable interrupt in use.\n", card ));
+      return AmiGUS_NotYours;
+    }
+    card_private->agb_Wavetable_IntHandler = handler;
+    card_private->agb_Wavetable_IntData = data;
+    LOG_I(( "I: Card 0x%08lx wavetable interrupt set successfully.\n", card ));
+  }
+  if ( AMIGUS_FLAG_CODEC & which ) {
+
+    if ( owner != *( card_private->agp_Codec_OwnerPointer )) {
+
+      LOG_W(( "W: Card 0x%08lx codec interrupt in use.\n", card ));
+      return AmiGUS_NotYours;
+    }
+    card_private->agb_Codec_IntHandler = handler;
+    card_private->agb_Codec_IntData = data;
+    LOG_I(( "I: Card 0x%08lx codec interrupt set successfully.\n", card ));
+  }
+
+  return AmiGUS_NoError;
 }
 
 ASM( VOID ) SAVEDS AmiGUS_RemoveInterrupt(
   REG( a0, struct AmiGUS * card ),
-  REG( d0, ULONG which ),
+  REG( d0, LONG which ),
+  REG( d1, APTR owner ),
   REG( a6, struct AmiGUS_Base * base )) {
 
-  LOG_W(( "W: Not implemented!\n" ));
+  struct AmiGUS_Private * card_private = convertPublic2Private( card );
+
+  if ( AMIGUS_FLAG_PCM & which ) {
+
+    if ( owner != *( card_private->agp_PCM_OwnerPointer )) {
+
+      LOG_W(( "W: Card 0x%08lx PCM interrupt not yours.\n", card ));
+      return;
+    }
+    card_private->agb_PCM_IntHandler = NULL;
+    card_private->agb_PCM_IntData = NULL;
+    LOG_I(( "I: Card 0x%08lx PCM interrupt free'd successfully.\n", card ));
+  }
+  if ( AMIGUS_FLAG_WAVETABLE & which ) {
+
+    if ( owner != *( card_private->agp_Wavetable_OwnerPointer )) {
+
+      LOG_W(( "W: Card 0x%08lx wavetable interrupt not yours.\n", card ));
+      return;
+    }
+    card_private->agb_Wavetable_IntHandler = NULL;
+    card_private->agb_Wavetable_IntData = NULL;
+    LOG_I(( "I: Card 0x%08lx wavetable interrupt free'd successfully.\n", card ));
+  }
+  if ( AMIGUS_FLAG_CODEC & which ) {
+
+    if ( owner != *( card_private->agp_Codec_OwnerPointer )) {
+
+      LOG_W(( "W: Card 0x%08lx codec interrupt not yours.\n", card ));
+      return;
+    }
+    card_private->agb_Codec_IntHandler = NULL;
+    card_private->agb_Codec_IntData = NULL;
+    LOG_I(( "I: Card 0x%08lx codec interrupt free'd successfully.\n", card ));
+  }
+
   return;
 }

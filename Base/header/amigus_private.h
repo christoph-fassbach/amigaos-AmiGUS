@@ -76,31 +76,38 @@
  */
 struct AmiGUS_Base {
   /* Library base stuff */
-  struct BaseLibrary            agb_BaseLibrary;   // Instance of library.h
+  struct BaseLibrary          agb_BaseLibrary;   // Instance of library.h
 
-  struct ExecBase             * agb_SysBase;       // Exec, allocations etc.
-  struct DosLibrary           * agb_DOSBase;       // DOS, logs and so on
-  struct Library              * agb_ExpansionBase; // Finding devices
+  struct ExecBase           * agb_SysBase;       // Exec, allocations etc.
+  struct DosLibrary         * agb_DOSBase;       // DOS, logs and so on
+  struct Library            * agb_ExpansionBase; // Finding devices
 
   /* AmiGUS specific member variables */
-  struct List                   agb_Cards;
+  struct List                 agb_Cards;
 
-  BPTR                          agb_LogFile;       // Debug log file handle
-  APTR                          agb_LogMem;        // Debug log memory blob
+  BPTR                        agb_LogFile;       // Debug log file handle
+  APTR                        agb_LogMem;        // Debug log memory blob
 };
 
 struct AmiGUS_Private {
 
-  struct Node                   agp_Node;
-  struct AmiGUS                 agp_AmiGUS_Public;
+  struct Node                 agp_Node;
+  struct AmiGUS               agp_AmiGUS_Public;
 
-  struct ConfigDev *            agp_PCM_ConfigDev;
-  struct ConfigDev *            agp_Wavetable_ConfigDev;
-  struct ConfigDev *            agp_Codec_ConfigDev;
+  APTR *                      agp_PCM_OwnerPointer;       // To real owner data
+  APTR                        agp_PCM_MaybeOwner;         // Not for Zorro2 ;)
+  APTR *                      agp_Wavetable_OwnerPointer; // To real owner data
+  APTR                        agp_Wavetable_MaybeOwner;   // Not for Zorro2 ;)
+  APTR *                      agp_Codec_OwnerPointer;     // To real owner data
+  APTR                        agp_Codec_MaybeOwner;       // Not for Zorro2 ;)
 
-  AmiGUS_Interrupt              agb_PCM_InterruptHandler;
-  AmiGUS_Interrupt              agb_Wavetable_InterruptHandler;
-  AmiGUS_Interrupt              agb_Codec_InterruptHandler;
+  AmiGUS_Interrupt            agb_PCM_IntHandler;
+  AmiGUS_Interrupt            agb_Wavetable_IntHandler;
+  AmiGUS_Interrupt            agb_Codec_IntHandler;
+
+  APTR                        agb_PCM_IntData;
+  APTR                        agb_Wavetable_IntData;
+  APTR                        agb_Codec_IntData;
 };
 
 /*
@@ -108,15 +115,15 @@ struct AmiGUS_Private {
  * Also used to switch between relying on globals or not.
  */
 #if defined(BASE_GLOBAL)
-  extern struct AmiGUS_Base       * AmiGUS_Base;
-  extern struct DosLibrary        * DOSBase;
-  extern struct Library           * ExpansionBase;
-  extern struct ExecBase          * SysBase;
+  extern struct AmiGUS_Base * AmiGUS_Base;
+  extern struct DosLibrary  * DOSBase;
+  extern struct Library     * ExpansionBase;
+  extern struct ExecBase    * SysBase;
 #elif defined(BASE_REDEFINE)
-  #define AmiGUS_Base               (base)
-  #define DOSBase                   base->agb_DOSBase
-  #define ExpansionBase             base->agb_ExpansionBase
-  #define SysBase                   base->agb_SysBase
+  #define AmiGUS_Base         (base)
+  #define DOSBase             base->agb_DOSBase
+  #define ExpansionBase       base->agb_ExpansionBase
+  #define SysBase             base->agb_SysBase
 #endif
 
 #endif /* AMIGUS_PRIVATE_H */

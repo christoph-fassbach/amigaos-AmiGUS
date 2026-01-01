@@ -39,22 +39,28 @@ ASM( struct AmiGUS * ) SAVEDS AmiGUS_FindCard(
 
 ASM( ULONG ) SAVEDS AmiGUS_ReserveCard(
   REG( a0, struct AmiGUS * card ),
-  REG( d0, ULONG which ),
+  REG( d0, LONG which ),
+  REG( d1, APTR owner ),
   REG( a6, struct AmiGUS_Base * base ));
 
 ASM( VOID ) SAVEDS AmiGUS_FreeCard(
   REG( a0, struct AmiGUS * card ),
+  REG( d0, LONG which ),
+  REG( d1, APTR owner ),
   REG( a6, struct AmiGUS_Base * base ));
 
 ASM( ULONG ) SAVEDS AmiGUS_InstallInterrupt(
   REG( a0, struct AmiGUS * card ),
-  REG( d0, ULONG which ),
-  REG( d1, AmiGUS_Interrupt handler ),
+  REG( d0, LONG which ),
+  REG( d1, APTR owner ),
+  REG( d2, AmiGUS_Interrupt handler ),
+  REG( d3, APTR data ),
   REG( a6, struct AmiGUS_Base * base ));
 
 ASM( VOID ) SAVEDS AmiGUS_RemoveInterrupt(
   REG( a0, struct AmiGUS * card ),
-  REG( d0, ULONG which ),
+  REG( d0, LONG which ),
+  REG( d1, APTR owner ),
   REG( a6, struct AmiGUS_Base * base ));
 
 #endif /* SDI_AMIGUS_PROTOS_H */
