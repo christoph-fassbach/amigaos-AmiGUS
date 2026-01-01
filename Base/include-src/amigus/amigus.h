@@ -23,29 +23,31 @@
 
 enum AmiGUS_TypeIds {
 
-  AmiGUS_Zorro2 = 0,
+  AmiGUS_Zorro2 = 0x7000,   // Avoiding random 0 collision
   AmiGUS_mini
-};
-
-enum AmiGUS_Errors {
-
-  AmiGUS_NoError                = 0,
-  AmiGUS_NotFound               = 0x0404,
-  AmiGUS_DetectError            = 0x0500,
-  AmiGUS_PcmInUse               = 0x0501,
-  AmiGUS_WavetableInUse         = 0x0502,
-  AmiGUS_PcmWavetableInUse      = 0x0503,
-  AmiGUS_CodecInUse             = 0x0504,
-  AmiGUS_PcmCodecInUse          = 0x0505,
-  AmiGUS_WavetableCodecInUse    = 0x0506,
-  AmiGUS_PcmWavetableCodecInUse = 0x0507,
-  AmiGUS_NotYours               = 0x0600
 };
 
 #define AMIGUS_FLAG_NONE        0x0000
 #define AMIGUS_FLAG_PCM         0x0001
 #define AMIGUS_FLAG_WAVETABLE   0x0002
 #define AMIGUS_FLAG_CODEC       0x0004
+
+#define AMIGUS_IN_USE_START     0x0500
+
+enum AmiGUS_Errors {
+
+  AmiGUS_NoError                = 0,
+  AmiGUS_NotFound               = 0x0404,
+  AmiGUS_DetectError            = 0x0500,
+  AmiGUS_PcmInUse               = AMIGUS_IN_USE_START                                             | AMIGUS_FLAG_PCM,
+  AmiGUS_WavetableInUse         = AMIGUS_IN_USE_START                     | AMIGUS_FLAG_WAVETABLE                  ,
+  AmiGUS_PcmWavetableInUse      = AMIGUS_IN_USE_START                     | AMIGUS_FLAG_WAVETABLE | AMIGUS_FLAG_PCM,
+  AmiGUS_CodecInUse             = AMIGUS_IN_USE_START | AMIGUS_FLAG_CODEC                                          ,
+  AmiGUS_PcmCodecInUse          = AMIGUS_IN_USE_START | AMIGUS_FLAG_CODEC                         | AMIGUS_FLAG_PCM,
+  AmiGUS_WavetableCodecInUse    = AMIGUS_IN_USE_START | AMIGUS_FLAG_CODEC | AMIGUS_FLAG_WAVETABLE                  ,
+  AmiGUS_PcmWavetableCodecInUse = AMIGUS_IN_USE_START | AMIGUS_FLAG_CODEC | AMIGUS_FLAG_WAVETABLE | AMIGUS_FLAG_PCM,
+  AmiGUS_NotYours               = 0x0600
+};
 
 struct AmiGUS {
 
