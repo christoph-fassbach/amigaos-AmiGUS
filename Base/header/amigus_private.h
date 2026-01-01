@@ -89,25 +89,21 @@ struct AmiGUS_Base {
   APTR                        agb_LogMem;        // Debug log memory blob
 };
 
+struct AmiGUS_Part {
+  APTR                      * agp_OwnerPointer;   // To real owner data
+  APTR                        agp_MaybeOwnerData; // Not for Zorro2 ;)
+  AmiGUS_Interrupt            agp_IntHandler;
+  APTR                        agp_IntData;
+};
+
 struct AmiGUS_Private {
 
   struct Node                 agp_Node;
   struct AmiGUS               agp_AmiGUS_Public;
 
-  APTR *                      agp_PCM_OwnerPointer;       // To real owner data
-  APTR                        agp_PCM_MaybeOwner;         // Not for Zorro2 ;)
-  APTR *                      agp_Wavetable_OwnerPointer; // To real owner data
-  APTR                        agp_Wavetable_MaybeOwner;   // Not for Zorro2 ;)
-  APTR *                      agp_Codec_OwnerPointer;     // To real owner data
-  APTR                        agp_Codec_MaybeOwner;       // Not for Zorro2 ;)
-
-  AmiGUS_Interrupt            agb_PCM_IntHandler;
-  AmiGUS_Interrupt            agb_Wavetable_IntHandler;
-  AmiGUS_Interrupt            agb_Codec_IntHandler;
-
-  APTR                        agb_PCM_IntData;
-  APTR                        agb_Wavetable_IntData;
-  APTR                        agb_Codec_IntData;
+  struct AmiGUS_Part          agp_PCM;
+  struct AmiGUS_Part          agp_Wavetable;
+  struct AmiGUS_Part          agp_Codec;
 };
 
 /*

@@ -27,10 +27,10 @@
 #include "support.h"
 
 /******************************************************************************
- * AmiGUS base library - private functions.
+ * AmiGUS base library - private function declarations & definitions.
  *****************************************************************************/
 
-struct AmiGUS_Private * convertPublic2Private( struct AmiGUS * card ) {
+static struct AmiGUS_Private * convertPublic2Private( struct AmiGUS * card ) {
 
   ULONG result = ((ULONG ) card );
 
@@ -40,23 +40,19 @@ struct AmiGUS_Private * convertPublic2Private( struct AmiGUS * card ) {
   return (( struct AmiGUS_Private * ) result );
 }
 
-/******************************************************************************
- * AmiGUS Zorro2 functions - private function declarations & definitions.
- *****************************************************************************/
-
 static LONG ChangePartReservation(
-  APTR * part,
+  APTR * ownerPointer,
   LONG which,
   APTR checkOwner,
   APTR setOwner ) {
 
-  if (( *( part )) && ( *( part) != checkOwner )) {
+  if (( *( ownerPointer )) && ( *( ownerPointer) != checkOwner )) {
 
     return AMIGUS_IN_USE_START + which;
   }
   if ( which ) {
 
-    *( part ) = setOwner;
+    *( ownerPointer ) = setOwner;
   }
   return AmiGUS_NoError;
 }
@@ -67,22 +63,49 @@ static LONG ChangeCardReservation(
   APTR checkOwner,
   APTR setOwner ) {
 
-  APTR * part1 = card->agp_PCM_OwnerPointer;
-  const LONG which1 = which & AMIGUS_FLAG_PCM;
-  
-  APTR * part2 = card->agp_Wavetable_OwnerPointer;
-  const LONG which2 = which & AMIGUS_FLAG_WAVETABLE;
-
-  APTR * part3 = card->agp_Codec_OwnerPointer;
-  const LONG which3 = which & AMIGUS_FLAG_CODEC;
-
   LONG result = AmiGUS_NoError;
 
-  result != ChangePartReservation( part1, which1, checkOwner, setOwner );
-  result != ChangePartReservation( part2, which2, checkOwner, setOwner );
-  result != ChangePartReservation( part3, which3, checkOwner, setOwner );
+  result != ChangePartReservation( card->agp_PCM.agp_OwnerPointer,
+                                   ( which & AMIGUS_FLAG_PCM ),
+                                   checkOwner,
+                                   setOwner );
+  result != ChangePartReservation( card->agp_Wavetable.agp_OwnerPointer,
+                                   ( which & AMIGUS_FLAG_WAVETABLE ),
+                                   checkOwner,
+                                   setOwner );
+  result != ChangePartReservation( card->agp_Codec.agp_OwnerPointer,
+                                   ( which & AMIGUS_FLAG_CODEC ),
+                                   checkOwner,
+                                   setOwner );
 
   return result;
+}
+
+static LONG ChangePartInterrupt(
+  struct AmiGUS_Part * part,
+  const LONG which,
+  const LONG flag,
+  const APTR owner,
+  AmiGUS_Interrupt handler,
+  APTR data ) {
+
+  if ( !( flag & which )) {
+
+    return AmiGUS_NoError;
+  }
+  if ( owner != *( part-> agp_OwnerPointer )) {
+
+    LOG_W(( "W: Part 0x%08lx for 0x%04lx not yours\n",
+            part, which ));
+    return AmiGUS_NotYours;
+  }
+
+  part->agp_IntHandler = handler;
+  part->agp_IntData = data;
+  LOG_I(( "I: Set int for part 0x%08lx for 0x%04lx successfully\n",
+          part, which ));
+
+  return AmiGUS_NoError;
 }
 
 /******************************************************************************
@@ -130,7 +153,7 @@ ASM( ULONG ) SAVEDS AmiGUS_ReserveCard(
 
   LOG_I(( "I: Card 0x%08lx parts 0x%04lx reserved for 0x%08lx => 0x%04lx\n",
           card, which, owner, result ));
-
+  // TODO: Install interrupt here!
   return result;
 }
 
@@ -146,7 +169,7 @@ ASM( VOID ) SAVEDS AmiGUS_FreeCard(
 
   LOG_I(( "I: Card 0x%08lx parts 0x%04lx freed for 0x%08lx => 0x%04lx\n",
           card, which, owner, result ));
-
+  // TODO: Free interrupt here!
   return;
 }
 
@@ -159,42 +182,31 @@ ASM( ULONG ) SAVEDS AmiGUS_InstallInterrupt(
   REG( a6, struct AmiGUS_Base * base )) {
 
   struct AmiGUS_Private * card_private = convertPublic2Private( card );
+  ULONG result = AmiGUS_NoError;
 
-  if ( AMIGUS_FLAG_PCM & which ) {
+  LOG_I(( "I: Setting interrupts for card 0x%08lx\n", card ));
+  result |= ChangePartInterrupt( &( card_private->agp_PCM ),
+                                 which,
+                                 AMIGUS_FLAG_PCM,
+                                 owner,
+                                 handler,
+                                 data );
+  result |= ChangePartInterrupt( &( card_private->agp_Wavetable ),
+                                 which,
+                                 AMIGUS_FLAG_WAVETABLE,
+                                 owner,
+                                 handler,
+                                 data );
+  result |= ChangePartInterrupt( &( card_private->agp_Codec ),
+                                 which,
+                                 AMIGUS_FLAG_CODEC,
+                                 owner,
+                                 handler,
+                                 data );
+  LOG_I(( "I: Card 0x%08lx codec interrupts set, result 0x%04lx\n",
+          card, result ));
 
-    if ( owner != *( card_private->agp_PCM_OwnerPointer )) {
-
-      LOG_W(( "W: Card 0x%08lx PCM interrupt in use.\n", card ));
-      return AmiGUS_NotYours;
-    }
-    card_private->agb_PCM_IntHandler = handler;
-    card_private->agb_PCM_IntData = data;
-    LOG_I(( "I: Card 0x%08lx PCM interrupt set successfully.\n", card ));
-  }
-  if ( AMIGUS_FLAG_WAVETABLE & which ) {
-
-    if ( owner != *( card_private->agp_Wavetable_OwnerPointer )) {
-
-      LOG_W(( "W: Card 0x%08lx wavetable interrupt in use.\n", card ));
-      return AmiGUS_NotYours;
-    }
-    card_private->agb_Wavetable_IntHandler = handler;
-    card_private->agb_Wavetable_IntData = data;
-    LOG_I(( "I: Card 0x%08lx wavetable interrupt set successfully.\n", card ));
-  }
-  if ( AMIGUS_FLAG_CODEC & which ) {
-
-    if ( owner != *( card_private->agp_Codec_OwnerPointer )) {
-
-      LOG_W(( "W: Card 0x%08lx codec interrupt in use.\n", card ));
-      return AmiGUS_NotYours;
-    }
-    card_private->agb_Codec_IntHandler = handler;
-    card_private->agb_Codec_IntData = data;
-    LOG_I(( "I: Card 0x%08lx codec interrupt set successfully.\n", card ));
-  }
-
-  return AmiGUS_NoError;
+  return result;
 }
 
 ASM( VOID ) SAVEDS AmiGUS_RemoveInterrupt(
@@ -204,40 +216,29 @@ ASM( VOID ) SAVEDS AmiGUS_RemoveInterrupt(
   REG( a6, struct AmiGUS_Base * base )) {
 
   struct AmiGUS_Private * card_private = convertPublic2Private( card );
+  LONG result = AmiGUS_NoError;
 
-  if ( AMIGUS_FLAG_PCM & which ) {
-
-    if ( owner != *( card_private->agp_PCM_OwnerPointer )) {
-
-      LOG_W(( "W: Card 0x%08lx PCM interrupt not yours.\n", card ));
-      return;
-    }
-    card_private->agb_PCM_IntHandler = NULL;
-    card_private->agb_PCM_IntData = NULL;
-    LOG_I(( "I: Card 0x%08lx PCM interrupt free'd successfully.\n", card ));
-  }
-  if ( AMIGUS_FLAG_WAVETABLE & which ) {
-
-    if ( owner != *( card_private->agp_Wavetable_OwnerPointer )) {
-
-      LOG_W(( "W: Card 0x%08lx wavetable interrupt not yours.\n", card ));
-      return;
-    }
-    card_private->agb_Wavetable_IntHandler = NULL;
-    card_private->agb_Wavetable_IntData = NULL;
-    LOG_I(( "I: Card 0x%08lx wavetable interrupt free'd successfully.\n", card ));
-  }
-  if ( AMIGUS_FLAG_CODEC & which ) {
-
-    if ( owner != *( card_private->agp_Codec_OwnerPointer )) {
-
-      LOG_W(( "W: Card 0x%08lx codec interrupt not yours.\n", card ));
-      return;
-    }
-    card_private->agb_Codec_IntHandler = NULL;
-    card_private->agb_Codec_IntData = NULL;
-    LOG_I(( "I: Card 0x%08lx codec interrupt free'd successfully.\n", card ));
-  }
+  LOG_I(( "I: Freeing interrupts for card 0x%08lx\n", card ));
+  result |= ChangePartInterrupt( &( card_private->agp_PCM ),
+                                 which,
+                                 AMIGUS_FLAG_PCM,
+                                 owner,
+                                 NULL,
+                                 NULL );
+  result |= ChangePartInterrupt( &( card_private->agp_Wavetable ),
+                                 which,
+                                 AMIGUS_FLAG_WAVETABLE,
+                                 owner,
+                                 NULL,
+                                 NULL );
+  result |= ChangePartInterrupt( &( card_private->agp_Codec ),
+                                 which,
+                                 AMIGUS_FLAG_CODEC,
+                                 owner,
+                                 NULL,
+                                 NULL );
+  LOG_I(( "I: Card 0x%08lx codec interrupts free'd, result 0x%04lx\n",
+          card, result ));
 
   return;
 }
