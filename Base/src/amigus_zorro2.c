@@ -75,15 +75,17 @@ VOID AmiGusZorro2_AddAll( struct List * cards ) {
 
     card_private = AllocMem( sizeof( struct AmiGUS_Private ), MEMF_ANY );
 
-    card_private->agp_PCM_OwnerPointer = &( cd_PCM->cd_Driver );
-    card_private->agp_Wavetable_OwnerPointer = &( cd_Wavetable->cd_Driver );
-    card_private->agp_Codec_OwnerPointer = &( cd_Codec->cd_Driver );
-    card_private->agb_PCM_IntHandler = NULL;
-    card_private->agb_PCM_IntData = NULL;
-    card_private->agb_Wavetable_IntHandler = NULL;
-    card_private->agb_Wavetable_IntData = NULL;
-    card_private->agb_Codec_IntHandler = NULL;
-    card_private->agb_Codec_IntData = NULL;
+    card_private->agp_PCM.agp_OwnerPointer = &( cd_PCM->cd_Driver );
+    card_private->agp_PCM.agp_IntHandler = NULL;
+    card_private->agp_PCM.agp_IntData = NULL;
+
+    card_private->agp_Wavetable.agp_OwnerPointer = &( cd_Wavetable->cd_Driver );
+    card_private->agp_Wavetable.agp_IntHandler = NULL;
+    card_private->agp_Wavetable.agp_IntData = NULL;
+
+    card_private->agp_Codec.agp_OwnerPointer = &( cd_Codec->cd_Driver );
+    card_private->agp_Codec.agp_IntHandler = NULL;
+    card_private->agp_Codec.agp_IntData = NULL;
 
     card_public = &( card_private->agp_AmiGUS_Public );
     card_public->agus_PcmBase = cd_PCM->cd_BoardAddr;
