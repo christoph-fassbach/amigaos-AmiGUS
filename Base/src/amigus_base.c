@@ -46,14 +46,20 @@ static LONG ChangePartReservation(
   APTR checkOwner,
   APTR setOwner ) {
 
+  LOG_V(( "D: Old owner is 0x%08lx, check 0x%08lx, set 0x%08lx\n",
+          *( ownerPointer ), checkOwner, setOwner ));
+  if ( !( which )) {
+
+    return AmiGUS_NoError;
+  }
   if (( *( ownerPointer )) && ( *( ownerPointer) != checkOwner )) {
 
     return AMIGUS_IN_USE_START + which;
   }
-  if ( which ) {
 
-    *( ownerPointer ) = setOwner;
-  }
+  *( ownerPointer ) = setOwner;
+  LOG_V(( "D: Now owner is 0x%08lx\n", *( ownerPointer )));
+
   return AmiGUS_NoError;
 }
 
@@ -65,15 +71,15 @@ static LONG ChangeCardReservation(
 
   LONG result = AmiGUS_NoError;
 
-  result != ChangePartReservation( card->agp_PCM.agp_OwnerPointer,
+  result |= ChangePartReservation( card->agp_PCM.agp_OwnerPointer,
                                    ( which & AMIGUS_FLAG_PCM ),
                                    checkOwner,
                                    setOwner );
-  result != ChangePartReservation( card->agp_Wavetable.agp_OwnerPointer,
+  result |= ChangePartReservation( card->agp_Wavetable.agp_OwnerPointer,
                                    ( which & AMIGUS_FLAG_WAVETABLE ),
                                    checkOwner,
                                    setOwner );
-  result != ChangePartReservation( card->agp_Codec.agp_OwnerPointer,
+  result |= ChangePartReservation( card->agp_Codec.agp_OwnerPointer,
                                    ( which & AMIGUS_FLAG_CODEC ),
                                    checkOwner,
                                    setOwner );
