@@ -33,6 +33,26 @@
 
 struct Library * AmiGUS_Base;
 
+VOID flushOwners(
+  struct AmiGUS * card,
+  APTR owner0,
+  APTR owner1,
+  APTR owner2 ) {
+
+  AmiGUS_FreeCard(
+    card,
+    AMIGUS_FLAG_PCM | AMIGUS_FLAG_WAVETABLE | AMIGUS_FLAG_CODEC,
+    owner0 );
+  AmiGUS_FreeCard(
+    card,
+    AMIGUS_FLAG_PCM | AMIGUS_FLAG_WAVETABLE | AMIGUS_FLAG_CODEC,
+    owner1 );
+  AmiGUS_FreeCard(
+    card,
+    AMIGUS_FLAG_PCM | AMIGUS_FLAG_WAVETABLE | AMIGUS_FLAG_CODEC,
+    owner2 );
+}
+
 /******************************************************************************
  * Test functions:
  *****************************************************************************/
@@ -79,9 +99,9 @@ BOOL testReservations( VOID ) {
   struct AmiGUS * card = AmiGUS_FindCard( NULL );
   ULONG returnValue;
   // Owner can be anything unique you own. :)
-  APTR owner1 = FindTask( NULL );
-  APTR owner2 = &( owner1 );
-  APTR owner3 = ( APTR ) 1234567890;
+  APTR owner0 = FindTask( NULL );
+  APTR owner1 = &( owner0 );
+  APTR owner2 = ( APTR ) 1234567890;
 
   if ( NULL == card ) {
 
@@ -90,103 +110,118 @@ BOOL testReservations( VOID ) {
   }
   printf( "Card 0x%08lx found.\n", card );
   printf( "Owners are 1: 0x%08lx 2: 0x%08lx 3: 0x%08lx.\n",
-          owner1, owner2, owner3 );
+          owner0, owner1, owner2 );
+  printf( "Attempting failure situation recovery,"
+          "may work if no allocations happened in the meantime\n" );
+  flushOwners( card, owner0, owner1, owner2 );
 
   // Test 1: Reserve free card part:
   returnValue = AmiGUS_ReserveCard( card, AMIGUS_FLAG_PCM, owner1 );
   if ( AmiGUS_NoError != returnValue ) {
 
     printf( "Could not reserve PCM part for owner 0x%08lx, reason 0x%04lx.\n",
-            owner1, returnValue );
+            owner0, returnValue );
+    flushOwners( card, owner0, owner1, owner2 );
     return TRUE;
   }
 
   // Test 2: Reserve used card part for same owner:
-  returnValue = AmiGUS_ReserveCard( card, AMIGUS_FLAG_PCM, owner1 );
+  returnValue = AmiGUS_ReserveCard( card, AMIGUS_FLAG_PCM, owner0 );
   if ( AmiGUS_NoError != returnValue ) {
 
     printf( "Could not reserve PCM part for owner 0x%08lx, reason 0x%04lx.\n",
-            owner1, returnValue );
+            owner0, returnValue );
+    flushOwners( card, owner0, owner1, owner2 );
     return TRUE;
   }
 
   // Test 3: Reserve used card part for someone else:
-  returnValue = AmiGUS_ReserveCard( card, AMIGUS_FLAG_PCM, owner2 );
+  returnValue = AmiGUS_ReserveCard( card, AMIGUS_FLAG_PCM, owner1 );
   if ( AmiGUS_PcmInUse != returnValue ) {
 
     printf( "Could reserve PCM part for owner 0x%08lx, reason 0x%04lx.\n",
-            owner2, returnValue );
+            owner1, returnValue );
+    flushOwners( card, owner0, owner1, owner2 );
     return TRUE;
   }
 
   // Test 4: Reserve remaining free card parts:
   returnValue = AmiGUS_ReserveCard( card,
                                     AMIGUS_FLAG_WAVETABLE | AMIGUS_FLAG_CODEC,
-                                    owner2 );
+                                    owner1 );
   if ( AmiGUS_NoError != returnValue ) {
 
     printf( "Could not reserve wavetable and codec parts for owner 0x%08lx, "
             "reason 0x%04lx.\n",
-            owner2, returnValue );
+            owner1, returnValue );
+    flushOwners( card, owner0, owner1, owner2 );
     return TRUE;
   }
 
   // Test5: Error codes
   returnValue = AmiGUS_ReserveCard( card,
                                     AMIGUS_FLAG_WAVETABLE,
-                                    owner3 );
+                                    owner2 );
   if ( AmiGUS_WavetableInUse != returnValue ) {
 
     printf( "Wrong error code 0x%04lx for owner 0x%08lx, expected 0x%04lx.\n",
-            owner3, returnValue, AmiGUS_WavetableInUse );
+            owner2, returnValue, AmiGUS_WavetableInUse );
+    flushOwners( card, owner0, owner1, owner2 );
     return TRUE;
   }
   returnValue = AmiGUS_ReserveCard( card,
                                     AMIGUS_FLAG_CODEC,
-                                    owner3 );
+                                    owner2 );
   if ( AmiGUS_CodecInUse != returnValue ) {
 
     printf( "Wrong error code 0x%04lx for owner 0x%08lx, expected 0x%04lx.\n",
-            owner3, returnValue, AmiGUS_CodecInUse );
+            owner2, returnValue, AmiGUS_CodecInUse );
+    flushOwners( card, owner0, owner1, owner2 );
     return TRUE;
   }
   returnValue = AmiGUS_ReserveCard( card,
                                     AMIGUS_FLAG_PCM | AMIGUS_FLAG_WAVETABLE,
-                                    owner3 );
+                                    owner2 );
   if ( AmiGUS_PcmWavetableInUse != returnValue ) {
 
     printf( "Wrong error code 0x%04lx for owner 0x%08lx, expected 0x%04lx.\n",
-            owner3, returnValue, AmiGUS_PcmWavetableInUse );
+            owner2, returnValue, AmiGUS_PcmWavetableInUse );
+    flushOwners( card, owner0, owner1, owner2 );
     return TRUE;
   }
   returnValue = AmiGUS_ReserveCard( card,
                                     AMIGUS_FLAG_PCM | AMIGUS_FLAG_CODEC,
-                                    owner3 );
+                                    owner2 );
   if ( AmiGUS_PcmCodecInUse != returnValue ) {
 
     printf( "Wrong error code 0x%04lx for owner 0x%08lx, expected 0x%04lx.\n",
-            owner3, returnValue, AmiGUS_PcmCodecInUse );
+            owner2, returnValue, AmiGUS_PcmCodecInUse );
+    flushOwners( card, owner0, owner1, owner2 );
     return TRUE;
   }
   returnValue = AmiGUS_ReserveCard( card,
                                     AMIGUS_FLAG_WAVETABLE | AMIGUS_FLAG_CODEC,
-                                    owner3 );
+                                    owner2 );
   if ( AmiGUS_WavetableCodecInUse != returnValue ) {
 
     printf( "Wrong error code 0x%04lx for owner 0x%08lx, expected 0x%04lx.\n",
-            owner3, returnValue, AmiGUS_WavetableCodecInUse );
+            owner2, returnValue, AmiGUS_WavetableCodecInUse );
+    flushOwners( card, owner0, owner1, owner2 );
     return TRUE;
   }
   returnValue = AmiGUS_ReserveCard(
     card,
     AMIGUS_FLAG_PCM | AMIGUS_FLAG_WAVETABLE | AMIGUS_FLAG_CODEC,
-    owner3 );
+    owner2 );
   if ( AmiGUS_PcmWavetableCodecInUse != returnValue ) {
 
     printf( "Wrong error code 0x%04lx for owner 0x%08lx, expected 0x%04lx.\n",
-            owner3, returnValue, AmiGUS_PcmWavetableCodecInUse );
+            owner2, returnValue, AmiGUS_PcmWavetableCodecInUse );
+    flushOwners( card, owner0, owner1, owner2 );
     return TRUE;
   }
+
+  flushOwners( card, owner0, owner1, owner2 );
   return FALSE; // NOT failed :)
 }
 
