@@ -27,11 +27,12 @@
 
 #include <proto/exec.h>
 #include <proto/amigus.h>
-#include <amigus/amigus.h>
+#include <stddef.h>
 
+#include "amigus_private.h"
 #include "errors.h"
 
-struct Library * AmiGUS_Base;
+struct AmiGUS_Base * AmiGUS_Base;
 
 VOID flushOwners(
   struct AmiGUS * card,
@@ -51,6 +52,41 @@ VOID flushOwners(
     card,
     AMIGUS_FLAG_PCM | AMIGUS_FLAG_WAVETABLE | AMIGUS_FLAG_CODEC,
     owner2 );
+}
+
+BOOL testFreeCardInitialState(
+  struct AmiGUS * card,
+  APTR owner0,
+  APTR owner1,
+  APTR owner2 ) {
+
+  ULONG returnValue;
+
+  flushOwners( card, owner0, owner1, owner2 );
+
+  // Reserve all, fail if not.
+  returnValue = AmiGUS_ReserveCard(
+    card,
+    AMIGUS_FLAG_PCM | AMIGUS_FLAG_WAVETABLE | AMIGUS_FLAG_CODEC,
+    owner0 );
+  if ( AmiGUS_NoError != returnValue ) {
+
+    printf( "Could not reserve all parts for owner 0x%08lx, reason 0x%04lx.\n",
+            owner0, returnValue );
+    flushOwners( card, owner0, owner1, owner2 );
+    return TRUE;
+  }
+  return FALSE;
+}
+
+static struct AmiGUS_Private * convertPublic2Private( struct AmiGUS * card ) {
+
+  ULONG result = ((ULONG ) card );
+
+  result -= offsetof( struct AmiGUS_Private, agp_AmiGUS_Public );
+  // printf( "D: Converted public 0x%08lx to 0x%08lx\n", card, result );
+
+  return (( struct AmiGUS_Private * ) result );
 }
 
 /******************************************************************************
@@ -229,31 +265,6 @@ BOOL testReserveCard( VOID ) {
   return FALSE; // NOT failed :)
 }
 
-BOOL testFreeCardInitialState(
-  struct AmiGUS * card,
-  APTR owner0,
-  APTR owner1,
-  APTR owner2 ) {
-
-  ULONG returnValue;
-
-  flushOwners( card, owner0, owner1, owner2 );
-
-  // Reserve all, fail if not.
-  returnValue = AmiGUS_ReserveCard(
-    card,
-    AMIGUS_FLAG_PCM | AMIGUS_FLAG_WAVETABLE | AMIGUS_FLAG_CODEC,
-    owner0 );
-  if ( AmiGUS_NoError != returnValue ) {
-
-    printf( "Could not reserve all parts for owner 0x%08lx, reason 0x%04lx.\n",
-            owner0, returnValue );
-    flushOwners( card, owner0, owner1, owner2 );
-    return TRUE;
-  }
-  return FALSE;
-}
-
 BOOL testFreeCard( VOID ) {
 
   struct AmiGUS * card = AmiGUS_FindCard( NULL );
@@ -397,25 +408,373 @@ BOOL testFreeCard( VOID ) {
 }
 
 BOOL testInstallInterrupt( VOID ) {
-/*
-  ULONG result = AmiGUS_InstallInterrupt(
-    &card,
-    AMIGUS_FLAG_PCM | AMIGUS_FLAG_CODEC | AMIGUS_FLAG_WAVETABLE,
-    &testInterruptHandler
-  );
 
-  return ( BOOL )( result != ENoError );
-  */
- return FALSE;
+  struct AmiGUS * card = AmiGUS_FindCard( NULL );
+  struct AmiGUS_Private * cardPrivate;
+  ULONG returnValue;
+  // Owner can be anything unique you own. :)
+  APTR owner0 = FindTask( NULL );
+  APTR owner1 = ( APTR ) 1234567890;
+  APTR owner2 = ( APTR ) 1234567891;
+  APTR data = ( APTR ) 1234567892;
+
+  if ( NULL == card ) {
+
+    printf( "No Card found.\n" );
+    return TRUE;
+  }
+  printf( "Card 0x%08lx found.\n", card );
+  printf( "Owners are 1: 0x%08lx 2: 0x%08lx 3: 0x%08lx.\n",
+          owner0, owner1, owner2 );
+  printf( "Testing AmiGUS_InstallInterrupt...\n");
+
+  // Test 1: Not owning the parts
+  flushOwners( card, owner0, owner1, owner2 );
+
+  returnValue = AmiGUS_InstallInterrupt(
+    card,
+    AMIGUS_FLAG_WAVETABLE,
+    owner0,
+    &( testInterruptHandler ),
+    data
+  );
+  if ( AmiGUS_NotYours != returnValue ) {
+
+    printf( "Installed interrupts with result 0x%04lx not owning the card.\n",
+            returnValue );
+    return TRUE;
+  }
+  returnValue = AmiGUS_InstallInterrupt(
+    card,
+    AMIGUS_FLAG_PCM,
+    owner0,
+    &( testInterruptHandler ),
+    data
+  );
+  if ( AmiGUS_NotYours != returnValue ) {
+
+    printf( "Installed interrupts with result 0x%04lx not owning the card.\n",
+            returnValue );
+    return TRUE;
+  }
+  returnValue = AmiGUS_InstallInterrupt(
+    card,
+    AMIGUS_FLAG_CODEC,
+    owner0,
+    &( testInterruptHandler ),
+    data
+  );
+  if ( AmiGUS_NotYours != returnValue ) {
+
+    printf( "Installed interrupts with result 0x%04lx not owning the card.\n",
+            returnValue );
+    return TRUE;
+  }
+
+  // Test 2: Owning the parts
+  returnValue = AmiGUS_ReserveCard(
+    card,
+    AMIGUS_FLAG_PCM | AMIGUS_FLAG_WAVETABLE | AMIGUS_FLAG_CODEC,
+    owner0 );
+  if ( AmiGUS_NoError != returnValue ) {
+
+    printf( "Could not reserve card for owner 0x%08lx, reason 0x%04lx.\n",
+            owner0, returnValue );
+    flushOwners( card, owner0, owner1, owner2 );
+    return TRUE;
+  }
+  returnValue = AmiGUS_InstallInterrupt(
+    card,
+    AMIGUS_FLAG_PCM,
+    owner0,
+    &( testInterruptHandler ),
+    data );
+  if ( AmiGUS_NoError != returnValue ) {
+
+    printf( "Could not install PCM interrupt, result 0x%04lx.\n",
+            returnValue );
+    return TRUE;
+  }
+  cardPrivate = convertPublic2Private( card );
+  if (( &( testInterruptHandler) != cardPrivate->agp_PCM.agp_IntHandler )
+    && ( data != cardPrivate->agp_PCM.agp_IntData )
+    && ( NULL != cardPrivate->agp_PCM.agp_IntHandler )
+    && ( NULL != cardPrivate->agp_PCM.agp_IntData )
+    && ( NULL != cardPrivate->agp_PCM.agp_IntHandler )
+    && ( NULL != cardPrivate->agp_PCM.agp_IntData )) {
+
+    printf( "PCM interrupt installed incorrectly\n" );
+    return TRUE;
+  }
+  returnValue = AmiGUS_InstallInterrupt(
+    card,
+    AMIGUS_FLAG_WAVETABLE,
+    owner0,
+    &( testInterruptHandler ),
+    data );
+  if ( AmiGUS_NoError != returnValue ) {
+
+    printf( "Could not install Wavetable interrupt, result 0x%04lx.\n",
+            returnValue );
+    return TRUE;
+  }
+  cardPrivate = convertPublic2Private( card );
+  if (( &( testInterruptHandler) != cardPrivate->agp_PCM.agp_IntHandler )
+    && ( data != cardPrivate->agp_PCM.agp_IntData )
+    && ( &( testInterruptHandler) != cardPrivate->agp_PCM.agp_IntHandler )
+    && ( data != cardPrivate->agp_PCM.agp_IntData )
+    && ( NULL != cardPrivate->agp_PCM.agp_IntHandler )
+    && ( NULL != cardPrivate->agp_PCM.agp_IntData )) {
+
+    printf( "Wavetable interrupt installed incorrectly\n" );
+    return TRUE;
+  }
+  returnValue = AmiGUS_InstallInterrupt(
+    card,
+    AMIGUS_FLAG_CODEC,
+    owner0,
+    &( testInterruptHandler ),
+    data );
+  if ( AmiGUS_NoError != returnValue ) {
+
+    printf( "Could not install Codec interrupt, result 0x%04lx.\n",
+            returnValue );
+    return TRUE;
+  }
+  cardPrivate = convertPublic2Private( card );
+  if (( &( testInterruptHandler) != cardPrivate->agp_PCM.agp_IntHandler )
+    && ( data != cardPrivate->agp_PCM.agp_IntData )
+    && ( &( testInterruptHandler) != cardPrivate->agp_PCM.agp_IntHandler )
+    && ( data != cardPrivate->agp_PCM.agp_IntData )
+    && ( &( testInterruptHandler) != cardPrivate->agp_PCM.agp_IntHandler )
+    && ( data != cardPrivate->agp_PCM.agp_IntData )) {
+
+    printf( "Codec interrupt installed incorrectly\n" );
+    return TRUE;
+  }
+
+  printf( "Success.\n");
+
+  // Made it to the end? Success!
+  AmiGUS_RemoveInterrupt(
+    card,
+    AMIGUS_FLAG_PCM | AMIGUS_FLAG_WAVETABLE | AMIGUS_FLAG_CODEC,
+    owner0 );
+  flushOwners( card, owner0, owner1, owner2 );
+  return FALSE; // NOT failed :)
 }
 
 BOOL testRemoveInterrupt( VOID ) {
-/*
+
+  struct AmiGUS * card = AmiGUS_FindCard( NULL );
+  struct AmiGUS_Private * cardPrivate;
+  ULONG returnValue;
+  // Owner can be anything unique you own. :)
+  APTR owner0 = FindTask( NULL );
+  APTR owner1 = ( APTR ) 1234567890;
+  APTR owner2 = ( APTR ) 1234567891;
+  APTR data = ( APTR ) 1234567892;
+
+  if ( NULL == card ) {
+
+    printf( "No Card found.\n" );
+    return TRUE;
+  }
+  printf( "Card 0x%08lx found.\n", card );
+  printf( "Owners are 1: 0x%08lx 2: 0x%08lx 3: 0x%08lx.\n",
+          owner0, owner1, owner2 );
+  printf( "Testing AmiGUS_RemoveInterrupt...\n");
+
+  // Test 1: Not owning the parts
+  flushOwners( card, owner0, owner1, owner2 );
+
+  returnValue = AmiGUS_ReserveCard(
+    card,
+    AMIGUS_FLAG_PCM | AMIGUS_FLAG_WAVETABLE | AMIGUS_FLAG_CODEC,
+    owner0 );
+  if ( AmiGUS_NoError != returnValue ) {
+
+    printf( "Could not reserve card for owner 0x%08lx, reason 0x%04lx.\n",
+            owner0, returnValue );
+    flushOwners( card, owner0, owner1, owner2 );
+    return TRUE;
+  }
+  returnValue = AmiGUS_InstallInterrupt(
+    card,
+    AMIGUS_FLAG_PCM | AMIGUS_FLAG_WAVETABLE | AMIGUS_FLAG_CODEC,
+    owner0,
+    &( testInterruptHandler ),
+    data );
+  if ( AmiGUS_NoError != returnValue ) {
+
+    printf( "Could not install all interrupts, result 0x%04lx.\n",
+            returnValue );
+    return TRUE;
+  }
+  cardPrivate = convertPublic2Private( card );
+  if (( &( testInterruptHandler) != cardPrivate->agp_PCM.agp_IntHandler )
+    && ( data != cardPrivate->agp_PCM.agp_IntData )
+    && ( &( testInterruptHandler) != cardPrivate->agp_PCM.agp_IntHandler )
+    && ( data != cardPrivate->agp_PCM.agp_IntData )
+    && ( &( testInterruptHandler) != cardPrivate->agp_PCM.agp_IntHandler )
+    && ( data != cardPrivate->agp_PCM.agp_IntData )) {
+
+    printf( "Some interrupts installed incorrectly\n" );
+    return TRUE;
+  }
   AmiGUS_RemoveInterrupt(
-    &card,
-    AMIGUS_FLAG_PCM | AMIGUS_FLAG_CODEC | AMIGUS_FLAG_WAVETABLE
-  );*/
-  return FALSE;
+    card,
+    AMIGUS_FLAG_PCM,
+    owner1 );
+  if (( &( testInterruptHandler) != cardPrivate->agp_PCM.agp_IntHandler )
+    && ( data != cardPrivate->agp_PCM.agp_IntData )
+    && ( &( testInterruptHandler) != cardPrivate->agp_PCM.agp_IntHandler )
+    && ( data != cardPrivate->agp_PCM.agp_IntData )
+    && ( &( testInterruptHandler) != cardPrivate->agp_PCM.agp_IntHandler )
+    && ( data != cardPrivate->agp_PCM.agp_IntData )) {
+
+    printf( "PCM interrupt removed incorrectly\n" );
+    return TRUE;
+  }
+  AmiGUS_RemoveInterrupt(
+    card,
+    AMIGUS_FLAG_WAVETABLE,
+    owner1 );
+  if (( &( testInterruptHandler) != cardPrivate->agp_PCM.agp_IntHandler )
+    && ( data != cardPrivate->agp_PCM.agp_IntData )
+    && ( &( testInterruptHandler) != cardPrivate->agp_PCM.agp_IntHandler )
+    && ( data != cardPrivate->agp_PCM.agp_IntData )
+    && ( &( testInterruptHandler) != cardPrivate->agp_PCM.agp_IntHandler )
+    && ( data != cardPrivate->agp_PCM.agp_IntData )) {
+
+    printf( "Wavetable interrupt removed incorrectly\n" );
+    return TRUE;
+  }
+  AmiGUS_RemoveInterrupt(
+    card,
+    AMIGUS_FLAG_CODEC,
+    owner1 );
+  if (( &( testInterruptHandler) != cardPrivate->agp_PCM.agp_IntHandler )
+    && ( data != cardPrivate->agp_PCM.agp_IntData )
+    && ( &( testInterruptHandler) != cardPrivate->agp_PCM.agp_IntHandler )
+    && ( data != cardPrivate->agp_PCM.agp_IntData )
+    && ( &( testInterruptHandler) != cardPrivate->agp_PCM.agp_IntHandler )
+    && ( data != cardPrivate->agp_PCM.agp_IntData )) {
+
+    printf( "CODEC interrupt removed incorrectly\n" );
+    return TRUE;
+  }
+  AmiGUS_RemoveInterrupt(
+    card,
+    AMIGUS_FLAG_PCM | AMIGUS_FLAG_WAVETABLE | AMIGUS_FLAG_CODEC,
+    owner1 );
+  if (( &( testInterruptHandler) != cardPrivate->agp_PCM.agp_IntHandler )
+    && ( data != cardPrivate->agp_PCM.agp_IntData )
+    && ( &( testInterruptHandler) != cardPrivate->agp_PCM.agp_IntHandler )
+    && ( data != cardPrivate->agp_PCM.agp_IntData )
+    && ( &( testInterruptHandler) != cardPrivate->agp_PCM.agp_IntHandler )
+    && ( data != cardPrivate->agp_PCM.agp_IntData )) {
+
+    printf( "Some interrupt removed incorrectly\n" );
+    return TRUE;
+  }
+
+  // Test 2: Owning the parts
+  AmiGUS_RemoveInterrupt(
+    card,
+    AMIGUS_FLAG_PCM | AMIGUS_FLAG_WAVETABLE | AMIGUS_FLAG_CODEC,
+    owner0 );
+  if (( NULL != cardPrivate->agp_PCM.agp_IntHandler )
+    && ( NULL != cardPrivate->agp_PCM.agp_IntData )
+    && ( NULL != cardPrivate->agp_PCM.agp_IntHandler )
+    && ( NULL != cardPrivate->agp_PCM.agp_IntData )
+    && ( NULL != cardPrivate->agp_PCM.agp_IntHandler )
+    && ( NULL != cardPrivate->agp_PCM.agp_IntData )) {
+
+    printf( "Some interrupt removed incorrectly, too\n" );
+    return TRUE;
+  }
+  returnValue = AmiGUS_InstallInterrupt(
+    card,
+    AMIGUS_FLAG_PCM | AMIGUS_FLAG_WAVETABLE | AMIGUS_FLAG_CODEC,
+    owner0,
+    &( testInterruptHandler ),
+    data );
+  if ( AmiGUS_NoError != returnValue ) {
+
+    printf( "Could not install all interrupts, result 0x%04lx.\n",
+            returnValue );
+    return TRUE;
+  }
+  cardPrivate = convertPublic2Private( card );
+  if (( &( testInterruptHandler) != cardPrivate->agp_PCM.agp_IntHandler )
+    && ( data != cardPrivate->agp_PCM.agp_IntData )
+    && ( &( testInterruptHandler) != cardPrivate->agp_PCM.agp_IntHandler )
+    && ( data != cardPrivate->agp_PCM.agp_IntData )
+    && ( &( testInterruptHandler) != cardPrivate->agp_PCM.agp_IntHandler )
+    && ( data != cardPrivate->agp_PCM.agp_IntData )) {
+
+    printf( "Some interrupts installed incorrectly\n" );
+    return TRUE;
+  }
+  AmiGUS_RemoveInterrupt(
+    card,
+    AMIGUS_FLAG_PCM,
+    owner0 );
+  if (( NULL != cardPrivate->agp_PCM.agp_IntHandler )
+    && ( NULL != cardPrivate->agp_PCM.agp_IntData )
+    && ( &( testInterruptHandler) != cardPrivate->agp_PCM.agp_IntHandler )
+    && ( data != cardPrivate->agp_PCM.agp_IntData )
+    && ( &( testInterruptHandler) != cardPrivate->agp_PCM.agp_IntHandler )
+    && ( data != cardPrivate->agp_PCM.agp_IntData )) {
+
+    printf( "PCM interrupt removed incorrectly\n" );
+    return TRUE;
+  }
+  AmiGUS_RemoveInterrupt(
+    card,
+    AMIGUS_FLAG_WAVETABLE,
+    owner0 );
+  if (( NULL != cardPrivate->agp_PCM.agp_IntHandler )
+    && ( NULL != cardPrivate->agp_PCM.agp_IntData )
+    && ( NULL != cardPrivate->agp_PCM.agp_IntHandler )
+    && ( NULL != cardPrivate->agp_PCM.agp_IntData )
+    && ( &( testInterruptHandler) != cardPrivate->agp_PCM.agp_IntHandler )
+    && ( data != cardPrivate->agp_PCM.agp_IntData )) {
+
+    printf( "Wavetable interrupt removed incorrectly\n" );
+    return TRUE;
+  }
+  AmiGUS_RemoveInterrupt(
+    card,
+    AMIGUS_FLAG_CODEC,
+    owner0 );
+  if (( NULL != cardPrivate->agp_PCM.agp_IntHandler )
+    && ( NULL != cardPrivate->agp_PCM.agp_IntData )
+    && ( NULL != cardPrivate->agp_PCM.agp_IntHandler )
+    && ( NULL != cardPrivate->agp_PCM.agp_IntData )
+    && ( NULL != cardPrivate->agp_PCM.agp_IntHandler )
+    && ( NULL != cardPrivate->agp_PCM.agp_IntData )) {
+
+    printf( "CODEC interrupt removed incorrectly\n" );
+    return TRUE;
+  }
+
+  // Made it to the end? Success!
+  AmiGUS_RemoveInterrupt(
+    card,
+    AMIGUS_FLAG_PCM | AMIGUS_FLAG_WAVETABLE | AMIGUS_FLAG_CODEC,
+    owner0 );
+  AmiGUS_RemoveInterrupt(
+    card,
+    AMIGUS_FLAG_PCM | AMIGUS_FLAG_WAVETABLE | AMIGUS_FLAG_CODEC,
+    owner1 );
+  AmiGUS_RemoveInterrupt(
+    card,
+    AMIGUS_FLAG_PCM | AMIGUS_FLAG_WAVETABLE | AMIGUS_FLAG_CODEC,
+    owner2 );
+  flushOwners( card, owner0, owner1, owner2 );
+  return FALSE; // NOT failed :)
 }
 
 /******************************************************************************
@@ -426,7 +785,7 @@ int main(int argc, char const *argv[]) {
   BOOL failed = FALSE;
   STRPTR libraryName = "amigus.library";
 
-  AmiGUS_Base = OpenLibrary( libraryName, 0 );
+  AmiGUS_Base = ( struct AmiGUS_Base * ) OpenLibrary( libraryName, 0 );
   if ( !AmiGUS_Base ) {
 
     printf( "Opening %s failed!\n", libraryName );
@@ -440,7 +799,7 @@ int main(int argc, char const *argv[]) {
   failed |= testInstallInterrupt();
   failed |= testRemoveInterrupt();
 
-  CloseLibrary( AmiGUS_Base );
+  CloseLibrary(( struct Library * ) AmiGUS_Base );
   printf( "%s closed\n", libraryName );
 
   if ( failed ) {
