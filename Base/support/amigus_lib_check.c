@@ -327,6 +327,69 @@ BOOL testFreeCard( VOID ) {
     return TRUE;
   }
 
+  // Test 4: Test freeing Codec from wrong owner
+  returnValue = testFreeCardInitialState( card, owner0, owner1, owner2 );
+  if ( returnValue ) {
+    printf( "Cannot reach initial state for free'ing Codec.\n" );
+    return TRUE;
+  }
+  AmiGUS_FreeCard(
+    card,
+    AMIGUS_FLAG_PCM,
+    owner1 );
+  returnValue = AmiGUS_ReserveCard(
+    card,
+    AMIGUS_FLAG_PCM | AMIGUS_FLAG_WAVETABLE | AMIGUS_FLAG_CODEC,
+    owner1 );
+  if ( AmiGUS_PcmWavetableCodecInUse != returnValue ) {
+
+    printf( "Codec was free'd unexpectedly.\n" );
+    flushOwners( card, owner0, owner1, owner2 );
+    return TRUE;
+  }
+  AmiGUS_FreeCard(
+    card,
+    AMIGUS_FLAG_WAVETABLE,
+    owner1 );
+  returnValue = AmiGUS_ReserveCard(
+    card,
+    AMIGUS_FLAG_PCM | AMIGUS_FLAG_WAVETABLE | AMIGUS_FLAG_CODEC,
+    owner1 );
+  if ( AmiGUS_PcmWavetableCodecInUse != returnValue ) {
+
+    printf( "Codec was free'd unexpectedly.\n" );
+    flushOwners( card, owner0, owner1, owner2 );
+    return TRUE;
+  }
+  AmiGUS_FreeCard(
+    card,
+    AMIGUS_FLAG_CODEC,
+    owner1 );
+  returnValue = AmiGUS_ReserveCard(
+    card,
+    AMIGUS_FLAG_PCM | AMIGUS_FLAG_WAVETABLE | AMIGUS_FLAG_CODEC,
+    owner1 );
+  if ( AmiGUS_PcmWavetableCodecInUse != returnValue ) {
+
+    printf( "Codec was free'd unexpectedly.\n" );
+    flushOwners( card, owner0, owner1, owner2 );
+    return TRUE;
+  }
+  AmiGUS_FreeCard(
+    card,
+    AMIGUS_FLAG_PCM | AMIGUS_FLAG_WAVETABLE | AMIGUS_FLAG_CODEC,
+    owner1 );
+  returnValue = AmiGUS_ReserveCard(
+    card,
+    AMIGUS_FLAG_PCM | AMIGUS_FLAG_WAVETABLE | AMIGUS_FLAG_CODEC,
+    owner1 );
+  if ( AmiGUS_PcmWavetableCodecInUse != returnValue ) {
+
+    printf( "Codec was free'd unexpectedly.\n" );
+    flushOwners( card, owner0, owner1, owner2 );
+    return TRUE;
+  }
+
   printf( "Success.\n");
   // Made it to the end? Success!
   flushOwners( card, owner0, owner1, owner2 );
