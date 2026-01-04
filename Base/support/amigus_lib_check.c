@@ -94,14 +94,14 @@ BOOL testFindCard( VOID ) {
   return ( BOOL ) ( 0 == i );
 }
 
-BOOL testReservations( VOID ) {
+BOOL testReserveCard( VOID ) {
 
   struct AmiGUS * card = AmiGUS_FindCard( NULL );
   ULONG returnValue;
   // Owner can be anything unique you own. :)
   APTR owner0 = FindTask( NULL );
-  APTR owner1 = &( owner0 );
-  APTR owner2 = ( APTR ) 1234567890;
+  APTR owner1 = ( APTR ) 1234567890;
+  APTR owner2 = ( APTR ) 1234567891;
 
   if ( NULL == card ) {
 
@@ -111,12 +111,14 @@ BOOL testReservations( VOID ) {
   printf( "Card 0x%08lx found.\n", card );
   printf( "Owners are 1: 0x%08lx 2: 0x%08lx 3: 0x%08lx.\n",
           owner0, owner1, owner2 );
-  printf( "Attempting failure situation recovery,"
-          "may work if no allocations happened in the meantime\n" );
+  printf( "Attempting failure situation recovery, "
+          "may work if no allocations happened in the meantime, "
+          "so ALL tests may only be valid straight after reboot!\n" );
   flushOwners( card, owner0, owner1, owner2 );
+  printf( "Testing AmiGUS_ReserveCard...\n");
 
   // Test 1: Reserve free card part:
-  returnValue = AmiGUS_ReserveCard( card, AMIGUS_FLAG_PCM, owner1 );
+  returnValue = AmiGUS_ReserveCard( card, AMIGUS_FLAG_PCM, owner0 );
   if ( AmiGUS_NoError != returnValue ) {
 
     printf( "Could not reserve PCM part for owner 0x%08lx, reason 0x%04lx.\n",
@@ -221,6 +223,112 @@ BOOL testReservations( VOID ) {
     return TRUE;
   }
 
+  printf( "Success.\n");
+  // Made it to the end? Success!
+  flushOwners( card, owner0, owner1, owner2 );
+  return FALSE; // NOT failed :)
+}
+
+BOOL testFreeCardInitialState(
+  struct AmiGUS * card,
+  APTR owner0,
+  APTR owner1,
+  APTR owner2 ) {
+
+  ULONG returnValue;
+
+  flushOwners( card, owner0, owner1, owner2 );
+
+  // Reserve all, fail if not.
+  returnValue = AmiGUS_ReserveCard(
+    card,
+    AMIGUS_FLAG_PCM | AMIGUS_FLAG_WAVETABLE | AMIGUS_FLAG_CODEC,
+    owner0 );
+  if ( AmiGUS_NoError != returnValue ) {
+
+    printf( "Could not reserve all parts for owner 0x%08lx, reason 0x%04lx.\n",
+            owner0, returnValue );
+    flushOwners( card, owner0, owner1, owner2 );
+    return TRUE;
+  }
+  return FALSE;
+}
+
+BOOL testFreeCard( VOID ) {
+
+  struct AmiGUS * card = AmiGUS_FindCard( NULL );
+  ULONG returnValue;
+  // Owner can be anything unique you own. :)
+  APTR owner0 = FindTask( NULL );
+  APTR owner1 = ( APTR ) 1234567890;
+  APTR owner2 = ( APTR ) 1234567891;
+
+  if ( NULL == card ) {
+
+    printf( "No Card found.\n" );
+    return TRUE;
+  }
+  printf( "Card 0x%08lx found.\n", card );
+  printf( "Owners are 1: 0x%08lx 2: 0x%08lx 3: 0x%08lx.\n",
+          owner0, owner1, owner2 );
+  printf( "Testing AmiGUS_FreeCard...\n");
+
+  // Test 1: Test freeing PCM, fail if re-reserve reserves more or less
+  returnValue = testFreeCardInitialState( card, owner0, owner1, owner2 );
+  if ( returnValue ) {
+    printf( "Cannot reach initial state for free'ing PCM.\n" );
+    return TRUE;
+  }
+  AmiGUS_FreeCard( card, AMIGUS_FLAG_PCM, owner0 );
+  returnValue = AmiGUS_ReserveCard(
+    card,
+    AMIGUS_FLAG_PCM | AMIGUS_FLAG_WAVETABLE | AMIGUS_FLAG_CODEC,
+    owner1 );
+  if ( AmiGUS_WavetableCodecInUse != returnValue ) {
+
+    printf( "PCM wasn't free'd as expected." );
+    flushOwners( card, owner0, owner1, owner2 );
+    return TRUE;
+  }
+
+  // Test 2: Test freeing Wavetable, fail if re-reserve reserves more or less
+  returnValue = testFreeCardInitialState( card, owner0, owner1, owner2 );
+  if ( returnValue ) {
+    printf( "Cannot reach initial state for free'ing Wavetable.\n" );
+    return TRUE;
+  }
+  AmiGUS_FreeCard( card, AMIGUS_FLAG_WAVETABLE, owner0 );
+  returnValue = AmiGUS_ReserveCard(
+    card,
+    AMIGUS_FLAG_PCM | AMIGUS_FLAG_WAVETABLE | AMIGUS_FLAG_CODEC,
+    owner1 );
+  if ( AmiGUS_PcmCodecInUse != returnValue ) {
+
+    printf( "Wavetable wasn't free'd as expected." );
+    flushOwners( card, owner0, owner1, owner2 );
+    return TRUE;
+  }
+
+  // Test 3: Test freeing Codec, fail if re-reserve reserves more or less
+  returnValue = testFreeCardInitialState( card, owner0, owner1, owner2 );
+  if ( returnValue ) {
+    printf( "Cannot reach initial state for free'ing Codec.\n" );
+    return TRUE;
+  }
+  AmiGUS_FreeCard( card, AMIGUS_FLAG_CODEC, owner0 );
+  returnValue = AmiGUS_ReserveCard(
+    card,
+    AMIGUS_FLAG_PCM | AMIGUS_FLAG_WAVETABLE | AMIGUS_FLAG_CODEC,
+    owner1 );
+  if ( AmiGUS_PcmWavetableInUse != returnValue ) {
+
+    printf( "Codec wasn't free'd as expected." );
+    flushOwners( card, owner0, owner1, owner2 );
+    return TRUE;
+  }
+
+  printf( "Success.\n");
+  // Made it to the end? Success!
   flushOwners( card, owner0, owner1, owner2 );
   return FALSE; // NOT failed :)
 }
@@ -247,13 +355,6 @@ BOOL testRemoveInterrupt( VOID ) {
   return FALSE;
 }
 
-BOOL testFree( VOID ) {
-/*
-  AmiGUS_Free( &card );
-*/
-  return FALSE;
-}
-
 /******************************************************************************
  * Finally, main triggering all tests:
  *****************************************************************************/
@@ -271,10 +372,10 @@ int main(int argc, char const *argv[]) {
   printf( "%s opened\n", libraryName );
 
   failed |= testFindCard();
-  failed |= testReservations();
+  failed |= testReserveCard();
+  failed |= testFreeCard();
   failed |= testInstallInterrupt();
   failed |= testRemoveInterrupt();
-  failed |= testFree();
 
   CloseLibrary( AmiGUS_Base );
   printf( "%s closed\n", libraryName );
