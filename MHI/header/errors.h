@@ -31,7 +31,7 @@ enum ErrorCodes
   ELibraryBaseInconsistency,
   EOpenDosBase,
   EOpenIntuitionBase,
-  EOpenExpansionBase,
+  EOpenAmiGusBase,
   EOpenLogFile,
   EAllocateLogMem,
   EHandleUnknown,

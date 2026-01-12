@@ -149,7 +149,7 @@ struct AmiGUS_MHI {
   struct ExecBase             * agb_SysBase;       // Exec, allocations etc.
   struct DosLibrary           * agb_DOSBase;       // DOS, logs and so on
   struct IntuitionBase        * agb_IntuitionBase; // For error messages
-  struct Library              * agb_ExpansionBase; // Finding devices
+  struct Library              * agb_AmiGUS_Base;   // Finding & handling AmiGUS
 
   /* AmiGUS specific member variables */
   struct Interrupt            * agb_Interrupt;     // Shared interrupt handler
@@ -168,13 +168,13 @@ struct AmiGUS_MHI {
 #if defined(BASE_GLOBAL)
   extern struct AmiGUS_MHI        * AmiGUS_MHI_Base;
   extern struct DosLibrary        * DOSBase;
-  extern struct Library           * ExpansionBase;
+  extern struct Library           * AmiGUS_Base;
   extern struct IntuitionBase     * IntuitionBase;
   extern struct ExecBase          * SysBase;
 #elif defined(BASE_REDEFINE)
   #define AmiGUS_MHI_Base           (base)
   #define DOSBase                   base->agb_DOSBase
-  #define ExpansionBase             base->agb_ExpansionBase
+  #define AmiGUS_Base               base->agb_AmiGUS_Base
   #define IntuitionBase             base->agb_IntuitionBase
   #define SysBase                   base->agb_SysBase
 #endif
