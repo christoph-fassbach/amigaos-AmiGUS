@@ -216,9 +216,16 @@ ASM( ULONG ) SAVEDS AmiGUS_ReserveCard(
   REG( d1, APTR owner ),
   REG( a6, struct AmiGUS_Base * base )) {
 
+  struct AmiGUS_Private * card_private;
+  ULONG result;
+
+  if ( NULL == card ) {
+
+    return AmiGUS_NotFound;
+  }
   // TODO: forbid
-  struct AmiGUS_Private * card_private = convertPublic2Private( card );
-  ULONG result = ChangeCardReservation( card_private, which, owner, owner );
+  card_private = convertPublic2Private( card );
+  result = ChangeCardReservation( card_private, which, owner, owner );
 
   LOG_I(( "I: Card 0x%08lx parts 0x%04lx reserved for 0x%08lx => 0x%04lx\n",
           card, which, owner, result ));
@@ -232,9 +239,16 @@ ASM( VOID ) SAVEDS AmiGUS_FreeCard(
   REG( d1, APTR owner ),
   REG( a6, struct AmiGUS_Base * base )) {
 
+  struct AmiGUS_Private * card_private;
+  LONG result;
+
+  if ( NULL == card ) {
+
+    return;
+  }
   // TODO: forbid
-  struct AmiGUS_Private * card_private = convertPublic2Private( card );
-  LONG result = ChangeCardReservation( card_private, which, owner, NULL );
+  card_private = convertPublic2Private( card );
+  result = ChangeCardReservation( card_private, which, owner, NULL );
 
   LOG_I(( "I: Card 0x%08lx parts 0x%04lx freed for 0x%08lx => 0x%04lx\n",
           card, which, owner, result ));
@@ -250,8 +264,15 @@ ASM( ULONG ) SAVEDS AmiGUS_InstallInterrupt(
   REG( d3, APTR data ),
   REG( a6, struct AmiGUS_Base * base )) {
 
-  struct AmiGUS_Private * card_private = convertPublic2Private( card );
+  struct AmiGUS_Private * card_private;
   ULONG result = AmiGUS_NoError;
+
+  if ( NULL == card ) {
+
+    return AmiGUS_NotFound;
+  }
+
+  card_private = convertPublic2Private( card );
 
   LOG_I(( "I: Setting interrupts for card 0x%08lx\n", card ));
   result |= ChangePartInterrupt( &( card_private->agp_PCM ),
@@ -286,8 +307,15 @@ ASM( VOID ) SAVEDS AmiGUS_RemoveInterrupt(
   REG( d1, APTR owner ),
   REG( a6, struct AmiGUS_Base * base )) {
 
-  struct AmiGUS_Private * card_private = convertPublic2Private( card );
+  struct AmiGUS_Private * card_private;
   LONG result = AmiGUS_NoError;
+
+  if ( NULL == card ) {
+
+    return;
+  }
+
+  card_private = convertPublic2Private( card );
 
   LOG_I(( "I: Freeing interrupts for card 0x%08lx\n", card ));
   result |= ChangePartInterrupt( &( card_private->agp_PCM ),
