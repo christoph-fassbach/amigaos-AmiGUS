@@ -29,6 +29,7 @@
 #include <proto/amigus.h>
 #include <stddef.h>
 
+#include "amigus_hardware.h"
 #include "amigus_private.h"
 #include "errors.h"
 
@@ -93,8 +94,52 @@ static struct AmiGUS_Private * convertPublic2Private( struct AmiGUS * card ) {
  * Test functions:
  *****************************************************************************/
 
-VOID testInterruptHandler( APTR data ) {
+LONG testInterruptHandler( APTR data ) {
 
+  return 0;
+}
+
+ULONG interruptCounter;
+LONG countingPcmIntHandler( APTR data ) {
+
+  struct AmiGUS * card = ( struct AmiGUS * ) data;
+  UWORD status = ReadReg16( card->agus_PcmBase, AMIGUS_PCM_INT_CONTROL );
+  if ( AMIGUS_PCM_INT_F_TIMER & status ) {
+    WriteReg16( card->agus_PcmBase,
+                AMIGUS_PCM_INT_CONTROL,
+                AMIGUS_INT_F_CLEAR | AMIGUS_PCM_INT_F_TIMER );
+    ++interruptCounter;
+    return 1;
+  }
+  return 0;
+}
+
+LONG countingWavetableIntHandler( APTR data ) {
+/*
+  struct AmiGUS * card = ( struct AmiGUS * ) data;
+  UWORD status = ReadReg16( card->agus_CodecBase, AMIGUS_CODEC_INT_CONTROL );
+  if ( AMIGUS_CODEC_INT_F_TIMER & status ) {
+    WriteReg16( card->agus_CodecBase,
+                AMIGUS_CODEC_INT_CONTROL,
+                AMIGUS_INT_F_CLEAR | AMIGUS_CODEC_INT_F_TIMER );
+    ++interruptCounter;
+    return 1;
+  }*/
+  return 0;
+}
+
+LONG countingCodecIntHandler( APTR data ) {
+
+  struct AmiGUS * card = ( struct AmiGUS * ) data;
+  UWORD status = ReadReg16( card->agus_CodecBase, AMIGUS_CODEC_INT_CONTROL );
+  if ( AMIGUS_CODEC_INT_F_TIMER & status ) {
+    WriteReg16( card->agus_CodecBase,
+                AMIGUS_CODEC_INT_CONTROL,
+                AMIGUS_INT_F_CLEAR | AMIGUS_CODEC_INT_F_TIMER );
+    ++interruptCounter;
+    return 1;
+  }
+  return 0;
 }
 
 BOOL testFindCard( VOID ) {
@@ -777,6 +822,178 @@ BOOL testRemoveInterrupt( VOID ) {
   return FALSE; // NOT failed :)
 }
 
+BOOL testPcmInterrupt( VOID ) {
+
+  ULONG returnValue;
+  ULONG rounds;
+  BOOL result = FALSE;
+
+  struct AmiGUS * card = AmiGUS_FindCard( NULL );
+  // Owner can be anything unique you own. :)
+  APTR owner = FindTask( NULL );
+
+  if ( NULL == card ) {
+
+    printf( "No Card found.\n" );
+    return TRUE;
+  }
+  printf( "Card 0x%08lx found.\n", card );
+  printf( "Owner is: 0x%08lx .\n", owner );
+  printf( "Testing AmiGUS PCM Interrupt handling...\n");
+
+  returnValue = AmiGUS_ReserveCard( card, AMIGUS_FLAG_PCM, owner );
+  if ( AmiGUS_NoError != returnValue ) {
+
+    printf( "Could not reserve card for owner 0x%08lx, reason 0x%04lx.\n",
+            owner, returnValue );
+    return TRUE;
+  }
+
+  interruptCounter = 0;
+
+  returnValue = AmiGUS_InstallInterrupt(
+    card,
+    AMIGUS_FLAG_PCM,
+    owner,
+    &( countingPcmIntHandler ),
+    card );
+  
+  if ( AmiGUS_NoError != returnValue ) {
+
+    printf( "Could not install interrupt for owner 0x%08lx, reason 0x%04lx.\n",
+            owner, returnValue );
+    AmiGUS_FreeCard( card, AMIGUS_FLAG_PCM, owner );
+    return TRUE;
+  }
+
+  printf( "Using 0x%08lx as base address\n", card->agus_PcmBase );
+
+  WriteReg16( card->agus_PcmBase, 
+              AMIGUS_PCM_INT_ENABLE,
+              AMIGUS_INT_F_CLEAR | 0x7FFF );
+  WriteReg16( card->agus_PcmBase, 
+              AMIGUS_PCM_INT_ENABLE,
+              AMIGUS_INT_F_SET | AMIGUS_PCM_INT_F_TIMER );
+  WriteReg32( card->agus_PcmBase,
+              AMIGUS_PCM_TIMER_RELOAD,
+              100000 );
+  WriteReg16( card->agus_PcmBase,
+              AMIGUS_PCM_INT_CONTROL,
+              AMIGUS_INT_F_CLEAR | AMIGUS_PCM_INT_F_TIMER );
+  
+  WriteReg16( card->agus_PcmBase, 
+              AMIGUS_PCM_TIMER_CONTROL,
+              AMIGUS_TIMER_ONCE | AMIGUS_TIMER_START );
+
+  printf( "Busy wait here, "
+          "100k rounds aka 10dots should be slower than 1/25s\n" );
+  for ( rounds = 100000; rounds > 0; --rounds ) {
+    if ( !( rounds % 10000 )) {
+      printf(".\n");
+    }
+  }
+  WriteReg16( card->agus_PcmBase, 
+              AMIGUS_PCM_INT_ENABLE,
+              AMIGUS_INT_F_CLEAR | AMIGUS_PCM_INT_F_TIMER );
+
+  if ( 1 != interruptCounter ) {
+
+    printf( "Interrupt did fire %lxx instead once, as expected!\n", 
+            interruptCounter );
+
+    result = TRUE;
+  }
+  AmiGUS_RemoveInterrupt( card, AMIGUS_FLAG_PCM, owner );
+  AmiGUS_FreeCard( card, AMIGUS_FLAG_PCM, owner );
+  return result;
+}
+
+BOOL testCodecInterrupt( VOID ) {
+
+  ULONG returnValue;
+  ULONG rounds;
+  BOOL result = FALSE;
+
+  struct AmiGUS * card = AmiGUS_FindCard( NULL );
+  // Owner can be anything unique you own. :)
+  APTR owner = FindTask( NULL );
+
+  if ( NULL == card ) {
+
+    printf( "No Card found.\n" );
+    return TRUE;
+  }
+  printf( "Card 0x%08lx found.\n", card );
+  printf( "Owner is: 0x%08lx .\n", owner );
+  printf( "Testing AmiGUS Codec Interrupt handling...\n");
+
+  returnValue = AmiGUS_ReserveCard( card, AMIGUS_FLAG_CODEC, owner );
+  if ( AmiGUS_NoError != returnValue ) {
+
+    printf( "Could not reserve card for owner 0x%08lx, reason 0x%04lx.\n",
+            owner, returnValue );
+    return TRUE;
+  }
+
+  interruptCounter = 0;
+
+  returnValue = AmiGUS_InstallInterrupt(
+    card,
+    AMIGUS_FLAG_CODEC,
+    owner,
+    &( countingCodecIntHandler ),
+    card );
+  
+  if ( AmiGUS_NoError != returnValue ) {
+
+    printf( "Could not install interrupt for owner 0x%08lx, reason 0x%04lx.\n",
+            owner, returnValue );
+    AmiGUS_FreeCard( card, AMIGUS_FLAG_CODEC, owner );
+    return TRUE;
+  }
+
+  printf( "Using 0x%08lx as base address\n", card->agus_CodecBase );
+
+  WriteReg16( card->agus_CodecBase, 
+              AMIGUS_CODEC_INT_ENABLE,
+              AMIGUS_INT_F_CLEAR | 0x7FFF );
+  WriteReg16( card->agus_CodecBase, 
+              AMIGUS_CODEC_INT_ENABLE,
+              AMIGUS_INT_F_SET | AMIGUS_CODEC_INT_F_TIMER );
+  WriteReg32( card->agus_CodecBase,
+              AMIGUS_CODEC_TIMER_RELOAD,
+              100000 );
+  WriteReg16( card->agus_CodecBase,
+              AMIGUS_CODEC_INT_CONTROL,
+              AMIGUS_INT_F_CLEAR | AMIGUS_CODEC_INT_F_TIMER );
+  
+  WriteReg16( card->agus_CodecBase, 
+              AMIGUS_CODEC_TIMER_CONTROL,
+              AMIGUS_TIMER_ONCE | AMIGUS_TIMER_START );
+
+  printf( "Busy wait here, "
+          "100k rounds aka 10dots should be slower than 1/25s\n" );
+  for ( rounds = 100000; rounds > 0; --rounds ) {
+    if ( !( rounds % 10000 )) {
+      printf(".\n");
+    }
+  }
+  WriteReg16( card->agus_CodecBase, 
+              AMIGUS_CODEC_INT_ENABLE,
+              AMIGUS_INT_F_CLEAR | AMIGUS_CODEC_INT_F_TIMER );
+
+  if ( 1 != interruptCounter ) {
+
+    printf( "Interrupt did fire %lxx instead once, as expected!\n", 
+            interruptCounter );
+
+    result = TRUE;
+  }
+  AmiGUS_RemoveInterrupt( card, AMIGUS_FLAG_CODEC, owner );
+  AmiGUS_FreeCard( card, AMIGUS_FLAG_CODEC, owner );
+  return result;
+}
+
 /******************************************************************************
  * Finally, main triggering all tests:
  *****************************************************************************/
@@ -798,6 +1015,9 @@ int main(int argc, char const *argv[]) {
   failed |= testFreeCard();
   failed |= testInstallInterrupt();
   failed |= testRemoveInterrupt();
+  failed |= testPcmInterrupt();
+//  failed |= testWavetableInterrupt();
+  failed |= testCodecInterrupt();
 
   CloseLibrary(( struct Library * ) AmiGUS_Base );
   printf( "%s closed\n", libraryName );
