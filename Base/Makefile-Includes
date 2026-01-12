@@ -26,7 +26,7 @@ ifeq ($(findstring /home,$(HOME)), /home)
   MKDIR_SUFFIX  =
   RM            = rm -rf
   RM_SUFFIX     =
-  CP            = cp
+  CP            = cp -r
   CP_SUFFIX     =
 else
   AMIGAOS       = 1
@@ -120,6 +120,12 @@ all: $(PRAGMANAME) $(AMIGAENAME) $(GCCINLINENAME) $(PROTONAME) \
 	$(CP) $(AMIGUS_INCLUDES)/amigus/$(WILDCARD).h $(TARGET_PATH)/C/amigus/ $(CP_SUFFIX)
 #	-@$(MKDIR) $(TARGET_PATH)/ASM/amigus $(MKDIR_SUFFIX)
 #	$(CP) $(AMIGUS_INCLUDES)/amigus/$(WILDCARD).i $(TARGET_PATH)/C/amigus/ $(CP_SUFFIX)
+
+install: all
+	$(MKDIR) ../MHI/include  $(MKDIR_SUFFIX)
+	$(MKDIR) ../AHI4/include $(MKDIR_SUFFIX)
+	$(CP) $(TARGET_PATH)/C/$(WILDCARD) ../MHI/include/  $(CP_SUFFIX)
+	$(CP) $(TARGET_PATH)/C/$(WILDCARD) ../AHI4/include/ $(CP_SUFFIX)
 
 clean:
 	-@$(RM) $(TARGET_PATH) $(RM_SUFFIX)
