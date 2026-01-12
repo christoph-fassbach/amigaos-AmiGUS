@@ -249,9 +249,12 @@ get_mem_log:
 	-cp target/$@ ~/Documents/FS-UAE/Shared/Projekte/AmiGUS/
 	-curl --netrc --upload-file target/$@       ftp://192.168.0.4/cf0/Expansion/AmiGUS/GetAmiGUSLibMemLog
 
-amigus_lib_check:
+amigus_lib_check: $(BDIR)amigus_hardware-$(LIB_CPU)-$(LIB_LOG).o
 	$(CC) $(CFLAGS) support/$@.o support/$@.c
-	$(LD) $(LFLAGS) target/$@ $(LFLAGS1) $(LFLAGST1) support/$@.o $(LFLAGST2)
+	$(LD) $(LFLAGS) target/$@ $(LFLAGS1) $(LFLAGST1) \
+    support/$@.o                                   \
+    $(BDIR)amigus_hardware-$(LIB_CPU)-$(LIB_LOG).o \
+    $(LFLAGST2)
 	-cp target/$@ ~/Documents/FS-UAE/Shared/Projekte/AmiGUS/
 	-curl --netrc --upload-file target/$@       ftp://192.168.0.4/cf0/Expansion/AmiGUS/
 

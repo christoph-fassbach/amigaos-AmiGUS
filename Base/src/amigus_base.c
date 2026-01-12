@@ -334,18 +334,27 @@ ASM( LONG ) /* __entry for vbcc ? */ SAVEDS INTERRUPT HandleInterrupt (
 
     if ( NULL != pcmHandler ) {
 
+      LOG_INT(( "INT: Sending INT to PCM handler 0x%08lx\n", pcmHandler ));
       result |= pcmHandler( pcmData );
+      LOG_INT(( "INT: PCM handler result %lx\n", result ));
     }
 
     if ( NULL != wtHandler ) {
 
+      LOG_INT(( "INT: Sending INT to Wavetable handler 0x%08lx\n", wtHandler ));
       result |= wtHandler( wtData );
+      LOG_INT(( "INT: Wavetable handler result %lx\n", result ));
     }
 
     if ( NULL != codecHandler ) {
 
+      LOG_INT(( "INT: Sending INT to Codec handler 0x%08lx\n", codecHandler ));
       result |= codecHandler( codecData );
+      LOG_INT(( "INT: Codec handler result %lx\n", result ));
     }
+    LOG_INT(( "INT: Card %s at 0x%08lx done\n",
+              card->agp_AmiGUS_Public.agus_TypeName,
+              card ));
   }
 
   return result;
