@@ -19,6 +19,7 @@
 #ifndef AMIGUS_H
 #define AMIGUS_H
 
+#include <amigus/SDI_compiler.h>
 #include <exec/types.h>
 
 enum AmiGUS_TypeIds {
@@ -70,6 +71,6 @@ struct AmiGUS {
   UBYTE     agus_Minute;
 };
 
-typedef LONG (*AmiGUS_Interrupt)( APTR data );
+typedef ASM( LONG ) (*AmiGUS_Interrupt)( REG( d1, APTR data ));
 
 #endif /* AMIGUS_H */
