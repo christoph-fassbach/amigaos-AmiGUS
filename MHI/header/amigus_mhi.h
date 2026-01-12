@@ -154,7 +154,6 @@ struct AmiGUS_MHI {
   struct Library              * agb_AmiGUS_Base;   // Finding & handling AmiGUS
 
   /* AmiGUS specific member variables */
-  struct Interrupt            * agb_Interrupt;     // Shared interrupt handler
 
   BPTR                          agb_LogFile;       // Debug log file handle
   APTR                          agb_LogMem;        // Debug log memory blob
