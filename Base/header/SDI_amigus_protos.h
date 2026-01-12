@@ -63,4 +63,21 @@ ASM( VOID ) SAVEDS AmiGUS_RemoveInterrupt(
   REG( d1, APTR owner ),
   REG( a6, struct AmiGUS_Base * base ));
 
+/******************************************************************************
+ * AmiGUS base library interrupt function written in SDI_compiler macros,
+ * compiler agnostic and for AmiGUS library internal usage.
+ *****************************************************************************/
+
+/**
+ * Interrupt handler function, checking the status of all AmiGUS cards
+ * found so far and filling their buffers accordingly.
+ *
+ * @param base Pointer to the driver library's base address.
+ *
+ * @return 1 if there was at least one card's interrupt pending that was handled,
+ *         0 otherwise.
+ */
+ASM( LONG ) /* __entry for vbcc ? */ SAVEDS INTERRUPT HandleInterrupt (
+  REG( a1, struct AmiGUS_Base * base ));
+
 #endif /* SDI_AMIGUS_PROTOS_H */

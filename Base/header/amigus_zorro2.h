@@ -22,6 +22,8 @@
 #include <amigus/amigus.h>
 #include <exec/types.h>
 
-LONG AmiGusZorro2_AddAll( struct List * cards );
+VOID AmiGusZorro2_AddAll( struct List * cards );
+VOID AmiGusZorro2_InstallInterrupt( VOID );
+VOID AmiGusZorro2_RemoveInterrupt( VOID );
 
-#endif
+#endif /* AMIGUS_ZORRO2_H */

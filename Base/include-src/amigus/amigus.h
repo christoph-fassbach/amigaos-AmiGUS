@@ -70,6 +70,6 @@ struct AmiGUS {
   UBYTE     agus_Minute;
 };
 
-typedef VOID (*AmiGUS_Interrupt)( APTR data );
+typedef LONG (*AmiGUS_Interrupt)( APTR data );
 
 #endif /* AMIGUS_H */

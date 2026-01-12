@@ -83,7 +83,9 @@ struct AmiGUS_Base {
   struct Library            * agb_ExpansionBase; // Finding devices
 
   /* AmiGUS specific member variables */
-  struct List                 agb_Cards;
+  struct List                 agb_Cards;         // List of AmiGUS_CardPrivates
+  struct Interrupt            agb_Interrupt;
+  ULONG                       agb_Flags;
 
   BPTR                        agb_LogFile;       // Debug log file handle
   APTR                        agb_LogMem;        // Debug log memory blob
@@ -105,6 +107,16 @@ struct AmiGUS_Private {
   struct AmiGUS_Part          agp_Wavetable;
   struct AmiGUS_Part          agp_Codec;
 };
+
+/*
+ * defines are limited to 32 chars due to a SAS/C insufficiency !!!
+ *
+ * So define below is just kind of a ruler...
+ */
+//      SASC_MAXIMUM_DEFINE_LENGTH_IS_32 12345678
+
+#define AMIGUS_BASE_F_ZORRO2_INT_SET     0x000001
+#define AMIGUS_BASE_F_PCMCIA_INT_SET     0x000002
 
 /*
  * All libraries' base pointers used by the AmiGUS library.
