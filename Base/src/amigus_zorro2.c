@@ -18,12 +18,14 @@
 
 #include <amigus/amigus.h>
 
+#include <hardware/intbits.h>
+
 #include <proto/expansion.h>
 #include <proto/exec.h>
-#include <limits.h>
 
 #include "amigus_hardware.h"
 #include "amigus_private.h"
+#include "amigus_zorro2.h"
 #include "debug.h"
 #include "errors.h"
 #include "support.h"
@@ -125,5 +127,39 @@ VOID AmiGusZorro2_AddAll( struct List * cards ) {
 
     AddTail( cards, &( card_private->agp_Node ));
   }
+  return;
+}
+
+VOID AmiGusZorro2_InstallInterrupt( VOID ) {
+
+  Disable();
+  if ( AmiGUS_Base->agb_Flags & AMIGUS_BASE_F_ZORRO2_INT_SET ) {
+
+    Enable();
+    LOG_I(( "I: Interrupt already installed.\n" ));
+    return;
+  }
+  AmiGUS_Base->agb_Flags |= AMIGUS_BASE_F_ZORRO2_INT_SET;
+  AddIntServer( INTB_PORTS, &( AmiGUS_Base->agb_Interrupt ));
+
+  Enable();
+  LOG_I(( "I: Interrupt successfully installed.\n" ));
+  return;
+}
+
+VOID AmiGusZorro2_RemoveInterrupt( VOID ) {
+
+  Disable();
+  if ( !( AmiGUS_Base->agb_Flags & AMIGUS_BASE_F_ZORRO2_INT_SET )) {
+
+    Enable();
+    LOG_I(( "I: Interrupt not installed.\n" ));
+    return;
+  }
+  AmiGUS_Base->agb_Flags &= ~AMIGUS_BASE_F_ZORRO2_INT_SET;
+  RemIntServer( INTB_PORTS, &( AmiGUS_Base->agb_Interrupt ));
+
+  Enable();
+  LOG_I(( "I: Interrupt successfully removed.\n" ));
   return;
 }

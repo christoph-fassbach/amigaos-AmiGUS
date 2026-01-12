@@ -20,6 +20,7 @@
 
 #include <amigus/amigus.h>
 
+#include "amigus_pcmcia.h"
 #include "amigus_private.h"
 #include "amigus_zorro2.h"
 #include "debug.h"
@@ -112,6 +113,68 @@ static LONG ChangePartInterrupt(
           part, which ));
 
   return AmiGUS_NoError;
+}
+
+VOID HandleInterruptChanges( VOID ) {
+
+  const struct List * cards = &( AmiGUS_Base->agb_Cards );
+  struct AmiGUS_Private * card;
+  BOOL needsZorro2Interrupt = FALSE;
+  BOOL needsPcmciaInterrupt = FALSE;
+
+  FOR_LIST( cards, card, struct AmiGUS_Private * ) {
+
+    BOOL needed =
+      ( NULL != card->agp_PCM.agp_IntHandler ) |
+      ( NULL != card->agp_Wavetable.agp_IntHandler ) |
+      ( NULL != card->agp_Codec.agp_IntHandler );
+
+    switch ( card->agp_AmiGUS_Public.agus_TypeId ) {
+
+      case AmiGUS_Zorro2: {
+
+        needsZorro2Interrupt |= needed;
+        break;
+      }
+      case AmiGUS_mini:{
+
+        needsPcmciaInterrupt |= needed;
+        break;
+      }
+      default: {
+        LOG_E(( "E: Unknown card type in HandleInterruptChanges\n" ));
+        break;
+      }
+    }
+  }
+  if (( needsZorro2Interrupt )
+    && ( !( AMIGUS_BASE_F_ZORRO2_INT_SET & AmiGUS_Base->agb_Flags ))) {
+
+    // Register Zorro2 interrupt now.
+    LOG_I(( "I: Registering Zorro2 INT\n"));
+    AmiGusZorro2_InstallInterrupt();
+  }
+  if (( !( needsZorro2Interrupt ))
+    && (( AMIGUS_BASE_F_ZORRO2_INT_SET & AmiGUS_Base->agb_Flags ))) {
+
+    // Un-Register Zorro2 interrupt now.
+    LOG_I(( "I: Un-registering Zorro2 INT\n"));
+    AmiGusZorro2_RemoveInterrupt();
+  }
+  if (( needsPcmciaInterrupt ) 
+    && ( !( AMIGUS_BASE_F_PCMCIA_INT_SET & AmiGUS_Base->agb_Flags ))) {
+
+    // Register PCMCIA interrupt now.
+    LOG_I(( "I: Registering PCMCIA INT\n"));
+    AmiGusPcmcia_InstallInterrupt();
+  }
+  if (( !( needsPcmciaInterrupt ))
+    && (( AMIGUS_BASE_F_PCMCIA_INT_SET & AmiGUS_Base->agb_Flags ))) {
+
+    // Un-Register PCMCIA interrupt now.
+    LOG_I(( "I: Un-registering PCMCIA INT\n"));
+    AmiGusPcmcia_RemoveInterrupt();
+  }
 }
 
 /******************************************************************************
@@ -212,6 +275,8 @@ ASM( ULONG ) SAVEDS AmiGUS_InstallInterrupt(
   LOG_I(( "I: Card 0x%08lx codec interrupts set, result 0x%04lx\n",
           card, result ));
 
+  HandleInterruptChanges();
+
   return result;
 }
 
@@ -246,5 +311,42 @@ ASM( VOID ) SAVEDS AmiGUS_RemoveInterrupt(
   LOG_I(( "I: Card 0x%08lx codec interrupts free'd, result 0x%04lx\n",
           card, result ));
 
+  HandleInterruptChanges();
+
   return;
+}
+
+ASM( LONG ) /* __entry for vbcc ? */ SAVEDS INTERRUPT HandleInterrupt (
+  REG( a1, struct AmiGUS_Base * base )) {
+
+  const struct List * cards = &( AmiGUS_Base->agb_Cards );
+  struct AmiGUS_Private * card;
+  LONG result = 0;
+
+  FOR_LIST( cards, card, struct AmiGUS_Private * ) {
+
+    const AmiGUS_Interrupt pcmHandler = card->agp_PCM.agp_IntHandler;
+    const APTR pcmData = card->agp_PCM.agp_IntData;
+    const AmiGUS_Interrupt wtHandler = card->agp_Wavetable.agp_IntHandler;
+    const APTR wtData = card->agp_Wavetable.agp_IntData;
+    const AmiGUS_Interrupt codecHandler = card->agp_Codec.agp_IntHandler;
+    const APTR codecData = card->agp_Codec.agp_IntData;
+
+    if ( NULL != pcmHandler ) {
+
+      result |= pcmHandler( pcmData );
+    }
+
+    if ( NULL != wtHandler ) {
+
+      result |= wtHandler( wtData );
+    }
+
+    if ( NULL != codecHandler ) {
+
+      result |= codecHandler( codecData );
+    }
+  }
+
+  return result;
 }
