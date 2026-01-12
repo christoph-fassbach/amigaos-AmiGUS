@@ -174,11 +174,19 @@ ASM( VOID ) SAVEDS MHIFreeDecoder(
 
   struct Task * task = handle->agch_Task;
   LONG signal = handle->agch_Signal;
-  ULONG error = EHandleUnknown;
+  ULONG error = ENoError;
 
   LOG_D(( "D: MHIFreeDecoder start for task 0x%08lx\n", task ));
 
   Forbid();
+  if ( !task ) {
+
+    LOG_W(( "W: AmiGUS MHI does not know task 0x%08lx and signal 0x%08lx"
+            " - hence not free'd.\n",
+            task, signal ));
+    LOG_D(( "D: MHIFreeDecoder done\n" ));
+    return;
+  }
 
   if (( handle->agch_AmiGUS )) {
 
