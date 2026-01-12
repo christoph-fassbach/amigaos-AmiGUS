@@ -41,6 +41,8 @@
 #endif
 #endif
 
+#include "amigus/amigus.h"
+
 #include "library.h"
 
 /*
@@ -117,7 +119,7 @@ struct AmiGUS_MHI_Handle {
   struct MinNode                agch_Node;          // Another list node
 
   APTR                          agch_CardBase;      // Codec base address
-  struct ConfigDev            * agch_ConfigDevice;  // Expansion device address
+  struct AmiGUS               * agch_AmiGUS;        // AmiGUS card handle
 
   struct Task                 * agch_Task;          // Client task and ...
   LONG                          agch_Signal;        // ... signal to notify
@@ -153,9 +155,6 @@ struct AmiGUS_MHI {
 
   /* AmiGUS specific member variables */
   struct Interrupt            * agb_Interrupt;     // Shared interrupt handler
-
-  /* Client info */
-  struct MinList                agb_Clients;       // AmiGUS_MHI_Handle list
 
   BPTR                          agb_LogFile;       // Debug log file handle
   APTR                          agb_LogMem;        // Debug log memory blob
