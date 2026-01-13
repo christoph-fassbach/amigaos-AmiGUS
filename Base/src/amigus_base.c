@@ -24,6 +24,7 @@
 #include "amigus_private.h"
 #include "amigus_zorro2.h"
 #include "debug.h"
+#include "SDI_amigus_protos.h"
 #include "SDI_compiler.h"
 #include "support.h"
 
@@ -181,7 +182,7 @@ VOID HandleInterruptChanges( VOID ) {
  * AmiGUS base library - public functions.
  *****************************************************************************/
 
-ASM( struct AmiGUS * ) SAVEDS AmiGUS_FindCard(
+ASM( AmiGUS_PTR ) SAVEDS AmiGUS_FindCard(
   REG( a0, struct AmiGUS * card ),
   REG( a6, struct AmiGUS_Base * base )) {
 

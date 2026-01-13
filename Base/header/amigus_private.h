@@ -64,6 +64,19 @@
  */
 #define AMIGUS_MEM_LOG_BORDERS      "********************************"
 
+/*
+ * defines are limited to 32 chars due to a SAS/C insufficiency !!!
+ *
+ * So define below is just kind of a ruler...
+ */
+//      SASC_MAXIMUM_DEFINE_LENGTH_IS_32 12345678
+
+/**
+ * List of potential flags managing library state in AmiGUS_Base->agb_Flags.
+ */
+#define AMIGUS_BASE_F_ZORRO2_INT_SET     0x00000001 // Z2 interrupt installed,
+#define AMIGUS_BASE_F_PCMCIA_INT_SET     0x00000002 // same for PCMCIA
+
 /******************************************************************************
  * Library base structure
  *****************************************************************************/
@@ -71,8 +84,8 @@
 /**
  * Private AmiGUS library base structure.
  *
- * There is no public one, pointers to libraries opened, interrupts,
- * list of client handles, logs. Nothing to play around with.
+ * There is no public one, pointers to libraries opened, interrupts, logs.
+ * Nothing to play around with.
  */
 struct AmiGUS_Base {
   /* Library base stuff */
@@ -83,40 +96,42 @@ struct AmiGUS_Base {
   struct Library            * agb_ExpansionBase; // Finding devices
 
   /* AmiGUS specific member variables */
-  struct List                 agb_Cards;         // List of AmiGUS_CardPrivates
-  struct Interrupt            agb_Interrupt;
-  ULONG                       agb_Flags;
+  struct List                 agb_Cards;         // List of AmiGUS_Privates
+  struct Interrupt            agb_Interrupt;     // Struct for Zorro2 interrupts
+  ULONG                       agb_Flags;         // See list of flags above!
 
   BPTR                        agb_LogFile;       // Debug log file handle
   APTR                        agb_LogMem;        // Debug log memory blob
 };
 
+/**
+ * Private AmiGUS card's functional block representation.
+ * Each AmiGUS card has three of these, PCM, Wavetable, Codec,
+ * and each of the parts has the same properties.
+ */
 struct AmiGUS_Part {
   APTR                      * agp_OwnerPointer;   // To real owner data
   APTR                        agp_MaybeOwnerData; // Not for Zorro2 ;)
-  AmiGUS_Interrupt            agp_IntHandler;
-  APTR                        agp_IntData;
+  AmiGUS_Interrupt            agp_IntHandler;     // Part's INT sub-handler
+  APTR                        agp_IntData;        // Data for INT sub-handler
 };
 
+/**
+ * Private AmiGUS card representation holding the inner workings
+ * of amigus.library,
+ * - node structure to be in the list of cards,
+ * - public part shared with the clients,
+ * - three functional blocks, aka parts, PCM, Wavetable, Codec.
+ */
 struct AmiGUS_Private {
 
-  struct Node                 agp_Node;
-  struct AmiGUS               agp_AmiGUS_Public;
+  struct Node                 agp_Node;           // Can be in a list of cards
+  struct AmiGUS               agp_AmiGUS_Public;  // Has a public part!
 
-  struct AmiGUS_Part          agp_PCM;
-  struct AmiGUS_Part          agp_Wavetable;
-  struct AmiGUS_Part          agp_Codec;
+  struct AmiGUS_Part          agp_PCM;            // PCM functional block
+  struct AmiGUS_Part          agp_Wavetable;      // Wavetable functional block
+  struct AmiGUS_Part          agp_Codec;          // Codec functional block
 };
-
-/*
- * defines are limited to 32 chars due to a SAS/C insufficiency !!!
- *
- * So define below is just kind of a ruler...
- */
-//      SASC_MAXIMUM_DEFINE_LENGTH_IS_32 12345678
-
-#define AMIGUS_BASE_F_ZORRO2_INT_SET     0x000001
-#define AMIGUS_BASE_F_PCMCIA_INT_SET     0x000002
 
 /*
  * All libraries' base pointers used by the AmiGUS library.
