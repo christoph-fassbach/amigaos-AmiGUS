@@ -74,7 +74,24 @@
   ( (( struct List * ) list)->lh_Head->ln_Succ == \
     (( struct List * ) list)->lh_Tail )
 
+/**
+ * Gets the largest of two input values.
+ *
+ * @param a Any value comparable by '<' binary operand.
+ * @param b Any value comparable by '<' binary operand.
+ *
+ * @return The larger of the input values.
+ */
 #define MAX( a, b ) (( a < b ) ? b : a )
+
+/**
+ * Gets the smallest of two input values.
+ *
+ * @param a Any value comparable by '>' binary operand.
+ * @param b Any value comparable by '>' binary operand.
+ *
+ * @return The smaller of the input values.
+ */
 #define MIN( a, b ) (( a > b ) ? b : a )
 
 #endif /* SUPPORT_H */
