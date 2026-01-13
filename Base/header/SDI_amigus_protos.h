@@ -23,9 +23,13 @@
 
 #include <amigus/amigus.h>
 #include <exec/types.h>
-#include <exec/tasks.h>
 
+#include "amigus_private.h"
 #include "SDI_compiler.h"
+
+// Fixes a bug in VBCC - somehow it would not compile the return value of
+// AmiGUS_FindCard otherwise.
+typedef struct AmiGUS * AmiGUS_PTR;
 
 /******************************************************************************
  * AmiGUS base library interface functions written in SDI_compiler macros,
@@ -33,7 +37,7 @@
  * adapting them for AmiGUS library internal usage.
  *****************************************************************************/
 
-ASM( struct AmiGUS * ) SAVEDS AmiGUS_FindCard(
+ASM( AmiGUS_PTR ) SAVEDS AmiGUS_FindCard(
   REG( a0, struct AmiGUS * card ),
   REG( a6, struct AmiGUS_Base * base ));
 
