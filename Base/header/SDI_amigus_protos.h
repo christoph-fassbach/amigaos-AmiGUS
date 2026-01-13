@@ -84,6 +84,8 @@ ASM( ULONG ) SAVEDS AmiGUS_ReserveCard(
 
 /**
  * Frees ("un-reserves") an AmiGUS card, be it Zorro2 or PCMCIA.
+ * Includes a call to amigus.library/AmiGUS_RemoveInterrupt() so
+ * user code cannot mess it up.
  * See amigus/amigus.h for reference of flags.
  *
  * You may wanna wrap this in 
@@ -111,10 +113,13 @@ ASM( VOID ) SAVEDS AmiGUS_FreeCard(
  * See amigus/amigus.h for reference of flags, error codes,
  * and handler function's signature.
  *
- * No need to wrap this in 
- * exec.library/Forbid() + Permit() or even Enable() + Disable() pairs
+ * No need to wrap this into an exec.library/Forbid() + Permit() pair,
  * as all non-owner requests are rejected.
- * You got race conditions in your own code? Well, that's a different story...
+ * You got race conditions in your own code?
+ * Well, that's a different story... maybe fix it where it happens?
+ * No? Well, will not crash, likely.
+ * But wrapping it into an exec.library/Enable() + Disable() pair will
+ * go sideways.
  *
  * @param card    Valid ( struct AmiGUS * ) card,
  *                or NULL, w/o chance of success, obviously.
@@ -150,10 +155,13 @@ ASM( ULONG ) SAVEDS AmiGUS_InstallInterrupt(
  * for a reserved AmiGUS card, be it Zorro2 or PCMCIA.
  * See amigus/amigus.h for reference of flags and error codes.
  *
- * No need to wrap this in 
- * exec.library/Forbid() + Permit() or even Enable() + Disable() pairs
+ * No need to wrap this into an exec.library/Forbid() + Permit() pair,
  * as all non-owner requests are rejected.
- * You got race conditions in your own code? Well, that's a different story...
+ * You got race conditions in your own code?
+ * Well, that's a different story... maybe fix it where it happens?
+ * No? Well, will not crash, likely.
+ * But wrapping it into an exec.library/Enable() + Disable() pair will
+ * go sideways.
  *
  * @param card    Valid ( struct AmiGUS * ) card,
  *                or NULL, w/o chance of success, obviously.

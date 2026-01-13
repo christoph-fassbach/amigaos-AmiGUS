@@ -126,7 +126,7 @@ VOID HandleInterruptChanges( VOID ) {
   FOR_LIST( cards, card, struct AmiGUS_Private * ) {
 
     BOOL needed =
-      ( NULL != card->agp_PCM.agp_IntHandler ) |
+      ( NULL != card->agp_PCM.agp_IntHandler )       |
       ( NULL != card->agp_Wavetable.agp_IntHandler ) |
       ( NULL != card->agp_Codec.agp_IntHandler );
 
@@ -137,7 +137,7 @@ VOID HandleInterruptChanges( VOID ) {
         needsZorro2Interrupt |= needed;
         break;
       }
-      case AmiGUS_mini:{
+      case AmiGUS_mini: {
 
         needsPcmciaInterrupt |= needed;
         break;
@@ -224,13 +224,13 @@ ASM( ULONG ) SAVEDS AmiGUS_ReserveCard(
 
     return AmiGUS_NotFound;
   }
-  // TODO: forbid
+
   card_private = convertPublic2Private( card );
   result = ChangeCardReservation( card_private, which, owner, owner );
 
   LOG_I(( "I: Card 0x%08lx parts 0x%04lx reserved for 0x%08lx => 0x%04lx\n",
           card, which, owner, result ));
-  // TODO: Install interrupt here!
+
   return result;
 }
 
@@ -247,13 +247,14 @@ ASM( VOID ) SAVEDS AmiGUS_FreeCard(
 
     return;
   }
-  // TODO: forbid
+
+  AmiGUS_RemoveInterrupt( card, which, owner, base );
   card_private = convertPublic2Private( card );
   result = ChangeCardReservation( card_private, which, owner, NULL );
 
   LOG_I(( "I: Card 0x%08lx parts 0x%04lx freed for 0x%08lx => 0x%04lx\n",
           card, which, owner, result ));
-  // TODO: Free interrupt here!
+
   return;
 }
 
@@ -297,7 +298,7 @@ ASM( ULONG ) SAVEDS AmiGUS_InstallInterrupt(
   LOG_I(( "I: Card 0x%08lx codec interrupts set, result 0x%04lx\n",
           card, result ));
 
-  HandleInterruptChanges();
+  HandleInterruptChanges(); // TODO: check error handling!
 
   return result;
 }

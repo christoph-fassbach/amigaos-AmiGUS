@@ -136,7 +136,7 @@ VOID AmiGusZorro2_InstallInterrupt( VOID ) {
   if ( AmiGUS_Base->agb_Flags & AMIGUS_BASE_F_ZORRO2_INT_SET ) {
 
     Enable();
-    LOG_I(( "I: Interrupt already installed.\n" ));
+    LOG_W(( "W: Interrupt already installed.\n" ));
     return;
   }
   AmiGUS_Base->agb_Flags |= AMIGUS_BASE_F_ZORRO2_INT_SET;
@@ -153,7 +153,7 @@ VOID AmiGusZorro2_RemoveInterrupt( VOID ) {
   if ( !( AmiGUS_Base->agb_Flags & AMIGUS_BASE_F_ZORRO2_INT_SET )) {
 
     Enable();
-    LOG_I(( "I: Interrupt not installed.\n" ));
+    LOG_W(( "W: Interrupt not installed.\n" ));
     return;
   }
   AmiGUS_Base->agb_Flags &= ~AMIGUS_BASE_F_ZORRO2_INT_SET;
