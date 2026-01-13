@@ -22,19 +22,27 @@
 #include <amigus/SDI_compiler.h>
 #include <exec/types.h>
 
+/**
+ * Enumerates all known AmiGUS derivatives with their own ID.
+ */
 enum AmiGUS_TypeIds {
 
-  AmiGUS_Zorro2 = 0x7000,   // Avoiding random 0 collision
-  AmiGUS_mini
+  AmiGUS_Zorro2 = 0x7000,   // Original Zorro2 card, avoiding Zero collisions
+  AmiGUS_mini               // PCMCIA card
 };
 
-#define AMIGUS_FLAG_NONE        0x0000
-#define AMIGUS_FLAG_PCM         0x0001
-#define AMIGUS_FLAG_WAVETABLE   0x0002
-#define AMIGUS_FLAG_CODEC       0x0004
+/**
+ * Flags defining all functional blocks / parts of an AmiGUS card.
+ */
+#define AMIGUS_FLAG_NONE        0x0000   //< No part ;)
+#define AMIGUS_FLAG_PCM         0x0001   //< PCM like main part, incl. mixer
+#define AMIGUS_FLAG_WAVETABLE   0x0002   //< Wavetable part
+#define AMIGUS_FLAG_CODEC       0x0004   //< Codec part, for MP3, FLAC, ...
 
+/**
+ * amigus.library error codes as returned by library interface functions.
+ */
 #define AMIGUS_IN_USE_START     0x0100
-
 enum AmiGUS_Errors {
 
   AmiGUS_NoError                = 0,
@@ -50,27 +58,47 @@ enum AmiGUS_Errors {
   AmiGUS_NotYours               = 0x0200
 };
 
+/**
+ * AmiGUS card description as returned by amigus.library/AmiGUS_FindCard().
+ *
+ * No need to free it, ownership stays with amigus.library.
+ * Consider ALL fields read-only, please.
+ */
 struct AmiGUS {
 
-  APTR      agus_PcmBase;
-  APTR      agus_WavetableBase;
-  APTR      agus_CodecBase;
+  APTR      agus_PcmBase;       //> Base address of the PCM part of the card.
+  APTR      agus_WavetableBase; //> Base address of the Wavetable part.
+  APTR      agus_CodecBase;     //> Base address of the codec part.
 
-  UBYTE     agus_FpgaId[ 8 ];
+  UBYTE     agus_FpgaId[ 8 ];   //> Hardware ID of the card's FPGA.
   
-  ULONG     agus_HardwareRev;
-  ULONG     agus_FirmwareRev;
+  ULONG     agus_HardwareRev;   //> Hardware revision of the card.
+  ULONG     agus_FirmwareRev;   //> Firmware revision of the card.
 
-  STRPTR    agus_TypeName;
-  UWORD     agus_TypeId;
+  STRPTR    agus_TypeName;      //> Human readable card type string.
+  UWORD     agus_TypeId;        //> Card type from enum AmiGUS_TypeIds.
 
-  UWORD     agus_Year;
-  UBYTE     agus_Month;
-  UBYTE     agus_Day;
-  UBYTE     agus_Hour;
-  UBYTE     agus_Minute;
+  UWORD     agus_Year;          //> Firmware date, year portion.
+  UBYTE     agus_Month;         //> Firmware date, month portion.
+  UBYTE     agus_Day;           //> Firmware date, day portion.
+  UBYTE     agus_Hour;          //> Firmware date, hour portion.
+  UBYTE     agus_Minute;        //> Firmware date, minute portion.
 };
 
-typedef ASM( LONG ) (*AmiGUS_Interrupt)( REG( d1, APTR data ));
+/**
+ * Woah... what is that?
+ *
+ * The interrupt handler function's signature as a typedef.
+ * Yes, amigus.library/AmiGUS_InstallInterrupt() expects user code delivering a
+ * function pointer matching exactly this type! But what is it?
+ * - A pointer to a function in register call style,
+ * - the function accepts only 1 parameter in d1,
+ * - the parameter echos the APTR data parameter delivered 
+ *   when the interrupt handler was installed,
+ * - the function returns LONG in d0,
+ *   0 if the interrupt was not handled,
+ *   1 if the interrupt was handled.
+ */
+typedef ASM( LONG ) ( * AmiGUS_Interrupt )( REG( d1, APTR data ));
 
 #endif /* AMIGUS_H */
