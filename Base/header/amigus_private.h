@@ -20,11 +20,11 @@
 #define AMIGUS_PRIVATE_H
 
 /*
- * MHI driver library header.
+ * AmiGUS library header.
  *
  * To be used only internally - but there in all .c files!
  * If you are using some of the library base addresses from
- * BASE_REDEFINE directly, e.g. in libinit.c,
+ * BASE_REDEFINE directly, e.g. in library.c,
  * do a #define NO_BASE_REDEFINE before including this file.
  */
 
@@ -34,7 +34,7 @@
 #ifndef BASE_GLOBAL 
 #ifndef NO_BASE_REDEFINE
 /* 
- * either this is active for everything except libinit.c
+ * either this is active for everything except library.c
  * or BASE_GLOBAL is active everywhere
  */
 #define BASE_REDEFINE
@@ -46,13 +46,12 @@
 #include "library.h"
 
 /*
- * Query-able facts via MHIQuery function: TODO
+ * Not yet query-able facts, maybe shall have a function for that later? <- TODO
  */
 #define AMIGUS_AUTHOR               "Christoph `Chritoph` Fassbach"
 #define AMIGUS_COPYRIGHT            "(c) 2025 Christoph Fassbach / LGPL3"
 #define AMIGUS_ANNOTATION           "Thanks to: Oliver Achten (AmiGUS), " \
-                                    "Frank Wille (vbcc), "                \
-                                    "Thomas Wenzel et al. (MHI)"
+                                    "Frank Wille (vbcc)"
 #define AMIGUS_VERSION              LIBRARY_IDSTRING
 
 /*
