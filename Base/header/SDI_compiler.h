@@ -173,7 +173,7 @@
  */
 #if defined(__VBCC__)
 
-__reg("d1") ULONG __GET_REG_D1()="\t";
+__reg("d1") unsigned long __GET_REG_D1()="\t";
 #define GET_REG(reg) __GET_ ## reg()
 
 #elif defined(__SASC)
