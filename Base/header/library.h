@@ -19,9 +19,7 @@
 #ifndef LIBRARY_H
 #define LIBRARY_H
 
-#include <exec/types.h>
 #include <exec/execbase.h>
-#include <exec/libraries.h>
 #include <exec/semaphores.h>
 #include <libraries/dos.h>
 

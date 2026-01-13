@@ -16,12 +16,8 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <exec/types.h>
 #include <exec/libraries.h>
 #include <exec/nodes.h>
-#include <exec/resident.h>
-#include <exec/semaphores.h>
-
 #include <libraries/dos.h>
 
 #include <proto/exec.h>

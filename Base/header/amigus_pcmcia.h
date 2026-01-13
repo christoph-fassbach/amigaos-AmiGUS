@@ -20,7 +20,7 @@
 #define AMIGUS_PCMCIA_H
 
 #include <amigus/amigus.h>
-#include <exec/types.h>
+#include <exec/lists.h>
 
 VOID AmiGusPcmcia_AddAll( struct List * cards );
 VOID AmiGusPcmcia_InstallInterrupt( VOID );
