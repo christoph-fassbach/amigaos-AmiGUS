@@ -20,10 +20,25 @@
 #define AMIGUS_ZORRO2_H
 
 #include <amigus/amigus.h>
-#include <exec/types.h>
+#include <exec/lists.h>
 
+/**
+ * Discovers all AmiGUS cards connected to Zorro2 slots.
+ *
+ * @param cards List of cards to add the discovered AmiGUS cards to.
+ */
 VOID AmiGusZorro2_AddAll( struct List * cards );
+
+/**
+ * Installs the interrupt handling and further dispatching by amigus.library
+ * for Zorro2.
+ */
 VOID AmiGusZorro2_InstallInterrupt( VOID );
+
+/**
+ * Removes the interrupt handling and further dispatching by amigus.library
+ * for Zorro2.
+ */
 VOID AmiGusZorro2_RemoveInterrupt( VOID );
 
 #endif /* AMIGUS_ZORRO2_H */
