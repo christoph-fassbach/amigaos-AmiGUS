@@ -31,6 +31,7 @@
  * Codec convenience functions - public function definitions.
  *****************************************************************************/
 
+#if 0
 LONG FindAmiGusCodec( struct ConfigDev ** device ) {
 
   LONG result = EAmiGUSNotFound;
@@ -88,6 +89,8 @@ LONG FindAmiGusCodec( struct ConfigDev ** device ) {
 
   return result;
 }
+
+#endif
 
 VOID StartAmiGusCodecPlayback( struct AmiGUS_MHI_Handle * handle ) {
 

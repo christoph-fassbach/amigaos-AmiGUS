@@ -19,6 +19,7 @@
 #include <exec/types.h>
 #include <libraries/mhi.h>
 #include <libraries/configvars.h>
+#include <proto/amigus.h>
 #include <proto/exec.h>
 
 #include "SDI_mhi_protos.h"
@@ -57,7 +58,7 @@ VOID InitHandle( struct AmiGUS_MHI_Handle * handle ) {
 
   ULONG i;
 
-  handle->agch_CardBase = handle->agch_ConfigDevice->cd_BoardAddr;
+  handle->agch_CardBase = handle->agch_AmiGUS->agus_CodecBase;
 
   NEW_LIST( &( handle->agch_Buffers ));
   handle->agch_CurrentBuffer = NULL;
@@ -116,11 +117,34 @@ ASM( APTR ) SAVEDS MHIAllocDecoder(
   if ( !error ) {
 
     Forbid();
+    do {
+
+      handle->agch_AmiGUS = AmiGUS_FindCard( handle->agch_AmiGUS );
+      if ( !( handle->agch_AmiGUS )) {
+
+        if ( !( error )) {
+          error = EAmiGUSNotFound;
+        }
+        continue;
+      }
+      if ( AMIGUS_MHI_FIRMWARE_MINIMUM >
+        handle->agch_AmiGUS->agus_FirmwareRev ) {
+
+        error = EAmiGUSFirmwareOutdated;
+        continue;
+      }
+      error = AmiGUS_ReserveCard( handle->agch_AmiGUS,
+                                  AMIGUS_FLAG_CODEC,
+                                  handle );
+
+    } while (( handle->agch_AmiGUS ) && ( error ));
+#if 0
     error = FindAmiGusCodec( &( handle->agch_ConfigDevice ));
     if ( !error ) {
 
       handle->agch_ConfigDevice->cd_Driver = handle;
     }
+#endif
     Permit();
   }
   if ( !error ) {
@@ -176,7 +200,6 @@ ASM( VOID ) SAVEDS MHIFreeDecoder(
   LONG signal = handle->agch_Signal;
   ULONG error = EHandleUnknown;
 
-
   LOG_D(( "D: MHIFreeDecoder start for task 0x%08lx\n", task ));
   FOR_LIST ( clients, currentHandle, struct AmiGUS_MHI_Handle * ) {
     
@@ -196,11 +219,14 @@ ASM( VOID ) SAVEDS MHIFreeDecoder(
   }
 
   Forbid();
-  if (( handle->agch_ConfigDevice->cd_Driver == handle )) {
+  if (( handle->agch_AmiGUS )) {
 
     handle->agch_Task = NULL;
     handle->agch_Signal = 0;
-    handle->agch_ConfigDevice->cd_Driver = NULL;
+
+    AmiGUS_FreeCard( handle->agch_AmiGUS, AMIGUS_FLAG_CODEC, handle );
+
+    handle->agch_AmiGUS = NULL;
 
     Remove(( struct Node * ) handle );
     FreeMem( handle, sizeof( struct AmiGUS_MHI_Handle ));

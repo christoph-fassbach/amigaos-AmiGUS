@@ -88,6 +88,42 @@ ASM( LONG ) /* __entry for vbcc ? */ SAVEDS INTERRUPT handleInterrupt (
  * Interrupt functions - public function definitions.
  *****************************************************************************/
 
+ASM( LONG ) HandleInterruptNew( REG( d1, APTR data )) {
+
+  LONG result = 0;
+
+  struct AmiGUS_MHI_Handle * handle = ( struct AmiGUS_MHI_Handle * ) data;
+
+  APTR card = handle->agch_CardBase;
+  const UWORD enable = ReadReg16( card, AMIGUS_CODEC_INT_ENABLE );
+  const UWORD control = ReadReg16( card, AMIGUS_CODEC_INT_CONTROL );
+  const UWORD status = enable & control;
+
+  /*
+  // This is super-spammy - but tells you what is wrong if int is stalling!
+  LOG_INT(( "INT: h 0x%08lx c 0x%08lx s 0x%04lx\n",
+            handle, card, status ));
+  // */
+  if ( status & ( AMIGUS_CODEC_INT_F_FIFO_EMPTY
+                | AMIGUS_CODEC_INT_F_FIFO_WATERMRK )) {
+
+    if ( MHIF_PLAYING == handle->agch_Status ) {
+
+      FillCodecBuffer( handle );
+    }
+
+    /* Clear AmiGUS control flags here!!! */
+    WriteReg16( card,
+                AMIGUS_CODEC_INT_CONTROL,
+                AMIGUS_INT_F_CLEAR
+                | AMIGUS_CODEC_INT_F_FIFO_EMPTY
+                | AMIGUS_CODEC_INT_F_FIFO_WATERMRK );
+    result = 1;
+  }
+
+  return result;
+}
+
 LONG CreateInterruptHandler( VOID ) {
 
   if ( AmiGUS_MHI_Base->agb_Interrupt ) {

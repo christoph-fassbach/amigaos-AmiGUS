@@ -27,6 +27,18 @@
  *****************************************************************************/
 
 /**
+ * Interrupt handler function,
+ * checking the status of the relevant AmiGUS card, and
+ * and filling their buffers accordingly.
+ *
+ * @param data Pointer to the handle address.
+ *
+ * @return 1 if the handle's card's interrupt was pending and handled,
+ *         0 otherwise.
+ */
+ASM( LONG ) HandleInterruptNew( REG( d1, APTR data ));
+
+/**
  * Creates the interupt handler for the MHI driver library.
  *
  * @return ENoError = 0 if successful,
