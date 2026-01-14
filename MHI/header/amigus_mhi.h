@@ -116,8 +116,6 @@ struct AmiGUS_MHI_Buffer {
  */
 struct AmiGUS_MHI_Handle {
 
-  struct MinNode                agch_Node;          // Another list node
-
   APTR                          agch_CardBase;      // Codec base address
   struct AmiGUS               * agch_AmiGUS;        // AmiGUS card handle
 
@@ -152,9 +150,6 @@ struct AmiGUS_MHI {
   struct DosLibrary           * agb_DOSBase;       // DOS, logs and so on
   struct IntuitionBase        * agb_IntuitionBase; // For error messages
   struct Library              * agb_AmiGUS_Base;   // Finding & handling AmiGUS
-
-  /* Client info */
-  struct MinList                agb_Clients;       // AmiGUS_MHI_Handle list
 
   BPTR                          agb_LogFile;       // Debug log file handle
   APTR                          agb_LogMem;        // Debug log memory blob
