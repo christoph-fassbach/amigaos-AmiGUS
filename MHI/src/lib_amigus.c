@@ -34,7 +34,7 @@ struct ExecBase          * SysBase           = 0;
 struct DosLibrary        * DOSBase           = 0;
 struct IntuitionBase     * IntuitionBase     = 0;
 struct Library           * UtilityBase       = 0;
-struct Library           * ExpansionBase     = 0;
+struct Library           * AmiGUS_Base       = 0;
 struct AmiGUS_MHI        * AmiGUS_MHI_Base   = 0;
 
 #endif
@@ -89,17 +89,17 @@ LONG CustomLibInit( LIBRARY_TYPE * base, struct ExecBase * sysBase ) {
 
     return EOpenIntuitionBase;
   }
-  base->agb_ExpansionBase =
-    ( struct Library * ) OpenLibrary( "expansion.library", 34 );
-  if ( !( base->agb_ExpansionBase )) {
+  base->agb_AmiGUS_Base =
+    ( struct Library * ) OpenLibrary( "amigus.library", 1 );
+  if ( !( base->agb_AmiGUS_Base )) {
 
-    return EOpenExpansionBase;
+    return EOpenAmiGusBase;
   }
 
 #ifdef BASE_GLOBAL
   DOSBase         = base->agb_DOSBase;
   IntuitionBase   = base->agb_IntuitionBase;
-  ExpansionBase   = base->agb_ExpansionBase;
+  AmiGUS_Base     = base->agb_AmiGUS_Base;
   AmiGUS_MHI_Base = base;
 #endif
 
@@ -135,8 +135,8 @@ VOID CustomLibClose( LIBRARY_TYPE * base ) {
 
     CloseLibrary(( struct Library * ) base->agb_IntuitionBase );
   }
-  if ( base->agb_ExpansionBase ) {
+  if ( base->agb_AmiGUS_Base ) {
 
-    CloseLibrary(( struct Library * ) base->agb_ExpansionBase );
+    CloseLibrary(( struct Library * ) base->agb_AmiGUS_Base );
   }
 }
