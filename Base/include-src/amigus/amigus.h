@@ -46,8 +46,7 @@ enum AmiGUS_TypeIds {
 enum AmiGUS_Errors {
 
   AmiGUS_NoError                = 0,
-  AmiGUS_NotFound               = 0x0404,
-  AmiGUS_DetectError            = AMIGUS_IN_USE_START, // 0x0100
+  AmiGUS_InUse                  = AMIGUS_IN_USE_START, // 0x0100
   AmiGUS_PcmInUse               = AMIGUS_IN_USE_START                                             | AMIGUS_FLAG_PCM,
   AmiGUS_WavetableInUse         = AMIGUS_IN_USE_START                     | AMIGUS_FLAG_WAVETABLE                  ,
   AmiGUS_PcmWavetableInUse      = AMIGUS_IN_USE_START                     | AMIGUS_FLAG_WAVETABLE | AMIGUS_FLAG_PCM,
@@ -55,7 +54,12 @@ enum AmiGUS_Errors {
   AmiGUS_PcmCodecInUse          = AMIGUS_IN_USE_START | AMIGUS_FLAG_CODEC                         | AMIGUS_FLAG_PCM,
   AmiGUS_WavetableCodecInUse    = AMIGUS_IN_USE_START | AMIGUS_FLAG_CODEC | AMIGUS_FLAG_WAVETABLE                  ,
   AmiGUS_PcmWavetableCodecInUse = AMIGUS_IN_USE_START | AMIGUS_FLAG_CODEC | AMIGUS_FLAG_WAVETABLE | AMIGUS_FLAG_PCM,
-  AmiGUS_NotYours               = 0x0200
+  AmiGUS_NotYours               = 0x0200,
+  AmiGUS_DetectError            = 0x0401,
+  AmiGUS_InterruptInstallFailed = 0x0402,
+  AmiGUS_InterruptRemoveFailed  = 0x0403,
+  AmiGUS_NotFound               = 0x0404,
+  AmiGUS_NotImplemented         = 0x0500
 };
 
 /**

@@ -26,12 +26,12 @@ VOID AmiGusPcmcia_AddAll( struct List * cards ) {
   return;
 }
 
-VOID AmiGusPcmcia_InstallInterrupt( VOID ) {
+LONG AmiGusPcmcia_InstallInterrupt( VOID ) {
 
-  return;
+  return AmiGUS_NotImplemented;
 }
 
-VOID AmiGusPcmcia_RemoveInterrupt( VOID ) {
+LONG AmiGusPcmcia_RemoveInterrupt( VOID ) {
 
-  return;
+  return AmiGUS_NotImplemented;
 }

@@ -32,13 +32,19 @@ VOID AmiGusZorro2_AddAll( struct List * cards );
 /**
  * Installs the interrupt handling and further dispatching by amigus.library
  * for Zorro2.
+ *
+ * @return AmiGUS_NoError if successful,
+ *         error code from enum AmiGUS_Errors otherwise.
  */
-VOID AmiGusZorro2_InstallInterrupt( VOID );
+LONG AmiGusZorro2_InstallInterrupt( VOID );
 
 /**
  * Removes the interrupt handling and further dispatching by amigus.library
  * for Zorro2.
+ *
+ * @return AmiGUS_NoError if successful,
+ *         error code from enum AmiGUS_Errors otherwise.
  */
-VOID AmiGusZorro2_RemoveInterrupt( VOID );
+LONG AmiGusZorro2_RemoveInterrupt( VOID );
 
 #endif /* AMIGUS_ZORRO2_H */
