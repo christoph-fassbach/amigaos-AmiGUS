@@ -130,36 +130,36 @@ VOID AmiGusZorro2_AddAll( struct List * cards ) {
   return;
 }
 
-VOID AmiGusZorro2_InstallInterrupt( VOID ) {
+LONG AmiGusZorro2_InstallInterrupt( VOID ) {
 
   Disable();
   if ( AmiGUS_Base->agb_Flags & AMIGUS_BASE_F_ZORRO2_INT_SET ) {
 
     Enable();
     LOG_W(( "W: Interrupt already installed.\n" ));
-    return;
+    return AmiGUS_InterruptInstallFailed;
   }
   AmiGUS_Base->agb_Flags |= AMIGUS_BASE_F_ZORRO2_INT_SET;
   AddIntServer( INTB_PORTS, &( AmiGUS_Base->agb_Interrupt ));
 
   Enable();
   LOG_I(( "I: Interrupt successfully installed.\n" ));
-  return;
+  return AmiGUS_NoError;
 }
 
-VOID AmiGusZorro2_RemoveInterrupt( VOID ) {
+LONG AmiGusZorro2_RemoveInterrupt( VOID ) {
 
   Disable();
   if ( !( AmiGUS_Base->agb_Flags & AMIGUS_BASE_F_ZORRO2_INT_SET )) {
 
     Enable();
     LOG_W(( "W: Interrupt not installed.\n" ));
-    return;
+    return AmiGUS_InterruptRemoveFailed;
   }
   AmiGUS_Base->agb_Flags &= ~AMIGUS_BASE_F_ZORRO2_INT_SET;
   RemIntServer( INTB_PORTS, &( AmiGUS_Base->agb_Interrupt ));
 
   Enable();
   LOG_I(( "I: Interrupt successfully removed.\n" ));
-  return;
+  return AmiGUS_NoError;
 }

@@ -116,12 +116,13 @@ static LONG ChangePartInterrupt(
   return AmiGUS_NoError;
 }
 
-VOID HandleInterruptChanges( VOID ) {
+LONG HandleInterruptChanges( VOID ) {
 
   const struct List * cards = &( AmiGUS_Base->agb_Cards );
   struct AmiGUS_Private * card;
   BOOL needsZorro2Interrupt = FALSE;
   BOOL needsPcmciaInterrupt = FALSE;
+  LONG result = AmiGUS_NoError;
 
   FOR_LIST( cards, card, struct AmiGUS_Private * ) {
 
@@ -153,29 +154,33 @@ VOID HandleInterruptChanges( VOID ) {
 
     // Register Zorro2 interrupt now.
     LOG_I(( "I: Registering Zorro2 INT\n"));
-    AmiGusZorro2_InstallInterrupt();
+    result |= AmiGusZorro2_InstallInterrupt();
   }
   if (( !( needsZorro2Interrupt ))
     && (( AMIGUS_BASE_F_ZORRO2_INT_SET & AmiGUS_Base->agb_Flags ))) {
 
     // Un-Register Zorro2 interrupt now.
     LOG_I(( "I: Un-registering Zorro2 INT\n"));
-    AmiGusZorro2_RemoveInterrupt();
+    result |= AmiGusZorro2_RemoveInterrupt();
   }
   if (( needsPcmciaInterrupt ) 
     && ( !( AMIGUS_BASE_F_PCMCIA_INT_SET & AmiGUS_Base->agb_Flags ))) {
 
     // Register PCMCIA interrupt now.
     LOG_I(( "I: Registering PCMCIA INT\n"));
-    AmiGusPcmcia_InstallInterrupt();
+    result |= AmiGusPcmcia_InstallInterrupt();
   }
   if (( !( needsPcmciaInterrupt ))
     && (( AMIGUS_BASE_F_PCMCIA_INT_SET & AmiGUS_Base->agb_Flags ))) {
 
     // Un-Register PCMCIA interrupt now.
     LOG_I(( "I: Un-registering PCMCIA INT\n"));
-    AmiGusPcmcia_RemoveInterrupt();
+    result |= AmiGusPcmcia_RemoveInterrupt();
   }
+
+  LOG_D(( "D: Interrupts adapted to Z2 %ld and PCMCIA %ld, result 0x%08lx\n",
+          needsZorro2Interrupt, needsPcmciaInterrupt, result ));
+  return result;
 }
 
 /******************************************************************************
@@ -298,7 +303,7 @@ ASM( ULONG ) SAVEDS AmiGUS_InstallInterrupt(
   LOG_I(( "I: Card 0x%08lx codec interrupts set, result 0x%04lx\n",
           card, result ));
 
-  HandleInterruptChanges(); // TODO: check error handling!
+  result |= HandleInterruptChanges();
 
   return result;
 }
