@@ -174,12 +174,6 @@ ASM( APTR ) SAVEDS MHIAllocDecoder(
     // Takes care of the log entry, too. :)
     DisplayError( error );
 
-  } else {
-
-    Forbid();
-    AddTail(( struct List * ) &( AmiGUS_MHI_Base->agb_Clients ),
-            ( struct Node * ) handle );
-    Permit();
   }
 
   LOG_D(( "D: MHIAllocDecoder done, returning handle 0x%08lx\n", handle ));
@@ -191,22 +185,12 @@ ASM( VOID ) SAVEDS MHIFreeDecoder(
   REG( a6, struct AmiGUS_MHI * base )
 ) {
 
-  struct MinList * clients = &( AmiGUS_MHI_Base->agb_Clients );
-  struct AmiGUS_MHI_Handle * currentHandle;
   struct Task * task = handle->agch_Task;
   LONG signal = handle->agch_Signal;
-  ULONG error = EHandleUnknown;
+  ULONG error = ENoError;
 
   LOG_D(( "D: MHIFreeDecoder start for task 0x%08lx\n", task ));
-  FOR_LIST ( clients, currentHandle, struct AmiGUS_MHI_Handle * ) {
-    
-    if ( handle == currentHandle ) {
-
-      error = ENoError;
-      break;
-    }
-  }
-  if (( error ) || ( !task )) {
+  if ( !( task )) {
 
     LOG_W(( "W: AmiGUS MHI does not know task 0x%08lx and signal 0x%08lx"
             " - hence not free'd.\n",
