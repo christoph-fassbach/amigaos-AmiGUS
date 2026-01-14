@@ -39,19 +39,6 @@
 ASM( LONG ) HandleInterruptNew( REG( d1, APTR data ));
 
 /**
- * Creates the interupt handler for the MHI driver library.
- *
- * @return ENoError = 0 if successful,
- *         error code otherwise.
- */
-LONG CreateInterruptHandler( VOID );
-
-/**
- * Destroys the interupt handler of the MHI driver library.
- */
-VOID DestroyInterruptHandler( VOID );
-
-/**
  * Fills the codec's playback buffer with however many more encoded data
  * is available, handling buffer exchanges, end of buffers, underruns, etc.
  *

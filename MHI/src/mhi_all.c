@@ -156,7 +156,11 @@ ASM( APTR ) SAVEDS MHIAllocDecoder(
     UpdateVS1063VolumePanning( handle->agch_CardBase,
                                handle->agch_MHI_Volume,
                                handle->agch_MHI_Panning );
-    error = CreateInterruptHandler();
+    error = AmiGUS_InstallInterrupt( handle->agch_AmiGUS,
+                                     AMIGUS_FLAG_CODEC,
+                                     handle,
+                                     &( HandleInterruptNew ),
+                                     handle );
 
   }
   if ( error ) {
@@ -239,10 +243,6 @@ ASM( VOID ) SAVEDS MHIFreeDecoder(
 
     LOG_D(( "D: AmiGUS MHI free'd up task 0x%08lx and signal 0x%08lx.\n",
             task, signal ));
-    if ( !( AmiGUS_MHI_Base->agb_Clients.mlh_Tail )) {
-
-      DestroyInterruptHandler();
-    }
   }
   LOG_D(( "D: MHIFreeDecoder done\n" ));
   return;
