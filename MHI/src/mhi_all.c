@@ -205,6 +205,7 @@ ASM( VOID ) SAVEDS MHIFreeDecoder(
     handle->agch_Task = NULL;
     handle->agch_Signal = 0;
 
+    AmiGUS_RemoveInterrupt( handle->agch_AmiGUS, AMIGUS_FLAG_CODEC, handle );
     AmiGUS_FreeCard( handle->agch_AmiGUS, AMIGUS_FLAG_CODEC, handle );
 
     handle->agch_AmiGUS = NULL;

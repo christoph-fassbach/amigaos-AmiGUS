@@ -84,8 +84,8 @@ ASM( ULONG ) SAVEDS AmiGUS_ReserveCard(
 
 /**
  * Frees ("un-reserves") an AmiGUS card, be it Zorro2 or PCMCIA.
- * Includes a call to amigus.library/AmiGUS_RemoveInterrupt() so
- * user code cannot mess it up.
+ * User code MUST call amigus.library/AmiGUS_RemoveInterrupt() before
+ * freeing up the card!
  * See amigus/amigus.h for reference of flags.
  *
  * You may wanna wrap this in 
