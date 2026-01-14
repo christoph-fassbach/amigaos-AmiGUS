@@ -253,7 +253,6 @@ ASM( VOID ) SAVEDS AmiGUS_FreeCard(
     return;
   }
 
-  AmiGUS_RemoveInterrupt( card, which, owner, base );
   card_private = convertPublic2Private( card );
   result = ChangeCardReservation( card_private, which, owner, NULL );
 
