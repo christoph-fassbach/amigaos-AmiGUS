@@ -138,13 +138,6 @@ ASM( APTR ) SAVEDS MHIAllocDecoder(
                                   handle );
 
     } while (( handle->agch_AmiGUS ) && ( error ));
-#if 0
-    error = FindAmiGusCodec( &( handle->agch_ConfigDevice ));
-    if ( !error ) {
-
-      handle->agch_ConfigDevice->cd_Driver = handle;
-    }
-#endif
     Permit();
   }
   if ( !error ) {
