@@ -41,13 +41,19 @@ VOID AmiGusPcmcia_AddAll( struct List * cards );
  * - and Quake 1 (clickBOOM) via AHI
  * simultanously.
  * You wondered why the amigus.library even exists? - Here you are, welcome.
+ *
+ * @return AmiGUS_NoError if successful,
+ *         error code from enum AmiGUS_Errors otherwise.
  */
-VOID AmiGusPcmcia_InstallInterrupt( VOID );
+LONG AmiGusPcmcia_InstallInterrupt( VOID );
 
 /**
  * Removes the interrupt handling and further dispatching by amigus.library
  * for PCMCIA.
+ *
+ * @return AmiGUS_NoError if successful,
+ *         error code from enum AmiGUS_Errors otherwise.
  */
-VOID AmiGusPcmcia_RemoveInterrupt( VOID );
+LONG AmiGusPcmcia_RemoveInterrupt( VOID );
 
 #endif /* AMIGUS_PCMCIA_H */
