@@ -153,9 +153,6 @@ struct AmiGUS_MHI {
   struct IntuitionBase        * agb_IntuitionBase; // For error messages
   struct Library              * agb_AmiGUS_Base;   // Finding & handling AmiGUS
 
-  /* AmiGUS specific member variables */
-  struct Interrupt            * agb_Interrupt;     // Shared interrupt handler
-
   /* Client info */
   struct MinList                agb_Clients;       // AmiGUS_MHI_Handle list
 
