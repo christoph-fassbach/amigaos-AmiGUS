@@ -66,7 +66,7 @@ SDIR   = src/
 HDIR   = header/
 
 APP_CPU        ?= 000
-APP_LOG        ?= SER_LOG
+APP_LOG        ?= NO_LOG
 # NO_LOG
 # SER_LOG
 # FILE_LOG

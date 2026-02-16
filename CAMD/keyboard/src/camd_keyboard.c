@@ -37,6 +37,7 @@
 #include "proto/camd.h"
 
 #include "midi/camd.h"
+#include "midi/mididefs.h"
 
 #include "camd_keyboard.h"
 #include "camd_utils.h"
@@ -156,8 +157,9 @@ LONG OpenMidi( ULONG index ) {
 
   // Keyboard only supports playback, hence does not need input buffers.
   base->ck_MidiNode = CreateMidi( MIDI_Name, name,
-                                  MIDI_MsgQueue, 0L, 
-                                  MIDI_SysExSize,0L,
+                                  // MIDI_MsgQueue, 0L,
+                                  // MIDI_SysExSize,0L,
+                                  MIDI_ErrFilter, CMEF_All,
                                   TAG_END );
   if ( !( base->ck_MidiNode )) {
 
@@ -170,7 +172,8 @@ LONG OpenMidi( ULONG index ) {
   base->ck_MidiLink = AddMidiLink( base->ck_MidiNode,
                                    MLTYPE_Sender,
                                    MLINK_Comment, linkName,
-                                   MLINK_Parse, TRUE, // TODO: needed?
+                                   MLINK_Name, "Out",
+                                   //MLINK_Parse, TRUE, // TODO: needed?
                                    MLINK_Location, node->cdn_Location,
                                    TAG_END );
   if ( !( base->ck_MidiLink )) {
@@ -604,7 +607,21 @@ VOID HandleEvents( VOID ) {
               break;
             }
             case GadgetId_Clavier: {
+              MidiMsg message;
+              message.mm_Status = MS_NoteOn | 6; // 1 = current Channel
+              message.mm_Data1 = windowMessageCode; // current Note
+              message.mm_Data2 = 127; // current Velocity or 0 for note off
               Printf( "echtes clavier %ld\n", windowMessageCode );
+
+              PutMidiMsg( base->ck_MidiLink, &( message ));
+              Printf( "Ton an\n" );
+              Printf( "Ton wieder aus\n" );
+
+              message.mm_Status = MS_NoteOn | 6; // 1 = current Channel
+              message.mm_Data1 = windowMessageCode; // current Note
+              message.mm_Data2 = 0; // current Velocity or 0 for note off
+              PutMidiMsg( base->ck_MidiLink, &( message ));
+
               break;
             }
             case GadgetId_Scroller: {
