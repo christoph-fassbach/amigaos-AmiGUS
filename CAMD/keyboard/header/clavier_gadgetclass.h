@@ -32,11 +32,20 @@
 #define CG_VISUAL_WIDTH         ( TAG_USER + 0x10000003 )
 
 struct Clavier_Gadget_Data {
-  WORD cgd_NoteHit;
+  BYTE cgd_Flags;
+  BYTE cgd_NoteHit;
   WORD cgd_OffsetX;
   WORD cgd_VirtualWidth;
   WORD cgd_VisualWidth;
 };
+
+/*
+ * defines are limited to 32 chars due to a SAS/C insufficiency !!!
+ *
+ * So define below is just kind of a ruler...
+ */
+#define SASC_MAXIMUM_DEFINE_LENGTH_IS_32 12345678
+#define CG_FLAG_REDRAW_BACKGROUND        0x01
 
 Class * InitClavierGadgetClass( VOID );
 

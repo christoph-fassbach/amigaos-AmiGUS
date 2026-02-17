@@ -296,6 +296,7 @@ static ULONG Handle_OM_NEW( Class * class,
   if ( gadget ) {
 
     struct Clavier_Gadget_Data * data = INST_DATA( class, gadget );
+    data->cgd_Flags = CG_FLAG_REDRAW_BACKGROUND;
     data->cgd_NoteHit = -1;
     data->cgd_OffsetX = 0;
     data->cgd_VirtualWidth = 1000;
@@ -322,6 +323,7 @@ static ULONG Handle_OM_SET_OR_UPDATE( Class * class,
       case CG_OFFSET_X: {
 
         data->cgd_OffsetX = tagItem->ti_Data;
+        data->cgd_Flags |= CG_FLAG_REDRAW_BACKGROUND;
         RefreshGadgets(gadget, CAMD_Keyboard_Base->ck_MainWindow, NULL );
         result |= 1;
         break;
@@ -463,9 +465,15 @@ static ULONG Handle_GM_RENDER( Class * class,
 
 #endif
 
-  // Flush drawable area with grey background
-  SetAPen( rastPort, 0 );
-  RectFill( rastPort, left, top, left + width, top + height );
+  if ( CG_FLAG_REDRAW_BACKGROUND & data->cgd_Flags ) {
+
+    // Only needed when scrolling, so do it only once!
+    data->cgd_Flags &= ~CG_FLAG_REDRAW_BACKGROUND;
+
+    // Flush drawable area with grey background
+    SetAPen( rastPort, 0 );
+    RectFill( rastPort, left, top, left + width, top + height );
+  }
 
   for ( midiNote = start; midiNote < 128; ++midiNote ) {
 
