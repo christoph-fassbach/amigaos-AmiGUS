@@ -179,7 +179,14 @@ static VOID getClavierKeyProperties( struct Clavier_Key * key,
       break;
     }
     case 7: {
-      keyType = WhiteMid;
+      if ( 127 == midiNote ) {
+
+        keyType = WhiteRight;
+
+      } else {
+
+        keyType = WhiteMid;
+      }
       keyBase = 4;
       key->ck_name[ nameIndex++ ] = 'G';
       break;
@@ -478,7 +485,7 @@ static ULONG Handle_GM_RENDER( Class * class,
     }
     SetAPen( rastPort, pen );
 
-    if ( width < key.ck_TopLeftX ) {
+    if (( width < key.ck_TopLeftX ) && ( width < key.ck_BottomLeftX )) {
 
       // Left border of key is outside window - abort!!!
       break;
