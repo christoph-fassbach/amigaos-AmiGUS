@@ -560,30 +560,16 @@ static ULONG Handle_GM_RENDER( Class * class,
         const LONG inscriptionX = left + ( inscriptionWidth >> 1 );
         const LONG inscriptionY = top + ( inscriptionHeight >> 1 );
 
-        struct IntuiText name = {
-          BLACK_KEY_PEN,
-          WHITE_KEY_PEN,
-          JAM1,
-          -2,
-          -3,
-          NULL,
-          NULL,
-          NULL };
-        struct IntuiText octave = {
-          BLACK_KEY_PEN,
-          WHITE_KEY_PEN,
-          JAM1,
-          -2,
-          1,
-          NULL,
-          NULL,
-          NULL };
+        struct IntuiText name =
+          { BLACK_KEY_PEN, WHITE_KEY_PEN, JAM1, -2, -3, NULL, NULL, NULL };
+        struct IntuiText octave =
+          { BLACK_KEY_PEN, WHITE_KEY_PEN, JAM1, -2,  1, NULL, NULL, NULL };
 
         name.IText = &( key.ck_name[ 0 ] );
-        octave.IText = &( key.ck_name[ 2 ] );
 
         if ( 14 < inscriptionHeight ) {
 
+          octave.IText = &( key.ck_name[ 2 ] );
           name.NextText = &( octave );
           name.TopEdge = -7;
         }
