@@ -297,6 +297,9 @@ VOID Cleanup( VOID ) {
 
 VOID OpenWin( VOID ) { // TODO: enable error handling and return values
 
+  ULONG offsetX;
+  ULONG visualWidth;
+  ULONG virtualWidth;
   CAMD_Keyboard_Base->ck_Screen = LockPubScreen( NULL );
 
   if ( !CAMD_Keyboard_Base->ck_Screen ) {
@@ -337,24 +340,66 @@ VOID OpenWin( VOID ) { // TODO: enable error handling and return values
       LabelEnd,
 
       LAYOUT_AddChild, HLayoutObject,
-        LAYOUT_AddChild, ButtonObject,
-          GA_Text, "Ok",
-          GA_ID, GadgetId_ButtonOK,
-          GA_RelVerify, TRUE,
-        ButtonEnd,
+        LAYOUT_AddChild, VLayoutObject,
+          LAYOUT_AddChild, ButtonObject,
+            GA_Text, "Ok",
+            GA_ID, GadgetId_ButtonOK,
+            GA_RelVerify, TRUE,
+          ButtonEnd,
 
-        LAYOUT_AddChild, ButtonObject,
-          GA_Text, "Cancel",
-          GA_ID, GadgetId_ButtonCancel,
-          GA_RelVerify, TRUE,
-        ButtonEnd,
+          LAYOUT_AddChild, ButtonObject,
+            GA_Text, "Cancel",
+            GA_ID, GadgetId_ButtonCancel,
+            GA_RelVerify, TRUE,
+          ButtonEnd,
+
+          LAYOUT_AddChild, ButtonObject,
+            GA_Text, "Clavier",
+            GA_ID, GadgetId_ClavierButton,
+            GA_RelVerify, TRUE,
+          ButtonEnd,
+        LayoutEnd,
+
+        LAYOUT_AddChild, VLayoutObject,
+          LAYOUT_AddChild, ButtonObject,
+            GA_Text, "Ok",
+            GA_ID, GadgetId_ButtonOK,
+            GA_RelVerify, TRUE,
+          ButtonEnd,
+
+          LAYOUT_AddChild, ButtonObject,
+            GA_Text, "Cancel",
+            GA_ID, GadgetId_ButtonCancel,
+            GA_RelVerify, TRUE,
+          ButtonEnd,
+
+          LAYOUT_AddChild, ButtonObject,
+            GA_Text, "Clavier",
+            GA_ID, GadgetId_ClavierButton,
+            GA_RelVerify, TRUE,
+          ButtonEnd,
+        LayoutEnd,
+
+        LAYOUT_AddChild, VLayoutObject,
+          LAYOUT_AddChild, ButtonObject,
+            GA_Text, "Ok",
+            GA_ID, GadgetId_ButtonOK,
+            GA_RelVerify, TRUE,
+          ButtonEnd,
+
+          LAYOUT_AddChild, ButtonObject,
+            GA_Text, "Cancel",
+            GA_ID, GadgetId_ButtonCancel,
+            GA_RelVerify, TRUE,
+          ButtonEnd,
+
+          LAYOUT_AddChild, ButtonObject,
+            GA_Text, "Clavier",
+            GA_ID, GadgetId_ClavierButton,
+            GA_RelVerify, TRUE,
+          ButtonEnd,
+        LayoutEnd,
       LayoutEnd,
-
-      LAYOUT_AddChild, ButtonObject,
-        GA_Text, "Clavier",
-        GA_ID, GadgetId_ClavierButton,
-        GA_RelVerify, TRUE,
-      ButtonEnd,
 
       LAYOUT_AddChild, CAMD_Keyboard_Base->ck_Scroller = ScrollerObject,
         GA_ID, GadgetId_Scroller,
@@ -382,6 +427,9 @@ VOID OpenWin( VOID ) { // TODO: enable error handling and return values
     return;
   }
 
+  GetAttr( CG_VIRTUAL_WIDTH, CAMD_Keyboard_Base->ck_Clavier, &( virtualWidth ));
+  GetAttr( CG_VISUAL_WIDTH, CAMD_Keyboard_Base->ck_Clavier, &( visualWidth ));
+  offsetX = ( virtualWidth - visualWidth ) >> 1;
   // ICA_TARGET + ICA_MAP mechanisms see
   // - https://wiki.amigaos.net/wiki/BOOPSI_-_Object_Oriented_Intuition
   // - http://amigadev.elowar.com/read/ADCD_2.1/Libraries_Manual_guide/node04CA.html
@@ -394,6 +442,13 @@ VOID OpenWin( VOID ) { // TODO: enable error handling and return values
     NULL,
     ICA_TARGET, CAMD_Keyboard_Base->ck_Clavier,
     ICA_MAP, scroller2clavier,
+    SCROLLER_Top, offsetX,
+    TAG_END );
+  SetGadgetAttrs(
+    CAMD_Keyboard_Base->ck_Clavier,
+    CAMD_Keyboard_Base->ck_MainWindow,
+    NULL,
+    CG_OFFSET_X, offsetX,
     TAG_END );
 
   GetAttr( WINDOW_SigMask,
