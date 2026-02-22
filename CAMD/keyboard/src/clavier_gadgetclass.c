@@ -137,78 +137,87 @@ static VOID getClavierKeyProperties( struct Clavier_Key * key,
       keyType = WhiteLeft;
       keyBase = 0;
       key->ck_name[ nameIndex++ ] = 'C';
+      key->ck_name[ nameIndex++ ] = 0;
       break;
     }
     case 1: {
       keyType = Black;
       keyBase = 1;
       key->ck_name[ nameIndex++ ] = 'C';
+      key->ck_name[ nameIndex++ ] = 0;
       key->ck_name[ nameIndex++ ] = '#';
+      key->ck_name[ nameIndex++ ] = 0;
       break;
     }
     case 2: {
       keyType = WhiteMid;
       keyBase = 1;
       key->ck_name[ nameIndex++ ] = 'D';
+      key->ck_name[ nameIndex++ ] = 0;
       break;
     }
     case 3: {
       keyType = Black;
       keyBase = 2;
       key->ck_name[ nameIndex++ ] = 'D';
+      key->ck_name[ nameIndex++ ] = 0;
       key->ck_name[ nameIndex++ ] = '#';
+      key->ck_name[ nameIndex++ ] = 0;
       break;
     }
     case 4: {
       keyType = WhiteRight;
       keyBase = 2;
       key->ck_name[ nameIndex++ ] = 'E';
+      key->ck_name[ nameIndex++ ] = 0;
       break;
     }
     case 5: {
       keyType = WhiteLeft;
       keyBase = 3;
       key->ck_name[ nameIndex++ ] = 'F';
+      key->ck_name[ nameIndex++ ] = 0;
       break;
     }
     case 6: {
       keyType = Black;
       keyBase = 4;
       key->ck_name[ nameIndex++ ] = 'F';
+      key->ck_name[ nameIndex++ ] = 0;
       key->ck_name[ nameIndex++ ] = '#';
+      key->ck_name[ nameIndex++ ] = 0;
       break;
     }
     case 7: {
-      if ( 127 == midiNote ) {
-
-        keyType = WhiteRight;
-
-      } else {
-
-        keyType = WhiteMid;
-      }
+      keyType = ( 127 == midiNote ) ? WhiteRight : WhiteMid;
       keyBase = 4;
       key->ck_name[ nameIndex++ ] = 'G';
+      key->ck_name[ nameIndex++ ] = 0;
       break;
     }
     case 8: {
       keyType = Black;
       keyBase = 5;
       key->ck_name[ nameIndex++ ] = 'G';
+      key->ck_name[ nameIndex++ ] = 0;
       key->ck_name[ nameIndex++ ] = '#';
+      key->ck_name[ nameIndex++ ] = 0;
       break;
     }
     case 9: {
       keyType = WhiteMid;
       keyBase = 5;
       key->ck_name[ nameIndex++ ] = 'A';
+      key->ck_name[ nameIndex++ ] = 0;
       break;
     }
     case 10: {
       keyType = Black;
       keyBase = 6;
       key->ck_name[ nameIndex++ ] = 'A';
+      key->ck_name[ nameIndex++ ] = 0;
       key->ck_name[ nameIndex++ ] = '#';
+      key->ck_name[ nameIndex++ ] = 0;
       break;
     }
     case 11:
@@ -216,6 +225,7 @@ static VOID getClavierKeyProperties( struct Clavier_Key * key,
       keyBase = 6;
       keyType = WhiteRight;
       key->ck_name[ nameIndex++ ] = 'B';
+      key->ck_name[ nameIndex++ ] = 0;
       break;
     }
   }
@@ -223,7 +233,10 @@ static VOID getClavierKeyProperties( struct Clavier_Key * key,
   if ( octave < 0 ) {
 
     key->ck_name[ nameIndex++ ] = '-';
-    key->ck_name[ nameIndex++ ] = '1';
+
+  } else if ( octave > 10 ) {
+
+    key->ck_name[ nameIndex++ ] = '+';
 
   } else {
 
@@ -516,6 +529,35 @@ static ULONG Handle_GM_RENDER( Class * class,
                 top + key.ck_SplitY,
                 left + MIN( key.ck_BottomRightX, width ),
                 top + key.ck_BottomY );
+      
+      if (( 0 <= key.ck_BottomLeftX > 0 ) && ( width > key.ck_BottomRightX )) {
+
+        struct IntuiText name = { 
+          BLACK_KEY_PEN,
+          WHITE_KEY_PEN,
+          JAM1,
+          2,
+          2,
+          NULL,
+          NULL,
+          NULL };
+        struct IntuiText octave = { 
+          BLACK_KEY_PEN,
+          WHITE_KEY_PEN,
+          JAM1,
+          2,
+          10,
+          NULL,
+          NULL,
+          NULL };
+        name.IText = &( key.ck_name[ 0 ] );
+        octave.IText = &( key.ck_name[ 2 ] );
+        name.NextText = &( octave );
+        PrintIText( rastPort,
+                    &name,
+                    left + key.ck_BottomLeftX,
+                    top + key.ck_SplitY );        
+      }
     }
   }
   return 0;
