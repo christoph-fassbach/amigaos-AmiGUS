@@ -93,8 +93,8 @@ static const struct TagItem scroller2clavier[] = {
 
 static const struct ColumnInfo instrumentColumns[] = {
 
-  { 25, " # ", CIF_CENTER },
-  { 125, "Name", CIF_CENTER },
+  { 30, " # ", CIF_CENTER },
+  { 190, "Name", CIF_CENTER },
   { -1, (STRPTR)~0, -1 }
 };
 
@@ -295,7 +295,7 @@ VOID FreeChooserLabels( VOID ) {
 
 VOID CreateInstrumentLabels( VOID ) {
 
-  LONG i = 0;
+  LONG i;
   struct Node * label;
   UBYTE number[ 4 ];
 
@@ -567,13 +567,13 @@ VOID OpenWin( VOID ) { // TODO: enable error handling and return values
     WA_DragBar, TRUE,
     WA_CloseGadget, TRUE,
     WA_SizeGadget, TRUE,
-    WA_Width, 600,
+    WA_Width, 620,
     WA_Height, 200,
     WA_SmartRefresh, TRUE,
-    WA_Flags,WFLG_CLOSEGADGET | WFLG_DRAGBAR | WFLG_DEPTHGADGET | WFLG_SIZEBBOTTOM | WFLG_SIZEGADGET | WFLG_ACTIVATE,
+    WA_Flags, WFLG_CLOSEGADGET | WFLG_DRAGBAR | WFLG_DEPTHGADGET | WFLG_SIZEBBOTTOM | WFLG_SIZEGADGET | WFLG_ACTIVATE,
     WA_IDCMP, IDCMP_VANILLAKEY | IDCMP_NEWSIZE,
     WINDOW_Position, WPOS_TOPLEFT,
-    WINDOW_IconifyGadget, FALSE,
+    WINDOW_IconifyGadget, FALSE, // TODO: TRUE,
 
     WINDOW_ParentGroup, VLayoutObject,
 
@@ -644,6 +644,8 @@ VOID OpenWin( VOID ) { // TODO: enable error handling and return values
             LISTBROWSER_Editable, FALSE,
             LISTBROWSER_Hierarchical, FALSE,
             LISTBROWSER_MultiSelect, FALSE,
+            LISTBROWSER_VirtualWidth, 220,
+            LISTBROWSER_HorizontalProp, TRUE,
             GA_Text, "Instruments",
             GA_ID, GadgetId_Instruments,
             GA_RelVerify, TRUE,
@@ -651,24 +653,31 @@ VOID OpenWin( VOID ) { // TODO: enable error handling and return values
         LayoutEnd,
       LayoutEnd,
 
+      LAYOUT_AddChild, CAMD_Keyboard_Base->ck_Clavier = NewObject( ClavierGadgetClass, NULL,
+        GA_ID, GadgetId_Clavier,
+        GA_RelVerify, TRUE,
+      TAG_END ),
+
       LAYOUT_AddChild, CAMD_Keyboard_Base->ck_Scroller = ScrollerObject,
         GA_ID, GadgetId_Scroller,
         // Do not need the events ATM: GA_RelVerify, TRUE,
         SCROLLER_Orientation, SCROLLER_HORIZONTAL,
       ScrollerEnd,
-
-      LAYOUT_AddChild, CAMD_Keyboard_Base->ck_Clavier = NewObject( ClavierGadgetClass, NULL,
-        GA_ID, GadgetId_Clavier,
-        GA_RelVerify, TRUE,
-        ICA_TARGET, CAMD_Keyboard_Base->ck_Scroller,
-        ICA_MAP, clavier2scroller,
-      TAG_END ),
     LayoutEnd,
   EndWindow;
 
   if ( !CAMD_Keyboard_Base->ck_MainWindowContent ) {
     return;
   }
+
+  // On creation by window open, clavier needs to tell scroller the size!
+  SetGadgetAttrs(
+    CAMD_Keyboard_Base->ck_Clavier,
+    NULL, // Window does not yet exist
+    NULL,
+    ICA_TARGET, CAMD_Keyboard_Base->ck_Scroller,
+    ICA_MAP, clavier2scroller,
+    TAG_END );
 
   CAMD_Keyboard_Base->ck_MainWindow = ( struct Window * )
     RA_OpenWindow( CAMD_Keyboard_Base->ck_MainWindowContent );
