@@ -84,6 +84,7 @@ struct CAMD_Keyboard {
 extern struct CAMD_Keyboard     * CAMD_Keyboard_Base;
 
 extern struct Library           * CamdBase;
+extern struct Library           * DiskfontBase;
 extern struct DosLibrary        * DOSBase;
 extern struct GfxBase           * GfxBase;
 extern struct IntuitionBase     * IntuitionBase;

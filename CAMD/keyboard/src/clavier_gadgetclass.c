@@ -21,6 +21,8 @@
 #include <clib/alib_protos.h>
 #include <intuition/gadgetclass.h>
 
+#include <proto/dos.h>
+#include <proto/diskfont.h>
 #include <proto/graphics.h>
 #include <proto/intuition.h>
 #include <proto/utility.h>
@@ -77,6 +79,13 @@ struct Clavier_Key {
 
   ULONG ck_pen;
   BYTE ck_name[8];
+};
+
+static struct TextAttr inscriptionFont = {
+  "topaz6.font",
+  6,
+  FS_NORMAL,
+  FPF_DESIGNED
 };
 
 static WORD getClavierWhiteKeyWidthByHeight( WORD height ) {
@@ -313,9 +322,23 @@ static ULONG Handle_OM_NEW( Class * class,
     data->cgd_NoteHit = -1;
     data->cgd_OffsetX = 0;
     data->cgd_VirtualWidth = 1000;
+    data->cgd_InscriptionFont = OpenDiskFont( &( inscriptionFont ));
   }
 
   return ( ULONG ) gadget;
+}
+
+static ULONG Handle_OM_DISPOSE( Class * class,
+                                struct Gadget * gadget,
+                                Msg message ) {
+
+  struct Clavier_Gadget_Data * data = INST_DATA( class, gadget );
+  ULONG result;
+  
+  CloseFont( data->cgd_InscriptionFont );
+  result = DoSuperMethodA( class, ( Object * ) gadget, message );
+
+  return result;
 }
 
 static ULONG Handle_OM_SET_OR_UPDATE( Class * class,
@@ -532,31 +555,41 @@ static ULONG Handle_GM_RENDER( Class * class,
       
       if (( 0 <= key.ck_BottomLeftX > 0 ) && ( width > key.ck_BottomRightX )) {
 
-        struct IntuiText name = { 
+        const LONG inscriptionWidth = key.ck_BottomLeftX + key.ck_BottomRightX;
+        const LONG inscriptionHeight = key.ck_SplitY + key.ck_BottomY;
+        const LONG inscriptionX = left + ( inscriptionWidth >> 1 );
+        const LONG inscriptionY = top + ( inscriptionHeight >> 1 );
+
+        struct IntuiText name = {
           BLACK_KEY_PEN,
           WHITE_KEY_PEN,
           JAM1,
-          2,
-          2,
+          -2,
+          -3,
           NULL,
           NULL,
           NULL };
-        struct IntuiText octave = { 
+        struct IntuiText octave = {
           BLACK_KEY_PEN,
           WHITE_KEY_PEN,
           JAM1,
-          2,
-          10,
+          -2,
+          1,
           NULL,
           NULL,
           NULL };
+
         name.IText = &( key.ck_name[ 0 ] );
         octave.IText = &( key.ck_name[ 2 ] );
-        name.NextText = &( octave );
-        PrintIText( rastPort,
-                    &name,
-                    left + key.ck_BottomLeftX,
-                    top + key.ck_SplitY );        
+
+        if ( 14 < inscriptionHeight ) {
+
+          name.NextText = &( octave );
+          name.TopEdge = -7;
+        }
+
+        SetFont( rastPort, data->cgd_InscriptionFont );
+        PrintIText( rastPort, &name, inscriptionX, inscriptionY );
       }
     }
   }
@@ -683,6 +716,10 @@ __saveds ULONG DispatchClavierGadgetClass(
       result = Handle_OM_NEW( class,
                               gadget,
                               ( struct opSet * ) message );
+      break;
+    }
+    case OM_DISPOSE: {
+      result = Handle_OM_DISPOSE( class, gadget, message );
       break;
     }
     case OM_SET: {

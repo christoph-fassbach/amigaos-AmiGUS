@@ -50,6 +50,7 @@
 struct CAMD_Keyboard     * CAMD_Keyboard_Base;   // Main app struct
 // System libraries:
 struct Library           * CamdBase;
+struct Library           * DiskfontBase;
 struct GfxBase           * GfxBase;
 struct IntuitionBase     * IntuitionBase;
 struct UtilityBase       * UtilityBase;
@@ -220,6 +221,7 @@ ULONG Startup( VOID ) {
   OpenLib(( struct Library ** )&IntuitionBase, "intuition.library", 36, EOpenIntuitionBase );
   OpenLib(( struct Library ** )&GfxBase, "graphics.library", 36, EOpenGfxBase );
   OpenLib(( struct Library ** )&UtilityBase, "utility.library", 36, EOpenUtilityBase );
+  OpenLib(( struct Library ** )&DiskfontBase, "diskfont.library", 36, EOpenDiskfontBase );
 
   OpenLib(( struct Library ** )&ButtonBase, "gadgets/button.gadget", 0, EOpenButtonBase );
   OpenLib(( struct Library ** )&ChooserBase, "gadgets/chooser.gadget", 0, EOpenChooserBase );
@@ -271,6 +273,7 @@ VOID Cleanup( VOID ) {
   CloseLib(( struct Library ** )&ChooserBase );
   CloseLib(( struct Library ** )&ButtonBase );
 
+  CloseLib(( struct Library ** )&DiskfontBase );
   CloseLib(( struct Library ** )&UtilityBase );
   CloseLib(( struct Library ** )&GfxBase );
   CloseLib(( struct Library ** )&IntuitionBase );

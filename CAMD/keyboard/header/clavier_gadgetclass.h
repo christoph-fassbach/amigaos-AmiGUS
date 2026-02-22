@@ -22,6 +22,7 @@
 #include <intuition/intuitionbase.h>
 #include <intuition/gadgetclass.h>
 #include <gadgets/scroller.h>
+#include <graphics/text.h>
 
 #define CLAVIERGCLASS           "claviergclass"
 
@@ -32,11 +33,12 @@
 #define CG_VISUAL_WIDTH         ( TAG_USER + 0x10000003 )
 
 struct Clavier_Gadget_Data {
-  BYTE cgd_Flags;
-  BYTE cgd_NoteHit;
-  WORD cgd_OffsetX;
-  WORD cgd_VirtualWidth;
-  WORD cgd_VisualWidth;
+  BYTE              cgd_Flags;
+  BYTE              cgd_NoteHit;
+  WORD              cgd_OffsetX;
+  WORD              cgd_VirtualWidth;
+  WORD              cgd_VisualWidth;
+  struct TextFont * cgd_InscriptionFont;
 };
 
 /*

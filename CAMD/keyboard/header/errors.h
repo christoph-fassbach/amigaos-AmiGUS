@@ -38,6 +38,7 @@ enum ErrorCodes
   EOpenLayoutBase,
   EOpenScrollerBase,
   EOpenUtilityBase,
+  EOpenDiskfontBase,
   EOpenVirtualBase,
   EOpenWindowBase,
   EOpenGadToolsBase,
