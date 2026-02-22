@@ -66,6 +66,7 @@ struct CAMD_Keyboard {
 
   struct List                   ck_Devices;
   struct List                   ck_DeviceLabels;
+  struct List                   ck_InstrumentLabels;
 
   /* CAMD pointers */
   struct MidiNode             * ck_MidiNode;
@@ -94,11 +95,13 @@ extern struct ExecBase          * SysBase;
 
 extern struct ClassLibrary      * ButtonBase;
 extern struct ClassLibrary      * ChooserBase;
+extern struct ClassLibrary      * IntegerBase;
 extern struct ClassLibrary      * LabelBase;
 extern struct ClassLibrary      * LayoutBase;
+extern struct ClassLibrary      * ListBrowserBase;
 extern struct ClassLibrary      * ScrollerBase;
+extern struct ClassLibrary      * SliderBase;
 extern struct ClassLibrary      * WindowBase;
-//extern struct Library           * LabelBase;
 
 extern Class                    * ClavierGadgetClass;
 

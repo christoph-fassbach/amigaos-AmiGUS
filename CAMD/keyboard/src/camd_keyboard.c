@@ -22,16 +22,20 @@
 #include <graphics/gfxbase.h>
 #include <intuition/icclass.h>
 #include <intuition/intuitionbase.h>
+#include <libraries/gadtools.h>
 #include <reaction/reaction_macros.h>
 
 #include <proto/alib.h>
 #include <proto/chooser.h>
 #include <proto/dos.h>
 #include <proto/exec.h>
+#include <proto/integer.h>
 #include <proto/intuition.h>
 #include <proto/label.h>
 #include <proto/layout.h>
+#include <proto/listbrowser.h>
 #include <proto/scroller.h>
+#include <proto/slider.h>
 #include <proto/window.h>
 
 #include "proto/camd.h"
@@ -60,9 +64,12 @@ struct UtilityBase       * UtilityBase;
 // And for ReAction:
 struct ClassLibrary      * ButtonBase;
 struct ClassLibrary      * ChooserBase;
+struct ClassLibrary      * IntegerBase;
 struct ClassLibrary      * LabelBase;
 struct ClassLibrary      * LayoutBase;
+struct ClassLibrary      * ListBrowserBase;
 struct ClassLibrary      * ScrollerBase;
+struct ClassLibrary      * SliderBase;
 struct ClassLibrary      * WindowBase;
 
 Class                    * ClavierGadgetClass;
@@ -84,15 +91,159 @@ static const struct TagItem scroller2clavier[] = {
   { TAG_END, 0 }
 };
 
+static const struct ColumnInfo instrumentColumns[] = {
+
+  { 25, " # ", CIF_CENTER },
+  { 125, "Name", CIF_CENTER },
+  { -1, (STRPTR)~0, -1 }
+};
+
+static const UBYTE * instrumentNames[] = {
+  "Acoustic Grand Piano",
+  "Bright Acoustic Piano",
+  "Electric Grand Piano",
+  "Honky-tonk Piano",
+  "Electric Piano 1",
+  "Electric Piano 2",
+  "Harpsichord",
+  "Clavinet",
+  "Celesta",
+  "Glockenspiel",
+  "Music Box",
+  "Vibraphone",
+  "Marimba",
+  "Xylophone",
+  "Tubular Bells",
+  "Dulcimer",
+  "Drawbar Organ",
+  "Percussive Organ",
+  "Rock Organ",
+  "Church Organ",
+  "Reed Organ",
+  "Accordion",
+  "Harmonica",
+  "Bandoneon",
+  "Acoustic Guitar (nylon)",
+  "Acoustic Guitar (steel)",
+  "Electric Guitar (jazz)",
+  "Electric Guitar",
+  "Electric Guitar (muted)",
+  "Overdriven Guitar",
+  "Distortion Guitar",
+  "Guitar Harmonics",
+  "Acoustic Bass",
+  "Electric Bass (finger)",
+  "Electric Bass (picked)",
+  "Fretless Bass",
+  "Slap Bass 1",
+  "Slap Bass 2",
+  "Synth Bass 1",
+  "Synth Bass 2",
+  "Violin",
+  "Viola",
+  "Cello",
+  "Contrabass",
+  "Tremolo Strings",
+  "Pizzicato Strings",
+  "Orchestral Harp",
+  "Timpani",
+  "String Ensemble 1",
+  "String Ensemble 2",
+  "Synth Strings 1",
+  "Synth Strings 2",
+  "Choir Aahs",
+  "Voice Oohs",
+  "Synth Voice",
+  "Orchestra Hit",
+  "Trumpet",
+  "Trombone",
+  "Tuba",
+  "Muted Trumpet",
+  "French Horn",
+  "Brass Section",
+  "Synth Brass 1",
+  "Synth Brass 2",
+  "Soprano Sax",
+  "Alto Sax",
+  "Tenor Sax",
+  "Baritone Sax",
+  "Oboe",
+  "English Horn",
+  "Bassoon",
+  "Clarinet",
+  "Piccolo",
+  "Flute",
+  "Recorder",
+  "Pan Flute",
+  "Blown bottle",
+  "Shakuhachi",
+  "Whistle",
+  "Ocarina",
+  "Lead 1",
+  "Lead 2",
+  "Lead 3",
+  "Lead 4",
+  "Lead 5",
+  "Lead 6",
+  "Lead 7",
+  "Lead 8",
+  "Pad 1",
+  "Pad 2",
+  "Pad 3",
+  "Pad 4",
+  "Pad 5",
+  "Pad 6",
+  "Pad 7",
+  "Pad 8",
+  "FX 1",
+  "FX 2",
+  "FX 3",
+  "FX 4",
+  "FX 5",
+  "FX 6",
+  "FX 7",
+  "FX 8",
+  "Sitar",
+  "Banjo",
+  "Shamisen",
+  "Koto",
+  "Kalimba",
+  "Bag pipe",
+  "Fiddle",
+  "Shanai",
+  "Tinkle Bell",
+  "Cowbell",
+  "Steel Drums",
+  "Woodblock",
+  "Taiko Drum",
+  "Melodic Tom",
+  "Synth Drum",
+  "Reverse Cymbal",
+  "Guitar Fret Noise",
+  "Breath Noise",
+  "Seashore",
+  "Bird Tweet",
+  "Telephone Ring",
+  "Helicopter",
+  "Applause",
+  "Gunshot",
+  NULL
+};
+
 enum GadgetIds {
 
   GadgetId_Start = 100,
   GadgetId_DeviceChooser,
+  GadgetId_VelocityInteger,
+  GadgetId_VelocitySlider,
+  GadgetId_ChannelInteger,
+  GadgetId_ChannelSlider,
   GadgetId_ButtonOK,
   GadgetId_ButtonCancel,
   GadgetId_ClavierButton,
   GadgetId_Scroller,
   GadgetId_Clavier,
+  GadgetId_Instruments,
   GadgetId_End
 };
 
@@ -141,6 +292,41 @@ VOID FreeChooserLabels( VOID ) {
   LOG_D(( "V: Labels is empty = %ld\n",
           IS_EMPTY_LIST( &( CAMD_Keyboard_Base->ck_DeviceLabels ))));
 }
+
+VOID CreateInstrumentLabels( VOID ) {
+
+  LONG i = 0;
+  struct Node * label;
+  UBYTE number[ 4 ];
+
+  for ( i = 0; i < 128; ++i ) {
+
+    sprintf( number, "%3ld", i);
+    label = AllocListBrowserNode(
+      sizeof( instrumentColumns ) / sizeof( struct ColumnInfo ),
+      LBNA_Column, 0,
+        LBNCA_CopyText, TRUE,
+        LBNCA_Text, number,
+        LBNCA_Justification, LCJ_RIGHT,
+      LBNA_Column, 1,
+        LBNCA_CopyText, TRUE,
+        LBNCA_Text, instrumentNames[ i ],
+      TAG_DONE
+    );
+    AddTail( &( CAMD_Keyboard_Base->ck_InstrumentLabels ), label );
+  }
+}
+
+VOID FreeInstrumentLabels( VOID ) {
+
+  struct Node * label;
+  FOR_LIST( &( CAMD_Keyboard_Base->ck_InstrumentLabels ),
+            label,
+            struct Node * ) {
+
+    FreeListBrowserNode( label );
+  }
+} 
 
 LONG OpenMidi( ULONG index ) {
 
@@ -225,9 +411,12 @@ ULONG Startup( VOID ) {
 
   OpenLib(( struct Library ** )&ButtonBase, "gadgets/button.gadget", 0, EOpenButtonBase );
   OpenLib(( struct Library ** )&ChooserBase, "gadgets/chooser.gadget", 0, EOpenChooserBase );
+  OpenLib(( struct Library ** )&IntegerBase, "gadgets/integer.gadget", 0, EOpenIntegerBase );
   OpenLib(( struct Library ** )&LabelBase, "images/label.image", 0, EOpenLabelBase );
   OpenLib(( struct Library ** )&LayoutBase, "gadgets/layout.gadget", 0, EOpenLayoutBase );
+  OpenLib(( struct Library ** )&ListBrowserBase, "gadgets/listbrowser.gadget", 0, EOpenListBrowserBase );
   OpenLib(( struct Library ** )&ScrollerBase, "gadgets/scroller.gadget", 0, EOpenScrollerBase );
+  OpenLib(( struct Library ** )&SliderBase, "gadgets/slider.gadget", 0, EOpenSliderBase );
   OpenLib(( struct Library ** )&WindowBase, "window.class", 0, EOpenWindowBase );
 
   ClavierGadgetClass = InitClavierGadgetClass();
@@ -257,10 +446,16 @@ ULONG Startup( VOID ) {
     }
   }
 
+  NEW_LIST( &( CAMD_Keyboard_Base->ck_InstrumentLabels ));
+
+  CreateInstrumentLabels();
+
   LOG_I(( "I: " STR( APP_NAME ) " startup complete.\n" ));
 }
 
 VOID Cleanup( VOID ) {
+
+  FreeInstrumentLabels();
 
   CloseMidi();
   FreeCamdOutputDevices( &( CAMD_Keyboard_Base->ck_Devices ));
@@ -268,8 +463,10 @@ VOID Cleanup( VOID ) {
 
   CloseLib(( struct Library ** )&WindowBase );
   CloseLib(( struct Library ** )&ScrollerBase );
+  CloseLib(( struct Library ** )&ListBrowserBase );
   CloseLib(( struct Library ** )&LayoutBase );
   CloseLib(( struct Library ** )&LabelBase );
+  CloseLib(( struct Library ** )&IntegerBase );
   CloseLib(( struct Library ** )&ChooserBase );
   CloseLib(( struct Library ** )&ButtonBase );
 
@@ -300,6 +497,9 @@ VOID OpenWin( VOID ) { // TODO: enable error handling and return values
   ULONG offsetX;
   ULONG visualWidth;
   ULONG virtualWidth;
+  APTR velocityGadget;
+  APTR channelGadget;
+
   CAMD_Keyboard_Base->ck_Screen = LockPubScreen( NULL );
 
   if ( !CAMD_Keyboard_Base->ck_Screen ) {
@@ -307,10 +507,61 @@ VOID OpenWin( VOID ) { // TODO: enable error handling and return values
     return;
   }
 
+  if ( 47 > SliderBase->cl_Lib.lib_Version ) {
+
+    velocityGadget =
+      IntegerObject,
+        INTEGER_MaxChars, 3,
+        INTEGER_Minimum, 0,
+        INTEGER_Maximum, 127,
+        INTEGER_Number, 127,
+        GA_ID, GadgetId_VelocityInteger,
+        GA_RelVerify, TRUE,
+      IntegerEnd;
+    channelGadget =
+      IntegerObject,
+        INTEGER_MaxChars, 2,
+        INTEGER_Minimum, 0,
+        INTEGER_Maximum, 15,
+        INTEGER_Number, 0,
+        GA_ID, GadgetId_ChannelInteger,
+        GA_RelVerify, TRUE,
+      IntegerEnd;
+
+  } else {
+
+    velocityGadget =
+      SliderObject,
+        SLIDER_Orientation, SLIDER_HORIZONTAL,
+        SLIDER_Min, 0,
+        SLIDER_Max, 127,
+        SLIDER_Level, 127,
+        SLIDER_Ticks, 8,
+        SLIDER_LevelPlace, PLACETEXT_RIGHT,
+        SLIDER_LevelFormat, "%3ld",
+        SLIDER_LevelMaxLen, 3,
+        GA_ID, GadgetId_VelocitySlider,
+        GA_RelVerify, TRUE,
+      SliderEnd;
+    channelGadget =
+      SliderObject,
+        SLIDER_Orientation, SLIDER_HORIZONTAL,
+        SLIDER_Min, 0,
+        SLIDER_Max, 15,
+        SLIDER_Level, 0,
+        SLIDER_Ticks, 8,
+        SLIDER_LevelPlace, PLACETEXT_RIGHT,
+        SLIDER_LevelFormat, "%3ld",
+        SLIDER_LevelMaxLen, 3,
+        GA_ID, GadgetId_ChannelSlider,
+        GA_RelVerify, TRUE,
+      IntegerEnd;
+  }
+
   CAMD_Keyboard_Base->ck_MainWindowContent = WindowObject,
     WA_PubScreen, CAMD_Keyboard_Base->ck_Screen,
-    WA_ScreenTitle, "asdf",
-    WA_Title, "test",
+    WA_ScreenTitle, APP_IDSTRING,
+    WA_Title, "CAMD Keyboard",
     WA_Activate, TRUE,
     WA_DepthGadget, TRUE,
     WA_DragBar, TRUE,
@@ -341,37 +592,16 @@ VOID OpenWin( VOID ) { // TODO: enable error handling and return values
 
       LAYOUT_AddChild, HLayoutObject,
         LAYOUT_AddChild, VLayoutObject,
-          LAYOUT_AddChild, ButtonObject,
-            GA_Text, "Ok",
-            GA_ID, GadgetId_ButtonOK,
-            GA_RelVerify, TRUE,
-          ButtonEnd,
 
-          LAYOUT_AddChild, ButtonObject,
-            GA_Text, "Cancel",
-            GA_ID, GadgetId_ButtonCancel,
-            GA_RelVerify, TRUE,
-          ButtonEnd,
+          LAYOUT_AddChild, velocityGadget,
+          CHILD_Label, LabelObject,
+            LABEL_Text ,"Velocity:",
+          LabelEnd,
 
-          LAYOUT_AddChild, ButtonObject,
-            GA_Text, "Clavier",
-            GA_ID, GadgetId_ClavierButton,
-            GA_RelVerify, TRUE,
-          ButtonEnd,
-        LayoutEnd,
-
-        LAYOUT_AddChild, VLayoutObject,
-          LAYOUT_AddChild, ButtonObject,
-            GA_Text, "Ok",
-            GA_ID, GadgetId_ButtonOK,
-            GA_RelVerify, TRUE,
-          ButtonEnd,
-
-          LAYOUT_AddChild, ButtonObject,
-            GA_Text, "Cancel",
-            GA_ID, GadgetId_ButtonCancel,
-            GA_RelVerify, TRUE,
-          ButtonEnd,
+          LAYOUT_AddChild, channelGadget,
+          CHILD_Label, LabelObject,
+            LABEL_Text ,"Channel: ",
+          LabelEnd,
 
           LAYOUT_AddChild, ButtonObject,
             GA_Text, "Clavier",
@@ -398,6 +628,26 @@ VOID OpenWin( VOID ) { // TODO: enable error handling and return values
             GA_ID, GadgetId_ClavierButton,
             GA_RelVerify, TRUE,
           ButtonEnd,
+        LayoutEnd,
+
+        LAYOUT_AddChild, VLayoutObject,
+          LAYOUT_AddImage, LabelObject,
+            LABEL_Text, "Selected instrument:",
+            LABEL_Justification, LABEL_CENTER,
+          LabelEnd,
+          LAYOUT_AddChild, ListBrowserObject,
+            LISTBROWSER_Labels, &( CAMD_Keyboard_Base->ck_InstrumentLabels ),
+            LISTBROWSER_ColumnInfo, instrumentColumns,
+            LISTBROWSER_Selected, 0,
+            LISTBROWSER_ColumnTitles, TRUE,
+            LISTBROWSER_ShowSelected, TRUE,
+            LISTBROWSER_Editable, FALSE,
+            LISTBROWSER_Hierarchical, FALSE,
+            LISTBROWSER_MultiSelect, FALSE,
+            GA_Text, "Instruments",
+            GA_ID, GadgetId_Instruments,
+            GA_RelVerify, TRUE,
+          ListBrowserEnd,
         LayoutEnd,
       LayoutEnd,
 
