@@ -801,14 +801,64 @@ VOID PlayNote( BYTE channel, BYTE note, BYTE velocity ) {
   PutMidiMsg( link, &( message ));
 }
 
-VOID SelectInstrument( BYTE channel, BYTE instrument ) {
+VOID SelectInstrument( BYTE channel ) {
 
-  struct MidiLink * link = CAMD_Keyboard_Base->ck_MidiLink;
+  struct CAMD_Keyboard * base = CAMD_Keyboard_Base;
+  struct MidiLink * link = base->ck_MidiLink;
   MidiMsg message = { 0L, 0L };
 
   message.mm_Status = MS_Prog | channel;
-  message.mm_Data1 = instrument;
+  message.mm_Data1 = base->ck_Instrument[ channel ];
   PutMidiMsg( link, &( message ));
+}
+
+VOID SelectChannel( BYTE channel ) {
+
+  struct CAMD_Keyboard * base = CAMD_Keyboard_Base;
+  const BYTE instrument = base->ck_Instrument[ channel ];
+  const BOOL percussionsNext = ( PERCUSSION_CHANNEL == channel );
+  const BOOL percussionsBefore = ( PERCUSSION_CHANNEL == base->ck_Channel );
+  const BOOL switchedType = ( percussionsNext != percussionsBefore );
+
+  if ( switchedType ) {
+    if ( percussionsNext ) {
+
+      SetGadgetAttrs( base->ck_ListBrowser,
+                      base->ck_MainWindow,
+                      NULL,
+                      LISTBROWSER_ShowSelected, FALSE,
+                      LISTBROWSER_Selected, -1,
+                      LISTBROWSER_MakeVisible, 0,
+                      LISTBROWSER_Labels, &( base->ck_PercussionLabels ),
+                      LISTBROWSER_ColumnInfo, percussionColumns,
+                      TAG_END );
+
+    } else {
+
+      SetGadgetAttrs( base->ck_ListBrowser,
+                      base->ck_MainWindow,
+                      NULL,
+                      LISTBROWSER_ShowSelected, TRUE,
+                      LISTBROWSER_Selected, instrument,
+                      LISTBROWSER_MakeVisible, instrument,
+                      LISTBROWSER_Labels, &( base->ck_InstrumentLabels ),
+                      LISTBROWSER_ColumnInfo, instrumentColumns,
+                      TAG_END );
+
+    }
+  } else {
+
+    SetGadgetAttrs( base->ck_ListBrowser,
+                    base->ck_MainWindow,
+                    NULL,
+                    LISTBROWSER_Selected, instrument,
+                    LISTBROWSER_MakeVisible, instrument,
+                    TAG_END );
+  }
+
+  Printf( "New channel %ld with instrument %ld\n",
+          channel, instrument );
+  base->ck_Channel = ( BYTE ) channel;
 }
 
 VOID PrintInfos( VOID ) {
@@ -1019,12 +1069,11 @@ VOID HandleEvents( VOID ) {
             }
             case GadgetId_Clavier: {
 
-              BYTE channel = CAMD_Keyboard_Base->ck_Channel;
+              BYTE channel = base->ck_Channel;
               BYTE note = windowMessageCode;
-              BYTE velocity = CAMD_Keyboard_Base->ck_Velocity;
+              BYTE velocity = base->ck_Velocity;
 
               PlayNote( channel, note, velocity );
-
               break;
             }
             case GadgetId_Scroller: {
@@ -1036,76 +1085,26 @@ VOID HandleEvents( VOID ) {
             case GadgetId_VelocitySlider: {
 
               Printf( "New velocity %ld\n", windowMessageCode );
-              CAMD_Keyboard_Base->ck_Velocity = ( BYTE ) windowMessageCode;
+              base->ck_Velocity = ( BYTE ) windowMessageCode;
               break;
             }
             case GadgetId_ChannelInteger:
             case GadgetId_ChannelSlider: {
 
-              WORD channel = windowMessageCode;
-              BYTE instrument = CAMD_Keyboard_Base->ck_Instrument[ channel ];
-              BOOL percussionsNext = ( PERCUSSION_CHANNEL == channel );
-              BOOL switchedType = ( percussionsNext !=
-                ( PERCUSSION_CHANNEL == CAMD_Keyboard_Base->ck_Channel )
-              );
-
-              if ( switchedType ) {
-                if ( percussionsNext ) {
-
-                  struct List * labels = 
-                    &( CAMD_Keyboard_Base->ck_PercussionLabels );
-                  SetGadgetAttrs( CAMD_Keyboard_Base->ck_ListBrowser,
-                                  CAMD_Keyboard_Base->ck_MainWindow,
-                                  NULL,
-                                  LISTBROWSER_ShowSelected, FALSE,
-                                  LISTBROWSER_Selected, -1,
-                                  LISTBROWSER_MakeVisible, 0,
-                                  LISTBROWSER_Labels, labels,
-                                  LISTBROWSER_ColumnInfo, percussionColumns,
-                                  TAG_END );
-
-                } else {
-
-                  struct List * labels =
-                    &( CAMD_Keyboard_Base->ck_InstrumentLabels );
-                  SetGadgetAttrs( CAMD_Keyboard_Base->ck_ListBrowser,
-                                  CAMD_Keyboard_Base->ck_MainWindow,
-                                  NULL,
-                                  LISTBROWSER_ShowSelected, TRUE,
-                                  LISTBROWSER_Selected, instrument,
-                                  LISTBROWSER_MakeVisible, instrument,
-                                  LISTBROWSER_Labels, labels,
-                                  LISTBROWSER_ColumnInfo, instrumentColumns,
-                                  TAG_END );
-
-                }
-              } else {
-
-                SetGadgetAttrs( CAMD_Keyboard_Base->ck_ListBrowser,
-                                CAMD_Keyboard_Base->ck_MainWindow,
-                                NULL,
-                                LISTBROWSER_Selected, instrument,
-                                LISTBROWSER_MakeVisible, instrument,
-                                TAG_END );
-              }
-
-              Printf( "New channel %ld with instrument %ld\n",
-                      channel, instrument );
-              CAMD_Keyboard_Base->ck_Channel = ( BYTE ) channel;
-
+              SelectChannel( windowMessageCode );
               break;
             }
             case GadgetId_Instruments: {
 
-              WORD channel = CAMD_Keyboard_Base->ck_Channel;
+              WORD channel = base->ck_Channel;
               BYTE instrument = ( BYTE ) windowMessageCode;
 
               if ( PERCUSSION_CHANNEL != channel ) {
 
                 Printf( "New instrument %ld in channel %ld\n",
                         instrument, channel );
-                CAMD_Keyboard_Base->ck_Instrument[ channel ] = instrument;
-                SelectInstrument( channel, instrument );
+                base->ck_Instrument[ channel ] = instrument;
+                SelectInstrument( channel );
               }
               break;
             }
