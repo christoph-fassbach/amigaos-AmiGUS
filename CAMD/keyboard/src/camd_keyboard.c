@@ -50,6 +50,8 @@
 #include "errors.h"
 #include "support.h"
 
+#define PERCUSSION_CHANNEL 9
+
 /* Globals defined somewhere - here ;) */
 struct CAMD_Keyboard     * CAMD_Keyboard_Base;   // Main app struct
 // System libraries:
@@ -98,135 +100,193 @@ static const struct ColumnInfo instrumentColumns[] = {
   { -1, (STRPTR)~0, -1 }
 };
 
+static const struct ColumnInfo percussionColumns[] = {
+
+  { 70, " Key ", CIF_CENTER },
+  { 250, "Name", CIF_CENTER },
+  { -1, (STRPTR)~0, -1 }
+};
+
 static const UBYTE * instrumentNames[] = {
-  "Acoustic Grand Piano",
-  "Bright Acoustic Piano",
-  "Electric Grand Piano",
-  "Honky-tonk Piano",
-  "Electric Piano 1",
-  "Electric Piano 2",
-  "Harpsichord",
-  "Clavinet",
-  "Celesta",
-  "Glockenspiel",
-  "Music Box",
-  "Vibraphone",
-  "Marimba",
-  "Xylophone",
-  "Tubular Bells",
-  "Dulcimer",
-  "Drawbar Organ",
-  "Percussive Organ",
-  "Rock Organ",
-  "Church Organ",
-  "Reed Organ",
-  "Accordion",
-  "Harmonica",
-  "Bandoneon",
-  "Acoustic Guitar (nylon)",
-  "Acoustic Guitar (steel)",
-  "Electric Guitar (jazz)",
-  "Electric Guitar",
-  "Electric Guitar (muted)",
-  "Overdriven Guitar",
-  "Distortion Guitar",
-  "Guitar Harmonics",
-  "Acoustic Bass",
-  "Electric Bass (finger)",
-  "Electric Bass (picked)",
-  "Fretless Bass",
-  "Slap Bass 1",
-  "Slap Bass 2",
-  "Synth Bass 1",
-  "Synth Bass 2",
-  "Violin",
-  "Viola",
-  "Cello",
-  "Contrabass",
-  "Tremolo Strings",
-  "Pizzicato Strings",
-  "Orchestral Harp",
-  "Timpani",
-  "String Ensemble 1",
-  "String Ensemble 2",
-  "Synth Strings 1",
-  "Synth Strings 2",
-  "Choir Aahs",
-  "Voice Oohs",
-  "Synth Voice",
-  "Orchestra Hit",
-  "Trumpet",
-  "Trombone",
-  "Tuba",
-  "Muted Trumpet",
-  "French Horn",
-  "Brass Section",
-  "Synth Brass 1",
-  "Synth Brass 2",
-  "Soprano Sax",
-  "Alto Sax",
-  "Tenor Sax",
-  "Baritone Sax",
-  "Oboe",
-  "English Horn",
-  "Bassoon",
-  "Clarinet",
-  "Piccolo",
-  "Flute",
-  "Recorder",
-  "Pan Flute",
-  "Blown bottle",
-  "Shakuhachi",
-  "Whistle",
-  "Ocarina",
-  "Lead 1",
-  "Lead 2",
-  "Lead 3",
-  "Lead 4",
-  "Lead 5",
-  "Lead 6",
-  "Lead 7",
-  "Lead 8",
-  "Pad 1",
-  "Pad 2",
-  "Pad 3",
-  "Pad 4",
-  "Pad 5",
-  "Pad 6",
-  "Pad 7",
-  "Pad 8",
-  "FX 1",
-  "FX 2",
-  "FX 3",
-  "FX 4",
-  "FX 5",
-  "FX 6",
-  "FX 7",
-  "FX 8",
-  "Sitar",
-  "Banjo",
-  "Shamisen",
-  "Koto",
-  "Kalimba",
-  "Bag pipe",
-  "Fiddle",
-  "Shanai",
-  "Tinkle Bell",
-  "Cowbell",
-  "Steel Drums",
-  "Woodblock",
-  "Taiko Drum",
-  "Melodic Tom",
-  "Synth Drum",
-  "Reverse Cymbal",
-  "Guitar Fret Noise",
-  "Breath Noise",
-  "Seashore",
-  "Bird Tweet",
-  "Telephone Ring",
-  "Helicopter",
-  "Applause",
-  "Gunshot",
+  "  0", "Acoustic Grand Piano",
+  "  1", "Bright Acoustic Piano",
+  "  2", "Electric Grand Piano",
+  "  3", "Honky-tonk Piano",
+  "  4", "Electric Piano 1",
+  "  5", "Electric Piano 2",
+  "  6", "Harpsichord",
+  "  7", "Clavinet",
+  "  8", "Celesta",
+  "  9", "Glockenspiel",
+  " 10", "Music Box",
+  " 11", "Vibraphone",
+  " 12", "Marimba",
+  " 13", "Xylophone",
+  " 14", "Tubular Bells",
+  " 15", "Dulcimer",
+  " 16", "Drawbar Organ",
+  " 17", "Percussive Organ",
+  " 18", "Rock Organ",
+  " 29", "Church Organ",
+  " 20", "Reed Organ",
+  " 21", "Accordion",
+  " 22", "Harmonica",
+  " 23", "Bandoneon",
+  " 24", "Acoustic Guitar (nylon)",
+  " 25", "Acoustic Guitar (steel)",
+  " 26", "Electric Guitar (jazz)",
+  " 27", "Electric Guitar",
+  " 28", "Electric Guitar (muted)",
+  " 29", "Overdriven Guitar",
+  " 30", "Distortion Guitar",
+  " 31", "Guitar Harmonics",
+  " 32", "Acoustic Bass",
+  " 33", "Electric Bass (finger)",
+  " 34", "Electric Bass (picked)",
+  " 35", "Fretless Bass",
+  " 36", "Slap Bass 1",
+  " 37", "Slap Bass 2",
+  " 38", "Synth Bass 1",
+  " 39", "Synth Bass 2",
+  " 40", "Violin",
+  " 41", "Viola",
+  " 42", "Cello",
+  " 43", "Contrabass",
+  " 44", "Tremolo Strings",
+  " 45", "Pizzicato Strings",
+  " 46", "Orchestral Harp",
+  " 47", "Timpani",
+  " 48", "String Ensemble 1",
+  " 49", "String Ensemble 2",
+  " 50", "Synth Strings 1",
+  " 51", "Synth Strings 2",
+  " 52", "Choir Aahs",
+  " 53", "Voice Oohs",
+  " 54", "Synth Voice",
+  " 55", "Orchestra Hit",
+  " 56", "Trumpet",
+  " 57", "Trombone",
+  " 58", "Tuba",
+  " 59", "Muted Trumpet",
+  " 60", "French Horn",
+  " 61", "Brass Section",
+  " 62", "Synth Brass 1",
+  " 63", "Synth Brass 2",
+  " 64", "Soprano Sax",
+  " 65", "Alto Sax",
+  " 66", "Tenor Sax",
+  " 67", "Baritone Sax",
+  " 68", "Oboe",
+  " 69", "English Horn",
+  " 70", "Bassoon",
+  " 71", "Clarinet",
+  " 72", "Piccolo",
+  " 73", "Flute",
+  " 74", "Recorder",
+  " 75", "Pan Flute",
+  " 76", "Blown bottle",
+  " 77", "Shakuhachi",
+  " 78", "Whistle",
+  " 79", "Ocarina",
+  " 80", "Lead 1",
+  " 81", "Lead 2",
+  " 82", "Lead 3",
+  " 83", "Lead 4",
+  " 84", "Lead 5",
+  " 85", "Lead 6",
+  " 86", "Lead 7",
+  " 87", "Lead 8",
+  " 88", "Pad 1",
+  " 89", "Pad 2",
+  " 90", "Pad 3",
+  " 91", "Pad 4",
+  " 92", "Pad 5",
+  " 93", "Pad 6",
+  " 94", "Pad 7",
+  " 95", "Pad 8",
+  " 96", "FX 1",
+  " 97", "FX 2",
+  " 98", "FX 3",
+  " 99", "FX 4",
+  "100", "FX 5",
+  "101", "FX 6",
+  "102", "FX 7",
+  "103", "FX 8",
+  "104", "Sitar",
+  "105", "Banjo",
+  "106", "Shamisen",
+  "107", "Koto",
+  "108", "Kalimba",
+  "109", "Bag pipe",
+  "110", "Fiddle",
+  "111", "Shanai",
+  "112", "Tinkle Bell",
+  "113", "Cowbell",
+  "114", "Steel Drums",
+  "115", "Woodblock",
+  "116", "Taiko Drum",
+  "117", "Melodic Tom",
+  "118", "Synth Drum",
+  "119", "Reverse Cymbal",
+  "120 ", "Guitar Fret Noise",
+  "121 ", "Breath Noise",
+  "122 ", "Seashore",
+  "123 ", "Bird Tweet",
+  "124 ", "Telephone Ring",
+  "125 ", "Helicopter",
+  "126 ", "Applause",
+  "127 ", "Gunshot",
+  NULL
+};
+
+static const UBYTE * PercussionNames[] = {
+  "B-1 ", "Ac./Low Bass Drum",
+  "C-2 ", "Elec./High Bass Drum",
+  "C#2 ", "Side Stick",
+  "D-2 ", "Acoustic Snare",
+  "D#2 ", "Hand Clap",
+  "E-2 ", "Elec. Snare/Rimshot",
+  "F-2 ", "Low Floor Tom",
+  "F#2 ", "Closed Hi-hat",
+  "G-2 ", "High Floor Tom",
+  "G#2 ", "Pedal Hi-hat",
+  "A-2 ", "Low Tom",
+  "A#2 ", "Open Hi-hat",
+  "B-2 ", "Low-Mid Tom",
+  "C-3 ", "High-Mid Tom",
+  "C#3 ", "Crash Cymbal 1",
+  "D-3 ", "High Tom",
+  "D#3 ", "Ride Cymbal 1",
+  "E-3 ", "Chinese Cymbal",
+  "F-3 ", "Ride Bell",
+  "F#3 ", "Tambourine",
+  "G-3 ", "Splash Cymbal",
+  "G#3 ", "Cowbell",
+  "A-3 ", "Crash Cymbal 2",
+  "A#3 ", "Vibraslap",
+  "B-3 ", "Ride Cymbal 2",
+  "C-4 ", "High Bongo",
+  "C#4 ", "Low Bongo",
+  "D-4 ", "Mute High Conga",
+  "D#4 ", "Open High Conga",
+  "E-4 ", "Low Conga",
+  "F-4 ", "High Timbale",
+  "F#4 ", "Low Timbale",
+  "G-4 ", "High Agogo",
+  "G#4 ", "Low Agogo",
+  "A-4 ", "Cabasa",
+  "A#4 ", "Maracas",
+  "B-4 ", "Short Whistle",
+  "C-5 ", "Long Whistle",
+  "C#5 ", "Short Guiro",
+  "D-5 ", "Long Guiro",
+  "D#5 ", "Claves",
+  "E-5 ", "High Woodblock",
+  "F-5 ", "Low Woodblock",
+  "F#5 ", "Mute Cuica",
+  "G-5 ", "Open Cuica",
+  "G#5 ", "Mute Triangle",
+  "A-5 ", "Open Triangle",
   NULL
 };
 
@@ -293,27 +353,24 @@ VOID FreeChooserLabels( VOID ) {
           IS_EMPTY_LIST( &( CAMD_Keyboard_Base->ck_DeviceLabels ))));
 }
 
-VOID CreateInstrumentLabels( VOID ) {
+VOID CreateLabels( struct List * labels, const UBYTE ** strings ) {
 
-  LONG i;
-  struct Node * label;
-  UBYTE number[ 4 ];
+  LONG i = 0;
 
-  for ( i = 0; i < 128; ++i ) {
+  while ( NULL != strings[ i ] ) {
 
-    sprintf( number, "%3ld", i);
-    label = AllocListBrowserNode(
+    struct Node * label = AllocListBrowserNode(
       sizeof( instrumentColumns ) / sizeof( struct ColumnInfo ),
       LBNA_Column, 0,
         LBNCA_CopyText, TRUE,
-        LBNCA_Text, number,
+        LBNCA_Text, strings[ i++ ],
         LBNCA_Justification, LCJ_RIGHT,
       LBNA_Column, 1,
         LBNCA_CopyText, TRUE,
-        LBNCA_Text, instrumentNames[ i ],
+        LBNCA_Text, strings[ i++ ],
       TAG_DONE
     );
-    AddTail( &( CAMD_Keyboard_Base->ck_InstrumentLabels ), label );
+    AddTail( labels, label );
   }
 }
 
@@ -403,7 +460,6 @@ ULONG Startup( VOID ) {
     return EAllocateAmiGUSCAMDToolBase;
   }
 
-  CAMD_Keyboard_Base->ck_Channel = 6;
   CAMD_Keyboard_Base->ck_Velocity = 127;
 
   // TODO: error handling of all the below!
@@ -451,8 +507,9 @@ ULONG Startup( VOID ) {
   }
 
   NEW_LIST( &( CAMD_Keyboard_Base->ck_InstrumentLabels ));
-
-  CreateInstrumentLabels();
+  CreateLabels( &CAMD_Keyboard_Base->ck_InstrumentLabels, instrumentNames );
+  NEW_LIST( &( CAMD_Keyboard_Base->ck_PercussionLabels ));
+  CreateLabels( &CAMD_Keyboard_Base->ck_PercussionLabels, PercussionNames );
 
   LOG_I(( "I: " STR( APP_NAME ) " startup complete.\n" ));
 }
@@ -562,7 +619,7 @@ VOID OpenWin( VOID ) { // TODO: enable error handling and return values
       IntegerEnd;
   }
 
-  CAMD_Keyboard_Base->ck_InstrumentList =
+  CAMD_Keyboard_Base->ck_ListBrowser =
     ListBrowserObject,
       LISTBROWSER_Labels, &( CAMD_Keyboard_Base->ck_InstrumentLabels ),
       LISTBROWSER_ColumnInfo, instrumentColumns,
@@ -656,7 +713,7 @@ VOID OpenWin( VOID ) { // TODO: enable error handling and return values
             LABEL_Text, "Selected instrument:",
             LABEL_Justification, LABEL_CENTER,
           LabelEnd,
-          LAYOUT_AddChild, CAMD_Keyboard_Base->ck_InstrumentList,
+          LAYOUT_AddChild, CAMD_Keyboard_Base->ck_ListBrowser,
         LayoutEnd,
       LayoutEnd,
 
@@ -987,16 +1044,55 @@ VOID HandleEvents( VOID ) {
 
               WORD channel = windowMessageCode;
               BYTE instrument = CAMD_Keyboard_Base->ck_Instrument[ channel ];
+              BOOL percussionsNext = ( PERCUSSION_CHANNEL == channel );
+              BOOL switchedType = ( percussionsNext !=
+                ( PERCUSSION_CHANNEL == CAMD_Keyboard_Base->ck_Channel )
+              );
 
-              Printf( "New channel %ld\n", channel );
+              if ( switchedType ) {
+                if ( percussionsNext ) {
+
+                  struct List * labels = 
+                    &( CAMD_Keyboard_Base->ck_PercussionLabels );
+                  SetGadgetAttrs( CAMD_Keyboard_Base->ck_ListBrowser,
+                                  CAMD_Keyboard_Base->ck_MainWindow,
+                                  NULL,
+                                  LISTBROWSER_ShowSelected, FALSE,
+                                  LISTBROWSER_Selected, -1,
+                                  LISTBROWSER_MakeVisible, 0,
+                                  LISTBROWSER_Labels, labels,
+                                  LISTBROWSER_ColumnInfo, percussionColumns,
+                                  TAG_END );
+
+                } else {
+
+                  struct List * labels =
+                    &( CAMD_Keyboard_Base->ck_InstrumentLabels );
+                  SetGadgetAttrs( CAMD_Keyboard_Base->ck_ListBrowser,
+                                  CAMD_Keyboard_Base->ck_MainWindow,
+                                  NULL,
+                                  LISTBROWSER_ShowSelected, TRUE,
+                                  LISTBROWSER_Selected, instrument,
+                                  LISTBROWSER_MakeVisible, instrument,
+                                  LISTBROWSER_Labels, labels,
+                                  LISTBROWSER_ColumnInfo, instrumentColumns,
+                                  TAG_END );
+
+                }
+              } else {
+
+                SetGadgetAttrs( CAMD_Keyboard_Base->ck_ListBrowser,
+                                CAMD_Keyboard_Base->ck_MainWindow,
+                                NULL,
+                                LISTBROWSER_Selected, instrument,
+                                LISTBROWSER_MakeVisible, instrument,
+                                TAG_END );
+              }
+
+              Printf( "New channel %ld with instrument %ld\n",
+                      channel, instrument );
               CAMD_Keyboard_Base->ck_Channel = ( BYTE ) channel;
-              Printf( "Setting instrument %ld\n", instrument );
-              SetGadgetAttrs( CAMD_Keyboard_Base->ck_InstrumentList,
-                              CAMD_Keyboard_Base->ck_MainWindow,
-                              NULL,
-                              LISTBROWSER_Selected, instrument,
-                              LISTBROWSER_MakeVisible, instrument,
-                              TAG_END );
+
               break;
             }
             case GadgetId_Instruments: {
@@ -1004,10 +1100,13 @@ VOID HandleEvents( VOID ) {
               WORD channel = CAMD_Keyboard_Base->ck_Channel;
               BYTE instrument = ( BYTE ) windowMessageCode;
 
-              Printf( "New instrument %ld in channel %ld\n",
-                      instrument, channel );
-              CAMD_Keyboard_Base->ck_Instrument[ channel ] = instrument;
-              SelectInstrument( channel, instrument );
+              if ( PERCUSSION_CHANNEL != channel ) {
+
+                Printf( "New instrument %ld in channel %ld\n",
+                        instrument, channel );
+                CAMD_Keyboard_Base->ck_Instrument[ channel ] = instrument;
+                SelectInstrument( channel, instrument );
+              }
               break;
             }
             default: {
