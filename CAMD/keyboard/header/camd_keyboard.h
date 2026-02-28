@@ -63,10 +63,17 @@ struct CAMD_Keyboard {
   ULONG                         ck_MainWindowSignal;
   APTR                          ck_Scroller;
   APTR                          ck_Clavier;
+  struct Gadget               * ck_InstrumentList;
 
   struct List                   ck_Devices;
   struct List                   ck_DeviceLabels;
   struct List                   ck_InstrumentLabels;
+
+  BYTE                          ck_Channel;
+  BYTE                          ck_Velocity;
+  BYTE                          ck_Reserved0;
+  BYTE                          ck_Reserved1;
+  BYTE                          ck_Instrument[ 16 ];
 
   /* CAMD pointers */
   struct MidiNode             * ck_MidiNode;

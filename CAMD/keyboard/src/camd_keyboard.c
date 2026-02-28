@@ -402,6 +402,10 @@ ULONG Startup( VOID ) {
     DisplayError( EAllocateAmiGUSCAMDToolBase );
     return EAllocateAmiGUSCAMDToolBase;
   }
+
+  CAMD_Keyboard_Base->ck_Channel = 6;
+  CAMD_Keyboard_Base->ck_Velocity = 127;
+
   // TODO: error handling of all the below!
   OpenLib(( struct Library ** )&CamdBase, "camd.library", 37, EOpenCamdBase );
   OpenLib(( struct Library ** )&IntuitionBase, "intuition.library", 36, EOpenIntuitionBase );
@@ -514,7 +518,7 @@ VOID OpenWin( VOID ) { // TODO: enable error handling and return values
         INTEGER_MaxChars, 3,
         INTEGER_Minimum, 0,
         INTEGER_Maximum, 127,
-        INTEGER_Number, 127,
+        INTEGER_Number, CAMD_Keyboard_Base->ck_Velocity,
         GA_ID, GadgetId_VelocityInteger,
         GA_RelVerify, TRUE,
       IntegerEnd;
@@ -523,7 +527,7 @@ VOID OpenWin( VOID ) { // TODO: enable error handling and return values
         INTEGER_MaxChars, 2,
         INTEGER_Minimum, 0,
         INTEGER_Maximum, 15,
-        INTEGER_Number, 0,
+        INTEGER_Number, CAMD_Keyboard_Base->ck_Channel,
         GA_ID, GadgetId_ChannelInteger,
         GA_RelVerify, TRUE,
       IntegerEnd;
@@ -535,7 +539,7 @@ VOID OpenWin( VOID ) { // TODO: enable error handling and return values
         SLIDER_Orientation, SLIDER_HORIZONTAL,
         SLIDER_Min, 0,
         SLIDER_Max, 127,
-        SLIDER_Level, 127,
+        SLIDER_Level, CAMD_Keyboard_Base->ck_Velocity,
         SLIDER_Ticks, 8,
         SLIDER_LevelPlace, PLACETEXT_RIGHT,
         SLIDER_LevelFormat, "%3ld",
@@ -548,7 +552,7 @@ VOID OpenWin( VOID ) { // TODO: enable error handling and return values
         SLIDER_Orientation, SLIDER_HORIZONTAL,
         SLIDER_Min, 0,
         SLIDER_Max, 15,
-        SLIDER_Level, 0,
+        SLIDER_Level, CAMD_Keyboard_Base->ck_Channel,
         SLIDER_Ticks, 8,
         SLIDER_LevelPlace, PLACETEXT_RIGHT,
         SLIDER_LevelFormat, "%3ld",
@@ -557,6 +561,23 @@ VOID OpenWin( VOID ) { // TODO: enable error handling and return values
         GA_RelVerify, TRUE,
       IntegerEnd;
   }
+
+  CAMD_Keyboard_Base->ck_InstrumentList =
+    ListBrowserObject,
+      LISTBROWSER_Labels, &( CAMD_Keyboard_Base->ck_InstrumentLabels ),
+      LISTBROWSER_ColumnInfo, instrumentColumns,
+      LISTBROWSER_Selected, 0,
+      LISTBROWSER_ColumnTitles, TRUE,
+      LISTBROWSER_ShowSelected, TRUE,
+      LISTBROWSER_Editable, FALSE,
+      LISTBROWSER_Hierarchical, FALSE,
+      LISTBROWSER_MultiSelect, FALSE,
+      LISTBROWSER_VirtualWidth, 220,
+      LISTBROWSER_HorizontalProp, TRUE,
+      GA_Text, "Instruments",
+      GA_ID, GadgetId_Instruments,
+      GA_RelVerify, TRUE,
+    ListBrowserEnd;
 
   CAMD_Keyboard_Base->ck_MainWindowContent = WindowObject,
     WA_PubScreen, CAMD_Keyboard_Base->ck_Screen,
@@ -635,21 +656,7 @@ VOID OpenWin( VOID ) { // TODO: enable error handling and return values
             LABEL_Text, "Selected instrument:",
             LABEL_Justification, LABEL_CENTER,
           LabelEnd,
-          LAYOUT_AddChild, ListBrowserObject,
-            LISTBROWSER_Labels, &( CAMD_Keyboard_Base->ck_InstrumentLabels ),
-            LISTBROWSER_ColumnInfo, instrumentColumns,
-            LISTBROWSER_Selected, 0,
-            LISTBROWSER_ColumnTitles, TRUE,
-            LISTBROWSER_ShowSelected, TRUE,
-            LISTBROWSER_Editable, FALSE,
-            LISTBROWSER_Hierarchical, FALSE,
-            LISTBROWSER_MultiSelect, FALSE,
-            LISTBROWSER_VirtualWidth, 220,
-            LISTBROWSER_HorizontalProp, TRUE,
-            GA_Text, "Instruments",
-            GA_ID, GadgetId_Instruments,
-            GA_RelVerify, TRUE,
-          ListBrowserEnd,
+          LAYOUT_AddChild, CAMD_Keyboard_Base->ck_InstrumentList,
         LayoutEnd,
       LayoutEnd,
 
@@ -715,6 +722,36 @@ VOID OpenWin( VOID ) { // TODO: enable error handling and return values
            &( CAMD_Keyboard_Base->ck_MainWindowSignal ));
 
   return;
+}
+
+VOID PlayNote( BYTE channel, BYTE note, BYTE velocity ) {
+
+  struct MidiLink * link = CAMD_Keyboard_Base->ck_MidiLink;
+  MidiMsg message = { 0L, 0L };
+
+  Printf( "Playing channel %ld, note %ld, velocity %ld\n",
+          channel, note, velocity );
+
+  message.mm_Status = MS_NoteOn | channel;
+  message.mm_Data1 = note;
+  message.mm_Data2 = velocity;
+              
+  PutMidiMsg( link, &( message ));
+
+  message.mm_Status = MS_NoteOn | channel;
+  message.mm_Data1 = note;
+  message.mm_Data2 = 0;
+  PutMidiMsg( link, &( message ));
+}
+
+VOID SelectInstrument( BYTE channel, BYTE instrument ) {
+
+  struct MidiLink * link = CAMD_Keyboard_Base->ck_MidiLink;
+  MidiMsg message = { 0L, 0L };
+
+  message.mm_Status = MS_Prog | channel;
+  message.mm_Data1 = instrument;
+  PutMidiMsg( link, &( message ));
 }
 
 VOID PrintInfos( VOID ) {
@@ -924,25 +961,53 @@ VOID HandleEvents( VOID ) {
               break;
             }
             case GadgetId_Clavier: {
-              MidiMsg message;
-              message.mm_Status = MS_NoteOn | 6; // 1 = current Channel
-              message.mm_Data1 = windowMessageCode; // current Note
-              message.mm_Data2 = 127; // current Velocity or 0 for note off
-              Printf( "echtes clavier %ld\n", windowMessageCode );
 
-              PutMidiMsg( base->ck_MidiLink, &( message ));
-              Printf( "Ton an\n" );
-              Printf( "Ton wieder aus\n" );
+              BYTE channel = CAMD_Keyboard_Base->ck_Channel;
+              BYTE note = windowMessageCode;
+              BYTE velocity = CAMD_Keyboard_Base->ck_Velocity;
 
-              message.mm_Status = MS_NoteOn | 6; // 1 = current Channel
-              message.mm_Data1 = windowMessageCode; // current Note
-              message.mm_Data2 = 0; // current Velocity or 0 for note off
-              PutMidiMsg( base->ck_MidiLink, &( message ));
+              PlayNote( channel, note, velocity );
 
               break;
             }
             case GadgetId_Scroller: {
-              Printf( "scroller %ld\n", windowMessageCode );
+
+              Printf( "Scroller position %ld\n", windowMessageCode );
+              break;
+            }
+            case GadgetId_VelocityInteger:
+            case GadgetId_VelocitySlider: {
+
+              Printf( "New velocity %ld\n", windowMessageCode );
+              CAMD_Keyboard_Base->ck_Velocity = ( BYTE ) windowMessageCode;
+              break;
+            }
+            case GadgetId_ChannelInteger:
+            case GadgetId_ChannelSlider: {
+
+              WORD channel = windowMessageCode;
+              BYTE instrument = CAMD_Keyboard_Base->ck_Instrument[ channel ];
+
+              Printf( "New channel %ld\n", channel );
+              CAMD_Keyboard_Base->ck_Channel = ( BYTE ) channel;
+              Printf( "Setting instrument %ld\n", instrument );
+              SetGadgetAttrs( CAMD_Keyboard_Base->ck_InstrumentList,
+                              CAMD_Keyboard_Base->ck_MainWindow,
+                              NULL,
+                              LISTBROWSER_Selected, instrument,
+                              LISTBROWSER_MakeVisible, instrument,
+                              TAG_END );
+              break;
+            }
+            case GadgetId_Instruments: {
+
+              WORD channel = CAMD_Keyboard_Base->ck_Channel;
+              BYTE instrument = ( BYTE ) windowMessageCode;
+
+              Printf( "New instrument %ld in channel %ld\n",
+                      instrument, channel );
+              CAMD_Keyboard_Base->ck_Instrument[ channel ] = instrument;
+              SelectInstrument( channel, instrument );
               break;
             }
             default: {
