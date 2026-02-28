@@ -298,9 +298,7 @@ enum GadgetIds {
   GadgetId_VelocitySlider,
   GadgetId_ChannelInteger,
   GadgetId_ChannelSlider,
-  GadgetId_ButtonOK,
-  GadgetId_ButtonCancel,
-  GadgetId_ClavierButton,
+  GadgetId_InfoButton,
   GadgetId_Scroller,
   GadgetId_Clavier,
   GadgetId_Instruments,
@@ -682,28 +680,8 @@ VOID OpenWin( VOID ) { // TODO: enable error handling and return values
           LabelEnd,
 
           LAYOUT_AddChild, ButtonObject,
-            GA_Text, "Clavier",
-            GA_ID, GadgetId_ClavierButton,
-            GA_RelVerify, TRUE,
-          ButtonEnd,
-        LayoutEnd,
-
-        LAYOUT_AddChild, VLayoutObject,
-          LAYOUT_AddChild, ButtonObject,
-            GA_Text, "Ok",
-            GA_ID, GadgetId_ButtonOK,
-            GA_RelVerify, TRUE,
-          ButtonEnd,
-
-          LAYOUT_AddChild, ButtonObject,
-            GA_Text, "Cancel",
-            GA_ID, GadgetId_ButtonCancel,
-            GA_RelVerify, TRUE,
-          ButtonEnd,
-
-          LAYOUT_AddChild, ButtonObject,
-            GA_Text, "Clavier",
-            GA_ID, GadgetId_ClavierButton,
+            GA_Text, "Print Info",
+            GA_ID, GadgetId_InfoButton,
             GA_RelVerify, TRUE,
           ButtonEnd,
         LayoutEnd,
@@ -786,9 +764,6 @@ VOID PlayNote( BYTE channel, BYTE note, BYTE velocity ) {
   struct MidiLink * link = CAMD_Keyboard_Base->ck_MidiLink;
   MidiMsg message = { 0L, 0L };
 
-  Printf( "Playing channel %ld, note %ld, velocity %ld\n",
-          channel, note, velocity );
-
   message.mm_Status = MS_NoteOn | channel;
   message.mm_Data1 = note;
   message.mm_Data2 = velocity;
@@ -806,6 +781,11 @@ VOID SelectInstrument( BYTE channel ) {
   struct CAMD_Keyboard * base = CAMD_Keyboard_Base;
   struct MidiLink * link = base->ck_MidiLink;
   MidiMsg message = { 0L, 0L };
+
+  if ( PERCUSSION_CHANNEL == channel ) {
+
+    return;
+  }
 
   message.mm_Status = MS_Prog | channel;
   message.mm_Data1 = base->ck_Instrument[ channel ];
@@ -828,7 +808,7 @@ VOID SelectChannel( BYTE channel ) {
                       NULL,
                       LISTBROWSER_ShowSelected, FALSE,
                       LISTBROWSER_Selected, -1,
-                      LISTBROWSER_MakeVisible, 0,
+                      LISTBROWSER_MakeVisible, instrument,
                       LISTBROWSER_Labels, &( base->ck_PercussionLabels ),
                       LISTBROWSER_ColumnInfo, percussionColumns,
                       TAG_END );
@@ -1050,18 +1030,12 @@ VOID HandleEvents( VOID ) {
           switch ( WMHI_GADGETMASK & windowMessage ) {
             case GadgetId_DeviceChooser: {
 
-              LOG_D(( "D: Chooser picked item %ld.\n", windowMessageCode ));
+              Printf( "Chooser picked item %ld.\n", windowMessageCode );
               CloseMidi();
               OpenMidi( windowMessageCode );
               break;
             }
-            case GadgetId_ButtonOK:
-            case GadgetId_ButtonCancel: {
-
-              stop = TRUE;
-              break;
-            }
-            case GadgetId_ClavierButton: {
+            case GadgetId_InfoButton: {
               // PrintInfos();
               PrintMidiClusters();
               PrintMidiNodes();
@@ -1073,12 +1047,9 @@ VOID HandleEvents( VOID ) {
               BYTE note = windowMessageCode;
               BYTE velocity = base->ck_Velocity;
 
+              Printf( "Playing channel %ld, note %ld, velocity %ld\n",
+                      channel, note, velocity );
               PlayNote( channel, note, velocity );
-              break;
-            }
-            case GadgetId_Scroller: {
-
-              Printf( "Scroller position %ld\n", windowMessageCode );
               break;
             }
             case GadgetId_VelocityInteger:
@@ -1099,13 +1070,10 @@ VOID HandleEvents( VOID ) {
               WORD channel = base->ck_Channel;
               BYTE instrument = ( BYTE ) windowMessageCode;
 
-              if ( PERCUSSION_CHANNEL != channel ) {
-
-                Printf( "New instrument %ld in channel %ld\n",
+              Printf( "New instrument %ld in channel %ld\n",
                         instrument, channel );
-                base->ck_Instrument[ channel ] = instrument;
-                SelectInstrument( channel );
-              }
+              base->ck_Instrument[ channel ] = instrument;
+              SelectInstrument( channel );
               break;
             }
             default: {
