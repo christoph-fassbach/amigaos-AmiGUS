@@ -148,7 +148,7 @@ else ifdef USEVBCC
                   -o
   LFLAGS        = -bamigahunk -x -s -mrel -Cvbcc -Bstatic -nostdlib -o
   LFLAGS1       = $(LDIR)startup.o
-  LFLAGS2       = $(LDIR)auto.lib $(LDIR)vc.lib
+  LFLAGS2       = $(LDIR)auto.lib $(LDIR)vc.lib $(LDIR)amiga.lib
   # add -v below to see what vbcc does under the hood :)
   CC            = vc +aos68k
   AS            = vasmm68k_mot

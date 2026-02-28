@@ -16,9 +16,6 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-#define ALIB_STDIO
-
-#include <clib/alib_protos.h>
 #include <graphics/gfxbase.h>
 #include <intuition/icclass.h>
 #include <intuition/intuitionbase.h>
@@ -239,7 +236,7 @@ static const UBYTE * instrumentNames[] = {
   NULL
 };
 
-static const UBYTE * PercussionNames[] = {
+static const UBYTE * percussionNames[] = {
   "B-1 ", "Ac./Low Bass Drum",
   "C-2 ", "Elec./High Bass Drum",
   "C#2 ", "Side Stick",
@@ -385,8 +382,8 @@ VOID FreeInstrumentLabels( VOID ) {
 
 LONG OpenMidi( ULONG index ) {
 
-  TEXT linkName[128];
-  STRPTR name = STR( APP_FILE );
+  STRPTR appName = STR( APP_FILE );
+  STRPTR linkName = STR( APP_FILE )" Link";
 
   struct CAMD_Keyboard * base = CAMD_Keyboard_Base;
   struct CAMD_Device_Node * node = ( struct CAMD_Device_Node * )
@@ -398,7 +395,7 @@ LONG OpenMidi( ULONG index ) {
   }
 
   // Keyboard only supports playback, hence does not need input buffers.
-  base->ck_MidiNode = CreateMidi( MIDI_Name, name,
+  base->ck_MidiNode = CreateMidi( MIDI_Name, appName,
                                   // MIDI_MsgQueue, 0L,
                                   // MIDI_SysExSize,0L,
                                   MIDI_ErrFilter, CMEF_All,
@@ -408,9 +405,8 @@ LONG OpenMidi( ULONG index ) {
     return ECreateMidi;
   }
   LOG_D(( "D: Got output node 0x%08lx for %s.\n",
-          base->ck_MidiNode, name ));
+          base->ck_MidiNode, appName ));
 
-  sprintf( linkName, "%s Link", name );
   base->ck_MidiLink = AddMidiLink( base->ck_MidiNode,
                                    MLTYPE_Sender,
                                    MLINK_Comment, linkName,
@@ -507,7 +503,7 @@ ULONG Startup( VOID ) {
   NEW_LIST( &( CAMD_Keyboard_Base->ck_InstrumentLabels ));
   CreateLabels( &CAMD_Keyboard_Base->ck_InstrumentLabels, instrumentNames );
   NEW_LIST( &( CAMD_Keyboard_Base->ck_PercussionLabels ));
-  CreateLabels( &CAMD_Keyboard_Base->ck_PercussionLabels, PercussionNames );
+  CreateLabels( &CAMD_Keyboard_Base->ck_PercussionLabels, percussionNames );
 
   LOG_I(( "I: " STR( APP_NAME ) " startup complete.\n" ));
 }
@@ -963,7 +959,6 @@ VOID PrintMidiNodes( VOID ) {
 
       struct MidiLink * link;
       STRPTR name = NULL;
-      ULONG result;
 
       Printf( "Node 0x%08lx\n", ( ULONG ) node );
       Printf( "+-> ClientType 0x%08lx\n", node->mi_ClientType );
@@ -978,11 +973,11 @@ VOID PrintMidiNodes( VOID ) {
         STRPTR location = NULL;
         STRPTR comment = NULL;
         Printf( "+-> Link 0x%08lx\n", ( ULONG ) link );
-        result = GetMidiLinkAttrs( link,
-                                   MLINK_Location, &location,
-                                   MLINK_Name, &name,
-                                   MLINK_Comment, &comment,
-                                   TAG_END );
+        GetMidiLinkAttrs( link,
+                          MLINK_Location, &location,
+                          MLINK_Name, &name,
+                          MLINK_Comment, &comment,
+                          TAG_END );
         if ( location ) {
           Printf( "+---> Location %s \n", location );
         }

@@ -29,6 +29,8 @@
 #include "errors.h"
 #include "support.h"
 
+extern struct ExecBase          * SysBase;
+
 LONG ExtractCamdOutputDevices( struct List * devices ) {
 
   LONG found = -1;
