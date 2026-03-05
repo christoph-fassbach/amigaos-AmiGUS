@@ -290,7 +290,8 @@ static const UBYTE * percussionNames[] = {
 enum GadgetIds {
 
   GadgetId_Start = 100,
-  GadgetId_DeviceChooser,
+  GadgetId_InputDeviceChooser,
+  GadgetId_OutputDeviceChooser,
   GadgetId_VelocityInteger,
   GadgetId_VelocitySlider,
   GadgetId_ChannelInteger,
@@ -326,13 +327,25 @@ VOID CloseLib( struct Library ** library ) {
 VOID CreateChooserLabels( VOID ) {
 
   struct CAMD_Device_Node * device;
-  FOR_LIST( &( CAMD_Keyboard_Base->ck_Devices ),
+
+  struct Node * label = AllocChooserNode( CNA_Text, "None", TAG_END );
+  AddTail( &( CAMD_Keyboard_Base->ck_InputDeviceLabels ), label );
+
+  FOR_LIST( &( CAMD_Keyboard_Base->ck_InputDevices ),
             device,
             struct CAMD_Device_Node * ) {
 
     STRPTR name = device->cdn_Name;
     struct Node * label = AllocChooserNode( CNA_Text, name, TAG_END );
-    AddTail( &( CAMD_Keyboard_Base->ck_DeviceLabels ), label );
+    AddTail( &( CAMD_Keyboard_Base->ck_InputDeviceLabels ), label );
+  }
+  FOR_LIST( &( CAMD_Keyboard_Base->ck_OutputDevices ),
+            device,
+            struct CAMD_Device_Node * ) {
+
+    STRPTR name = device->cdn_Name;
+    struct Node * label = AllocChooserNode( CNA_Text, name, TAG_END );
+    AddTail( &( CAMD_Keyboard_Base->ck_OutputDeviceLabels ), label );
   }
 }
 
@@ -340,12 +353,19 @@ VOID FreeChooserLabels( VOID ) {
 
   struct Node * node;
 
-  while ( node = RemHead( &( CAMD_Keyboard_Base->ck_DeviceLabels ))) {
+  while ( node = RemHead( &( CAMD_Keyboard_Base->ck_InputDeviceLabels ))) {
 
     FreeChooserNode( node );
   }
   LOG_D(( "V: Labels is empty = %ld\n",
-          IS_EMPTY_LIST( &( CAMD_Keyboard_Base->ck_DeviceLabels ))));
+          IS_EMPTY_LIST( &( CAMD_Keyboard_Base->ck_InputDeviceLabels ))));
+
+  while ( node = RemHead( &( CAMD_Keyboard_Base->ck_OutputDeviceLabels ))) {
+
+    FreeChooserNode( node );
+  }
+  LOG_D(( "V: Labels is empty = %ld\n",
+          IS_EMPTY_LIST( &( CAMD_Keyboard_Base->ck_OutputDeviceLabels ))));
 }
 
 VOID CreateLabels( struct List * labels, const UBYTE ** strings ) {
@@ -380,14 +400,19 @@ VOID FreeInstrumentLabels( VOID ) {
   }
 } 
 
-LONG OpenMidi( ULONG index ) {
+LONG OpenMidiInput( ULONG index ) {
+}
+VOID CloseMidiInput( VOID ) {
+}
+
+LONG OpenMidiOutput( ULONG index ) {
 
   STRPTR appName = STR( APP_FILE );
   STRPTR linkName = STR( APP_FILE )" Link";
 
   struct CAMD_Keyboard * base = CAMD_Keyboard_Base;
   struct CAMD_Device_Node * node = ( struct CAMD_Device_Node * )
-    NodeAtIndex( &( base->ck_Devices ), index );
+    NodeAtIndex( &( base->ck_OutputDevices ), index );
 
   if ( !node ) {
 
@@ -424,7 +449,7 @@ LONG OpenMidi( ULONG index ) {
   return ENoError;
 }
 
-VOID CloseMidi( VOID ) {
+VOID CloseMidiOutput( VOID ) {
 
   struct CAMD_Keyboard * base = CAMD_Keyboard_Base;
   if ( base->ck_MidiLink ) {
@@ -479,8 +504,10 @@ ULONG Startup( VOID ) {
     DisplayError( EInitClavierGadgetClass );
   }
 
-  NEW_LIST( &( CAMD_Keyboard_Base->ck_Devices ));
-  NEW_LIST( &( CAMD_Keyboard_Base->ck_DeviceLabels ));
+  NEW_LIST( &( CAMD_Keyboard_Base->ck_InputDevices ));
+  NEW_LIST( &( CAMD_Keyboard_Base->ck_OutputDevices ));
+  NEW_LIST( &( CAMD_Keyboard_Base->ck_InputDeviceLabels ));
+  NEW_LIST( &( CAMD_Keyboard_Base->ck_OutputDeviceLabels ));
 
   if ( CamdBase->lib_Version > 37 ) {
 
@@ -488,11 +515,16 @@ ULONG Startup( VOID ) {
 
     return EInvalidCamdVersion;
   }
-  result = ExtractCamdOutputDevices( &( CAMD_Keyboard_Base->ck_Devices ));
+  result = ExtractCamdDevices( &( CAMD_Keyboard_Base->ck_InputDevices ), TRUE );
+  if ( !result ) {
+
+    DisplayError( result );
+  }
+  result = ExtractCamdDevices( &( CAMD_Keyboard_Base->ck_OutputDevices ), FALSE );
   if ( result ) {
 
     CreateChooserLabels();
-    result = OpenMidi( 0 );
+    result = OpenMidiOutput( 0 );
 
     if ( result ) {
 
@@ -512,8 +544,10 @@ VOID Cleanup( VOID ) {
 
   FreeInstrumentLabels();
 
-  CloseMidi();
-  FreeCamdOutputDevices( &( CAMD_Keyboard_Base->ck_Devices ));
+  CloseMidiInput();
+  CloseMidiOutput();
+  FreeCamdDevices( &( CAMD_Keyboard_Base->ck_InputDevices ));
+  FreeCamdDevices( &( CAMD_Keyboard_Base->ck_OutputDevices ));
   FreeChooserLabels();
 
   CloseLib(( struct Library ** )&WindowBase );
@@ -649,21 +683,21 @@ VOID OpenWin( VOID ) { // TODO: enable error handling and return values
 
     WINDOW_ParentGroup, VLayoutObject,
 
-      LAYOUT_AddChild, ChooserObject,
-        GA_ID, GadgetId_DeviceChooser,
-        GA_RelVerify, TRUE,
-        CHOOSER_Labels, &( CAMD_Keyboard_Base->ck_DeviceLabels ),
-        CHOOSER_Selected, 0,
-        CHOOSER_PopUp, TRUE,
-        CHOOSER_AutoFit, TRUE,
-      ChooserEnd,
-      CHILD_NominalSize, TRUE,
-      CHILD_Label, LabelObject,
-        LABEL_Text ,"Target CAMD device: ",
-      LabelEnd,
-
       LAYOUT_AddChild, HLayoutObject,
         LAYOUT_AddChild, VLayoutObject,
+
+          LAYOUT_AddChild, ChooserObject,
+            GA_ID, GadgetId_InputDeviceChooser,
+            GA_RelVerify, TRUE,
+            CHOOSER_Labels, &( CAMD_Keyboard_Base->ck_InputDeviceLabels ),
+            CHOOSER_Selected, 0,
+            CHOOSER_PopUp, TRUE,
+            CHOOSER_AutoFit, TRUE,
+          ChooserEnd,
+          CHILD_NominalSize, TRUE,
+          CHILD_Label, LabelObject,
+            LABEL_Text ,"Input: ",
+          LabelEnd,
 
           LAYOUT_AddChild, velocityGadget,
           CHILD_Label, LabelObject,
@@ -680,14 +714,29 @@ VOID OpenWin( VOID ) { // TODO: enable error handling and return values
             GA_ID, GadgetId_InfoButton,
             GA_RelVerify, TRUE,
           ButtonEnd,
-        LayoutEnd,
 
+        LayoutEnd,
         LAYOUT_AddChild, VLayoutObject,
+
+          LAYOUT_AddChild, ChooserObject,
+            GA_ID, GadgetId_OutputDeviceChooser,
+            GA_RelVerify, TRUE,
+            CHOOSER_Labels, &( CAMD_Keyboard_Base->ck_OutputDeviceLabels ),
+            CHOOSER_Selected, 0,
+            CHOOSER_PopUp, TRUE,
+            CHOOSER_AutoFit, TRUE,
+          ChooserEnd,
+          CHILD_NominalSize, TRUE,
+          CHILD_Label, LabelObject,
+            LABEL_Text ,"Output: ",
+          LabelEnd,
+
           LAYOUT_AddImage, LabelObject,
             LABEL_Text, "Selected instrument:",
             LABEL_Justification, LABEL_CENTER,
           LabelEnd,
           LAYOUT_AddChild, CAMD_Keyboard_Base->ck_ListBrowser,
+
         LayoutEnd,
       LayoutEnd,
 
@@ -1023,11 +1072,21 @@ VOID HandleEvents( VOID ) {
       switch ( WMHI_CLASSMASK & windowMessage ) {
         case WMHI_GADGETUP: {
           switch ( WMHI_GADGETMASK & windowMessage ) {
-            case GadgetId_DeviceChooser: {
+            case GadgetId_InputDeviceChooser: {
 
-              Printf( "Chooser picked item %ld.\n", windowMessageCode );
-              CloseMidi();
-              OpenMidi( windowMessageCode );
+              Printf( "Input chooser picked item %ld.\n", windowMessageCode );
+              CloseMidiInput();
+              if ( 0 < windowMessageCode ) {
+
+                OpenMidiInput( windowMessageCode );
+              }
+              break;
+            }
+            case GadgetId_OutputDeviceChooser: {
+
+              Printf( "Output chooser picked item %ld.\n", windowMessageCode );
+              CloseMidiOutput();
+              OpenMidiOutput( windowMessageCode );
               break;
             }
             case GadgetId_InfoButton: {

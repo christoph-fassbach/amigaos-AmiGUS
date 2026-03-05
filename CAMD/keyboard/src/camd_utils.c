@@ -31,10 +31,11 @@
 
 extern struct ExecBase          * SysBase;
 
-LONG ExtractCamdOutputDevices( struct List * devices ) {
+LONG ExtractCamdDevices( struct List * devices, BOOL input ) {
 
   LONG found = -1;
   APTR lock = LockCAMD( CD_Linkages );
+  STRPTR typeString = "NO";
 
   LOG_V(( "V: CAMD locked @ 0x%08lx\n", ( ULONG ) lock ));
   if ( NULL != lock ) {
@@ -47,10 +48,21 @@ LONG ExtractCamdOutputDevices( struct List * devices ) {
           cluster = NextCluster( cluster )) {
 
       struct MidiLink * next;
+      struct List * midiLinkList;
 
-      LOG_D(( "D: Checking CAMD cluster 0x%08lx -> %s\n",
-             ( ULONG ) cluster, cluster->mcl_Node.ln_Name ));
-      FOR_LIST( &cluster->mcl_Receivers, next, struct MidiLink * ) {
+      if ( input ) {
+
+        midiLinkList = &cluster->mcl_Senders;
+        typeString = "in";
+
+      } else {
+
+        midiLinkList = &cluster->mcl_Receivers;
+        typeString = "out";
+      }
+      LOG_D(( "D: Checking CAMD cluster 0x%08lx -> %s for %sputs\n",
+              ( ULONG ) cluster, cluster->mcl_Node.ln_Name, typeString ));
+      FOR_LIST( midiLinkList, next, struct MidiLink * ) {
 
         STRPTR location = NULL;
         STRPTR comment = NULL;
@@ -89,11 +101,11 @@ LONG ExtractCamdOutputDevices( struct List * devices ) {
     LOG_V(( "V: CAMD unlocked @ 0x%08lx\n", ( ULONG ) lock ));
   }
 
-  LOG_D(( "D: Found %ld CAMD outputs\n", found ));
+  LOG_D(( "D: Found %ld CAMD %sputs\n", found, typeString ));
   return found;
 }
 
-VOID FreeCamdOutputDevices( struct List * devices ) {
+VOID FreeCamdDevices( struct List * devices ) {
 
   struct CAMD_Device_Node * node;
 

@@ -29,8 +29,8 @@ struct CAMD_Device_Node {
     STRPTR cdn_Location;
 };
 
-LONG ExtractCamdOutputDevices( struct List * devices );
-VOID FreeCamdOutputDevices( struct List * devices );
+LONG ExtractCamdDevices( struct List * devices, BOOL input );
+VOID FreeCamdDevices( struct List * devices );
 
 extern struct Library           * CamdBase;
 

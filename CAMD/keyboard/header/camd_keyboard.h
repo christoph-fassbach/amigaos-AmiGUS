@@ -65,8 +65,10 @@ struct CAMD_Keyboard {
   APTR                          ck_Clavier;
   struct Gadget               * ck_ListBrowser;
 
-  struct List                   ck_Devices;
-  struct List                   ck_DeviceLabels;
+  struct List                   ck_InputDevices;
+  struct List                   ck_OutputDevices;
+  struct List                   ck_InputDeviceLabels;
+  struct List                   ck_OutputDeviceLabels;
   struct List                   ck_InstrumentLabels;
   struct List                   ck_PercussionLabels;
 
