@@ -400,51 +400,107 @@ VOID FreeInstrumentLabels( VOID ) {
   }
 } 
 
-LONG OpenMidiInput( ULONG index ) {
-}
-VOID CloseMidiInput( VOID ) {
-}
+LONG OpenMidi( VOID ) {
 
-LONG OpenMidiOutput( ULONG index ) {
-
-  STRPTR appName = STR( APP_FILE );
-  STRPTR linkName = STR( APP_FILE )" Link";
+  STRPTR appName = STR( APP_NAME );
 
   struct CAMD_Keyboard * base = CAMD_Keyboard_Base;
-  struct CAMD_Device_Node * node = ( struct CAMD_Device_Node * )
-    NodeAtIndex( &( base->ck_OutputDevices ), index );
 
-  if ( !node ) {
-
-    return ENoMidiNodes;
-  }
-
-  // Keyboard only supports playback, hence does not need input buffers.
   base->ck_MidiNode = CreateMidi( MIDI_Name, appName,
-                                  // MIDI_MsgQueue, 0L,
-                                  // MIDI_SysExSize,0L,
+                                  MIDI_MsgQueue, 8L,
+                                  MIDI_SysExSize, 8L,
                                   MIDI_ErrFilter, CMEF_All,
                                   TAG_END );
   if ( !( base->ck_MidiNode )) {
 
     return ECreateMidi;
   }
-  LOG_D(( "D: Got output node 0x%08lx for %s.\n",
+  LOG_D(( "D: Got MIDI node 0x%08lx for %s.\n",
           base->ck_MidiNode, appName ));
+  return ENoError;
+} 
 
-  base->ck_MidiLink = AddMidiLink( base->ck_MidiNode,
-                                   MLTYPE_Sender,
-                                   MLINK_Comment, linkName,
-                                   MLINK_Name, "Out",
-                                   //MLINK_Parse, TRUE, // TODO: needed?
-                                   MLINK_Location, node->cdn_Location,
-                                   TAG_END );
-  if ( !( base->ck_MidiLink )) {
+VOID CloseMidi( VOID ) {
+
+  struct CAMD_Keyboard * base = CAMD_Keyboard_Base;
+  if ( base->ck_MidiNode ) {
+
+    DeleteMidi( base->ck_MidiNode );
+    LOG_D(( "D: Closed MIDI node 0x%08lx.\n",
+            base->ck_MidiNode ));
+    base->ck_MidiNode = NULL;
+  }
+}
+
+LONG OpenMidiInput( ULONG index ) {
+
+  STRPTR linkName = STR( APP_NAME )" Link";
+
+  struct CAMD_Keyboard * base = CAMD_Keyboard_Base;
+  struct CAMD_Device_Node * node =
+    ( struct CAMD_Device_Node * )
+      NodeAtIndex( &( base->ck_InputDevices ), index );
+
+  if ( !node ) {
+
+    return ENoMidiNodes;
+  }
+
+  base->ck_MidiLinkIn = AddMidiLink( base->ck_MidiNode,
+                                     MLTYPE_Receiver,
+                                     MLINK_Comment, linkName,
+                                     MLINK_Name, "In",
+                                     //MLINK_Parse, TRUE, // TODO: needed?
+                                     MLINK_Location, node->cdn_Location,
+                                     TAG_END );
+  if ( !( base->ck_MidiLinkIn )) {
+
+    return EAddMidiLink;
+  }
+  LOG_D(( "D: Got input link 0x%08lx for %s at %s.\n",
+          base->ck_MidiLinkIn, linkName, node->cdn_Location ));
+
+  return ENoError;
+}
+
+VOID CloseMidiInput( VOID ) {
+
+  struct CAMD_Keyboard * base = CAMD_Keyboard_Base;
+  if ( base->ck_MidiLinkIn ) {
+
+    RemoveMidiLink( base->ck_MidiLinkIn );
+    LOG_D(( "D: Closed input link 0x%08lx.\n", base->ck_MidiLinkIn ));
+    base->ck_MidiLinkIn = NULL;
+  }
+}
+
+LONG OpenMidiOutput( ULONG index ) {
+  
+  STRPTR linkName = STR( APP_NAME )" Link";
+
+  struct CAMD_Keyboard * base = CAMD_Keyboard_Base;
+  struct CAMD_Device_Node * node =
+    ( struct CAMD_Device_Node * )
+      NodeAtIndex( &( base->ck_OutputDevices ), index );
+
+  if ( !node ) {
+
+    return ENoMidiNodes;
+  }
+
+  base->ck_MidiLinkOut = AddMidiLink( base->ck_MidiNode,
+                                      MLTYPE_Sender,
+                                      MLINK_Comment, linkName,
+                                      MLINK_Name, "Out",
+                                      //MLINK_Parse, TRUE, // TODO: needed?
+                                      MLINK_Location, node->cdn_Location,
+                                      TAG_END );
+  if ( !( base->ck_MidiLinkOut )) {
 
     return EAddMidiLink;
   }
   LOG_D(( "D: Got output link 0x%08lx for %s at %s.\n",
-          base->ck_MidiLink, linkName, node->cdn_Location ));
+          base->ck_MidiLinkOut, linkName, node->cdn_Location ));
 
   return ENoError;
 }
@@ -452,17 +508,11 @@ LONG OpenMidiOutput( ULONG index ) {
 VOID CloseMidiOutput( VOID ) {
 
   struct CAMD_Keyboard * base = CAMD_Keyboard_Base;
-  if ( base->ck_MidiLink ) {
+  if ( base->ck_MidiLinkOut ) {
 
-    RemoveMidiLink( base->ck_MidiLink );
-    LOG_D(( "D: Closed link 0x%08lx.\n", base->ck_MidiLink ));
-    base->ck_MidiLink = NULL;
-  }
-  if ( base->ck_MidiNode ) {
-
-    DeleteMidi( base->ck_MidiNode );
-    LOG_D(( "D: Closed node 0x%08lx.\n", base->ck_MidiNode ));
-    base->ck_MidiNode = NULL;
+    RemoveMidiLink( base->ck_MidiLinkOut );
+    LOG_D(( "D: Closed output link 0x%08lx.\n", base->ck_MidiLinkOut ));
+    base->ck_MidiLinkOut = NULL;
   }
 }
 
@@ -515,21 +565,24 @@ ULONG Startup( VOID ) {
 
     return EInvalidCamdVersion;
   }
-  result = ExtractCamdDevices( &( CAMD_Keyboard_Base->ck_InputDevices ), TRUE );
+
+  ExtractCamdDevices( &( CAMD_Keyboard_Base->ck_InputDevices ), TRUE );
+  result = ExtractCamdDevices( &( CAMD_Keyboard_Base->ck_OutputDevices ), FALSE );
   if ( !result ) {
+    
+    DisplayError( ENoCamdOutputs );
+  }
+  CreateChooserLabels();
+
+  result = OpenMidi();
+  if ( result ) {
 
     DisplayError( result );
   }
-  result = ExtractCamdDevices( &( CAMD_Keyboard_Base->ck_OutputDevices ), FALSE );
+  result = OpenMidiOutput( 0 );
   if ( result ) {
 
-    CreateChooserLabels();
-    result = OpenMidiOutput( 0 );
-
-    if ( result ) {
-
-      DisplayError( result );
-    }
+    DisplayError( result );
   }
 
   NEW_LIST( &( CAMD_Keyboard_Base->ck_InstrumentLabels ));
@@ -546,6 +599,7 @@ VOID Cleanup( VOID ) {
 
   CloseMidiInput();
   CloseMidiOutput();
+  CloseMidi();
   FreeCamdDevices( &( CAMD_Keyboard_Base->ck_InputDevices ));
   FreeCamdDevices( &( CAMD_Keyboard_Base->ck_OutputDevices ));
   FreeChooserLabels();
@@ -806,7 +860,7 @@ VOID OpenWin( VOID ) { // TODO: enable error handling and return values
 
 VOID PlayNote( BYTE channel, BYTE note, BYTE velocity ) {
 
-  struct MidiLink * link = CAMD_Keyboard_Base->ck_MidiLink;
+  struct MidiLink * link = CAMD_Keyboard_Base->ck_MidiLinkOut;
   MidiMsg message = { 0L, 0L };
 
   message.mm_Status = MS_NoteOn | channel;
@@ -824,7 +878,7 @@ VOID PlayNote( BYTE channel, BYTE note, BYTE velocity ) {
 VOID SelectInstrument( BYTE channel ) {
 
   struct CAMD_Keyboard * base = CAMD_Keyboard_Base;
-  struct MidiLink * link = base->ck_MidiLink;
+  struct MidiLink * link = base->ck_MidiLinkOut;
   MidiMsg message = { 0L, 0L };
 
   if ( PERCUSSION_CHANNEL == channel ) {
@@ -1078,7 +1132,7 @@ VOID HandleEvents( VOID ) {
               CloseMidiInput();
               if ( 0 < windowMessageCode ) {
 
-                OpenMidiInput( windowMessageCode );
+                OpenMidiInput( windowMessageCode - 1 );
               }
               break;
             }

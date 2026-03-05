@@ -46,6 +46,7 @@ enum ErrorCodes
   EOpenReactionBases,
   EInitClavierGadgetClass,
   EInvalidCamdVersion,
+  ENoCamdOutputs,
   ENoMidiNodes,
   ECreateMidi,
   EAddMidiLink,

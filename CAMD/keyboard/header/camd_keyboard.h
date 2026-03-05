@@ -80,7 +80,8 @@ struct CAMD_Keyboard {
 
   /* CAMD pointers */
   struct MidiNode             * ck_MidiNode;
-  struct MidiLink             * ck_MidiLink;
+  struct MidiLink             * ck_MidiLinkIn;
+  struct MidiLink             * ck_MidiLinkOut;
 
   /* Debug output handling */
   BPTR                          ck_LogFile;       // Debug log file handle
