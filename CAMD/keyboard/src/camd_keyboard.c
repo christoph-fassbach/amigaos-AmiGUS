@@ -46,6 +46,7 @@
 #include "debug.h"
 #include "errors.h"
 #include "support.h"
+#include "worker.h"
 
 #define PERCUSSION_CHANNEL 9
 
@@ -407,7 +408,7 @@ LONG OpenMidi( VOID ) {
   struct CAMD_Keyboard * base = CAMD_Keyboard_Base;
 
   base->ck_MidiNode = CreateMidi( MIDI_Name, appName,
-                                  MIDI_MsgQueue, 8L,
+                                  MIDI_MsgQueue, 100L,
                                   MIDI_SysExSize, 8L,
                                   MIDI_ErrFilter, CMEF_All,
                                   TAG_END );
@@ -418,7 +419,7 @@ LONG OpenMidi( VOID ) {
   LOG_D(( "D: Got MIDI node 0x%08lx for %s.\n",
           base->ck_MidiNode, appName ));
   return ENoError;
-} 
+}
 
 VOID CloseMidi( VOID ) {
 
@@ -450,6 +451,7 @@ LONG OpenMidiInput( ULONG index ) {
                                      MLTYPE_Receiver,
                                      MLINK_Comment, linkName,
                                      MLINK_Name, "In",
+                                     MLINK_EventMask, CMF_Note,
                                      //MLINK_Parse, TRUE, // TODO: needed?
                                      MLINK_Location, node->cdn_Location,
                                      TAG_END );
@@ -590,10 +592,36 @@ ULONG Startup( VOID ) {
   NEW_LIST( &( CAMD_Keyboard_Base->ck_PercussionLabels ));
   CreateLabels( &CAMD_Keyboard_Base->ck_PercussionLabels, percussionNames );
 
+  CAMD_Keyboard_Base->ck_MainProcess = ( struct Process * ) FindTask( NULL );
+  CAMD_Keyboard_Base->ck_MainSignal = AllocSignal( -1 );
+  if ( -1 == CAMD_Keyboard_Base->ck_MainSignal ) {
+
+    DisplayError( EMainProcessSignalsFailed );
+    return NULL;
+  }
+  CAMD_Keyboard_Base->ck_WorkerReady = FALSE;
+
+  LOG_D(( "D: Creating worker process for CAMD_Keyboard_Base @ %08lx\n",
+          (LONG) CAMD_Keyboard_Base ));
+  if ( CreateWorkerProcess() ) {
+
+    LOG_D(( "D: No worker, failed.\n" ));
+    return NULL;
+  }
+
+  SetMidiAttrs( CAMD_Keyboard_Base->ck_MidiNode,
+                MIDI_SignalTask, CAMD_Keyboard_Base->ck_WorkerProcess,
+                MIDI_RecvSignal, CAMD_Keyboard_Base->ck_WorkerWorkSignal,
+                MIDI_PartSignal, -1,
+                TAG_END );
+
   LOG_I(( "I: " STR( APP_NAME ) " startup complete.\n" ));
 }
 
 VOID Cleanup( VOID ) {
+
+  DestroyWorkerProcess();
+  FreeSignal( CAMD_Keyboard_Base->ck_MainSignal );
 
   FreeInstrumentLabels();
 

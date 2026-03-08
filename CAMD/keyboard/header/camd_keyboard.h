@@ -72,6 +72,14 @@ struct CAMD_Keyboard {
   struct List                   ck_InstrumentLabels;
   struct List                   ck_PercussionLabels;
 
+  struct Process              * ck_MainProcess;
+  struct Process              * ck_WorkerProcess;
+  LONG                          ck_WorkerReady;
+  BYTE                          ck_MainSignal;
+  BYTE                          ck_WorkerWorkSignal;
+  BYTE                          ck_WorkerStopSignal;
+  BYTE                          ck_Padding0;
+
   BYTE                          ck_Channel;
   BYTE                          ck_Velocity;
   BYTE                          ck_Reserved0;
