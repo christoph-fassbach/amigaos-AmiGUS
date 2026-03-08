@@ -66,7 +66,7 @@ SDIR   = src/
 HDIR   = header/
 
 APP_CPU        ?= 000
-APP_LOG        ?= SER_LOG
+APP_LOG        ?= MEM_LOG
 # NO_LOG
 # SER_LOG
 # FILE_LOG
@@ -178,6 +178,7 @@ else
                   TO 
   LFLAGS1       = FROM LIB:c.o
   LFLAGS2       = LIBRARY LIB:scnb.lib LIB:amiga.lib
+  LFLAGST2      = LIBRARY LIB:sc.lib LIB:amiga.lib
   CC            = $(RUNNER) sc
   AS            = $(RUNNER) sc
   LD            = $(RUNNER) slink
@@ -242,14 +243,8 @@ support: FOLDERS get_mem_log
 
 get_mem_log:
 	$(CC) $(CFLAGS) support/$@.o support/$@.c
-	$(LD) $(LFLAGS) target/$@ $(LFLAGS1) $(LFLAGST1) support/$@.o $(LFLAGST2)
-	-cp target/$@ ~/Documents/FS-UAE/Shared/CAMD/GetCamdMemLog
-	-curl --netrc --upload-file target/$@       ftp://192.168.0.4/cf0/Expansion/AmiGUS/GetCamdMemLog
-
-camd_lib_check:
-	$(CC) $(CFLAGS) support/$@.o support/$@.c
-	$(LD) $(LFLAGS) target/$@ $(LFLAGS1) $(LFLAGST1) support/$@.o $(LFLAGST2)
-	-cp target/$@ ~/Documents/FS-UAE/Shared/CAMD/
-	-curl --netrc --upload-file target/$@       ftp://192.168.0.4/cf0/Expansion/AmiGUS/
+	$(LD) $(LFLAGS) target/$@ $(LFLAGS1) support/$@.o $(LFLAGST2)
+	-cp target/$@ ~/Documents/FS-UAE/Shared/CAMD/GetCamdKeyboardMemLog
+	-curl --netrc --upload-file target/$@       ftp://192.168.0.4/cf0/Expansion/AmiGUS/debug/GetCamdKeyboardMemLog
 
 ###############################################################################
