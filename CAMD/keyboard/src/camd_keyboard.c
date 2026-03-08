@@ -46,7 +46,6 @@
 #include "debug.h"
 #include "errors.h"
 #include "support.h"
-#include "worker.h"
 
 #define PERCUSSION_CHANNEL 9
 
@@ -593,25 +592,16 @@ ULONG Startup( VOID ) {
   CreateLabels( &CAMD_Keyboard_Base->ck_PercussionLabels, percussionNames );
 
   CAMD_Keyboard_Base->ck_MainProcess = ( struct Process * ) FindTask( NULL );
-  CAMD_Keyboard_Base->ck_MainSignal = AllocSignal( -1 );
-  if ( -1 == CAMD_Keyboard_Base->ck_MainSignal ) {
+  CAMD_Keyboard_Base->ck_MidiInSignal = AllocSignal( -1 );
+  if ( -1 == CAMD_Keyboard_Base->ck_MidiInSignal ) {
 
-    DisplayError( EMainProcessSignalsFailed );
-    return NULL;
-  }
-  CAMD_Keyboard_Base->ck_WorkerReady = FALSE;
-
-  LOG_D(( "D: Creating worker process for CAMD_Keyboard_Base @ %08lx\n",
-          (LONG) CAMD_Keyboard_Base ));
-  if ( CreateWorkerProcess() ) {
-
-    LOG_D(( "D: No worker, failed.\n" ));
-    return NULL;
+    DisplayError( EMidiInSignalFailed );
+    return EMidiInSignalFailed;
   }
 
   SetMidiAttrs( CAMD_Keyboard_Base->ck_MidiNode,
-                MIDI_SignalTask, CAMD_Keyboard_Base->ck_WorkerProcess,
-                MIDI_RecvSignal, CAMD_Keyboard_Base->ck_WorkerWorkSignal,
+                MIDI_SignalTask, CAMD_Keyboard_Base->ck_MainProcess,
+                MIDI_RecvSignal, CAMD_Keyboard_Base->ck_MidiInSignal,
                 MIDI_PartSignal, -1,
                 TAG_END );
 
@@ -620,8 +610,7 @@ ULONG Startup( VOID ) {
 
 VOID Cleanup( VOID ) {
 
-  DestroyWorkerProcess();
-  FreeSignal( CAMD_Keyboard_Base->ck_MainSignal );
+  FreeSignal( CAMD_Keyboard_Base->ck_MidiInSignal );
 
   FreeInstrumentLabels();
 
@@ -1130,12 +1119,27 @@ VOID HandleEvents( VOID ) {
   BOOL stop = FALSE;
   struct CAMD_Keyboard * base = CAMD_Keyboard_Base;
 
+  const ULONG midiInSignal = ( 1 << base->ck_MidiInSignal );
+  const ULONG windowSignal = base->ck_MainWindowSignal;
+
   while ( !( stop )) {
 
-    ULONG signals = Wait( base->ck_MainWindowSignal
+    ULONG signals = Wait( windowSignal
+                          | midiInSignal
                           | SIGBREAKF_CTRL_C );
     if ( SIGBREAKF_CTRL_C & signals) {
       stop = TRUE;
+    }
+    if ( midiInSignal & signals ) {
+
+      struct MidiLink * link = base->ck_MidiLinkOut;
+      MidiMsg message;
+      while ( GetMidi( base->ck_MidiNode, &message )) {
+
+        Printf( "Received MIDI message 0x%08lx 0x%08lx\n",
+                message.l[ 0 ], message.l[ 1 ] );
+        PutMidiMsg( link, &( message ));
+      }
     }
 
     for ( ; ; ) {
