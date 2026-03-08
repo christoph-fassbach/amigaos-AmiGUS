@@ -318,6 +318,7 @@ ASM( VOID ) SAVEDS AmiGUS_ClosePort (
   // TODO: check port num
 
   DestroyWorkerProcess();
+  FreeSignal( AmiGUS_CAMD_Base->agb_MainSignal );
 }
 
 ASM( VOID ) SAVEDS AmiGUS_ActivateXmit(
