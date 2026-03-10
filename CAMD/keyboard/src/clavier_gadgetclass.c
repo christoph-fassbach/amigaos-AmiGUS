@@ -23,6 +23,7 @@
 
 #include <proto/dos.h>
 #include <proto/diskfont.h>
+#include <proto/exec.h>
 #include <proto/graphics.h>
 #include <proto/intuition.h>
 #include <proto/utility.h>
@@ -323,6 +324,8 @@ static ULONG Handle_OM_NEW( Class * class,
     data->cgd_NoteHit = -1;
     data->cgd_OffsetX = 0;
     data->cgd_VirtualWidth = 1000;
+    data->cgd_EventTask = NULL;
+    data->cgd_EventSignal = -1;
     data->cgd_InscriptionFont = OpenDiskFont( &( inscriptionFont ));
   }
 
@@ -361,7 +364,9 @@ static ULONG Handle_OM_SET_OR_UPDATE( Class * class,
 
         data->cgd_OffsetX = tagItem->ti_Data;
         data->cgd_Flags |= CG_FLAG_REDRAW_BACKGROUND;
-        RefreshGadgets(gadget, CAMD_Keyboard_Base->ck_MainWindow, NULL );
+        RefreshGadgets( gadget, CAMD_Keyboard_Base->ck_MainWindow, NULL );
+        LOG_D(( "D: clavier_gadgetclass - set x offset %ld\n",
+                data->cgd_OffsetX ));
         result |= 1;
         break;
       }
@@ -371,10 +376,28 @@ static ULONG Handle_OM_SET_OR_UPDATE( Class * class,
         result |= 1;
         break;
       }
-      case CG_VISUAL_WIDTH:
+      case CG_VISUAL_WIDTH: {
 
         data->cgd_VisualWidth = tagItem->ti_Data;
         result |= 1;
+        break;
+      }
+      case CG_EVENT_TASK: {
+
+        data->cgd_EventTask = ( struct Task * ) tagItem->ti_Data;
+        LOG_D(( "D: clavier_gadgetclass - Set task 0x%08lx\n",
+                data->cgd_EventTask ));
+        result |= 1;
+        break;
+      }
+      case CG_EVENT_SIGNAL: {
+
+        data->cgd_EventSignal = tagItem->ti_Data;
+        LOG_D(( "D: clavier_gadgetclass - Set signal 0x%08lx\n",
+                data->cgd_EventSignal ));
+        result |= 1;
+        break;
+      }
       default: {
         break;
       }
@@ -401,6 +424,11 @@ static ULONG Handle_OM_GET( Class * class,
   }
 
   switch ( attributeId ) {
+    case CG_NOTE_HIT: {
+
+      *( message->opg_Storage ) = data->cgd_NoteHit;
+      return 1;
+    }
     case CG_OFFSET_X: {
 
       *( message->opg_Storage ) = data->cgd_OffsetX;
@@ -432,6 +460,7 @@ static ULONG Handle_GM_HITTEST( Class * class,
   const UWORD hitY = message->gpht_Mouse.Y;
   const WORD keyWidth = getClavierWhiteKeyWidth( gadget );
   struct Clavier_Gadget_Data * data = INST_DATA( class, gadget );
+  const BYTE oldNote = data->cgd_NoteHit;
 
 #ifdef LIMIT_ACTIVE_AREA
   
@@ -443,6 +472,9 @@ static ULONG Handle_GM_HITTEST( Class * class,
 
   WORD i;
   struct Clavier_Key key;
+  ULONG result = GMR_GADGETNOTHIT;
+
+  data->cgd_NoteHit = -1;
 
 #ifdef LIMIT_ACTIVE_AREA
 
@@ -468,12 +500,19 @@ static ULONG Handle_GM_HITTEST( Class * class,
        ) {
 
       data->cgd_NoteHit = i;
-      return GMR_GADGETHIT;
+      result = GMR_GADGETHIT;
+      break;
     }
   }
 
-  data->cgd_NoteHit = -1;
-  return GMR_GADGETNOTHIT;
+  if (( oldNote != data->cgd_NoteHit ) &&
+      ( data->cgd_EventTask ) &&
+      ( -1 < data->cgd_EventSignal)) {
+
+    Signal( data->cgd_EventTask, data->cgd_EventSignal );
+  }
+
+  return result;
 }
 
 static ULONG Handle_GM_RENDER( Class * class,
@@ -655,11 +694,13 @@ static ULONG Handle_GM_Domain( Class * class,
 
   if ( message->gpd_GInfo ) {
 
-    LOG_V(( "V: Has GInfo %ld\n", message->gpd_GInfo->gi_Domain.Height ));
+    LOG_V(( "V: clavier_gadgetclass - Has GInfo %ld\n",
+            message->gpd_GInfo->gi_Domain.Height ));
 
   } else {
 
-    LOG_V(( "V: No GInfo %ld \n", message->gpd_Which ));
+    LOG_V(( "V: clavier_gadgetclass - No GInfo %ld \n",
+            message->gpd_Which ));
   }
 
   switch ( message->gpd_Which ) {

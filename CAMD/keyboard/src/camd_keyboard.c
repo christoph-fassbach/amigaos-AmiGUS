@@ -605,11 +605,14 @@ ULONG Startup( VOID ) {
                 MIDI_PartSignal, -1,
                 TAG_END );
 
+  CAMD_Keyboard_Base->ck_ClavierSignal = AllocSignal( -1 );
+
   LOG_I(( "I: " STR( APP_NAME ) " startup complete.\n" ));
 }
 
 VOID Cleanup( VOID ) {
 
+  FreeSignal( CAMD_Keyboard_Base->ck_ClavierSignal );
   FreeSignal( CAMD_Keyboard_Base->ck_MidiInSignal );
 
   FreeInstrumentLabels();
@@ -866,6 +869,8 @@ VOID OpenWin( VOID ) { // TODO: enable error handling and return values
     CAMD_Keyboard_Base->ck_MainWindow,
     NULL,
     CG_OFFSET_X, offsetX,
+    CG_EVENT_TASK, CAMD_Keyboard_Base->ck_MainProcess,
+    CG_EVENT_SIGNAL, ( 1 << CAMD_Keyboard_Base->ck_ClavierSignal ),
     TAG_END );
 
   GetAttr( WINDOW_SigMask,
@@ -1119,15 +1124,18 @@ VOID HandleEvents( VOID ) {
   BOOL stop = FALSE;
   struct CAMD_Keyboard * base = CAMD_Keyboard_Base;
 
-  const ULONG midiInSignal = ( 1 << base->ck_MidiInSignal );
   const ULONG windowSignal = base->ck_MainWindowSignal;
+  const ULONG midiInSignal = ( 1 << base->ck_MidiInSignal );
+  const ULONG clavierSignal = ( 1 << CAMD_Keyboard_Base->ck_ClavierSignal );
 
   while ( !( stop )) {
 
     ULONG signals = Wait( windowSignal
                           | midiInSignal
+                          | clavierSignal
                           | SIGBREAKF_CTRL_C );
     if ( SIGBREAKF_CTRL_C & signals) {
+
       stop = TRUE;
     }
     if ( midiInSignal & signals ) {
@@ -1143,6 +1151,12 @@ VOID HandleEvents( VOID ) {
         message.b[ 0 ] = ( message.b[ 0 ] & 0xF0 ) | channel;
         PutMidiMsg( link, &( message ));
       }
+    }
+    if ( clavierSignal & signals ) {
+
+      ULONG note;
+      GetAttr( CG_NOTE_HIT, base->ck_Clavier, &note );
+      LOG_I(( "I: Pushed note %ld\n", note ));
     }
 
     for ( ; ; ) {

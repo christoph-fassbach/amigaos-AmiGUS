@@ -28,9 +28,12 @@
 
 #define GMR_GADGETNOTHIT        0
 
-#define CG_OFFSET_X             ( TAG_USER + 0x10000001 )
-#define CG_VIRTUAL_WIDTH        ( TAG_USER + 0x10000002 )
-#define CG_VISUAL_WIDTH         ( TAG_USER + 0x10000003 )
+#define CG_NOTE_HIT             ( TAG_USER + 0x10000001 )
+#define CG_OFFSET_X             ( TAG_USER + 0x10000002 )
+#define CG_VIRTUAL_WIDTH        ( TAG_USER + 0x10000003 )
+#define CG_VISUAL_WIDTH         ( TAG_USER + 0x10000004 )
+#define CG_EVENT_TASK           ( TAG_USER + 0x10000005 )
+#define CG_EVENT_SIGNAL         ( TAG_USER + 0x10000006 )
 
 struct Clavier_Gadget_Data {
   BYTE              cgd_Flags;
@@ -38,6 +41,8 @@ struct Clavier_Gadget_Data {
   WORD              cgd_OffsetX;
   WORD              cgd_VirtualWidth;
   WORD              cgd_VisualWidth;
+  struct Task     * cgd_EventTask;
+  LONG              cgd_EventSignal;
   struct TextFont * cgd_InscriptionFont;
 };
 

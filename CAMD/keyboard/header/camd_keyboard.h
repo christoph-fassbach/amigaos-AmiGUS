@@ -74,10 +74,10 @@ struct CAMD_Keyboard {
 
   struct Process              * ck_MainProcess;
   BYTE                          ck_MidiInSignal;
+  BYTE                          ck_ClavierSignal;
 
   BYTE                          ck_Channel;
   BYTE                          ck_Velocity;
-  BYTE                          ck_Reserved0;
   BYTE                          ck_Instrument[ 16 ];
 
   /* CAMD pointers */
