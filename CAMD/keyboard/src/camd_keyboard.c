@@ -890,11 +890,6 @@ VOID PlayNote( BYTE channel, BYTE note, BYTE velocity ) {
   message.mm_Data2 = velocity;
               
   PutMidiMsg( link, &( message ));
-
-  message.mm_Status = MS_NoteOn | channel;
-  message.mm_Data1 = note;
-  message.mm_Data2 = 0;
-  PutMidiMsg( link, &( message ));
 }
 
 VOID SelectInstrument( BYTE channel ) {
@@ -1154,9 +1149,17 @@ VOID HandleEvents( VOID ) {
     }
     if ( clavierSignal & signals ) {
 
-      ULONG note;
+      BYTE channel = base->ck_Channel;
+      BYTE velocity = base->ck_Velocity;
+      LONG note;
       GetAttr( CG_NOTE_HIT, base->ck_Clavier, &note );
-      LOG_I(( "I: Pushed note %ld\n", note ));
+
+      if ( -1 < note ) {
+
+        LOG_I(( "I: Playing channel %ld, note %ld, velocity %ld\n",
+              channel, note, velocity ));
+        PlayNote( channel, note, velocity );
+      }
     }
 
     for ( ; ; ) {
@@ -1204,9 +1207,9 @@ VOID HandleEvents( VOID ) {
 
               BYTE channel = base->ck_Channel;
               BYTE note = windowMessageCode;
-              BYTE velocity = base->ck_Velocity;
+              BYTE velocity = 0; // just off here! base->ck_Velocity;
 
-              LOG_I(( "I: Playing channel %ld, note %ld, velocity %ld\n",
+              LOG_I(( "I: Stoping channel %ld, note %ld, velocity %ld\n",
                       channel, note, velocity ));
               PlayNote( channel, note, velocity );
               break;
