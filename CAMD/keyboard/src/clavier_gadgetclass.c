@@ -29,6 +29,7 @@
 
 #include "clavier_gadgetclass.h"
 #include "camd_keyboard.h"
+#include "debug.h"
 
 #define LIMIT_ACTIVE_AREA // If defined, only hit and draw active area
 
@@ -417,7 +418,7 @@ static ULONG Handle_OM_GET( Class * class,
     }
     default: {
 
-      Printf("Unknown %lx\n", attributeId );
+      LOG_W(("W: clavier_gadgetclass - Unknown attribute %lx\n", attributeId ));
       return 0;
     }
   }
@@ -654,11 +655,11 @@ static ULONG Handle_GM_Domain( Class * class,
 
   if ( message->gpd_GInfo ) {
 
-    Printf( "ja %ld\n", message->gpd_GInfo->gi_Domain.Height );
+    LOG_V(( "V: Has GInfo %ld\n", message->gpd_GInfo->gi_Domain.Height ));
 
   } else {
 
-    Printf( "nein %ld \n", message->gpd_Which );
+    LOG_V(( "V: No GInfo %ld \n", message->gpd_Which ));
   }
 
   switch ( message->gpd_Which ) {

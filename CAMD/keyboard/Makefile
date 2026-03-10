@@ -66,8 +66,9 @@ SDIR   = src/
 HDIR   = header/
 
 APP_CPU        ?= 000
-APP_LOG        ?= MEM_LOG
+APP_LOG        ?= CON_LOG
 # NO_LOG
+# CON_LOG
 # SER_LOG
 # FILE_LOG
 # MEM_LOG

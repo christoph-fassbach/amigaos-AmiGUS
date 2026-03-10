@@ -52,6 +52,25 @@ ASM( VOID ) debug_mPutChProc( REG( d0, UBYTE c ), REG( a3, UBYTE ** target )) {
  * Debug helper functions - public function definitions.
  *****************************************************************************/
 
+#ifdef CON_LOG
+
+VOID debug_Printf( STRPTR format, ... ) {
+
+  VPrintf(
+    format,
+    /*
+    /------+-----------------------> Cast to required APTR 
+    |      |  /------+-------------> Nice math in LONGs to make it work 
+    |      |  |      | /-----+-----> STRPTR, address of format, first argument
+    |      |  |      | |     | /-+-> 4 bytes later, the next argument follows
+    |      |  |      | |     | | |   */
+    ( APTR ) (( LONG ) &format + 4 ));
+}
+
+#endif /* CON_LOG */
+
+#if defined( SER_LOG ) | defined( FILE_LOG ) | defined( MEM_LOG )
+
 #define NOT_USE_RawPutCharC
 #ifdef USE_RawPutCharC
 
@@ -103,6 +122,10 @@ VOID debug_kprintf( STRPTR format, ... ) {
 }
 
 #endif
+#endif /* SER_LOG (
+            and FILE_LOG for logging errors 
+            and MEM_LOG for printing address ;-)
+          ) */
 
 #ifdef FILE_LOG
 

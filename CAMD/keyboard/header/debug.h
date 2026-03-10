@@ -83,23 +83,32 @@ VOID RawPutChar( BYTE putCh );
  * - Whatever parameter you pass in here will ALWAYS be promoted to LONG!
  */
 
-#if defined (SER_LOG)
+#if defined (CON_LOG)
+
+// LOG_INT(X) NO way
+// #define LOG_V(X) debug_Printf X
+#define LOG_D(X)   debug_Printf X
+#define LOG_I(X)   debug_Printf X
+#define LOG_W(X)   debug_Printf X
+#define LOG_E(X)   debug_Printf X
+
+#elif defined (SER_LOG)
 
 // LOG_INT(X) would deadlock
 // #define LOG_V(X) debug_kprintf X
-#define LOG_D(X) debug_kprintf X
-#define LOG_I(X) debug_kprintf X
-#define LOG_W(X) debug_kprintf X
-#define LOG_E(X) debug_kprintf X
+#define LOG_D(X)   debug_kprintf X
+#define LOG_I(X)   debug_kprintf X
+#define LOG_W(X)   debug_kprintf X
+#define LOG_E(X)   debug_kprintf X
 
 #elif defined (FILE_LOG)
 
 // LOG_INT(X) would crash
-#define LOG_V(X) debug_fprintf X
-#define LOG_D(X) debug_fprintf X
-#define LOG_I(X) debug_fprintf X
-#define LOG_W(X) debug_fprintf X
-#define LOG_E(X) debug_fprintf X
+#define LOG_V(X)   debug_fprintf X
+#define LOG_D(X)   debug_fprintf X
+#define LOG_I(X)   debug_fprintf X
+#define LOG_W(X)   debug_fprintf X
+#define LOG_E(X)   debug_fprintf X
 
 #elif defined (MEM_LOG)
 
@@ -133,12 +142,20 @@ VOID RawPutChar( BYTE putCh );
 #endif
 
 /**
+ * Logging function used by the macros above, logging to CONsole aka shell.
+ * Do not use directly, use the macros!
+ *
+ * @param format Exec Printf style format followed by all parameters.
+ */
+VOID debug_Printf( STRPTR format, ... );
+
+/**
  * Logging function used by the macros above, logging to serial port.
  * Do not use directly, use the macros!
  *
  * @param format Exec Printf style format followed by all parameters.
  */
-void debug_kprintf(STRPTR format, ...);
+VOID debug_kprintf( STRPTR format, ... );
 
 /**
  * Logging function used by the macros above, logging to a file.
@@ -146,7 +163,7 @@ void debug_kprintf(STRPTR format, ...);
  *
  * @param format Exec Printf style format followed by all parameters.
  */
-void debug_fprintf(STRPTR format, ...);
+VOID debug_fprintf( STRPTR format, ... );
 
 /**
  * Logging functions used by the macros above, logging some area in memory.
@@ -154,6 +171,6 @@ void debug_fprintf(STRPTR format, ...);
  *
  * @param format Exec Printf style format followed by all parameters.
  */
-void debug_mprintf(STRPTR format, ...);
+VOID debug_mprintf( STRPTR format, ... );
 
 #endif /* DEBUG_H */
