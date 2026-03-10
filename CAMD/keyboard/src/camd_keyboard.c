@@ -1152,7 +1152,7 @@ VOID HandleEvents( VOID ) {
       BYTE channel = base->ck_Channel;
       BYTE velocity = base->ck_Velocity;
       LONG note;
-      GetAttr( CG_NOTE_HIT, base->ck_Clavier, &note );
+      GetAttr( CG_NOTE_HIT, base->ck_Clavier, ( ULONG * ) &( note ));
 
       if ( -1 < note ) {
 
