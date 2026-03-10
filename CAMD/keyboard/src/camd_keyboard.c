@@ -1136,8 +1136,11 @@ VOID HandleEvents( VOID ) {
       MidiMsg message;
       while ( GetMidi( base->ck_MidiNode, &message )) {
 
+        BYTE channel = base->ck_Channel;
+
         LOG_I(( "I: Received MIDI message 0x%08lx 0x%08lx\n",
                 message.l[ 0 ], message.l[ 1 ] ));
+        message.b[ 0 ] = ( message.b[ 0 ] & 0xF0 ) | channel;
         PutMidiMsg( link, &( message ));
       }
     }
