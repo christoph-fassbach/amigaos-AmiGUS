@@ -368,7 +368,7 @@ VOID FreeChooserLabels( VOID ) {
           IS_EMPTY_LIST( &( CAMD_Keyboard_Base->ck_OutputDeviceLabels ))));
 }
 
-VOID CreateLabels( struct List * labels, const UBYTE ** strings ) {
+VOID CreateListLabels( struct List * labels, const UBYTE ** strings ) {
 
   LONG i = 0;
 
@@ -399,7 +399,7 @@ VOID FreeListLabels( struct List * list ) {
     FreeListBrowserNode( label );
   }
   LOG_D(( "V: List labels emptied.\n" ));
-} 
+}
 
 LONG OpenMidi( VOID ) {
 
@@ -588,9 +588,9 @@ ULONG Startup( VOID ) {
   }
 
   NEW_LIST( &( CAMD_Keyboard_Base->ck_InstrumentLabels ));
-  CreateLabels( &CAMD_Keyboard_Base->ck_InstrumentLabels, instrumentNames );
+  CreateListLabels( &CAMD_Keyboard_Base->ck_InstrumentLabels, instrumentNames );
   NEW_LIST( &( CAMD_Keyboard_Base->ck_PercussionLabels ));
-  CreateLabels( &CAMD_Keyboard_Base->ck_PercussionLabels, percussionNames );
+  CreateListLabels( &CAMD_Keyboard_Base->ck_PercussionLabels, percussionNames );
 
   CAMD_Keyboard_Base->ck_MainProcess = ( struct Process * ) FindTask( NULL );
   CAMD_Keyboard_Base->ck_MidiInSignal = AllocSignal( -1 );
