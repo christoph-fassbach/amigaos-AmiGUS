@@ -19,6 +19,7 @@
 #include <intuition/intuitionbase.h>
 #include <libraries/gadtools.h>
 #include <reaction/reaction_macros.h>
+#include <gadgets/getfile.h>
 
 #include <proto/alib.h>
 #include <proto/dos.h>
@@ -41,8 +42,8 @@ struct SF_Converter      * SF_Converter_Base;   // Main app struct
 struct IntuitionBase     * IntuitionBase;
 struct UtilityBase       * UtilityBase;
 // and some more owned by the linker libraries:
-// struct ExecBase       * SysBase;
 // struct DosLibrary     * DOSBase;
+// struct ExecBase       * SysBase;
 // And for ReAction:
 struct ClassLibrary      * ButtonBase;
 struct ClassLibrary      * GetFileBase;
@@ -52,8 +53,6 @@ struct ClassLibrary      * ListBrowserBase;
 struct ClassLibrary      * WindowBase;
 
 /* Locals also defined here! */
-
-#define GetFileObjectEnd LabelEnd
 
 static const struct ColumnInfo instrumentColumns[] = {
 
@@ -419,12 +418,12 @@ VOID OpenWin( VOID ) { // TODO: enable error handling and return values
       LAYOUT_AddChild, HLayoutObject,
         LAYOUT_VertAlignment, LALIGN_CENTER,
 
-        LAYOUT_AddChild, GetFileObject,
+        LAYOUT_AddChild, SF_Converter_Base->ck_InputGetFile = GetFileObject,
           GA_ID, GadgetId_GetInputFile,
           GA_RelVerify, TRUE,
           GETFILE_TitleText, "Select a .sf2 / .AmiSF file",
           GETFILE_ReadOnly, TRUE,
-        GetFileObjectEnd,
+        GetFileEnd,
         CHILD_WeightedHeight, 0,
         CHILD_Label, LabelObject,
           LABEL_Text ,"Source: ",
@@ -451,12 +450,12 @@ VOID OpenWin( VOID ) { // TODO: enable error handling and return values
       LAYOUT_AddChild, HLayoutObject,
         LAYOUT_VertAlignment, LALIGN_CENTER,
 
-        LAYOUT_AddChild, GetFileObject,
+        LAYOUT_AddChild, SF_Converter_Base->ck_OutputGetFile = GetFileObject,
           GA_ID, GadgetId_GetOutputFile,
           GA_RelVerify, TRUE,
           GETFILE_TitleText, "Select target .AmiSF file",
           GETFILE_ReadOnly, FALSE,
-        GetFileObjectEnd,
+        GetFileEnd,
         CHILD_WeightedHeight, 0,
         CHILD_Label, LabelObject,
           LABEL_Text ,"Target: ",
@@ -526,8 +525,31 @@ VOID HandleEvents( VOID ) {
       switch ( WMHI_CLASSMASK & windowMessage ) {
         case WMHI_GADGETUP: {
           switch ( WMHI_GADGETMASK & windowMessage ) {
+            case GadgetId_GetInputFile: {
+
+              gfRequestFile(( Object * ) base->ck_InputGetFile,
+                             base->ck_MainWindow );
+              break;
+            }
+            case GadgetId_GetOutputFile: {
+
+              gfRequestFile(( Object * ) base->ck_OutputGetFile,
+                             base->ck_MainWindow );
+              break;
+            }
+            case GadgetId_ReadButton: {
+
+              LOG_D(( "D: Read button pressed.\n" ));
+              break;
+            }
+            case GadgetId_WriteButton: {
+
+              LOG_D(( "D: Write button pressed.\n" ));
+              break;
+            }
             case GadgetId_Instruments: {
 
+              LOG_D(( "D: List element pressed.\n" ));
               break;
             }
             default: {

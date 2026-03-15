@@ -61,6 +61,8 @@ struct SF_Converter {
   struct Window               * ck_MainWindow;
   Object                      * ck_MainWindowContent;
   ULONG                         ck_MainWindowSignal;
+  struct Gadget               * ck_InputGetFile;
+  struct Gadget               * ck_OutputGetFile;
   struct Gadget               * ck_ListBrowser;
 
   struct List                   ck_InstrumentLabels;
