@@ -1,0 +1,97 @@
+/*
+ * This file is part of the SoundFontConverter.
+ *
+ * SoundFontConverter is free software: you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation, version 3 of the License only.
+ *
+ * SoundFontConverter is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See the GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with SoundFontConverter.
+ *
+ * If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#ifndef CONVERTER_H
+#define CONVERTER_H
+
+#include <dos/dos.h>
+#include <exec/execbase.h>
+#include <intuition/classes.h>
+#include <intuition/intuitionbase.h>
+#include <utility/utility.h>
+
+/******************************************************************************
+ * Define the tool's properties here,
+ * will be used in camd_amigus.c.
+ *****************************************************************************/
+
+#define STR_VALUE(x)      #x
+#define STR(x)            STR_VALUE(x)
+
+#define APP_IDSTRING      STR( APP_FILE )" "                         \
+                          STR( APP_VERSION )".00"STR( APP_REVISION ) \
+                          " "APP_DATE" "STR( APP_CPU )" "            \
+                          STR( APP_COMPILER )" "STR( APP_HOST )
+
+/*
+ * If logging to memory is activated, this is used to mark the start
+ * of the log memory. And as 1 pointer to this marker, 1 pointer to the
+ * library file name and 1 more pointer to the marker are used, the full
+ * start marker is not even in the library, no need to unload the library
+ * so even with library in memory it should unique in memory.
+ */
+#define MEM_LOG_BORDERS         "********************************"
+
+/******************************************************************************
+ * Tool base structure
+ *****************************************************************************/
+/**
+ * Private SoundFontConverter base structure.
+ *
+ * There is no public one, nothing to play around with.
+ */
+struct SF_Converter {
+  /* Tool specific member variables */
+  struct Screen               * ck_Screen;
+  struct Window               * ck_MainWindow;
+  Object                      * ck_MainWindowContent;
+  ULONG                         ck_MainWindowSignal;
+  struct Gadget               * ck_ListBrowser;
+
+  struct List                   ck_InstrumentLabels;
+  struct List                   ck_PercussionLabels;
+
+  struct Process              * ck_MainProcess;
+
+  /* Debug output handling */
+  BPTR                          ck_LogFile;       // Debug log file handle
+  APTR                          ck_LogMem;        // Debug log memory blob
+};
+
+//#define CAMD_TOOL_FLAG_REACTION_FAILED   0x00000001
+
+/*
+ * All libraries' base pointers used by the CAMD MIDI driver tool.
+ */
+extern struct SF_Converter      * SF_Converter_Base;
+
+extern struct DosLibrary        * DOSBase;
+extern struct IntuitionBase     * IntuitionBase;
+extern struct UtilityBase       * UtilityBase;
+extern struct ExecBase          * SysBase;
+
+extern struct ClassLibrary      * ButtonBase;
+extern struct ClassLibrary      * GetFileBase;
+extern struct ClassLibrary      * LabelBase;
+extern struct ClassLibrary      * LayoutBase;
+extern struct ClassLibrary      * ListBrowserBase;
+extern struct ClassLibrary      * WindowBase;
+
+extern Class                    * ClavierGadgetClass;
+
+#endif /* CONVERTER_H */
