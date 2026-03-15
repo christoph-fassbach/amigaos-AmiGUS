@@ -57,22 +57,22 @@
  */
 struct SF_Converter {
   /* Tool specific member variables */
-  struct Screen               * ck_Screen;
-  struct Window               * ck_MainWindow;
-  Object                      * ck_MainWindowContent;
-  ULONG                         ck_MainWindowSignal;
-  struct Gadget               * ck_InputGetFile;
-  struct Gadget               * ck_OutputGetFile;
-  struct Gadget               * ck_ListBrowser;
+  struct Screen               * sfc_Screen;
+  struct Window               * sfc_MainWindow;
+  Object                      * sfc_MainWindowContent;
+  ULONG                         sfc_MainWindowSignal;
+  struct Gadget               * sfc_InputGetFile;
+  struct Gadget               * sfc_OutputGetFile;
+  struct Gadget               * sfc_ListBrowser;
 
-  struct List                   ck_InstrumentLabels;
-  struct List                   ck_PercussionLabels;
+  struct List                   sfc_InstrumentLabels;
+  struct List                   sfc_PercussionLabels;
 
-  struct Process              * ck_MainProcess;
+  struct Process              * sfc_MainProcess;
 
   /* Debug output handling */
-  BPTR                          ck_LogFile;       // Debug log file handle
-  APTR                          ck_LogMem;        // Debug log memory blob
+  BPTR                          sfc_LogFile;       // Debug log file handle
+  APTR                          sfc_LogMem;        // Debug log memory blob
 };
 
 //#define CAMD_TOOL_FLAG_REACTION_FAILED   0x00000001

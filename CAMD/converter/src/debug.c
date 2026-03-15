@@ -142,7 +142,7 @@ VOID debug_fprintf( STRPTR format, ... ) {
     return;
   }
 
-  if ( !SF_Converter_Base->ck_LogFile ) {
+  if ( !SF_Converter_Base->sfc_LogFile ) {
     if ( errorShown ) {
 
       return;
@@ -162,9 +162,9 @@ VOID debug_fprintf( STRPTR format, ... ) {
     }
 #endif
 
-    SF_Converter_Base->ck_LogFile = Open( logFilePath, MODE_NEWFILE );
+    SF_Converter_Base->sfc_LogFile = Open( logFilePath, MODE_NEWFILE );
 
-    if ( !SF_Converter_Base->ck_LogFile ) {
+    if ( !SF_Converter_Base->sfc_LogFile ) {
 
       errorShown = TRUE;
       DisplayError( EOpenLogFile );
@@ -182,7 +182,7 @@ VOID debug_fprintf( STRPTR format, ... ) {
     ( APTR ) (( LONG ) &format + 4 ),
     &debug_mPutChProc,
     &printBuffer );
-  Write( SF_Converter_Base->ck_LogFile, buffer, printBuffer - buffer - 1 );
+  Write( SF_Converter_Base->sfc_LogFile, buffer, printBuffer - buffer - 1 );
 }
 
 #endif /* FILE_LOG */
@@ -202,7 +202,7 @@ VOID debug_mprintf( STRPTR format, ... ) {
     MEM_LOG_BORDERS
   };
 
-  if ( !SF_Converter_Base->ck_LogMem ) {
+  if ( !SF_Converter_Base->sfc_LogMem ) {
 
     // Yep, defaults to 
     LONG size = 32 << 20;             // 32MB somewhere
@@ -245,36 +245,36 @@ VOID debug_mprintf( STRPTR format, ... ) {
 
     if ( 0 < ( LONG ) where ) {
 
-      SF_Converter_Base->ck_LogMem = AllocAbs( size, where );
+      SF_Converter_Base->sfc_LogMem = AllocAbs( size, where );
     }
-    if ( !SF_Converter_Base->ck_LogMem ) {
+    if ( !SF_Converter_Base->sfc_LogMem ) {
 
-      SF_Converter_Base->ck_LogMem = AllocAbs( size, ( APTR ) 0x0a000000 );
+      SF_Converter_Base->sfc_LogMem = AllocAbs( size, ( APTR ) 0x0a000000 );
     }
-    if ( !SF_Converter_Base->ck_LogMem ) {
+    if ( !SF_Converter_Base->sfc_LogMem ) {
 
-      SF_Converter_Base->ck_LogMem = AllocAbs( size, ( APTR ) 0x00400000 );
+      SF_Converter_Base->sfc_LogMem = AllocAbs( size, ( APTR ) 0x00400000 );
     }
-    if ( !SF_Converter_Base->ck_LogMem ) {
+    if ( !SF_Converter_Base->sfc_LogMem ) {
 
-      SF_Converter_Base->ck_LogMem = AllocAbs( size, ( APTR ) 0x48000000 );
+      SF_Converter_Base->sfc_LogMem = AllocAbs( size, ( APTR ) 0x48000000 );
     }
-    if ( !SF_Converter_Base->ck_LogMem ) {
+    if ( !SF_Converter_Base->sfc_LogMem ) {
 
       size = ( 2 << 19 ) - 4;
-      SF_Converter_Base->ck_LogMem = AllocAbs( size, ( APTR ) 0x00400000 );
+      SF_Converter_Base->sfc_LogMem = AllocAbs( size, ( APTR ) 0x00400000 );
     }
-    if ( SF_Converter_Base->ck_LogMem ) {
+    if ( SF_Converter_Base->sfc_LogMem ) {
 
       LONG i;
       for ( i = 0; i < size; i += 4 ) {
-        *( ULONG * )(( LONG ) SF_Converter_Base->ck_LogMem + i ) = 0;
+        *( ULONG * )(( LONG ) SF_Converter_Base->sfc_LogMem + i ) = 0;
       }
     } else {
 
-      SF_Converter_Base->ck_LogMem = AllocMem( size, MEMF_CLEAR | MEMF_PUBLIC );
+      SF_Converter_Base->sfc_LogMem = AllocMem( size, MEMF_CLEAR | MEMF_PUBLIC );
     }
-    if ( !SF_Converter_Base->ck_LogMem ) {
+    if ( !SF_Converter_Base->sfc_LogMem ) {
 
       debug_kprintf( STR( APP_FILE ) " Log giving up...\n" );
       errorShown = TRUE;
@@ -283,17 +283,17 @@ VOID debug_mprintf( STRPTR format, ... ) {
     }
     debug_kprintf( STR( APP_FILE )
                    " Log @ 0x%08lx = %ld (retrieved), size %ld\n",
-                   ( LONG ) SF_Converter_Base->ck_LogMem,
-                   ( LONG ) SF_Converter_Base->ck_LogMem,
+                   ( LONG ) SF_Converter_Base->sfc_LogMem,
+                   ( LONG ) SF_Converter_Base->sfc_LogMem,
                    size );
 
     RawDoFmt( "%s %s %s\n",
               ( APTR ) memMarker,
               &debug_mPutChProc,
-              &SF_Converter_Base->ck_LogMem );
+              &SF_Converter_Base->sfc_LogMem );
     /* Move mem blob pointer back to overwrite trailing zero next comment */
-    SF_Converter_Base->ck_LogMem =
-      ( APTR )(( ULONG ) SF_Converter_Base->ck_LogMem - 1 );
+    SF_Converter_Base->sfc_LogMem =
+      ( APTR )(( ULONG ) SF_Converter_Base->sfc_LogMem - 1 );
     debug_kprintf( STR( APP_FILE ) " Log ready\n" );
   }
 
@@ -307,10 +307,10 @@ VOID debug_mprintf( STRPTR format, ... ) {
     |      |  |      | |     | | |   */
     ( APTR ) (( LONG ) &format + 4 ),
     &debug_mPutChProc,
-    &SF_Converter_Base->ck_LogMem );
+    &SF_Converter_Base->sfc_LogMem );
   /* Move mem blob pointer back to overwrite trailing zero next comment */
-  SF_Converter_Base->ck_LogMem =
-    ( APTR )(( ULONG ) SF_Converter_Base->ck_LogMem - 1 );
+  SF_Converter_Base->sfc_LogMem =
+    ( APTR )(( ULONG ) SF_Converter_Base->sfc_LogMem - 1 );
 }
 
 #endif /* MEM_LOG */

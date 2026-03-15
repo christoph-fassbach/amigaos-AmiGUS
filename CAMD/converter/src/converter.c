@@ -332,17 +332,17 @@ ULONG Startup( VOID ) {
   OpenLib(( struct Library ** )&ListBrowserBase, "gadgets/listbrowser.gadget", 0, EOpenListBrowserBase );
   OpenLib(( struct Library ** )&WindowBase, "window.class", 0, EOpenWindowBase );
 
-  NEW_LIST( &( SF_Converter_Base->ck_InstrumentLabels ));
-  CreateListLabels( &SF_Converter_Base->ck_InstrumentLabels, instrumentNames );
+  NEW_LIST( &( SF_Converter_Base->sfc_InstrumentLabels ));
+  CreateListLabels( &SF_Converter_Base->sfc_InstrumentLabels, instrumentNames );
 
-  SF_Converter_Base->ck_MainProcess = ( struct Process * ) FindTask( NULL );
+  SF_Converter_Base->sfc_MainProcess = ( struct Process * ) FindTask( NULL );
 
   LOG_I(( "I: " STR( APP_NAME ) " startup complete.\n" ));
 }
 
 VOID Cleanup( VOID ) {
 
-  FreeListLabels( &( SF_Converter_Base->ck_InstrumentLabels ));
+  FreeListLabels( &( SF_Converter_Base->sfc_InstrumentLabels ));
 
   CloseLib(( struct Library ** )&WindowBase );
   CloseLib(( struct Library ** )&ListBrowserBase );
@@ -356,10 +356,10 @@ VOID Cleanup( VOID ) {
   LOG_I(( "I: " STR( APP_NAME ) " cleanup starting.\n" ));
   if ( SF_Converter_Base ) {
 
-    if ( SF_Converter_Base->ck_LogFile ) {
+    if ( SF_Converter_Base->sfc_LogFile ) {
 
-      LOG_I(( "I: Attempting SF_Converter_Base->ck_LogFile.\n" ));
-      Close( SF_Converter_Base->ck_LogFile );
+      LOG_I(( "I: Attempting SF_Converter_Base->sfc_LogFile.\n" ));
+      Close( SF_Converter_Base->sfc_LogFile );
     }
     /* Free'ing agt_LogMem deliberately not happening here! */
 
@@ -372,16 +372,16 @@ VOID Cleanup( VOID ) {
 
 VOID OpenWin( VOID ) { // TODO: enable error handling and return values
 
-  SF_Converter_Base->ck_Screen = LockPubScreen( NULL );
+  SF_Converter_Base->sfc_Screen = LockPubScreen( NULL );
 
-  if ( !SF_Converter_Base->ck_Screen ) {
+  if ( !SF_Converter_Base->sfc_Screen ) {
 
     return;
   }
 
-  SF_Converter_Base->ck_ListBrowser =
+  SF_Converter_Base->sfc_ListBrowser =
     ListBrowserObject,
-      LISTBROWSER_Labels, &( SF_Converter_Base->ck_InstrumentLabels ),
+      LISTBROWSER_Labels, &( SF_Converter_Base->sfc_InstrumentLabels ),
       LISTBROWSER_ColumnInfo, instrumentColumns,
       LISTBROWSER_Selected, 0,
       LISTBROWSER_ColumnTitles, TRUE,
@@ -396,8 +396,8 @@ VOID OpenWin( VOID ) { // TODO: enable error handling and return values
       GA_RelVerify, TRUE,
     ListBrowserEnd;
 
-  SF_Converter_Base->ck_MainWindowContent = WindowObject,
-    WA_PubScreen, SF_Converter_Base->ck_Screen,
+  SF_Converter_Base->sfc_MainWindowContent = WindowObject,
+    WA_PubScreen, SF_Converter_Base->sfc_Screen,
     WA_ScreenTitle, APP_IDSTRING,
     WA_Title, "SoundFontConverter",
     WA_Activate, TRUE,
@@ -418,7 +418,7 @@ VOID OpenWin( VOID ) { // TODO: enable error handling and return values
       LAYOUT_AddChild, HLayoutObject,
         LAYOUT_VertAlignment, LALIGN_CENTER,
 
-        LAYOUT_AddChild, SF_Converter_Base->ck_InputGetFile = GetFileObject,
+        LAYOUT_AddChild, SF_Converter_Base->sfc_InputGetFile = GetFileObject,
           GA_ID, GadgetId_GetInputFile,
           GA_RelVerify, TRUE,
           GETFILE_TitleText, "Select a .sf2 / .AmiSF file",
@@ -444,13 +444,13 @@ VOID OpenWin( VOID ) { // TODO: enable error handling and return values
         LABEL_Text, "Instrument definitions:",
         LABEL_Justification, LABEL_CENTER,
       LabelEnd,
-      LAYOUT_AddChild, SF_Converter_Base->ck_ListBrowser,
+      LAYOUT_AddChild, SF_Converter_Base->sfc_ListBrowser,
       CHILD_WeightedHeight, 1000,
 
       LAYOUT_AddChild, HLayoutObject,
         LAYOUT_VertAlignment, LALIGN_CENTER,
 
-        LAYOUT_AddChild, SF_Converter_Base->ck_OutputGetFile = GetFileObject,
+        LAYOUT_AddChild, SF_Converter_Base->sfc_OutputGetFile = GetFileObject,
           GA_ID, GadgetId_GetOutputFile,
           GA_RelVerify, TRUE,
           GETFILE_TitleText, "Select target .AmiSF file",
@@ -473,22 +473,22 @@ VOID OpenWin( VOID ) { // TODO: enable error handling and return values
     LayoutEnd,
   EndWindow;
 
-  if ( !SF_Converter_Base->ck_MainWindowContent ) {
+  if ( !SF_Converter_Base->sfc_MainWindowContent ) {
     return;
   }
 
   // On creation by window open, clavier needs to tell scroller the size!
 
-  SF_Converter_Base->ck_MainWindow = ( struct Window * )
-    RA_OpenWindow( SF_Converter_Base->ck_MainWindowContent );
+  SF_Converter_Base->sfc_MainWindow = ( struct Window * )
+    RA_OpenWindow( SF_Converter_Base->sfc_MainWindowContent );
 
-  if ( !SF_Converter_Base->ck_MainWindow ) {
+  if ( !SF_Converter_Base->sfc_MainWindow ) {
     return;
   }
 
   GetAttr( WINDOW_SigMask,
-           SF_Converter_Base->ck_MainWindowContent, 
-           &( SF_Converter_Base->ck_MainWindowSignal ));
+           SF_Converter_Base->sfc_MainWindowContent, 
+           &( SF_Converter_Base->sfc_MainWindowSignal ));
 
   return;
 }
@@ -498,7 +498,7 @@ VOID HandleEvents( VOID ) {
   BOOL stop = FALSE;
   struct SF_Converter * base = SF_Converter_Base;
 
-  const ULONG windowSignal = base->ck_MainWindowSignal;
+  const ULONG windowSignal = base->sfc_MainWindowSignal;
 
   while ( !( stop )) {
 
@@ -512,7 +512,7 @@ VOID HandleEvents( VOID ) {
     for ( ; ; ) {
 
       WORD windowMessageCode;
-      ULONG windowMessage = DoMethod( base->ck_MainWindowContent,
+      ULONG windowMessage = DoMethod( base->sfc_MainWindowContent,
                                       WM_HANDLEINPUT, 
                                       &windowMessageCode );
 
@@ -527,14 +527,14 @@ VOID HandleEvents( VOID ) {
           switch ( WMHI_GADGETMASK & windowMessage ) {
             case GadgetId_GetInputFile: {
 
-              gfRequestFile(( Object * ) base->ck_InputGetFile,
-                             base->ck_MainWindow );
+              gfRequestFile(( Object * ) base->sfc_InputGetFile,
+                             base->sfc_MainWindow );
               break;
             }
             case GadgetId_GetOutputFile: {
 
-              gfRequestFile(( Object * ) base->ck_OutputGetFile,
-                             base->ck_MainWindow );
+              gfRequestFile(( Object * ) base->sfc_OutputGetFile,
+                             base->sfc_MainWindow );
               break;
             }
             case GadgetId_ReadButton: {
@@ -586,15 +586,15 @@ VOID CloseWin( VOID ) {
 
     return;
   }
-  if ( SF_Converter_Base->ck_MainWindowContent ) {
+  if ( SF_Converter_Base->sfc_MainWindowContent ) {
 
-    DisposeObject( SF_Converter_Base->ck_MainWindowContent );
-    SF_Converter_Base->ck_MainWindowContent = NULL;
+    DisposeObject( SF_Converter_Base->sfc_MainWindowContent );
+    SF_Converter_Base->sfc_MainWindowContent = NULL;
   }
-  if ( SF_Converter_Base->ck_Screen ) {
+  if ( SF_Converter_Base->sfc_Screen ) {
 
-    UnlockPubScreen( NULL, SF_Converter_Base->ck_Screen );
-    SF_Converter_Base->ck_Screen = NULL;
+    UnlockPubScreen( NULL, SF_Converter_Base->sfc_Screen );
+    SF_Converter_Base->sfc_Screen = NULL;
   }
 }
 
