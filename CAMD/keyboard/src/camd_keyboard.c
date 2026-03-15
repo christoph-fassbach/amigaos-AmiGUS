@@ -357,14 +357,14 @@ VOID FreeChooserLabels( VOID ) {
 
     FreeChooserNode( node );
   }
-  LOG_D(( "V: Labels is empty = %ld\n",
+  LOG_D(( "V: Input labels is empty = %ld\n",
           IS_EMPTY_LIST( &( CAMD_Keyboard_Base->ck_InputDeviceLabels ))));
 
   while ( node = RemHead( &( CAMD_Keyboard_Base->ck_OutputDeviceLabels ))) {
 
     FreeChooserNode( node );
   }
-  LOG_D(( "V: Labels is empty = %ld\n",
+  LOG_D(( "V: Output labels is empty = %ld\n",
           IS_EMPTY_LIST( &( CAMD_Keyboard_Base->ck_OutputDeviceLabels ))));
 }
 
@@ -389,15 +389,16 @@ VOID CreateLabels( struct List * labels, const UBYTE ** strings ) {
   }
 }
 
-VOID FreeInstrumentLabels( VOID ) {
+VOID FreeListLabels( struct List * list ) {
 
   struct Node * label;
-  FOR_LIST( &( CAMD_Keyboard_Base->ck_InstrumentLabels ),
+  FOR_LIST( list,
             label,
             struct Node * ) {
 
     FreeListBrowserNode( label );
   }
+  LOG_D(( "V: List labels emptied.\n" ));
 } 
 
 LONG OpenMidi( VOID ) {
@@ -615,7 +616,8 @@ VOID Cleanup( VOID ) {
   FreeSignal( CAMD_Keyboard_Base->ck_ClavierSignal );
   FreeSignal( CAMD_Keyboard_Base->ck_MidiInSignal );
 
-  FreeInstrumentLabels();
+  FreeListLabels( &( CAMD_Keyboard_Base->ck_InstrumentLabels ));
+  FreeListLabels( &( CAMD_Keyboard_Base->ck_PercussionLabels ));
 
   CloseMidiInput();
   CloseMidiOutput();
