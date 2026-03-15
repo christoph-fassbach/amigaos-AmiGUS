@@ -30,13 +30,9 @@ STRPTR _AppVersionString = "$VER: " APP_IDSTRING "\r\n";
 struct AmiGUS_CAMD_Tool  * AmiGUS_CAMD_Tool_Base = NULL;
 struct Library           * GadToolsBase          = NULL;
 struct IntuitionBase     * IntuitionBase         = NULL;
-
-struct Library           * BevelBase             = NULL;
-struct Library           * LabelBase             = NULL;
-struct Library           * LayoutBase            = NULL;
-struct Library           * ListBrowserBase       = NULL;
-struct Library           * VirtualBase           = NULL;
-struct Library           * WindowBase            = NULL;
+// and some more owned by the linker libraries:
+// struct ExecBase       * SysBase;
+// struct DosLibrary     * DOSBase;
 
 LONG Startup( VOID ) {
 
@@ -49,16 +45,6 @@ LONG Startup( VOID ) {
 
     DisplayError( EAllocateAmiGUSCAMDToolBase );
     return EAllocateAmiGUSCAMDToolBase;
-  }
-  if ( !DOSBase ) {
-
-    DOSBase = ( struct DosLibrary * )
-      OpenLibrary( "dos.library", 36 );
-  }
-  if ( !DOSBase ) {
-
-    DisplayError( EOpenDosBase );
-    return EOpenDosBase;
   }
   if ( !IntuitionBase ) {
 
@@ -80,59 +66,6 @@ LONG Startup( VOID ) {
     return EOpenGadToolsBase;
   }
 
-  if ( !BevelBase ) {
-
-    BevelBase = OpenLibrary( "images/bevel.image", 41 );
-  }
-  if ( !BevelBase ) {
-
-    AmiGUS_CAMD_Tool_Base->agt_Flags |= CAMD_TOOL_FLAG_REACTION_FAILED;
-  }
-  if ( !LabelBase ) {
-
-    LabelBase = OpenLibrary( "images/label.image", 41 );
-  }
-  if ( !LabelBase ) {
-
-    AmiGUS_CAMD_Tool_Base->agt_Flags |= CAMD_TOOL_FLAG_REACTION_FAILED;
-  }
-  if ( !LayoutBase ) {
-
-    LayoutBase = OpenLibrary( "gadgets/layout.gadget", 41 );
-  }
-  if ( !LayoutBase ) {
-
-    AmiGUS_CAMD_Tool_Base->agt_Flags |= CAMD_TOOL_FLAG_REACTION_FAILED;
-  }
-  if ( !ListBrowserBase ) {
-
-    ListBrowserBase = OpenLibrary( "gadgets/listbrowser.gadget", 41 );
-  }
-  if ( !ListBrowserBase ) {
-
-    AmiGUS_CAMD_Tool_Base->agt_Flags |= CAMD_TOOL_FLAG_REACTION_FAILED;
-  }
-  if ( !VirtualBase ) {
-
-    VirtualBase = OpenLibrary( "gadgets/virtual.gadget", 41 );
-  }
-  if ( !VirtualBase ) {
-
-    AmiGUS_CAMD_Tool_Base->agt_Flags |= CAMD_TOOL_FLAG_REACTION_FAILED;
-  }
-  if ( !WindowBase ) {
-
-    WindowBase = OpenLibrary( "window.class", 41 );
-  }
-  if ( !WindowBase ) {
-
-    AmiGUS_CAMD_Tool_Base->agt_Flags |= CAMD_TOOL_FLAG_REACTION_FAILED;
-  }
-  if ( AmiGUS_CAMD_Tool_Base->agt_Flags & CAMD_TOOL_FLAG_REACTION_FAILED ) {
-
-    LOG_W(( "W: Could not open ReAction - Test button hidden!\n" ));
-  }
-
   LOG_I(( "I: " STR( APP_NAME ) " startup complete.\n" ));
   return ENoError;
 }
@@ -140,37 +73,6 @@ LONG Startup( VOID ) {
 VOID Cleanup( VOID ) {
 
   LOG_I(( "I: " STR( APP_NAME ) " cleanup starting.\n" ));
-
-  if ( WindowBase ) {
-
-    CloseLibrary( WindowBase );
-    WindowBase = NULL;
-  }
-  if ( VirtualBase ) {
-
-    CloseLibrary( VirtualBase );
-    VirtualBase = NULL;
-  }
-  if ( ListBrowserBase ) {
-
-    CloseLibrary( ListBrowserBase );
-    ListBrowserBase = NULL;
-  }
-  if ( LayoutBase ) {
-
-    CloseLibrary( LayoutBase );
-    LayoutBase = NULL;
-  }
-  if ( LabelBase ) {
-
-    CloseLibrary( LabelBase );
-    LabelBase = NULL;
-  }
-  if ( BevelBase ) {
-
-    CloseLibrary( BevelBase );
-    BevelBase = NULL;
-  }
 
   if ( GadToolsBase ) {
 
@@ -192,11 +94,6 @@ VOID Cleanup( VOID ) {
 
     FreeMem( AmiGUS_CAMD_Tool_Base, sizeof( struct AmiGUS_CAMD_Tool ));
     AmiGUS_CAMD_Tool_Base = NULL;
-  }
-  if ( DOSBase ) {
-
-    CloseLibrary(( struct Library *) DOSBase );
-    DOSBase = NULL;
   }
 }
 

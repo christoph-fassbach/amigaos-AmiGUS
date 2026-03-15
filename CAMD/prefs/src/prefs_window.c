@@ -25,7 +25,6 @@
 #include "errors.h"
 #include "prefs_window.h"
 #include "support.h"
-#include "test_window.h"
 
 struct TextAttr topaz8 = { ( STRPTR ) "topaz.font", 8, 0, 1 };
 
@@ -289,7 +288,6 @@ VOID HandlePrefsUiEvents( struct AmiGUS_CAMD_Tool * base ) {
         switch ( gadget->GadgetID ) {
           case GADGET_TEST_BUTTON: {
             LOG_V(( "V: Handling test button\n" ));
-            CreateTestUi( base );
             break;
           }
           case GADGET_CANCEL_BUTTON: {
