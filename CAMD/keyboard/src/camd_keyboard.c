@@ -627,6 +627,7 @@ VOID Cleanup( VOID ) {
   FreeChooserLabels();
 
   CloseLib(( struct Library ** )&WindowBase );
+  CloseLib(( struct Library ** )&SliderBase );
   CloseLib(( struct Library ** )&ScrollerBase );
   CloseLib(( struct Library ** )&ListBrowserBase );
   CloseLib(( struct Library ** )&LayoutBase );
