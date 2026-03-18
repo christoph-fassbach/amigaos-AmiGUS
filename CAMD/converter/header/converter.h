@@ -70,6 +70,9 @@ struct SF_Converter {
 
   struct Process              * sfc_MainProcess;
 
+  STRPTR                        sfc_SourceFileName;
+  STRPTR                        sfc_TargetFileName;
+
   /* Debug output handling */
   BPTR                          sfc_LogFile;       // Debug log file handle
   APTR                          sfc_LogMem;        // Debug log memory blob

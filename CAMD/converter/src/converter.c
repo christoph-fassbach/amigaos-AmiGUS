@@ -308,6 +308,15 @@ VOID FreeListLabels( struct List * list ) {
   LOG_D(( "V: List labels emptied.\n" ));
 }
 
+STRPTR RequestFileName( struct Window * window, struct Gadget * gadget ) {
+
+  STRPTR path = NULL;
+  gfRequestFile(( Object * ) gadget, window );
+  GetAttr( GETFILE_FullFile, gadget, ( ULONG * ) &( path ));
+  LOG_D(( "D: Selected file %s \n", path ));
+  return path;
+}
+
 ULONG Startup( VOID ) {
 
   LONG result;
@@ -426,6 +435,7 @@ VOID OpenWin( VOID ) { // TODO: enable error handling and return values
           GETFILE_DoSaveMode, FALSE,
           GETFILE_DoPatterns, TRUE,
           GETFILE_RejectIcons, TRUE,
+          GETFILE_FullFileExpand, TRUE,
           GETFILE_Pattern, "#?.(sf2|AmiSF)",
         GetFileEnd,
         CHILD_WeightedHeight, 0,
@@ -462,6 +472,7 @@ VOID OpenWin( VOID ) { // TODO: enable error handling and return values
           GETFILE_DoSaveMode, TRUE,
           GETFILE_DoPatterns, TRUE,
           GETFILE_RejectIcons, TRUE,
+          GETFILE_FullFileExpand, TRUE,
           GETFILE_Pattern, "#?.AmiSF",
         GetFileEnd,
         CHILD_WeightedHeight, 0,
@@ -535,24 +546,26 @@ VOID HandleEvents( VOID ) {
           switch ( WMHI_GADGETMASK & windowMessage ) {
             case GadgetId_GetInputFile: {
 
-              gfRequestFile(( Object * ) base->sfc_InputGetFile,
-                             base->sfc_MainWindow );
+              base->sfc_SourceFileName = 
+                RequestFileName( base->sfc_MainWindow,
+                                 base->sfc_InputGetFile );
               break;
             }
             case GadgetId_GetOutputFile: {
 
-              gfRequestFile(( Object * ) base->sfc_OutputGetFile,
-                             base->sfc_MainWindow );
+              base->sfc_TargetFileName = 
+                RequestFileName( base->sfc_MainWindow,
+                                 base->sfc_OutputGetFile );
               break;
             }
             case GadgetId_ReadButton: {
 
-              LOG_D(( "D: Read button pressed.\n" ));
+              LOG_D(( "D: Reading %s.\n", base->sfc_SourceFileName ));
               break;
             }
             case GadgetId_WriteButton: {
 
-              LOG_D(( "D: Write button pressed.\n" ));
+              LOG_D(( "D: Writing %s.\n", base->sfc_TargetFileName ));
               break;
             }
             case GadgetId_Instruments: {
