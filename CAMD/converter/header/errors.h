@@ -56,6 +56,19 @@ enum ErrorCodes
   EGadToolsGetVisualInfo,
   EGadToolsCreateContext,
 
+  /* SF2 read errors 400-499 */
+  EOpenFileFailed = 400,
+  EInvalidFileSize,
+  ENoRiffChunk,
+  ENoSfbkChunk,
+  ENoInfoChunk,
+  ENoSdtaChunk,
+  ENoPdtaChunk,
+  EInvalidInfoChunk,
+  EInvalidVersionChunk,
+  EIncompatibleVersion,
+  EInvalidInfoSubChunkSize,
+
   /* Insert errors above. */
   EUnknownError,
   EAmountOfErrors

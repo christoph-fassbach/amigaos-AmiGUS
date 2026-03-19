@@ -114,4 +114,81 @@ VOID DisplayError( ULONG aError );
  */
 LONG C_strlen( STRPTR string );
 
+/**
+ * Like string.h's strlen.
+ * Returns the length of the C-string, NOT including trailing 0.
+ *
+ * @param string Input string.
+ *
+ * @return Length of the string.
+ */
+LONG C_strlen(STRPTR string);
+
+/**
+ * Like string.h's strcmp.
+ * Returns the comparison result of the two strings.
+ *
+ * @param a
+ * @param b
+ *
+ * @return -1 if a < b,
+ *          0 if a = b,
+ *          1 if a > b.
+ */
+LONG C_strcmp(STRPTR a, STRPTR b);
+
+/**
+ * Like string.h's strncpy, just without returning anything.
+ * Copies up to n characters from the string pointed to, by src to dest.
+ *
+ * @param target Target C-string.
+ * @param source Source C-string.
+ * @param max Maximum of characters to copy,
+ *            character at index max - 1 will be set to 0.
+ */
+void C_strncpy(STRPTR target, CONST_STRPTR source, UWORD max);
+
+/**
+ * Like string.h's strncpy, just without returning anything and accepting BCPL-strings as source.
+ * Copies up to n characters from the string pointed to, by src to dest.
+ *
+ * @param target Target C-string.
+ * @param source Source BCPL-string.
+ * @param max Maximum of characters to copy,
+ *            character at index max - 1 will be set to 0.
+ */
+void B_strncpy(STRPTR target, BSTR source, UWORD max);
+
+/**
+ * Returns a copy of a C-string.
+ *
+ * @param string Input string.
+ *
+ * @return Copy of the string,
+ *         transferring ownership of the vector to the caller.
+ */
+STRPTR C_strcpy_VD(STRPTR string);
+
+/**
+ * Returns target, adding as much of source into it as max permits.
+ *
+ * @param target String to add to.
+ * @param source Added string.
+ * @param max Permissable space in target.
+ *
+ * @return Modified or unmodified target.
+ */
+STRPTR C_strcat(STRPTR target, STRPTR source, UWORD max);
+
+/**
+ * Returns all strings concatenated together.
+ * Transfers ownership of the resulting vector to the caller.
+ *
+ * @param count Number of strings to concatenate.
+ * @param varargs Strings to concatenate.
+ *
+ * @return Newly allocated result string.
+ */
+STRPTR C_strcat_VD(LONG count, ...);
+
 #endif /* SUPPORT_H */

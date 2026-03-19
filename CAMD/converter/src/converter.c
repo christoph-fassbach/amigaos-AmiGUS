@@ -32,8 +32,10 @@
 #include <proto/window.h>
 
 #include "converter.h"
+
 #include "debug.h"
 #include "errors.h"
+#include "sf2_reader.h"
 #include "support.h"
 
 /* Globals defined somewhere - here ;) */
@@ -312,6 +314,12 @@ STRPTR RequestFileName( struct Window * window, struct Gadget * gadget ) {
 
   STRPTR path = NULL;
   gfRequestFile(( Object * ) gadget, window );
+  GetAttr( GETFILE_File, gadget, ( ULONG * ) &( path ));
+  if (( !( path )) || ( 0 >= C_strlen( path ))) {
+
+    LOG_D(( "D: No file selected\n" ));
+    return NULL;
+  }
   GetAttr( GETFILE_FullFile, gadget, ( ULONG * ) &( path ));
   LOG_D(( "D: Selected file %s \n", path ));
   return path;
@@ -381,16 +389,18 @@ VOID Cleanup( VOID ) {
 
 VOID OpenWin( VOID ) { // TODO: enable error handling and return values
 
-  SF_Converter_Base->sfc_Screen = LockPubScreen( NULL );
+  struct SF_Converter * base = SF_Converter_Base;
 
-  if ( !SF_Converter_Base->sfc_Screen ) {
+  base->sfc_Screen = LockPubScreen( NULL );
+
+  if ( !base->sfc_Screen ) {
 
     return;
   }
 
-  SF_Converter_Base->sfc_ListBrowser =
+  base->sfc_ListBrowser =
     ListBrowserObject,
-      LISTBROWSER_Labels, &( SF_Converter_Base->sfc_InstrumentLabels ),
+      LISTBROWSER_Labels, &( base->sfc_InstrumentLabels ),
       LISTBROWSER_ColumnInfo, instrumentColumns,
       LISTBROWSER_Selected, 0,
       LISTBROWSER_ColumnTitles, TRUE,
@@ -405,8 +415,8 @@ VOID OpenWin( VOID ) { // TODO: enable error handling and return values
       GA_RelVerify, TRUE,
     ListBrowserEnd;
 
-  SF_Converter_Base->sfc_MainWindowContent = WindowObject,
-    WA_PubScreen, SF_Converter_Base->sfc_Screen,
+  base->sfc_MainWindowContent = WindowObject,
+    WA_PubScreen, base->sfc_Screen,
     WA_ScreenTitle, APP_IDSTRING,
     WA_Title, "SoundFontConverter",
     WA_Activate, TRUE,
@@ -427,7 +437,7 @@ VOID OpenWin( VOID ) { // TODO: enable error handling and return values
       LAYOUT_AddChild, HLayoutObject,
         LAYOUT_VertAlignment, LALIGN_CENTER,
 
-        LAYOUT_AddChild, SF_Converter_Base->sfc_InputGetFile = GetFileObject,
+        LAYOUT_AddChild, base->sfc_InputGetFile = GetFileObject,
           GA_ID, GadgetId_GetInputFile,
           GA_RelVerify, TRUE,
           GETFILE_TitleText, "Select a .sf2 / .AmiSF file",
@@ -443,10 +453,11 @@ VOID OpenWin( VOID ) { // TODO: enable error handling and return values
           LABEL_Text ,"Source: ",
         LabelEnd,
 
-        LAYOUT_AddChild, ButtonObject,
+        LAYOUT_AddChild, base->sfc_ReadButton = ButtonObject,
           GA_Text, " Read  ",
           GA_ID, GadgetId_ReadButton,
           GA_RelVerify, TRUE,
+          GA_Disabled, TRUE,
         LayoutEnd,
         CHILD_WeightedHeight, 0,
         CHILD_WeightedWidth, 0,
@@ -458,13 +469,13 @@ VOID OpenWin( VOID ) { // TODO: enable error handling and return values
         LABEL_Text, "Instrument definitions:",
         LABEL_Justification, LABEL_CENTER,
       LabelEnd,
-      LAYOUT_AddChild, SF_Converter_Base->sfc_ListBrowser,
+      LAYOUT_AddChild, base->sfc_ListBrowser,
       CHILD_WeightedHeight, 1000,
 
       LAYOUT_AddChild, HLayoutObject,
         LAYOUT_VertAlignment, LALIGN_CENTER,
 
-        LAYOUT_AddChild, SF_Converter_Base->sfc_OutputGetFile = GetFileObject,
+        LAYOUT_AddChild, base->sfc_OutputGetFile = GetFileObject,
           GA_ID, GadgetId_GetOutputFile,
           GA_RelVerify, TRUE,
           GETFILE_TitleText, "Select target .AmiSF file",
@@ -480,10 +491,11 @@ VOID OpenWin( VOID ) { // TODO: enable error handling and return values
           LABEL_Text ,"Target: ",
         LabelEnd,
 
-        LAYOUT_AddChild, ButtonObject,
+        LAYOUT_AddChild, base->sfc_WriteButton = ButtonObject,
           GA_Text, " Write ",
           GA_ID, GadgetId_WriteButton,
           GA_RelVerify, TRUE,
+          GA_Disabled, TRUE,
         LayoutEnd,
         CHILD_WeightedHeight, 0,
         CHILD_WeightedWidth, 0,
@@ -492,22 +504,22 @@ VOID OpenWin( VOID ) { // TODO: enable error handling and return values
     LayoutEnd,
   EndWindow;
 
-  if ( !SF_Converter_Base->sfc_MainWindowContent ) {
+  if ( !base->sfc_MainWindowContent ) {
     return;
   }
 
   // On creation by window open, clavier needs to tell scroller the size!
 
-  SF_Converter_Base->sfc_MainWindow = ( struct Window * )
-    RA_OpenWindow( SF_Converter_Base->sfc_MainWindowContent );
+  base->sfc_MainWindow = ( struct Window * )
+    RA_OpenWindow( base->sfc_MainWindowContent );
 
-  if ( !SF_Converter_Base->sfc_MainWindow ) {
+  if ( !base->sfc_MainWindow ) {
     return;
   }
 
   GetAttr( WINDOW_SigMask,
-           SF_Converter_Base->sfc_MainWindowContent, 
-           &( SF_Converter_Base->sfc_MainWindowSignal ));
+           base->sfc_MainWindowContent, 
+           &( base->sfc_MainWindowSignal ));
 
   return;
 }
@@ -546,21 +558,38 @@ VOID HandleEvents( VOID ) {
           switch ( WMHI_GADGETMASK & windowMessage ) {
             case GadgetId_GetInputFile: {
 
+              BOOL disabled;
               base->sfc_SourceFileName = 
                 RequestFileName( base->sfc_MainWindow,
                                  base->sfc_InputGetFile );
+              disabled = ( NULL == base->sfc_SourceFileName );
+              SetGadgetAttrs( base->sfc_ReadButton,
+                              base->sfc_MainWindow,
+                              NULL,
+                              GA_Disabled, disabled,
+                              TAG_END );
               break;
             }
             case GadgetId_GetOutputFile: {
 
+              BOOL disabled;
               base->sfc_TargetFileName = 
                 RequestFileName( base->sfc_MainWindow,
                                  base->sfc_OutputGetFile );
+              disabled = ( NULL == base->sfc_TargetFileName );
+              SetGadgetAttrs( base->sfc_WriteButton,
+                              base->sfc_MainWindow,
+                              NULL,
+                              GA_Disabled, disabled,
+                              TAG_END );
               break;
             }
             case GadgetId_ReadButton: {
 
+              APTR x;
               LOG_D(( "D: Reading %s.\n", base->sfc_SourceFileName ));
+              x = AllocSf2FromFile( base->sfc_SourceFileName );
+              LOG_D(( "D: result is 0x%08lx\n", x ));
               break;
             }
             case GadgetId_WriteButton: {

@@ -233,3 +233,43 @@ LONG C_strlen( STRPTR string ) {
   } 
   return length;
 }
+
+LONG C_strcmp(STRPTR a, STRPTR b) {
+
+  LONG result = 0;
+  while (
+    !(result = (*a) - (*b)) &&
+    (*a++) &&
+    (*b++)
+  );
+  return (result > 0) - (result < 0);
+}
+
+void C_strncpy(STRPTR target, CONST_STRPTR source, UWORD max) {
+
+  while (
+    (--max) &&
+    (*target++ = *source++)
+  );
+  *target = 0;
+}
+
+void B_strncpy(STRPTR target, BSTR source, UWORD max) {
+
+  STRPTR sptr = (STRPTR)BADDR(source);
+  UBYTE blen = *sptr;
+  if (blen < max) {
+    max = (UWORD)blen + 1;
+  }
+  ++sptr;
+  C_strncpy(target, sptr, max);
+}
+
+STRPTR C_strcpy_VD(STRPTR string) {
+
+  LONG length = C_strlen(string) + 1;
+  STRPTR result = AllocVec(length, MEMF_ANY);
+  C_strncpy(result, string, length);
+
+  return result;
+}

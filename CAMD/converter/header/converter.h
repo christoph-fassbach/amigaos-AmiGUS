@@ -62,7 +62,9 @@ struct SF_Converter {
   Object                      * sfc_MainWindowContent;
   ULONG                         sfc_MainWindowSignal;
   struct Gadget               * sfc_InputGetFile;
+  struct Gadget               * sfc_ReadButton;
   struct Gadget               * sfc_OutputGetFile;
+  struct Gadget               * sfc_WriteButton;
   struct Gadget               * sfc_ListBrowser;
 
   struct List                   sfc_InstrumentLabels;
