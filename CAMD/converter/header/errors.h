@@ -59,6 +59,7 @@ enum ErrorCodes
   /* SF2 read errors 400-499 */
   EOpenFileFailed = 400,
   EInvalidFileSize,
+  EParseFailed,
   ENoRiffChunk,
   ENoSfbkChunk,
   ENoInfoChunk,
@@ -69,6 +70,7 @@ enum ErrorCodes
   EInvalidVersionChunk,
   EIncompatibleVersion,
   EInvalidInfoSubChunkSize,
+  EInvalidPresetSubChunk,
   EDuplicatedSmplChunk,
   EDuplicatedSm24Chunk,
 

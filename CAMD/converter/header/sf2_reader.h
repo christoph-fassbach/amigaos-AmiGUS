@@ -20,6 +20,7 @@
 #define SF2_READER_H
 
 #include <exec/types.h>
+#include <exec/lists.h>
 
 struct SF2_Parsed {
 
@@ -32,6 +33,13 @@ struct SF2_Parsed {
   ULONG sf2_16bitSampleSize;
   LONG sf2_24bitSamplePosition;
   ULONG sf2_24bitSampleSize;
+  LONG sf2_PresetsPosition;
+  ULONG sf2_PresetsSize;
+
+  struct MinList sf2_Samples;
+  struct MinList sf2_Modulators;
+  struct MinList sf2_Instruments;
+  struct MinList sf2_Presets;
 };
 
 struct SF2_Parsed * AllocSf2FromFile( STRPTR filePath );

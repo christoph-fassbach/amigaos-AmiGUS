@@ -61,77 +61,14 @@
 #define SM24_CHUNK_ID CHAR_TO_ULONG( 's', 'm', '2', '4' )
 #define DLS_CHUNK_ID  CHAR_TO_ULONG( 'D', 'L', 'S', ' ' )
 
-static const ULONG chunkIds[] = {
-
-  RIFF_CHUNK_ID,
-  LIST_CHUNK_ID,
-  SFBK_CHUNK_ID,
-  INFO_CHUNK_ID,
-  SDTA_CHUNK_ID,
-  PDTA_CHUNK_ID,
-  IFIL_CHUNK_ID,
-  ISNG_CHUNK_ID,
-  INAM_CHUNK_ID,
-  IROM_CHUNK_ID,
-  IVER_CHUNK_ID,
-  ICRD_CHUNK_ID,
-  IENG_CHUNK_ID,
-  IPRD_CHUNK_ID,
-  ICOP_CHUNK_ID,
-  ICMT_CHUNK_ID,
-  ISFT_CHUNK_ID,
-  DMOD_CHUNK_ID,
-  SNAM_CHUNK_ID,
-  SMPL_CHUNK_ID,
-  PHDR_CHUNK_ID,
-  PBAG_CHUNK_ID,
-  PMOD_CHUNK_ID,
-  PGEN_CHUNK_ID,
-  IHDR_CHUNK_ID,
-  IBAG_CHUNK_ID,
-  IMOD_CHUNK_ID,
-  IGEN_CHUNK_ID,
-  SHDR_CHUNK_ID,
-  SM24_CHUNK_ID,
-  DLS_CHUNK_ID,
-  0
-};
-
-enum SF2_Chunk_Indices {
-
-  RIFF_CHUNK_INDEX = 0,
-  LIST_CHUNK_INDEX,
-  SFBK_CHUNK_INDEX,
-  INFO_CHUNK_INDEX,
-  SDTA_CHUNK_INDEX,
-  PDTA_CHUNK_INDEX,
-  IFIL_CHUNK_INDEX,
-  ISNG_CHUNK_INDEX,
-  INAM_CHUNK_INDEX,
-  IROM_CHUNK_INDEX,
-  IVER_CHUNK_INDEX,
-  ICRD_CHUNK_INDEX,
-  IENG_CHUNK_INDEX,
-  IPRD_CHUNK_INDEX,
-  ICOP_CHUNK_INDEX,
-  ICMT_CHUNK_INDEX,
-  ISFT_CHUNK_INDEX,
-  DMOD_CHUNK_INDEX,
-  SNAM_CHUNK_INDEX,
-  SMPL_CHUNK_INDEX,
-  PHDR_CHUNK_INDEX,
-  PBAG_CHUNK_INDEX,
-  PMOD_CHUNK_INDEX,
-  PGEN_CHUNK_INDEX,
-  IHDR_CHUNK_INDEX,
-  IBAG_CHUNK_INDEX,
-  IMOD_CHUNK_INDEX,
-  IGEN_CHUNK_INDEX,
-  SHDR_CHUNK_INDEX,
-  SM24_CHUNK_INDEX,
-  DLS_CHUNK_INDEX,
-  MAX_CHUNK_INDEX
-};
+/* SF2 well known chunk size multiples and sizes */
+#define PHDR_CHUNK_SIZE_MULTIPLE ( 38 )
+#define PBAG_CHUNK_SIZE_MULTIPLE (  4 )
+#define PMOD_CHUNK_SIZE_MULTIPLE ( 10 )
+#define PGEN_CHUNK_SIZE_MULTIPLE (  4 )
+#define IHDR_CHUNK_SIZE_MULTIPLE ( 22 )
+#define SHDR_CHUNK_SIZE_MULTIPLE ( 46 )
+// TODO 256 and 65536
 
 struct SF2_Chunk {
 
@@ -177,13 +114,63 @@ static LONG ReadChunk( BPTR fileHandle, struct SF2_Chunk * target ) {
 static LONG ReadListChunk( BPTR fileHandle, struct SF2_Chunk * target ) {
 
   LONG result = ReadChunk( fileHandle, target );
-  if (( 1 != result ) || ( chunkIds[ LIST_CHUNK_INDEX ] != target->id )) {
+  if (( 1 != result ) || ( LIST_CHUNK_ID != target->id )) {
 
     return result;
   }
   target->size -= 4;
   result = ReadULONG( fileHandle, &( target->id ));
   return result;
+}
+
+static LONG ReadPresetSubChunk( BPTR fileHandle,
+                                struct SF2_Chunk * target,
+                                const LONG expectedId,
+                                const LONG expectedSizeMultiple,
+                                ULONG * remainingSize ) {
+
+  union { ULONG id;
+          BYTE idAsString[ 8 ];
+        } chunkHelper[ 2 ];
+  LONG result = ReadChunk( fileHandle, target );
+
+  *( remainingSize ) -= 8;
+  chunkHelper[ 0 ].id = expectedId;
+  chunkHelper[ 0 ].idAsString[ 4 ] = 0;
+
+  if ( 1 != result ) {
+
+    LOG_E(( "E: Preset sub chunk '%s' expected, but read %ld.\n",
+            chunkHelper[ 0 ].idAsString, result ));
+    return EInvalidPresetSubChunk;
+  }
+  if ( expectedId != target->id ) {
+
+    chunkHelper[ 1 ].id = target->id;
+    chunkHelper[ 1 ].idAsString[ 4 ] = 0;
+
+    LOG_E(( "E: Preset sub chunk expected '%s', actual '%s'\n",
+            chunkHelper[ 0 ].idAsString, chunkHelper[ 1 ].idAsString ));
+    return EInvalidPresetSubChunk;
+  }
+  if ( target->size % expectedSizeMultiple ) {
+
+    LOG_E(( "E: Preset sub chunk '%s' size multiple of expected %ld, "
+            "actual %ld.\n",
+            chunkHelper[ 0 ].idAsString,
+            expectedSizeMultiple,
+            target->size ));
+    return EInvalidPresetSubChunk;
+  }
+  if ( *( remainingSize ) < target->size ) {
+
+    LOG_E(( "E: Preset sub chunk '%s' size %ld exceeds remaining size %ld.\n",
+            chunkHelper[ 0 ].idAsString,
+            target->size,
+            remainingSize ));
+  }
+  *( remainingSize ) -= target->size;
+  return ENoError;
 }
 
 static LONG ReadInfo( struct SF2_Parsed * sf2, ULONG size ) {
@@ -203,7 +190,7 @@ static LONG ReadInfo( struct SF2_Parsed * sf2, ULONG size ) {
       return EInvalidInfoChunk;
     }
 
-    if ( chunkIds[ IFIL_CHUNK_INDEX ] == chunk.id ) {
+    if ( IFIL_CHUNK_ID == chunk.id ) {
 
       UWORD version;
       if ( 4 != chunk.size ) {
@@ -226,7 +213,7 @@ static LONG ReadInfo( struct SF2_Parsed * sf2, ULONG size ) {
       size -= chunk.size;
       continue;
     }
-    if ( chunkIds[ IVER_CHUNK_INDEX ] == chunk.id ) {
+    if ( IVER_CHUNK_ID == chunk.id ) {
 
       if ( 4 != chunk.size ) {
 
@@ -250,16 +237,16 @@ static LONG ReadInfo( struct SF2_Parsed * sf2, ULONG size ) {
               chunkHelper.idAsString, chunk.size ));
       return EInvalidInfoSubChunkSize;
     }
-    if (((( chunkIds[ ICOP_CHUNK_INDEX ] == chunk.id ) ||
-          ( chunkIds[ ICRD_CHUNK_INDEX ] == chunk.id ) ||    
-          ( chunkIds[ IENG_CHUNK_INDEX ] == chunk.id ) ||
-          ( chunkIds[ INAM_CHUNK_INDEX ] == chunk.id ) ||
-          ( chunkIds[ IPRD_CHUNK_INDEX ] == chunk.id ) ||
-          ( chunkIds[ IROM_CHUNK_INDEX ] == chunk.id ) ||
-          ( chunkIds[ ISFT_CHUNK_INDEX ] == chunk.id ) ||
-          ( chunkIds[ ISNG_CHUNK_INDEX ] == chunk.id )) &&
+    if (((( ICOP_CHUNK_ID == chunk.id ) ||
+          ( ICRD_CHUNK_ID == chunk.id ) ||    
+          ( IENG_CHUNK_ID == chunk.id ) ||
+          ( INAM_CHUNK_ID == chunk.id ) ||
+          ( IPRD_CHUNK_ID == chunk.id ) ||
+          ( IROM_CHUNK_ID == chunk.id ) ||
+          ( ISFT_CHUNK_ID == chunk.id ) ||
+          ( ISNG_CHUNK_ID == chunk.id )) &&
           ( 256 < chunk.size )) ||
-          (( chunkIds[ ICMT_CHUNK_INDEX ] == chunk.id ) &&
+          (( ICMT_CHUNK_ID == chunk.id ) &&
            ( 65536 < chunk.size ))) {
 
       LOG_W(( "W: Chunk %s has invalid size %ld.\n",
@@ -273,20 +260,26 @@ static LONG ReadInfo( struct SF2_Parsed * sf2, ULONG size ) {
   return ENoError;
 }
 
-static LONG ReadSampleData( struct SF2_Parsed * sf2, ULONG size ) {
+static LONG ReadSampleInfo( struct SF2_Parsed * sf2, ULONG size ) {
 
   LONG result;
   struct SF2_Chunk chunk;
-  union { ULONG id;
-          BYTE idAsString[ 8 ];
-        } chunkHelper;
 
-  if ( size >= 8 ) {
-  
-    result = ReadChunk( sf2->sf2_FileHandle, &( chunk ));
-    size -= 8;
+  if ( size < 8 ) {
+
+    LOG_E(( "E: Sample chunk size %ld too small.\n", size ));
+    return ENoSmplChunk;
   }
-  if ( chunkIds[ SMPL_CHUNK_INDEX ] == chunk.id ) {
+
+  result = ReadChunk( sf2->sf2_FileHandle, &( chunk ));
+  if ( 1 != result ) {
+
+    LOG_E(( "E: Could not read sample chunk.\n" ));
+    return ENoSmplChunk;
+  }
+  size -= 8;
+
+  if ( SMPL_CHUNK_ID == chunk.id ) {
 
     LONG position;
 
@@ -303,15 +296,20 @@ static LONG ReadSampleData( struct SF2_Parsed * sf2, ULONG size ) {
             position, chunk.size ));
     
     size -= chunk.size;
-    if ( size >= 8 ) {
-  
-      result = ReadChunk( sf2->sf2_FileHandle, &( chunk ));
-      size -= 8;
-    }
+  }
+  if ( size >= 8 ) {
+
+    result = ReadChunk( sf2->sf2_FileHandle, &( chunk ));
+    size -= 8;
+  }
+  if ( 1 != result ) {
+
+    LOG_E(( "E: Could not read sample chunk.\n" ));
+    return ENoSmplChunk;
   }
   if (( 2 >= sf2->sf2_MajorVersion ) &&
       ( 4 >= sf2->sf2_MinorVersion ) &&
-      ( chunkIds[ SM24_CHUNK_INDEX ] == chunk.id )) {
+      ( SM24_CHUNK_ID == chunk.id )) {
 
     LONG position;
     if ( sf2->sf2_24bitSamplePosition ) {
@@ -340,13 +338,45 @@ static LONG ReadSampleData( struct SF2_Parsed * sf2, ULONG size ) {
   return ENoError;
 }
 
-static LONG ReadHeader( struct SF2_Parsed * sf2 ) {
+static LONG ReadPresetInfo( struct SF2_Parsed * sf2, ULONG size ) {
 
   LONG result;
   struct SF2_Chunk chunk;
+  union { ULONG id;
+          BYTE idAsString[ 8 ];
+        } chunkHelper;
+
+  sf2->sf2_PresetsPosition = Seek( sf2->sf2_FileHandle, 0, OFFSET_CURRENT );
+  sf2->sf2_PresetsSize = size;
+
+  LOG_D(( "D: size %ld\n", size ));
+  result = ReadPresetSubChunk( sf2->sf2_FileHandle,
+                               &( chunk ),
+                               PHDR_CHUNK_ID,
+                               PHDR_CHUNK_SIZE_MULTIPLE,
+                               &( size ));
+  if ( result ) {
+
+    return result;
+  }
+  // TODO: https://github.com/FluidSynth/fluidsynth/blob/master/src/sfloader/fluid_sffile.c#L1099
+  Seek( sf2->sf2_FileHandle, chunk.size, OFFSET_CURRENT );
+  // Remove after done ;)
+
+  LOG_D(( "D: size %ld\n", size ));
+  Seek( sf2->sf2_FileHandle, size, OFFSET_CURRENT );
+  return ENoError;
+}
+
+static LONG ReadHeader( struct SF2_Parsed * sf2 ) {
+
+  LONG result;
+  LONG expectedPosition;
+  LONG actualPosition;
+  struct SF2_Chunk chunk;
 
   result = ReadChunk( sf2->sf2_FileHandle, &( chunk ));
-  if (( 1 != result ) || ( chunkIds[ RIFF_CHUNK_INDEX ] != chunk.id )) {
+  if (( 1 != result ) || ( RIFF_CHUNK_ID != chunk.id )) {
 
     DisplayError( ENoRiffChunk );
     return ENoRiffChunk;
@@ -354,7 +384,7 @@ static LONG ReadHeader( struct SF2_Parsed * sf2 ) {
   LOG_D(( "D: RIFF passed.\n" ));
 
   result = ReadULONG( sf2->sf2_FileHandle, &( chunk.id ));
-  if (( 1 != result ) || ( chunkIds[ SFBK_CHUNK_INDEX ] != chunk.id )) {
+  if (( 1 != result ) || ( SFBK_CHUNK_ID != chunk.id )) {
 
     DisplayError( ENoSfbkChunk );
     return ENoSfbkChunk;
@@ -369,7 +399,7 @@ static LONG ReadHeader( struct SF2_Parsed * sf2 ) {
   LOG_D(( "D: Size passed.\n" ));
 
   result = ReadListChunk( sf2->sf2_FileHandle, &( chunk ));
-  if (( 1 != result ) || ( chunkIds[ INFO_CHUNK_INDEX ] != chunk.id )) {
+  if (( 1 != result ) || ( INFO_CHUNK_ID != chunk.id )) {
 
     DisplayError( ENoInfoChunk );
     return ENoInfoChunk;
@@ -383,27 +413,41 @@ static LONG ReadHeader( struct SF2_Parsed * sf2 ) {
   LOG_D(( "D: Info passed.\n" ));
 
   result = ReadListChunk( sf2->sf2_FileHandle, &( chunk ));
-  if (( 1 != result ) || ( chunkIds[ SDTA_CHUNK_INDEX ] != chunk.id )) {
+  if (( 1 != result ) || ( SDTA_CHUNK_ID != chunk.id )) {
 
     DisplayError( ENoSdtaChunk );
     return ENoSdtaChunk;
   }
-  result = ReadSampleData( sf2, chunk.size );
+  result = ReadSampleInfo( sf2, chunk.size );
   if ( ENoError != result ) {
 
     DisplayError( result );
     return result;
   }
-  LOG_D(( "D: Sample data passed.\n" ));
+  LOG_D(( "D: Sample info passed.\n" ));
 
   result = ReadListChunk( sf2->sf2_FileHandle, &( chunk ));
-  if (( 1 != result ) || ( chunkIds[ PDTA_CHUNK_INDEX ] != chunk.id )) {
+  if (( 1 != result ) || ( PDTA_CHUNK_ID != chunk.id )) {
 
     DisplayError( ENoPdtaChunk );
     return ENoPdtaChunk;
   }
+  result = ReadPresetInfo( sf2, chunk.size );
+  if ( ENoError != result ) {
+
+    DisplayError( result );
+    return result;
+  }
   LOG_D(( "D: Preset data passed.\n" ));
-  // hydra pos + size here
+
+  actualPosition = Seek( sf2->sf2_FileHandle, 0, OFFSET_END );
+  expectedPosition = Seek( sf2->sf2_FileHandle, 0, OFFSET_CURRENT );
+  LOG_D(( "D: Expected %ld, actual %ld\n", expectedPosition, actualPosition ));
+  if ( actualPosition != expectedPosition ) {
+
+    DisplayError( EParseFailed );
+    return EParseFailed;
+  }
 
   return ENoError;
 }
@@ -413,9 +457,15 @@ struct SF2_Parsed * AllocSf2FromFile( STRPTR filePath ) {
   LONG result;
   struct SF2_Parsed X;
   struct SF2_Parsed * sf2 = &( X );
+
   sf2->sf2_16bitSamplePosition = 0;
   sf2->sf2_24bitSamplePosition = 0;
-  
+
+  NEW_LIST( &( sf2->sf2_Samples ));
+  NEW_LIST( &( sf2->sf2_Modulators ));
+  NEW_LIST( &( sf2->sf2_Instruments ));
+  NEW_LIST( &( sf2->sf2_Presets ));
+
   sf2->sf2_FileHandle = Open( filePath, MODE_OLDFILE );
   if ( !( sf2->sf2_FileHandle )) {
 
