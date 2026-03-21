@@ -62,13 +62,14 @@
 #define DLS_CHUNK_ID  CHAR_TO_ULONG( 'D', 'L', 'S', ' ' )
 
 /* SF2 well known chunk size multiples and sizes */
-#define PHDR_CHUNK_SIZE_MULTIPLE ( 38 )
-#define PBAG_CHUNK_SIZE_MULTIPLE (  4 )
-#define PMOD_CHUNK_SIZE_MULTIPLE ( 10 )
-#define PGEN_CHUNK_SIZE_MULTIPLE (  4 )
-#define IHDR_CHUNK_SIZE_MULTIPLE ( 22 )
-#define SHDR_CHUNK_SIZE_MULTIPLE ( 46 )
-// TODO 256 and 65536
+#define PHDR_CHUNK_SIZE_MULTIPLE (    38 )
+#define PBAG_CHUNK_SIZE_MULTIPLE (     4 )
+#define PMOD_CHUNK_SIZE_MULTIPLE (    10 )
+#define PGEN_CHUNK_SIZE_MULTIPLE (     4 )
+#define IHDR_CHUNK_SIZE_MULTIPLE (    22 )
+#define SHDR_CHUNK_SIZE_MULTIPLE (    46 )
+#define CHUNK_SIZE_LIMIT_8bit    (   256 )
+#define CHUNK_SIZE_LIMIT_16bit   ( 65536 )
 
 struct SF2_Chunk {
 
@@ -245,9 +246,9 @@ static LONG ReadInfo( struct SF2_Parsed * sf2, ULONG size ) {
           ( IROM_CHUNK_ID == chunk.id ) ||
           ( ISFT_CHUNK_ID == chunk.id ) ||
           ( ISNG_CHUNK_ID == chunk.id )) &&
-          ( 256 < chunk.size )) ||
+          ( CHUNK_SIZE_LIMIT_8bit < chunk.size )) ||
           (( ICMT_CHUNK_ID == chunk.id ) &&
-           ( 65536 < chunk.size ))) {
+           ( CHUNK_SIZE_LIMIT_16bit < chunk.size ))) {
 
       LOG_W(( "W: Chunk %s has invalid size %ld.\n",
               chunkHelper.idAsString, chunk.size ));
