@@ -64,10 +64,13 @@ enum ErrorCodes
   ENoInfoChunk,
   ENoSdtaChunk,
   ENoPdtaChunk,
+  ENoSmplChunk,
   EInvalidInfoChunk,
   EInvalidVersionChunk,
   EIncompatibleVersion,
   EInvalidInfoSubChunkSize,
+  EDuplicatedSmplChunk,
+  EDuplicatedSm24Chunk,
 
   /* Insert errors above. */
   EUnknownError,

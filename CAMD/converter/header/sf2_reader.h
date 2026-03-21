@@ -28,6 +28,10 @@ struct SF2_Parsed {
   ULONG sf2_FileSize;
   UWORD sf2_MajorVersion;
   UWORD sf2_MinorVersion;
+  LONG sf2_16bitSamplePosition;
+  ULONG sf2_16bitSampleSize;
+  LONG sf2_24bitSamplePosition;
+  ULONG sf2_24bitSampleSize;
 };
 
 struct SF2_Parsed * AllocSf2FromFile( STRPTR filePath );

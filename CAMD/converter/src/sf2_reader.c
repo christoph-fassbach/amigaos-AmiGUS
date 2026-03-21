@@ -190,12 +190,9 @@ static LONG ReadInfo( struct SF2_Parsed * sf2, ULONG size ) {
 
   LONG result;
   struct SF2_Chunk chunk;
-
-  union {
-
-    ULONG id;
-    char idAsString[ 8 ];
-  } chunkHelper;
+  union { ULONG id;
+          BYTE idAsString[ 8 ];
+        } chunkHelper;
 
   while ( 0 < size ) {
 
@@ -238,6 +235,7 @@ static LONG ReadInfo( struct SF2_Parsed * sf2, ULONG size ) {
 
       // Assumption: We do not need the ROM version at all.
 
+      Seek( sf2->sf2_FileHandle, chunk.size, OFFSET_CURRENT );
       size -= chunk.size;
       continue;
     }
@@ -271,6 +269,73 @@ static LONG ReadInfo( struct SF2_Parsed * sf2, ULONG size ) {
     Seek( sf2->sf2_FileHandle, chunk.size, OFFSET_CURRENT );
     LOG_I(( "I: Skipping chunk %s with size %ld, \tremaining in header %ld.\n",
             chunkHelper.idAsString, chunk.size, size ));
+  }
+  return ENoError;
+}
+
+static LONG ReadSampleData( struct SF2_Parsed * sf2, ULONG size ) {
+
+  LONG result;
+  struct SF2_Chunk chunk;
+  union { ULONG id;
+          BYTE idAsString[ 8 ];
+        } chunkHelper;
+
+  if ( size >= 8 ) {
+  
+    result = ReadChunk( sf2->sf2_FileHandle, &( chunk ));
+    size -= 8;
+  }
+  if ( chunkIds[ SMPL_CHUNK_INDEX ] == chunk.id ) {
+
+    LONG position;
+
+    if ( sf2->sf2_16bitSamplePosition ) {
+
+      return EDuplicatedSmplChunk;
+    }
+    position = Seek( sf2->sf2_FileHandle, 0, OFFSET_CURRENT );
+    sf2->sf2_16bitSamplePosition = position;
+    sf2->sf2_16bitSampleSize = chunk.size;
+    Seek( sf2->sf2_FileHandle, chunk.size, OFFSET_CURRENT );
+
+    LOG_I(( "I: 16bit sample position %ld, size %ld\n",
+            position, chunk.size ));
+    
+    size -= chunk.size;
+    if ( size >= 8 ) {
+  
+      result = ReadChunk( sf2->sf2_FileHandle, &( chunk ));
+      size -= 8;
+    }
+  }
+  if (( 2 >= sf2->sf2_MajorVersion ) &&
+      ( 4 >= sf2->sf2_MinorVersion ) &&
+      ( chunkIds[ SM24_CHUNK_INDEX ] == chunk.id )) {
+
+    LONG position;
+    if ( sf2->sf2_24bitSamplePosition ) {
+
+      return EDuplicatedSm24Chunk;
+    }
+    position = Seek( sf2->sf2_FileHandle, 0, OFFSET_CURRENT );
+    sf2->sf2_24bitSamplePosition = position;
+    sf2->sf2_24bitSampleSize = chunk.size;
+    Seek( sf2->sf2_FileHandle, chunk.size, OFFSET_CURRENT );
+
+    LOG_I(( "I: 24bit sample position %ld, size %ld\n",
+            position, chunk.size ));
+    
+    size -= chunk.size;
+  }
+  if ( size >= 8 ) {
+
+    return ENoSmplChunk;
+  }
+  if ( 0 > size ) {
+
+    Seek( sf2->sf2_FileHandle, size, OFFSET_CURRENT );
+    LOG_W(( "W: Skipping over some sample data left-overs.\n" ));
   }
   return ENoError;
 }
@@ -323,6 +388,12 @@ static LONG ReadHeader( struct SF2_Parsed * sf2 ) {
     DisplayError( ENoSdtaChunk );
     return ENoSdtaChunk;
   }
+  result = ReadSampleData( sf2, chunk.size );
+  if ( ENoError != result ) {
+
+    DisplayError( result );
+    return result;
+  }
   LOG_D(( "D: Sample data passed.\n" ));
 
   result = ReadListChunk( sf2->sf2_FileHandle, &( chunk ));
@@ -337,12 +408,13 @@ static LONG ReadHeader( struct SF2_Parsed * sf2 ) {
   return ENoError;
 }
 
-
 struct SF2_Parsed * AllocSf2FromFile( STRPTR filePath ) {
 
   LONG result;
   struct SF2_Parsed X;
   struct SF2_Parsed * sf2 = &( X );
+  sf2->sf2_16bitSamplePosition = 0;
+  sf2->sf2_24bitSamplePosition = 0;
   
   sf2->sf2_FileHandle = Open( filePath, MODE_OLDFILE );
   if ( !( sf2->sf2_FileHandle )) {
@@ -367,6 +439,11 @@ struct SF2_Parsed * AllocSf2FromFile( STRPTR filePath ) {
   }
 
   result = ReadHeader( sf2 );
+  if ( result ) {
+
+    Close( sf2->sf2_FileHandle );
+    return NULL;
+  }
 
   Close( sf2->sf2_FileHandle );
   return NULL;
