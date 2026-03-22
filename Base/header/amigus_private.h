@@ -93,6 +93,7 @@ struct AmiGUS_Base {
   struct ExecBase           * agb_SysBase;       // Exec, allocations etc.
   struct DosLibrary         * agb_DOSBase;       // DOS, logs and so on
   struct Library            * agb_ExpansionBase; // Finding devices
+  struct Library            * agb_CardResource;  // PCMCIA support
 
   /* AmiGUS specific member variables */
   struct List                 agb_Cards;         // List of AmiGUS_Privates
@@ -140,9 +141,11 @@ struct AmiGUS_Private {
   extern struct AmiGUS_Base * AmiGUS_Base;
   extern struct DosLibrary  * DOSBase;
   extern struct Library     * ExpansionBase;
+  extern struct Library     * CardResource;
   extern struct ExecBase    * SysBase;
 #elif defined(BASE_REDEFINE)
   #define AmiGUS_Base         (base)
+  #define CardResource        base->agb_CardResource
   #define DOSBase             base->agb_DOSBase
   #define ExpansionBase       base->agb_ExpansionBase
   #define SysBase             base->agb_SysBase

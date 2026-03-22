@@ -36,6 +36,7 @@ struct ExecBase          * SysBase           = 0;
 struct DosLibrary        * DOSBase           = 0;
 struct Library           * UtilityBase       = 0;
 struct Library           * ExpansionBase     = 0;
+struct Library           * CardResource      = 0;
 struct AmiGUS_Base       * AmiGUS_Base       = 0;
 
 #endif
@@ -90,8 +91,11 @@ LONG CustomLibInit( LIBRARY_TYPE * base, struct ExecBase * sysBase ) {
 
     return EOpenExpansionBase;
   }
+  base->agb_CardResource = 
+    ( struct Library * ) OpenResource( "card.resource" );
 
 #ifdef BASE_GLOBAL
+  CardResource    = base->agb_CardResource;
   DOSBase         = base->agb_DOSBase;
   ExpansionBase   = base->agb_ExpansionBase;
   AmiGUS_Base     = base;
