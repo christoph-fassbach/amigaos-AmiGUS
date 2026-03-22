@@ -174,6 +174,27 @@ static LONG ReadPresetSubChunk( BPTR fileHandle,
   return ENoError;
 }
 
+static LONG ReadPresetData( BPTR fileHandle,
+                            const LONG size,
+                            struct MinList * target ) {
+
+  LONG i;
+
+  if (( !( size )) || ( size % PHDR_CHUNK_SIZE_MULTIPLE )) {
+
+    return EInvalidPresetDataSize;
+  }
+
+  i = ( size / PHDR_CHUNK_SIZE_MULTIPLE ) - 1;
+alosidfj
+
+  // TODO: https://github.com/FluidSynth/fluidsynth/blob/master/src/sfloader/fluid_sffile.c#L1099
+  Seek( fileHandle, size, OFFSET_CURRENT );
+  // Remove after done ;)
+
+  return ENoError;
+}
+
 static LONG ReadInfo( struct SF2_Parsed * sf2, ULONG size ) {
 
   LONG result;
@@ -360,9 +381,13 @@ static LONG ReadPresetInfo( struct SF2_Parsed * sf2, ULONG size ) {
 
     return result;
   }
-  // TODO: https://github.com/FluidSynth/fluidsynth/blob/master/src/sfloader/fluid_sffile.c#L1099
-  Seek( sf2->sf2_FileHandle, chunk.size, OFFSET_CURRENT );
-  // Remove after done ;)
+  result = ReadPresetData( sf2->sf2_FileHandle,
+                           chunk.size,
+                           &( sf2->sf2_Presets ));
+  if ( result ) {
+
+    return result;
+  }
 
   LOG_D(( "D: size %ld\n", size ));
   Seek( sf2->sf2_FileHandle, size, OFFSET_CURRENT );

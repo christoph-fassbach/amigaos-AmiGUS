@@ -71,6 +71,7 @@ enum ErrorCodes
   EIncompatibleVersion,
   EInvalidInfoSubChunkSize,
   EInvalidPresetSubChunk,
+  EInvalidPresetDataSize,
   EDuplicatedSmplChunk,
   EDuplicatedSm24Chunk,
 
