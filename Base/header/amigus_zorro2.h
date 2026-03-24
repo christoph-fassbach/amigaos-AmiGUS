@@ -30,6 +30,13 @@
 VOID AmiGusZorro2_AddAll( struct List * cards );
 
 /**
+ * Removes and frees all AmiGUS cards connected to Zorro2 slots.
+ *
+ * @param cards List of cards to free.
+ */
+VOID AmiGusZorro2_RemoveAll( struct List * cards );
+
+/**
  * Installs the interrupt handling and further dispatching by amigus.library
  * for Zorro2.
  *

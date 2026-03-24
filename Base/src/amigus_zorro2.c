@@ -130,6 +130,22 @@ VOID AmiGusZorro2_AddAll( struct List * cards ) {
   return;
 }
 
+VOID AmiGusZorro2_RemoveAll( struct List * cards ) {
+
+  struct AmiGUS_Private * card_private; 
+  FOR_LIST( cards, card_private, struct AmiGUS_Private * ) {
+
+    if ( AmiGUS_Zorro2 == card_private->agp_AmiGUS_Public.agus_TypeId ) {
+
+      LOG_I(( "I: Releasing %s ...\n", AmiGUS_Zorro2_Name ));
+      *( card_private->agp_PCM.agp_OwnerPointer ) = NULL;
+      *( card_private->agp_Wavetable.agp_OwnerPointer ) = NULL;
+      *( card_private->agp_Codec.agp_OwnerPointer ) = NULL;
+      LOG_I(( "I: done, %s free'd!\n", AmiGUS_Zorro2_Name ));
+    }
+  }
+}
+
 LONG AmiGusZorro2_InstallInterrupt( VOID ) {
 
   Disable();

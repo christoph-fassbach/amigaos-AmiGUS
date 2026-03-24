@@ -41,6 +41,8 @@
 #endif
 #endif
 
+#include <resources/card.h>
+
 #include <amigus/amigus.h>
 
 #include "library.h"
@@ -98,6 +100,7 @@ struct AmiGUS_Base {
   /* AmiGUS specific member variables */
   struct List                 agb_Cards;         // List of AmiGUS_Privates
   struct Interrupt            agb_Interrupt;     // Struct for Zorro2 interrupts
+  struct CardHandle           agb_CardHandle;    // Struct for card.resource
   ULONG                       agb_Flags;         // See list of flags above!
 
   BPTR                        agb_LogFile;       // Debug log file handle

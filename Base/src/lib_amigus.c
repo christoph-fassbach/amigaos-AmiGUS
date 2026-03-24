@@ -121,6 +121,9 @@ VOID CustomLibClose( LIBRARY_TYPE * base ) {
 #endif
 
   APTR card;
+
+  AmiGusPcmcia_RemoveAll( &( base->agb_Cards ));
+  AmiGusZorro2_RemoveAll( &( base->agb_Cards ));
   while ( card = RemTail( &( base->agb_Cards ))) {
 
     FreeMem( card, sizeof( struct AmiGUS_Private ));
