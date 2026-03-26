@@ -152,14 +152,14 @@ LONG AmiGusZorro2_InstallInterrupt( VOID ) {
   if ( AmiGUS_Base->agb_Flags & AMIGUS_BASE_F_ZORRO2_INT_SET ) {
 
     Enable();
-    LOG_W(( "W: Interrupt already installed.\n" ));
+    LOG_W(( "W: Zorro2 interrupt already installed.\n" ));
     return AmiGUS_InterruptInstallFailed;
   }
   AmiGUS_Base->agb_Flags |= AMIGUS_BASE_F_ZORRO2_INT_SET;
   AddIntServer( INTB_PORTS, &( AmiGUS_Base->agb_Interrupt ));
 
   Enable();
-  LOG_I(( "I: Interrupt successfully installed.\n" ));
+  LOG_I(( "I: Zorro2 interrupt successfully installed.\n" ));
   return AmiGUS_NoError;
 }
 
@@ -169,13 +169,13 @@ LONG AmiGusZorro2_RemoveInterrupt( VOID ) {
   if ( !( AmiGUS_Base->agb_Flags & AMIGUS_BASE_F_ZORRO2_INT_SET )) {
 
     Enable();
-    LOG_W(( "W: Interrupt not installed.\n" ));
+    LOG_W(( "W: Zorro2 interrupt not installed.\n" ));
     return AmiGUS_InterruptRemoveFailed;
   }
   AmiGUS_Base->agb_Flags &= ~AMIGUS_BASE_F_ZORRO2_INT_SET;
   RemIntServer( INTB_PORTS, &( AmiGUS_Base->agb_Interrupt ));
 
   Enable();
-  LOG_I(( "I: Interrupt successfully removed.\n" ));
+  LOG_I(( "I: Zorro2 interrupt successfully removed.\n" ));
   return AmiGUS_NoError;
 }

@@ -30,6 +30,7 @@
 #include "debug.h"
 #include "errors.h"
 #include "support.h"
+#include "SDI_amigus_protos.h"
 
 // https://github.com/torvalds/linux/blob/v6.19/arch/m68k/include/asm/amigahw.h
 // https://github.com/torvalds/linux/blob/v6.19/arch/m68k/include/asm/amigayle.h
@@ -78,10 +79,11 @@ static VOID ResetPcmcia( VOID ) {
 ASM( LONG ) /* __entry for vbcc ? */ SAVEDS INTERRUPT HandleRemovedInterrupt (
   REG( a1, struct AmiGUS_Base * base )) {
 
-  struct CardHandle * handle = &( base->agb_CardHandle );
   LOG_INT(( "INT: PCMCIA removed.\n" ));
+//  struct CardHandle * handle = &( base->agb_CardHandle );
 //  CardResetCard( handle );
 //  ReleaseCard( handle, 0 );
+  LOG_D(("1\n"));
 
   return 0;
 }
@@ -91,6 +93,7 @@ ASM( LONG ) /* __entry for vbcc ? */ SAVEDS INTERRUPT HandleInsertedInterrupt (
 
   LOG_INT(( "INT: PCMCIA inserted.\n" ));
   // Test if Amigus 
+  LOG_D(("2\n"));
 
   return 0;
 }
@@ -100,6 +103,11 @@ ASM( ULONG ) /* __entry for vbcc ? */ SAVEDS INTERRUPT HandleStatusInterrupt (
   REG( a1, struct AmiGUS_Base * base )) {
 
   LOG_INT(( "INT: PCMCIA status change, now %ld.\n", status ));
+  if ( CARD_STATUSF_IRQ & status ) {
+
+    HandleInterrupt( base );
+  }
+  LOG_D(("3\n"));
   return status;
 }
 
@@ -233,16 +241,19 @@ VOID AmiGusPcmcia_AddAll( struct List * cards ) {
 
   card_private->agp_PCM.agp_OwnerPointer =
     &( card_private->agp_PCM.agp_MaybeOwnerData );
+  card_private->agp_PCM.agp_MaybeOwnerData = NULL;
   card_private->agp_PCM.agp_IntHandler = NULL;
   card_private->agp_PCM.agp_IntData = NULL;
 
   card_private->agp_Wavetable.agp_OwnerPointer =
     &( card_private->agp_Wavetable.agp_MaybeOwnerData );
+  card_private->agp_Wavetable.agp_MaybeOwnerData = NULL;
   card_private->agp_Wavetable.agp_IntHandler = NULL;
   card_private->agp_Wavetable.agp_IntData = NULL;
 
   card_private->agp_Codec.agp_OwnerPointer =
     &( card_private->agp_Codec.agp_MaybeOwnerData );
+  card_private->agp_Codec.agp_MaybeOwnerData = NULL;
   card_private->agp_Codec.agp_IntHandler = NULL;
   card_private->agp_Codec.agp_IntData = NULL;
 
@@ -296,10 +307,14 @@ VOID AmiGusPcmcia_RemoveAll( struct List * cards ) {
 
 LONG AmiGusPcmcia_InstallInterrupt( VOID ) {
 
-  return AmiGUS_NotImplemented;
+  LOG_I(( "I: PCMCIA ints handled permanently, no install needed.\n" ));
+
+  return AmiGUS_NoError;
 }
 
 LONG AmiGusPcmcia_RemoveInterrupt( VOID ) {
 
-  return AmiGUS_NotImplemented;
+  LOG_I(( "I: PCMCIA ints handled permanently, no remove possible.\n" ));
+
+  return AmiGUS_NoError;
 }

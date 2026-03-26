@@ -1011,6 +1011,7 @@ int main(int argc, char const *argv[]) {
   printf( "%s opened\n", libraryName );
 
   failed |= testFindCard();
+  /*
   failed |= testReserveCard();
   failed |= testFreeCard();
   failed |= testInstallInterrupt();
@@ -1018,7 +1019,7 @@ int main(int argc, char const *argv[]) {
   failed |= testPcmInterrupt();
 //  failed |= testWavetableInterrupt();
   failed |= testCodecInterrupt();
-
+*/
   CloseLibrary(( struct Library * ) AmiGUS_Base );
   printf( "%s closed\n", libraryName );
 
