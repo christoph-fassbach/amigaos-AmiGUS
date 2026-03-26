@@ -176,7 +176,9 @@ ASM( APTR ) SAVEDS MHIAllocDecoder(
 
   }
 
-  LOG_D(( "D: MHIAllocDecoder done, returning handle 0x%08lx\n", handle ));
+  LOG_D(( "D: MHIAllocDecoder done, using "
+          "handle 0x%08lx, card 0x%08lx and part 0x%04lx\n",
+          handle, handle->agch_AmiGUS, AMIGUS_FLAG_CODEC ));
   return handle;
 }
 
