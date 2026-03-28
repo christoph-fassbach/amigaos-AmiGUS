@@ -32,11 +32,6 @@
 #include "support.h"
 #include "SDI_amigus_protos.h"
 
-// https://github.com/torvalds/linux/blob/v6.19/arch/m68k/include/asm/amigahw.h
-// https://github.com/torvalds/linux/blob/v6.19/arch/m68k/include/asm/amigayle.h
-// https://github.com/torvalds/linux/blob/v6.19/arch/m68k/include/asm/amipcmcia.h
-// https://github.com/torvalds/linux/blob/v4.0/arch/m68k/amiga/pcmcia.c
-
 /*
  * defines are limited to 32 chars due to a SAS/C insufficiency !!!
  *
@@ -82,10 +77,6 @@ ASM( LONG ) /* __entry for vbcc ? */ SAVEDS INTERRUPT HandleRemovedInterrupt (
   REG( a1, struct AmiGUS_Base * base )) {
 
   LOG_INT(( "INT: PCMCIA removed.\n" ));
-//  struct CardHandle * handle = &( base->agb_CardHandle );
-//  CardResetCard( handle );
-//  ReleaseCard( handle, 0 );
-  LOG_D(("1\n"));
 
   return 0;
 }
@@ -94,8 +85,6 @@ ASM( LONG ) /* __entry for vbcc ? */ SAVEDS INTERRUPT HandleInsertedInterrupt (
   REG( a1, struct AmiGUS_Base * base )) {
 
   LOG_INT(( "INT: PCMCIA inserted.\n" ));
-  // Test if Amigus 
-  LOG_D(("2\n"));
 
   return 0;
 }
@@ -109,14 +98,13 @@ ASM( ULONG ) /* __entry for vbcc ? */ SAVEDS INTERRUPT HandleStatusInterrupt (
 
     HandleInterrupt( base );
   }
-  LOG_D(("3\n"));
   return status;
 }
 
 VOID AmiGusPcmcia_AddAll( struct List * cards ) {
 
   struct AmiGUS_Base * base = AmiGUS_Base;
-  struct CardHandle * handle = &( base->agb_CardHandle );
+  struct CardHandle * handle;
   struct AmiGUS_Private * card_private;
   struct AmiGUS * card_public;
   struct CardMemoryMap * cardMap;
@@ -131,6 +119,7 @@ VOID AmiGusPcmcia_AddAll( struct List * cards ) {
   BOOL reset;
   ULONG serial;
 
+  base->agb_CardHandle = NULL;
   if ( !( base->agb_CardResource )) {
 
     LOG_I(( "I: No card.resource, not looking further on PCMCIA.\n" ));
@@ -156,6 +145,15 @@ VOID AmiGusPcmcia_AddAll( struct List * cards ) {
     return;
   }
 
+  base->agb_CardHandle = AllocMem( sizeof( struct CardHandle ),
+                                   MEMF_ANY | MEMF_CLEAR );
+  handle = base->agb_CardHandle;
+  handle->cah_CardRemoved = AllocMem( sizeof( struct Interrupt ),
+                                      MEMF_ANY | MEMF_CLEAR );
+  handle->cah_CardInserted = AllocMem( sizeof( struct Interrupt ),
+                                       MEMF_ANY | MEMF_CLEAR );
+  handle->cah_CardStatus = AllocMem( sizeof( struct Interrupt ),
+                                     MEMF_ANY | MEMF_CLEAR );
   handle->cah_CardNode.ln_Pri = 20;
   handle->cah_CardNode.ln_Name = ( char * ) LibName;
   handle->cah_CardRemoved->is_Data = ( APTR ) base;
@@ -293,20 +291,32 @@ VOID AmiGusPcmcia_AddAll( struct List * cards ) {
 VOID AmiGusPcmcia_RemoveAll( struct List * cards ) {
 
   struct AmiGUS_Base * base = AmiGUS_Base;
-  struct CardHandle * handle = &( base->agb_CardHandle );
   struct AmiGUS_Private * card_private; 
   FOR_LIST( cards, card_private, struct AmiGUS_Private * ) {
 
     if ( AmiGUS_mini == card_private->agp_AmiGUS_Public.agus_TypeId ) {
 
       LOG_I(( "I: Resetting %s...\n", AmiGUS_Mini_Name ));
-      CardResetCard( handle );
+      CardResetCard( base->agb_CardHandle );
       Delay( 3 );
       LOG_I(( "I: done, releasing %s...\n", AmiGUS_Mini_Name ));
       Delay( 3 );
-      ReleaseCard( handle, CARDB_REMOVEHANDLE );
+      ReleaseCard( base->agb_CardHandle, CARDB_REMOVEHANDLE );
       LOG_I(( "I: done, %s free'd!\n", AmiGUS_Mini_Name ));
     }
+  }
+  if ( base->agb_CardHandle ) {
+
+    FreeMem( base->agb_CardHandle->cah_CardRemoved,
+             sizeof( struct Interrupt ));
+    FreeMem( base->agb_CardHandle->cah_CardInserted,
+             sizeof( struct Interrupt ));
+    FreeMem( base->agb_CardHandle->cah_CardStatus,
+             sizeof( struct Interrupt ));
+    FreeMem( base->agb_CardHandle,
+             sizeof( struct CardHandle ));
+    base->agb_CardHandle = NULL;
+    LOG_D(( "D: Free'd PCMCIA card handle and interrupts.\n" ));
   }
 }
 

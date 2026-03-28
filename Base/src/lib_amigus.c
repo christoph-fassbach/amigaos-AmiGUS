@@ -27,7 +27,6 @@
 #include "errors.h"
 #include "library.h"
 #include "support.h"
-#include "SDI_amigus_protos.h"
 
 #ifdef BASE_GLOBAL
 
@@ -104,11 +103,6 @@ LONG CustomLibInit( LIBRARY_TYPE * base, struct ExecBase * sysBase ) {
   NEW_LIST( &( base->agb_Cards ));
   AmiGusPcmcia_AddAll( &( base->agb_Cards ));
   AmiGusZorro2_AddAll( &( base->agb_Cards ));
-
-  base->agb_Interrupt.is_Node.ln_Pri = 100;
-  base->agb_Interrupt.is_Node.ln_Name = "AmiGUS_Base_INT";
-  base->agb_Interrupt.is_Data = ( APTR ) base;
-  base->agb_Interrupt.is_Code = ( VOID ( * )( )) HandleInterrupt;
 
   LOG_D(( "D: AmiGUS base ready @ 0x%08lx\n", base ));
   return ENoError;
