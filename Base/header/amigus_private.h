@@ -77,6 +77,7 @@
  */
 #define AMIGUS_BASE_F_ZORRO2_INT_SET     0x00000001 // Z2 interrupt installed,
 #define AMIGUS_BASE_F_PCMCIA_INT_SET     0x00000002 // same for PCMCIA
+#define AMIGUS_BASE_F_PCMCIA_MEMORY_MODE 0x00000004 // PCMCIA access as memory
 
 /******************************************************************************
  * Library base structure
