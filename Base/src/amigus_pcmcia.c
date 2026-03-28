@@ -307,10 +307,12 @@ VOID AmiGusPcmcia_AddAll( struct List * cards ) {
   LOG_D(( "D: Requesting PCMCIA card ownership for 0x%08lx.\n",
           base->agb_CardHandle ));
   own = OwnCard( base->agb_CardHandle );
-  if ( NULL == own ) {
+  if ( NULL != own ) {
 
-    LOG_D(( "D: Success, owning card!\n" ));
+    LOG_E(( "E: Failed owning card!\n" ));
+    return;
   }
+  LOG_D(( "D: Success, owning card!\n" ));
 
   reset = CardResetCard( base->agb_CardHandle );
   if ( !( reset )) {
@@ -322,7 +324,7 @@ VOID AmiGusPcmcia_AddAll( struct List * cards ) {
   Delay( 3 );
 
   cardMap = GetCardMap(); // <- has addresses and sizes and shit
-  LOG_V(( "V: Addresses: Mem 0x%08lx Attr 0x%08lx IO 0x%08lx\n",
+  LOG_D(( "D: Addresses: Mem 0x%08lx Attr 0x%08lx IO 0x%08lx\n",
           cardMap->cmm_CommonMemory,
           cardMap->cmm_AttributeMemory,
           cardMap->cmm_IOMemory ));
