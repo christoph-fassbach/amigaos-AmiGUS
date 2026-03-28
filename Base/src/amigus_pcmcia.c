@@ -50,10 +50,12 @@
 
 #define GAYLE_PCMCIA_ASK_HEDLEY_RESET    0x0300
 
-
 #define CHAR_TO_ULONG( a, b, c, d )      ((( a ) << 24 ) | (( b ) << 16 ) | (( c ) << 8 ) | ( d ))
 #define AMIGUS_MINI_CARD_ID_LOW          CHAR_TO_ULONG( 'A', 'M' ,'I', 'G' )
 #define AMIGUS_MINI_CARD_ID_HIGH         CHAR_TO_ULONG( 'U', 'S' ,'M', 'N' )
+#define AMIGUS_MINI_PCM_OFFSET           0x00000100
+#define AMIGUS_MINI_CODEC_OFFSET         0x00000200
+#define AMIGUS_MINI_WAVETABLE_OFFSET     0x00000300
 
 extern const char LibName[];
 
@@ -258,9 +260,12 @@ VOID AmiGusPcmcia_AddAll( struct List * cards ) {
   card_private->agp_Codec.agp_IntData = NULL;
 
   card_public = &( card_private->agp_AmiGUS_Public );
-  card_public->agus_PcmBase = ( APTR )( cardBaseLong + 0x00000100 );
-  card_public->agus_WavetableBase = ( APTR )( cardBaseLong + 0x00000200 );
-  card_public->agus_CodecBase = ( APTR )( cardBaseLong + 0x00000300 );
+  card_public->agus_PcmBase =
+    ( APTR )( cardBaseLong + AMIGUS_MINI_PCM_OFFSET );
+  card_public->agus_WavetableBase =
+    ( APTR )( cardBaseLong + AMIGUS_MINI_WAVETABLE_OFFSET );
+  card_public->agus_CodecBase =
+    ( APTR )( cardBaseLong + AMIGUS_MINI_CODEC_OFFSET );
   card_public->agus_TypeId = AmiGUS_mini;
   card_public->agus_TypeName = AmiGUS_Mini_Name;
 
