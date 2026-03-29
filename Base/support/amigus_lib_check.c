@@ -166,8 +166,16 @@ BOOL testFindCard( VOID ) {
             card->agus_Day,
             card->agus_Hour,
             card->agus_Minute );
-    printf( "Hardware rev is ?\n");
-    printf( "FPGA id is ?\n");
+    printf( "Hardware rev is %ld\n", card->agus_HardwareRev );
+    printf( "FPGA id is 0x %02lx%02lx %02lx%02lx %02lx%02lx %02lx%02lx\n",
+            card->agus_FpgaId.idBytes[ 0 ],
+            card->agus_FpgaId.idBytes[ 1 ],
+            card->agus_FpgaId.idBytes[ 2 ],
+            card->agus_FpgaId.idBytes[ 3 ],
+            card->agus_FpgaId.idBytes[ 4 ],
+            card->agus_FpgaId.idBytes[ 5 ],
+            card->agus_FpgaId.idBytes[ 6 ],
+            card->agus_FpgaId.idBytes[ 7 ] );
 
     ++i;
   }

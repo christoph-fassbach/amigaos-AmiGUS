@@ -55,6 +55,7 @@
 #define AMIGUS_MINI_ID_LOW_OFFSET        0x80
 #define AMIGUS_MINI_ID_HIGH_OFFSET       0x84
 #define AMIGUS_MINI_SERIAL_OFFSET        0x88
+#define AMIGUS_MINI_HARDWARE_ID          0x8C
 #define AMIGUS_MINI_PCM_OFFSET           0x00000100
 #define AMIGUS_MINI_CODEC_OFFSET         0x00000200
 #define AMIGUS_MINI_WAVETABLE_OFFSET     0x00000300
@@ -203,6 +204,12 @@ static struct AmiGUS_Private * CreateCardPrivate( ULONG cardBase ) {
 
   struct AmiGUS_Private * cardPrivate;
   struct AmiGUS * cardPublic;
+  APTR ownerPcm;
+  APTR ownerWavetable;
+  APTR ownerCodec;
+  APTR cardPcm;
+  APTR cardWavetable;
+  APTR cardCodec;
   ULONG serial;
 
   cardPrivate = AllocMem( sizeof( struct AmiGUS_Private ), MEMF_ANY );
@@ -212,33 +219,43 @@ static struct AmiGUS_Private * CreateCardPrivate( ULONG cardBase ) {
     return cardPrivate;
   }
 
-  cardPrivate->agp_PCM.agp_OwnerPointer =
-    &( cardPrivate->agp_PCM.agp_MaybeOwnerData );
+  ownerPcm = &( cardPrivate->agp_PCM.agp_MaybeOwnerData );
+  cardPrivate->agp_PCM.agp_OwnerPointer = ownerPcm;
   cardPrivate->agp_PCM.agp_MaybeOwnerData = NULL;
   cardPrivate->agp_PCM.agp_IntHandler = NULL;
   cardPrivate->agp_PCM.agp_IntData = NULL;
 
-  cardPrivate->agp_Wavetable.agp_OwnerPointer =
-    &( cardPrivate->agp_Wavetable.agp_MaybeOwnerData );
+  ownerWavetable = &( cardPrivate->agp_Wavetable.agp_MaybeOwnerData );
+  cardPrivate->agp_Wavetable.agp_OwnerPointer = ownerWavetable;
   cardPrivate->agp_Wavetable.agp_MaybeOwnerData = NULL;
   cardPrivate->agp_Wavetable.agp_IntHandler = NULL;
   cardPrivate->agp_Wavetable.agp_IntData = NULL;
 
-  cardPrivate->agp_Codec.agp_OwnerPointer =
-    &( cardPrivate->agp_Codec.agp_MaybeOwnerData );
+  ownerCodec = &( cardPrivate->agp_Codec.agp_MaybeOwnerData );
+  cardPrivate->agp_Codec.agp_OwnerPointer = ownerCodec;    
   cardPrivate->agp_Codec.agp_MaybeOwnerData = NULL;
   cardPrivate->agp_Codec.agp_IntHandler = NULL;
   cardPrivate->agp_Codec.agp_IntData = NULL;
 
   cardPublic = &( cardPrivate->agp_AmiGUS_Public );
-  cardPublic->agus_PcmBase =
-    ( APTR )( cardBase + AMIGUS_MINI_PCM_OFFSET );
-  cardPublic->agus_WavetableBase =
-    ( APTR )( cardBase + AMIGUS_MINI_WAVETABLE_OFFSET );
-  cardPublic->agus_CodecBase =
-    ( APTR )( cardBase + AMIGUS_MINI_CODEC_OFFSET );
+
+  cardPcm = ( APTR )( cardBase + AMIGUS_MINI_PCM_OFFSET );
+  cardPublic->agus_PcmBase = cardPcm;
+  cardWavetable = ( APTR )( cardBase + AMIGUS_MINI_WAVETABLE_OFFSET );
+  cardPublic->agus_WavetableBase = cardWavetable;
+  cardCodec = ( APTR )( cardBase + AMIGUS_MINI_CODEC_OFFSET );
+  cardPublic->agus_CodecBase = cardCodec;
+
+  cardPublic->agus_FpgaId.idLongs[ 0 ] = ReadReg32( cardPublic->agus_PcmBase,
+                                                    AMIGUS_FPGA_ID_LOW );
+  cardPublic->agus_FpgaId.idLongs[ 1 ] = ReadReg32( cardPublic->agus_PcmBase,
+                                                    AMIGUS_FPGA_ID_HIGH );
+
   cardPublic->agus_TypeId = AmiGUS_mini;
   cardPublic->agus_TypeName = AmiGUS_Mini_Name;
+
+  cardPublic->agus_HardwareRev = ReadReg16(( APTR ) cardBase,
+                                            AMIGUS_MINI_HARDWARE_ID );
 
   serial = ReadReg32(( APTR ) cardBase, AMIGUS_MINI_SERIAL_OFFSET );
   cardPublic->agus_FirmwareRev = serial;

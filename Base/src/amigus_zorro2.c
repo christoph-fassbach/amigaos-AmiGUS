@@ -49,11 +49,11 @@ VOID AmiGusZorro2_AddAll( struct List * cards ) {
   
   for ( ; ; ) {
 
-    struct AmiGUS_Private * card_private;
-    struct AmiGUS * card_public;
-    ULONG serial_PCM;
-    ULONG serial_Wavetable;
-    ULONG serial_Codec;
+    struct AmiGUS_Private * cardPrivate;
+    struct AmiGUS * cardPublic;
+    ULONG serialPCM;
+    ULONG serialWavetable;
+    ULONG serialCodec;
     ULONG serial;
 
     cd_PCM = FindConfigDev( cd_PCM,
@@ -78,58 +78,66 @@ VOID AmiGusZorro2_AddAll( struct List * cards ) {
       break;
     }
 
-    card_private = AllocMem( sizeof( struct AmiGUS_Private ), MEMF_ANY );
+    cardPrivate = AllocMem( sizeof( struct AmiGUS_Private ), MEMF_ANY );
 
-    card_private->agp_PCM.agp_OwnerPointer = &( cd_PCM->cd_Driver );
-    card_private->agp_PCM.agp_IntHandler = NULL;
-    card_private->agp_PCM.agp_IntData = NULL;
+    cardPrivate->agp_PCM.agp_OwnerPointer = &( cd_PCM->cd_Driver );
+    cardPrivate->agp_PCM.agp_IntHandler = NULL;
+    cardPrivate->agp_PCM.agp_IntData = NULL;
 
-    card_private->agp_Wavetable.agp_OwnerPointer = &( cd_Wavetable->cd_Driver );
-    card_private->agp_Wavetable.agp_IntHandler = NULL;
-    card_private->agp_Wavetable.agp_IntData = NULL;
+    cardPrivate->agp_Wavetable.agp_OwnerPointer = &( cd_Wavetable->cd_Driver );
+    cardPrivate->agp_Wavetable.agp_IntHandler = NULL;
+    cardPrivate->agp_Wavetable.agp_IntData = NULL;
 
-    card_private->agp_Codec.agp_OwnerPointer = &( cd_Codec->cd_Driver );
-    card_private->agp_Codec.agp_IntHandler = NULL;
-    card_private->agp_Codec.agp_IntData = NULL;
+    cardPrivate->agp_Codec.agp_OwnerPointer = &( cd_Codec->cd_Driver );
+    cardPrivate->agp_Codec.agp_IntHandler = NULL;
+    cardPrivate->agp_Codec.agp_IntData = NULL;
 
-    card_public = &( card_private->agp_AmiGUS_Public );
-    card_public->agus_PcmBase = cd_PCM->cd_BoardAddr;
-    card_public->agus_WavetableBase = cd_Wavetable->cd_BoardAddr;
-    card_public->agus_CodecBase = cd_Codec->cd_BoardAddr;
-    card_public->agus_TypeId = AmiGUS_Zorro2;
-    card_public->agus_TypeName = AmiGUS_Zorro2_Name;
+    cardPublic = &( cardPrivate->agp_AmiGUS_Public );
+    cardPublic->agus_PcmBase = cd_PCM->cd_BoardAddr;
+    cardPublic->agus_WavetableBase = cd_Wavetable->cd_BoardAddr;
+    cardPublic->agus_CodecBase = cd_Codec->cd_BoardAddr;
 
-    serial_PCM = cd_PCM->cd_Rom.er_SerialNumber;
-    serial_Wavetable = cd_Wavetable->cd_Rom.er_SerialNumber;
-    serial_Codec = cd_Codec->cd_Rom.er_SerialNumber;
+    cardPublic->agus_FpgaId.idLongs[ 0 ] = ReadReg32( cardPublic->agus_PcmBase,
+                                                    AMIGUS_FPGA_ID_LOW );
+  cardPublic->agus_FpgaId.idLongs[ 1 ] = ReadReg32( cardPublic->agus_PcmBase,
+                                                    AMIGUS_FPGA_ID_HIGH );
 
-    if (( serial_PCM != serial_Wavetable )
-      || ( serial_PCM != serial_Codec )) {
+    cardPublic->agus_TypeId = AmiGUS_Zorro2;
+    cardPublic->agus_TypeName = AmiGUS_Zorro2_Name;
+
+    cardPublic->agus_HardwareRev = 0;
+
+    serialPCM = cd_PCM->cd_Rom.er_SerialNumber;
+    serialWavetable = cd_Wavetable->cd_Rom.er_SerialNumber;
+    serialCodec = cd_Codec->cd_Rom.er_SerialNumber;
+
+    if (( serialPCM != serialWavetable )
+      || ( serialPCM != serialCodec )) {
 
       LOG_W(( "W: Versions 0x%08lx/0x%08lx/0x%08lx of AmiGUSs "
               "combined into 0x%08lx/0x%08lx do not match!\n",
-              serial_PCM, serial_Wavetable, serial_Codec,
-              card_private, card_public ));
+              serialPCM, serialWavetable, serialCodec,
+              cardPrivate, cardPublic ));
     }
 
-    serial = MIN( serial_PCM, MIN( serial_Wavetable, serial_Codec ));
-    card_public->agus_FirmwareRev = serial;
+    serial = MIN( serialPCM, MIN( serialWavetable, serialCodec ));
+    cardPublic->agus_FirmwareRev = serial;
     LOG_V(("I: AmiGUS firmware 0x%08lx\n", serial ));
 
-    card_public->agus_Minute = ( UBYTE )(( serial & 0x0000003Ful )       );
-    card_public->agus_Hour   = ( UBYTE )(( serial & 0x000007C0ul ) >>  6 );
-    card_public->agus_Day    = ( UBYTE )(( serial & 0x0000F800ul ) >> 11 );
-    card_public->agus_Month  = ( UBYTE )(( serial & 0x000F0000ul ) >> 16 );
-    card_public->agus_Year   = ( UWORD )(( serial & 0xFFF00000ul ) >> 20 );
+    cardPublic->agus_Minute = ( UBYTE )(( serial & 0x0000003Ful )       );
+    cardPublic->agus_Hour   = ( UBYTE )(( serial & 0x000007C0ul ) >>  6 );
+    cardPublic->agus_Day    = ( UBYTE )(( serial & 0x0000F800ul ) >> 11 );
+    cardPublic->agus_Month  = ( UBYTE )(( serial & 0x000F0000ul ) >> 16 );
+    cardPublic->agus_Year   = ( UWORD )(( serial & 0xFFF00000ul ) >> 20 );
     LOG_I(( "I: AmiGUS firmware date %04ld-%02ld-%02ld, %02ld:%02ld\n",
-            card_public->agus_Year, 
-            card_public->agus_Month,
-            card_public->agus_Day,
-            card_public->agus_Hour,
-            card_public->agus_Minute ));
+            cardPublic->agus_Year, 
+            cardPublic->agus_Month,
+            cardPublic->agus_Day,
+            cardPublic->agus_Hour,
+            cardPublic->agus_Minute ));
 
     ++count;
-    AddTail( cards, &( card_private->agp_Node ));
+    AddTail( cards, &( cardPrivate->agp_Node ));
   }
   if ( count ) {
 
@@ -154,15 +162,15 @@ VOID AmiGusZorro2_AddAll( struct List * cards ) {
 VOID AmiGusZorro2_RemoveAll( struct List * cards ) {
 
   struct AmiGUS_Base * base = AmiGUS_Base;
-  struct AmiGUS_Private * card_private; 
-  FOR_LIST( cards, card_private, struct AmiGUS_Private * ) {
+  struct AmiGUS_Private * cardPrivate; 
+  FOR_LIST( cards, cardPrivate, struct AmiGUS_Private * ) {
 
-    if ( AmiGUS_Zorro2 == card_private->agp_AmiGUS_Public.agus_TypeId ) {
+    if ( AmiGUS_Zorro2 == cardPrivate->agp_AmiGUS_Public.agus_TypeId ) {
 
       LOG_I(( "I: Releasing %s ...\n", AmiGUS_Zorro2_Name ));
-      *( card_private->agp_PCM.agp_OwnerPointer ) = NULL;
-      *( card_private->agp_Wavetable.agp_OwnerPointer ) = NULL;
-      *( card_private->agp_Codec.agp_OwnerPointer ) = NULL;
+      *( cardPrivate->agp_PCM.agp_OwnerPointer ) = NULL;
+      *( cardPrivate->agp_Wavetable.agp_OwnerPointer ) = NULL;
+      *( cardPrivate->agp_Codec.agp_OwnerPointer ) = NULL;
       LOG_I(( "I: done, %s free'd!\n", AmiGUS_Zorro2_Name ));
     }
   }

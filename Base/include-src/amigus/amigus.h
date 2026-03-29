@@ -74,7 +74,10 @@ struct AmiGUS {
   APTR      agus_WavetableBase; //> Base address of the Wavetable part.
   APTR      agus_CodecBase;     //> Base address of the codec part.
 
-  UBYTE     agus_FpgaId[ 8 ];   //> Hardware ID of the card's FPGA.
+  union {
+    ULONG     idLongs[ 2 ];     //> Hardware ID of the card's FPGA - in ULONGs.
+    UBYTE     idBytes[ 8 ];     //> Hardware ID of the card's FPGA - in UBYTEs.
+  } agus_FpgaId;
   
   ULONG     agus_HardwareRev;   //> Hardware revision of the card.
   ULONG     agus_FirmwareRev;   //> Firmware revision of the card.
