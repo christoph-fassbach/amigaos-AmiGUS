@@ -117,11 +117,13 @@ struct AmiGUS_AHI_Base {
   struct IntuitionBase        * agb_IntuitionBase;
   struct Library              * agb_UtilityBase;
   struct Library              * agb_ExpansionBase;
+  struct Library              * agb_AmiGUS_Base;
 
   struct Device               * agb_TimerBase;
   struct IORequest            * agb_TimerRequest;
   /* AmiGUS specific member variables */
   APTR                          agb_CardBase;
+  struct AmiGUS               * agch_AmiGUS;        // AmiGUS card handle
   struct Interrupt            * agb_Interrupt;
   struct Process              * agb_MainProcess;
   struct Process              * agb_WorkerProcess;

@@ -25,7 +25,7 @@
 #include "debug.h"
 #include "errors.h"
 
-LONG FindAmiGusPcm( struct AmiGUS_AHI_Base *amiGUSBase ) {
+LONG FindAmiGusPcmOld( struct AmiGUS_AHI_Base *amiGUSBase ) {
 
   struct ConfigDev *configDevice = 0;
   ULONG serial;
