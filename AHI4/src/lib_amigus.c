@@ -137,19 +137,19 @@ LONG CustomLibInit( LIBRARY_TYPE * base, struct ExecBase * sysBase ) {
 #endif
 
   LOG_D(( "D: AmiGUS base ready @ 0x%08lx\n", amiGUSBase ));
-  amiGUSBase->agch_AmiGUS = AmiGUS_FindCard( amiGUSBase->agch_AmiGUS );
-  if ( !( amiGUSBase->agch_AmiGUS )) {
+  amiGUSBase->agb_AmiGUS = AmiGUS_FindCard( amiGUSBase->agb_AmiGUS );
+  if ( !( amiGUSBase->agb_AmiGUS )) {
 
     error = EAmiGUSNotFound;
 
   } else if ( AMIGUS_AHI_FIRMWARE_MINIMUM 
-    > amiGUSBase->agch_AmiGUS->agus_FirmwareRev ) {
+    > amiGUSBase->agb_AmiGUS->agus_FirmwareRev ) {
 
     error = EAmiGUSFirmwareOutdated;
 
   } else {
 
-    error = AmiGUS_ReserveCard( amiGUSBase->agch_AmiGUS,
+    error = AmiGUS_ReserveCard( amiGUSBase->agb_AmiGUS,
                                 AMIGUS_FLAG_PCM,
                                 amiGUSBase );
   }
@@ -159,7 +159,7 @@ LONG CustomLibInit( LIBRARY_TYPE * base, struct ExecBase * sysBase ) {
 
   } else {
 
-    amiGUSBase->agb_CardBase = amiGUSBase->agch_AmiGUS->agus_PcmBase;
+    amiGUSBase->agb_CardBase = amiGUSBase->agb_AmiGUS->agus_PcmBase;
     amiGUSBase->agb_UsageCounter = 0;
   }
   LOG_I(( "I: %s\n", LIBRARY_IDSTRING ));
@@ -170,7 +170,7 @@ VOID CustomLibClose( LIBRARY_TYPE * base ) {
 
   struct AmiGUS_AHI_Base * amiGUSBase = (struct AmiGUS_AHI_Base *)base;
 
-  AmiGUS_FreeCard( amiGUSBase->agch_AmiGUS,
+  AmiGUS_FreeCard( amiGUSBase->agb_AmiGUS,
                    AMIGUS_FLAG_PCM,
                    amiGUSBase );
 #ifndef BASE_GLOBAL

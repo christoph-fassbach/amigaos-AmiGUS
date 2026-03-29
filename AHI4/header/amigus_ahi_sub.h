@@ -123,8 +123,7 @@ struct AmiGUS_AHI_Base {
   struct IORequest            * agb_TimerRequest;
   /* AmiGUS specific member variables */
   APTR                          agb_CardBase;
-  struct AmiGUS               * agch_AmiGUS;        // AmiGUS card handle
-  struct Interrupt            * agb_Interrupt;
+  struct AmiGUS               * agb_AmiGUS;         /* AmiGUS card handle    */
   struct Process              * agb_MainProcess;
   struct Process              * agb_WorkerProcess;
   LONG                          agb_WorkerReady;
@@ -151,6 +150,7 @@ struct AmiGUS_AHI_Base {
 
 #if defined(BASE_GLOBAL)
   extern struct AmiGUS_AHI_Base   * AmiGUS_AHI_Base;
+  extern struct Library           * AmiGUS_Base;
   extern struct DosLibrary        * DOSBase;
   extern struct Library           * ExpansionBase;
   extern struct IntuitionBase     * IntuitionBase;
@@ -159,6 +159,7 @@ struct AmiGUS_AHI_Base {
   extern struct Library           * UtilityBase;
 #elif defined(BASE_REDEFINE)
   #define AmiGUS_AHI_Base           (base)
+  #define AmiGUS_Base               base->agb_AmiGUS_Base;
   #define DOSBase                   base->agb_DOSBase
   #define ExpansionBase             base->agb_ExpansionBase
   #define IntuitionBase             base->agb_IntuitionBase
