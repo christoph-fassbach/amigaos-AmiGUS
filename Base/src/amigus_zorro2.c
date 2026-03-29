@@ -98,9 +98,9 @@ VOID AmiGusZorro2_AddAll( struct List * cards ) {
     cardPublic->agus_CodecBase = cd_Codec->cd_BoardAddr;
 
     cardPublic->agus_FpgaId.idLongs[ 0 ] = ReadReg32( cardPublic->agus_PcmBase,
-                                                    AMIGUS_FPGA_ID_LOW );
-  cardPublic->agus_FpgaId.idLongs[ 1 ] = ReadReg32( cardPublic->agus_PcmBase,
-                                                    AMIGUS_FPGA_ID_HIGH );
+                                                      AMIGUS_FPGA_ID_LOW );
+    cardPublic->agus_FpgaId.idLongs[ 1 ] = ReadReg32( cardPublic->agus_PcmBase,
+                                                      AMIGUS_FPGA_ID_HIGH );
 
     cardPublic->agus_TypeId = AmiGUS_Zorro2;
     cardPublic->agus_TypeName = AmiGUS_Zorro2_Name;
