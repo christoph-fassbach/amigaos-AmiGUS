@@ -55,6 +55,8 @@ AMIGUS_SFD        = $(AMIGUS_INCLUDES)/sfd/$(BASE_NAME)_lib.sfd
 
 default: all
 
+INCLUDES: all
+
 #$(AMIGUS_SFD): $(CAMD_ORIG_FD)
 #	edit FROM $< TO $@ WITH fd_patch
 
