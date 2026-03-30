@@ -1,9 +1,9 @@
 #
 # This file is part of the AmiGUS CAMD MIDI driver.
 #
-# AmiGUS CAMD MIDI driver is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Lesser General Public License as published by
-# the Free Software Foundation, version 3 of the License only.
+# AmiGUS CAMD MIDI driver is free software: you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public License as 
+# published by the Free Software Foundation, version 3 of the License only.
 #
 # AmiGUS CAMD MIDI driver is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -16,92 +16,137 @@
 # If not, see <http://www.gnu.org/licenses/>.
 #
 
-BASE    = camd
-PATH    = include
+BASE				= camd
+INTERMEDIATE		= build
+TARGET_PATH			= include
 
 # The includes can be found e.g. on
 # - Amiga Developer CD v2.1 - November 1999 (1999)(Haage & Partner)
 # - Amiga Developer CD v1.2
 # - Amiga Developer CD v1.1 - May 1996 (1996)(Schatztruhe)
 
-CAMD_INCLUDES    = ADCD_2.1:Extras/MIDI/camd-37.1/development
-# CAMD_INCLUDES    = ADCD_v1.2:extras/midi/camd-37.1/development
-# CAMD_INCLUDES    = Amiga_Dev_CD_v1.1:Extras/MIDI/camd-37.1/development
+ifeq ($(findstring /home,$(HOME)), /home)
+  LINUX				= 1
 
-CAMD_ORIG_CLIB   = $(CAMD_INCLUDES)/include/clib/$(BASE)_protos.h
-CAMD_ORIG_FD     = $(CAMD_INCLUDES)/fd/$(BASE)_lib.fd
+  WILDCARD			= *
 
-CAMD_PATCH_FD    = RAM:$(BASE)_lib.fd
+# CAMD_INCLUDES		= /media/${USER}/ADCD_2.1/Extras/MIDI/camd-37.1/development
+  CAMD_INCLUDES		= /media/${USER}/ADCD_v1.2/extras/midi/camd-37.1/development
+# CAMD_INCLUDES		= /media/${USER}/Amiga_Dev_CD_v1.1/Extras/MIDI/camd-37.1/development
+
+  CAMD_PATCH_RULE	= sed -e"s/CreateMidiA(name,/CreateMidiA(/" $< > $@
+
+  MKDIR				= mkdir -p
+  MKDIR_SUFFIX		=
+  RM				= rm -rf
+  RM_SUFFIX			=
+  CP				= cp -R
+  CP_SUFFIX			=
+  CHMOD				= chmod -R +wx
+  FD2PRAGMA			= vamos -c ../.vamosrc fd2pragma
+else
+  AMIGAOS			= 1
+
+  WILDCARD			= \#?
+
+  CAMD_INCLUDES		= ADCD_2.1:Extras/MIDI/camd-37.1/development
+# CAMD_INCLUDES		= ADCD_v1.2:extras/midi/camd-37.1/development
+# CAMD_INCLUDES		= Amiga_Dev_CD_v1.1:Extras/MIDI/camd-37.1/development
+
+  CAMD_PATCH_RULE	= edit FROM $< TO $@ WITH fd_patch
+
+  MKDIR				= makedir
+  MKDIR_SUFFIX		= ALL >NIL:
+  RM				= delete
+  RM_SUFFIX			= ALL >NIL:
+  CP				= copy
+  CP_SUFFIX			= ALL CLONE
+  CHMOD				= REM
+  FD2PRAGMA			= fd2pragma
+endif
+
+CAMD_ORIG_CLIB		= $(INTERMEDIATE)/input/include/clib/$(BASE)_protos.h
+CAMD_ORIG_FD		= $(INTERMEDIATE)/input/fd/$(BASE)_lib.fd
+CAMD_PATCH_FD		= $(INTERMEDIATE)/input/$(BASE)_lib.fd
 
 default: all
 
 $(CAMD_PATCH_FD): $(CAMD_ORIG_FD)
-	edit FROM $< TO $@ WITH fd_patch
+	$(CAMD_PATCH_RULE)
 
-SFDPATH = $(PATH)/sfd/
+SFDPATH = $(TARGET_PATH)/sfd/
 SFDNAME = $(SFDPATH)$(BASE).sfd
 $(SFDNAME): $(CAMD_PATCH_FD)
-	-@makedir $(SFDPATH) ALL >NIL:
-	fd2pragma SPECIAL 112 CLIB $(CAMD_ORIG_CLIB) INFILE $(CAMD_PATCH_FD) TO $(SFDPATH)
+	-@$(MKDIR) $(SFDPATH) $(MKDIR_SUFFIX)
+	$(FD2PRAGMA) SPECIAL 112 CLIB $(CAMD_ORIG_CLIB) INFILE $(CAMD_PATCH_FD) TO $(SFDPATH)
 
-PRAGMAPATH = $(PATH)/C/pragma/
+PRAGMAPATH = $(TARGET_PATH)/C/pragma/
 PRAGMANAME = $(PRAGMAPATH)$(BASE)_lib.h
 $(PRAGMANAME): $(CAMD_PATCH_FD)
-	-@makedir $(PRAGMAPATH) ALL >NIL:
-	fd2pragma SPECIAL   6 CLIB $(CAMD_ORIG_CLIB) INFILE $(CAMD_PATCH_FD) TO $(PRAGMAPATH)
+	-@$(MKDIR) $(PRAGMAPATH) $(MKDIR_SUFFIX)
+	$(FD2PRAGMA) SPECIAL   6 CLIB $(CAMD_ORIG_CLIB) INFILE $(CAMD_PATCH_FD) TO $(PRAGMAPATH)
 
-AMIGAEPATH = $(PATH)/AmigaE/
+AMIGAEPATH = $(TARGET_PATH)/AmigaE/
 AMIGAENAME = $(AMIGAEPATH)$(BASE).m
 $(AMIGAENAME): $(CAMD_PATCH_FD)
-	-@makedir $(AMIGAEPATH) ALL >NIL:
-	fd2pragma SPECIAL  18 CLIB $(CAMD_ORIG_CLIB) INFILE $(CAMD_PATCH_FD) TO $(AMIGAEPATH)
+	-@$(MKDIR) $(AMIGAEPATH) $(MKDIR_SUFFIX)
+	$(FD2PRAGMA) SPECIAL  18 CLIB $(CAMD_ORIG_CLIB) INFILE $(CAMD_PATCH_FD) TO $(AMIGAEPATH)
 
-GCCINLINEPATH = $(PATH)/C/inline/
+GCCINLINEPATH = $(TARGET_PATH)/C/inline/
 GCCINLINENAME = $(GCCINLINEPATH)$(BASE).h
 $(GCCINLINENAME): $(CAMD_PATCH_FD)
-	-@makedir $(GCCINLINEPATH) ALL >NIL:
-	fd2pragma SPECIAL  40 CLIB $(CAMD_ORIG_CLIB) INFILE $(CAMD_PATCH_FD) TO $(GCCINLINEPATH)
+	-@$(MKDIR) $(GCCINLINEPATH) $(MKDIR_SUFFIX)
+	$(FD2PRAGMA) SPECIAL  40 CLIB $(CAMD_ORIG_CLIB) INFILE $(CAMD_PATCH_FD) TO $(GCCINLINEPATH)
 
-PROTOPATH = $(PATH)/C/proto/
+PROTOPATH = $(TARGET_PATH)/C/proto/
 PROTONAME = $(PROTOPATH)$(BASE).h
 $(PROTONAME): $(CAMD_PATCH_FD)
-	-@makedir $(PROTOPATH) ALL >NIL:
-	fd2pragma SPECIAL  38 CLIB $(CAMD_ORIG_CLIB) INFILE $(CAMD_PATCH_FD) TO $(PROTOPATH)
+	-@$(MKDIR) $(PROTOPATH) $(MKDIR_SUFFIX)
+	$(FD2PRAGMA) SPECIAL  38 CLIB $(CAMD_ORIG_CLIB) INFILE $(CAMD_PATCH_FD) TO $(PROTOPATH)
 
-VBCCINLINEPATH = $(PATH)/C/inline/
+VBCCINLINEPATH = $(TARGET_PATH)/C/inline/
 VBCCINLINENAME = $(VBCCINLINEPATH)$(BASE)_protos.h
 $(VBCCINLINENAME): $(CAMD_PATCH_FD)
-	-@makedir $(VBCCINLINEPATH) ALL >NIL:
-	fd2pragma SPECIAL  70 CLIB $(CAMD_ORIG_CLIB) INFILE $(CAMD_PATCH_FD) TO $(VBCCINLINEPATH)
+	-@$(MKDIR) $(VBCCINLINEPATH) $(MKDIR_SUFFIX)
+	$(FD2PRAGMA) SPECIAL  70 CLIB $(CAMD_ORIG_CLIB) INFILE $(CAMD_PATCH_FD) TO $(VBCCINLINEPATH)
 
-LVOPATH = $(PATH)/ASM/lvo/
+LVOPATH = $(TARGET_PATH)/ASM/lvo/
 LVONAME = $(LVOPATH)$(BASE)_lib.i
 $(LVONAME): $(CAMD_PATCH_FD)
-	-@makedir $(LVOPATH) ALL >NIL:
-	fd2pragma SPECIAL  23 CLIB $(CAMD_ORIG_CLIB) INFILE $(CAMD_PATCH_FD) TO $(LVOPATH)
+	-@$(MKDIR) $(LVOPATH) $(MKDIR_SUFFIX)
+	$(FD2PRAGMA) SPECIAL  23 CLIB $(CAMD_ORIG_CLIB) INFILE $(CAMD_PATCH_FD) TO $(LVOPATH)
 
-FDPATH = $(PATH)/FD/
+FDPATH = $(TARGET_PATH)/FD/
 FDNAME = $(FDPATH)$(BASE)_lib.fd
 $(FDNAME): $(CAMD_PATCH_FD)
-	-@makedir $(FDPATH) ALL >NIL:
-	fd2pragma SPECIAL 110 CLIB $(CAMD_ORIG_CLIB) INFILE $(CAMD_PATCH_FD) TO $(FDPATH) COMMENT
+	-@$(MKDIR) $(FDPATH) $(MKDIR_SUFFIX)
+	$(FD2PRAGMA) SPECIAL 110 CLIB $(CAMD_ORIG_CLIB) INFILE $(CAMD_PATCH_FD) TO $(FDPATH) COMMENT
 
-CLIBPATH = $(PATH)/C/clib/
+CLIBPATH = $(TARGET_PATH)/C/clib/
 CLIBNAME = $(CLIBPATH)$(BASE)_protos.h
 $(CLIBNAME): $(CAMD_PATCH_FD)
-	-@makedir $(CLIBPATH) ALL >NIL:
-	fd2pragma SPECIAL 111 CLIB $(CAMD_ORIG_CLIB) INFILE $(CAMD_PATCH_FD) TO $(CLIBPATH) COMMENT
+	-@$(MKDIR) $(CLIBPATH) $(MKDIR_SUFFIX)
+	$(FD2PRAGMA) SPECIAL 111 CLIB $(CAMD_ORIG_CLIB) INFILE $(CAMD_PATCH_FD) TO $(CLIBPATH) COMMENT
 # breaks it sometimes... COPYRIGHT $(AUTHOR)
 
-all: $(PRAGMANAME) $(AMIGAENAME) $(GCCINLINENAME) $(PROTONAME) \
+prepare-files:
+	-@$(MKDIR) $(INTERMEDIATE) $(MKDIR_SUFFIX)
+	$(CP) $(CAMD_INCLUDES) $(INTERMEDIATE)/input
+	$(CHMOD) $(INTERMEDIATE)/input
+	echo 0 > prepare-files
+
+all: prepare-files \
+     $(PRAGMANAME) $(AMIGAENAME) $(GCCINLINENAME) $(PROTONAME) \
      $(VBCCINLINENAME) $(LVONAME) $(FDNAME) $(CLIBNAME) \
      $(LIBRARYNAME) $(SFDNAME)
-	-@makedir $(PATH)/midi ALL >NIL:
-	copy $(CAMD_INCLUDES)/include/midi/#?.h $(PATH)/midi/ ALL CLONE
-	copy $(CAMD_INCLUDES)/include/midi/#?.i $(PATH)/midi/ ALL CLONE
+	-@$(MKDIR) $(TARGET_PATH)/midi $(MKDIR_SUFFIX)
+	$(CP) $(INTERMEDIATE)/input/include/midi/$(WILDCARD).h $(TARGET_PATH)/midi/ $(CP_SUFFIX)
+	$(CP) $(INTERMEDIATE)/input/include/midi/$(WILDCARD).i $(TARGET_PATH)/midi/ $(CP_SUFFIX)
 
 clean:
-	-@delete $(PATH) ALL
-	-@delete $(CAMD_PATCH_FD) ALL
+	-@$(RM) $(TARGET_PATH) $(RM_SUFFIX)
+	-@$(RM) $(CAMD_PATCH_FD) $(RM_SUFFIX)
+	-@$(RM) $(INTERMEDIATE) $(RM_SUFFIX)
+	-@$(RM) prepare-files $(RM_SUFFIX)
 # cp -R ~/Dokumente/FS-UAE/Shared/CAMD/include .
 # for UAEM in `find include | grep \.uaem` ; do rm $UAEM ; done

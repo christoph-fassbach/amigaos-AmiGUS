@@ -125,10 +125,12 @@ all: $(PRAGMANAME) $(AMIGAENAME) $(GCCINLINENAME) $(PROTONAME) \
 
 install: all
 	$(MKDIR) ../AHI4/include/C $(MKDIR_SUFFIX)
-	$(MKDIR) ../CAMD/include $(MKDIR_SUFFIX)
+	$(MKDIR) ../CAMD/include/C $(MKDIR_SUFFIX)
 	$(MKDIR) ../MHI/include  $(MKDIR_SUFFIX)
 	$(CP) $(TARGET_PATH)/C/$(WILDCARD) ../AHI4/include/C $(CP_SUFFIX)
-	$(CP) $(TARGET_PATH)/C/$(WILDCARD) ../CAMD/include/  $(CP_SUFFIX)
+	$(CP) $(TARGET_PATH)/C/$(WILDCARD) ../CAMD/include/C $(CP_SUFFIX)
+	$(RM) ../CAMD/include/C/amigus $(RM_SUFFIX)
+	$(CP) $(TARGET_PATH)/C/amigus      ../CAMD/include $(CP_SUFFIX)
 	$(CP) $(TARGET_PATH)/C/$(WILDCARD) ../MHI/include/  $(CP_SUFFIX)
 
 clean:

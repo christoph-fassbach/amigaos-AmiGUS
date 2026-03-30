@@ -20,6 +20,7 @@ TARGET_PATH = ./include
 
 all: $(LIBRARYNAME)
 	-@mkdir -p $(TARGET_PATH)
+	cp -R ../include/amigus $(TARGET_PATH)
 	cp -R ../include/midi $(TARGET_PATH)
 	cp -R ../include/C/* $(TARGET_PATH)
 
