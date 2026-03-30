@@ -125,16 +125,16 @@ VOID CustomLibClose( LIBRARY_TYPE * base ) {
     FreeMem( base->agb_LogMem, ... );
   }    
   */
-  if ( base->agb_DOSBase ) {
+  if ( base->agb_AmiGUS_Base ) {
 
-    CloseLibrary(( struct Library *) base->agb_DOSBase );
+    CloseLibrary(( struct Library * ) base->agb_AmiGUS_Base );
   }
   if ( base->agb_IntuitionBase ) {
 
     CloseLibrary(( struct Library * ) base->agb_IntuitionBase );
   }
-  if ( base->agb_AmiGUS_Base ) {
+  if ( base->agb_DOSBase ) {
 
-    CloseLibrary(( struct Library * ) base->agb_AmiGUS_Base );
+    CloseLibrary(( struct Library *) base->agb_DOSBase );
   }
 }

@@ -27,7 +27,6 @@
 #include "errors.h"
 #include "library.h"
 #include "support.h"
-#include "SDI_amigus_protos.h"
 
 #ifdef BASE_GLOBAL
 
@@ -36,6 +35,7 @@ struct ExecBase          * SysBase           = 0;
 struct DosLibrary        * DOSBase           = 0;
 struct Library           * UtilityBase       = 0;
 struct Library           * ExpansionBase     = 0;
+struct Library           * CardResource      = 0;
 struct AmiGUS_Base       * AmiGUS_Base       = 0;
 
 #endif
@@ -90,8 +90,11 @@ LONG CustomLibInit( LIBRARY_TYPE * base, struct ExecBase * sysBase ) {
 
     return EOpenExpansionBase;
   }
+  base->agb_CardResource = 
+    ( struct Library * ) OpenResource( "card.resource" );
 
 #ifdef BASE_GLOBAL
+  CardResource    = base->agb_CardResource;
   DOSBase         = base->agb_DOSBase;
   ExpansionBase   = base->agb_ExpansionBase;
   AmiGUS_Base     = base;
@@ -100,11 +103,6 @@ LONG CustomLibInit( LIBRARY_TYPE * base, struct ExecBase * sysBase ) {
   NEW_LIST( &( base->agb_Cards ));
   AmiGusPcmcia_AddAll( &( base->agb_Cards ));
   AmiGusZorro2_AddAll( &( base->agb_Cards ));
-
-  base->agb_Interrupt.is_Node.ln_Pri = 100;
-  base->agb_Interrupt.is_Node.ln_Name = "AmiGUS_Base_INT";
-  base->agb_Interrupt.is_Data = ( APTR ) base;
-  base->agb_Interrupt.is_Code = ( VOID ( * )( )) HandleInterrupt;
 
   LOG_D(( "D: AmiGUS base ready @ 0x%08lx\n", base ));
   return ENoError;
@@ -117,6 +115,9 @@ VOID CustomLibClose( LIBRARY_TYPE * base ) {
 #endif
 
   APTR card;
+
+  AmiGusPcmcia_RemoveAll( &( base->agb_Cards ));
+  AmiGusZorro2_RemoveAll( &( base->agb_Cards ));
   while ( card = RemTail( &( base->agb_Cards ))) {
 
     FreeMem( card, sizeof( struct AmiGUS_Private ));

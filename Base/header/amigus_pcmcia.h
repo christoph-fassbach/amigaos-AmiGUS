@@ -31,6 +31,13 @@
 VOID AmiGusPcmcia_AddAll( struct List * cards );
 
 /**
+ * Removes and frees all AmiGUS cards connected to Zorro2 slots.
+ *
+ * @param cards List of cards to free.
+ */
+VOID AmiGusPcmcia_RemoveAll( struct List * cards );
+
+/**
  * Installs the interrupt handling and further dispatching by amigus.library
  * for PCMCIA.
  *

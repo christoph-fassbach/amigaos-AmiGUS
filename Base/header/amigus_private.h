@@ -41,6 +41,8 @@
 #endif
 #endif
 
+#include <resources/card.h>
+
 #include <amigus/amigus.h>
 
 #include "library.h"
@@ -75,6 +77,7 @@
  */
 #define AMIGUS_BASE_F_ZORRO2_INT_SET     0x00000001 // Z2 interrupt installed,
 #define AMIGUS_BASE_F_PCMCIA_INT_SET     0x00000002 // same for PCMCIA
+#define AMIGUS_BASE_F_PCMCIA_MEMORY_MODE 0x00000004 // PCMCIA access as memory
 
 /******************************************************************************
  * Library base structure
@@ -93,10 +96,12 @@ struct AmiGUS_Base {
   struct ExecBase           * agb_SysBase;       // Exec, allocations etc.
   struct DosLibrary         * agb_DOSBase;       // DOS, logs and so on
   struct Library            * agb_ExpansionBase; // Finding devices
+  struct Library            * agb_CardResource;  // PCMCIA support
 
   /* AmiGUS specific member variables */
   struct List                 agb_Cards;         // List of AmiGUS_Privates
-  struct Interrupt            agb_Interrupt;     // Struct for Zorro2 interrupts
+  struct Interrupt          * agb_Interrupt;     // Struct for Zorro2 interrupts
+  struct CardHandle         * agb_CardHandle;    // Struct for card.resource
   ULONG                       agb_Flags;         // See list of flags above!
 
   BPTR                        agb_LogFile;       // Debug log file handle
@@ -140,9 +145,11 @@ struct AmiGUS_Private {
   extern struct AmiGUS_Base * AmiGUS_Base;
   extern struct DosLibrary  * DOSBase;
   extern struct Library     * ExpansionBase;
+  extern struct Library     * CardResource;
   extern struct ExecBase    * SysBase;
 #elif defined(BASE_REDEFINE)
   #define AmiGUS_Base         (base)
+  #define CardResource        base->agb_CardResource
   #define DOSBase             base->agb_DOSBase
   #define ExpansionBase       base->agb_ExpansionBase
   #define SysBase             base->agb_SysBase

@@ -55,6 +55,8 @@ AMIGUS_SFD        = $(AMIGUS_INCLUDES)/sfd/$(BASE_NAME)_lib.sfd
 
 default: all
 
+INCLUDES: all
+
 #$(AMIGUS_SFD): $(CAMD_ORIG_FD)
 #	edit FROM $< TO $@ WITH fd_patch
 
@@ -122,10 +124,12 @@ all: $(PRAGMANAME) $(AMIGAENAME) $(GCCINLINENAME) $(PROTONAME) \
 #	$(CP) $(AMIGUS_INCLUDES)/amigus/$(WILDCARD).i $(TARGET_PATH)/C/amigus/ $(CP_SUFFIX)
 
 install: all
+	$(MKDIR) ../AHI4/include/C $(MKDIR_SUFFIX)
+	$(MKDIR) ../CAMD/include $(MKDIR_SUFFIX)
 	$(MKDIR) ../MHI/include  $(MKDIR_SUFFIX)
-	$(MKDIR) ../AHI4/include $(MKDIR_SUFFIX)
+	$(CP) $(TARGET_PATH)/C/$(WILDCARD) ../AHI4/include/C $(CP_SUFFIX)
+	$(CP) $(TARGET_PATH)/C/$(WILDCARD) ../CAMD/include/  $(CP_SUFFIX)
 	$(CP) $(TARGET_PATH)/C/$(WILDCARD) ../MHI/include/  $(CP_SUFFIX)
-	$(CP) $(TARGET_PATH)/C/$(WILDCARD) ../AHI4/include/ $(CP_SUFFIX)
 
 clean:
 	-@$(RM) $(TARGET_PATH) $(RM_SUFFIX)

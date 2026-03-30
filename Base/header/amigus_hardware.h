@@ -78,6 +78,9 @@
 #define AMIGUS_PCM_REC_VOLUME_LEFT       0x84
 #define AMIGUS_PCM_REC_VOLUME_RIGHT      0x86
 
+#define AMIGUS_FPGA_ID_LOW               0xe8
+#define AMIGUS_FPGA_ID_HIGH              0xec
+
 #define AMIGUS_PCM_TIMER_CONTROL         0xf0
 #define AMIGUS_PCM_TIMER_RELOAD          0xf2
 #define AMIGUS_PCM_TIMER_READ            0xf6
