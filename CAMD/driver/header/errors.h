@@ -26,7 +26,7 @@ enum ErrorCodes
   {
   ENoError = 0,
   /* Insert errors below. */
-  /* Global errors 1-99 */
+  /* Global errors 0x0001 - 0x00ff */
   EWrongDriverCPUVersion,
   ELibraryBaseInconsistency,
   EOpenDosBase,
@@ -45,17 +45,14 @@ enum ErrorCodes
   EWorkerProcessDied,
   EWorkerProcessSignalsFailed,
   EMainProcessSignalsFailed,
-
-  /* Missing implementation 100-199*/
-  ESomethingNotImplemented = 100,  
-
-  /* Hardware errors 200-300 */
-  EAmiGUSNotFound = 200,
+  EAmiGUSNotFound,
   EAmiGUSDetectError,
   EAmiGUSFirmwareOutdated,
 
+  /* amigus.library errors 0x0100 - 0x05ff */
+
   /* Insert errors above. */
-  EUnknownError,
+  EUnknownError = 0x0600,
   EAmountOfErrors
   };
 

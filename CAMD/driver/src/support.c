@@ -73,12 +73,13 @@ struct ErrorMessage errors[] = {
   { EAllocateAmiGUSCAMDBase, "No base struct - out of memory!", "Shit!" },
   { EAllocateHandle, "No more handles - out of memory!", "Shit!" },
   { EAllocateBuffer, "No more buffers - out of memory!", "Shit!" },
-  { EDriverInUse, "AmiGUS wavetable part is in use by another driver.", "Oops." },
 
   { EAmiGUSNotFound, "AmiGUS card not found.", "Read?" },
   { EAmiGUSDetectError, "AmiGUS card detection mess.", "Damn!" },
   { EAmiGUSFirmwareOutdated, "AmiGUS card firmware outdated.", "Will update, promised!" },
 
+  { AmiGUS_WavetableInUse, "AmiGUS wavetable part is in use by another driver.", "Oops." },
+  { AmiGUS_InterruptInstallFailed, "AmiGUS interrupt could not be installed.", "Pity!" },
   /* Insert errors above. */
 
   { EUnknownError, "Unknown error.", "Shit!" }
