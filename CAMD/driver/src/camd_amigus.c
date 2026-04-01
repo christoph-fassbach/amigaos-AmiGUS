@@ -16,8 +16,10 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <amigus/amigus.h>
 #include <intuition/intuitionbase.h>
 #include <libraries/expansionbase.h>
+#include <proto/amigus.h>
 #include <proto/dos.h>
 #include <proto/exec.h>
 
@@ -35,8 +37,7 @@
 struct ExecBase          * SysBase           = NULL;
 struct DosLibrary        * DOSBase           = NULL;
 struct IntuitionBase     * IntuitionBase     = NULL;
-struct Library           * UtilityBase       = NULL;
-struct Library           * ExpansionBase     = NULL;
+struct Library           * AmiGUS_Base       = NULL;
 struct AmiGUS_CAMD       * AmiGUS_CAMD_Base  = NULL;
 
 STRPTR _LibVersionString = "$VER: " LIBRARY_IDSTRING "\r\n";
@@ -143,6 +144,7 @@ struct MidiPortData AmiGUS_MidiPortData = { AmiGUS_ActivateXmit };
 ASM( BOOL ) SAVEDS AmiGUS_Init( REG( a6, struct ExecBase * sysBase )) {
 
   LONG error;
+  struct AmiGUS_CAMD * base;
 
   /* Prevent use of customized library versions on CPUs not targetted. */
 #ifdef _M68060
@@ -173,15 +175,14 @@ ASM( BOOL ) SAVEDS AmiGUS_Init( REG( a6, struct ExecBase * sysBase )) {
 
   SysBase = sysBase;
 
-  AmiGUS_CAMD_Base = AllocMem(
-    sizeof( struct AmiGUS_CAMD ),
-    MEMF_PUBLIC | MEMF_CLEAR );
-  if ( !AmiGUS_CAMD_Base ) {
+  base = AllocMem( sizeof( struct AmiGUS_CAMD ), MEMF_PUBLIC | MEMF_CLEAR );
+  if ( !base ) {
 
     DisplayError( EAllocateAmiGUSCAMDBase );
     AmiGUS_Expunge();
     return FALSE;
   }
+  AmiGUS_CAMD_Base = base;
 
   DOSBase =
     ( struct DosLibrary * ) OpenLibrary( "dos.library", 34 );
@@ -199,24 +200,55 @@ ASM( BOOL ) SAVEDS AmiGUS_Init( REG( a6, struct ExecBase * sysBase )) {
     AmiGUS_Expunge();
     return FALSE;
   }
-  ExpansionBase =
-    ( struct Library * ) OpenLibrary( "expansion.library", 34 );
-  if ( !( ExpansionBase )) {
 
-    DisplayError( EOpenExpansionBase );
+  AmiGUS_Base =
+    ( struct Library * ) OpenLibrary( "amigus.library", 1 );
+  if ( !( AmiGUS_Base )) {
+
+    DisplayError( EOpenAmiGusBase );
     AmiGUS_Expunge();
     return FALSE;
   }
+#if 1
 
-  error = ENoError; //TODO: FindAmiGusWavetable( &( AmiGUS_CAMD_Base->agb_ConfigDevice ));
+  Forbid();
+  do {
+
+    base->agb_AmiGUS = AmiGUS_FindCard( base->agb_AmiGUS );
+    if ( !( base->agb_AmiGUS )) {
+
+      error = EAmiGUSNotFound;
+      continue;
+    }
+    if ( AMIGUS_CAMD_FIRMWARE_MINIMUM >
+      base->agb_AmiGUS->agus_FirmwareRev ) {
+
+      error = EAmiGUSFirmwareOutdated;
+      continue;
+    }
+    error = AmiGUS_ReserveCard( base->agb_AmiGUS,
+                                AMIGUS_FLAG_WAVETABLE,
+                                base );
+
+  } while (( base->agb_AmiGUS ) && ( error ));
+  Permit();
+#else
+
+  error = ENoError;
+
+#endif
   if ( error ) {
 
     DisplayError( error );
     AmiGUS_Expunge();
     return FALSE;
   }
+  base->agb_CardBase = base->agb_AmiGUS->agus_WavetableBase;
+  LOG_D(( "D: AmiGUS_CAMD using Wavetable @ 0x%08lx on %s\n",
+          base->agb_CardBase,
+          base->agb_AmiGUS->agus_TypeName ));
 
-  LOG_D(( "D: AmiGUS_CAMD_Base ready @ 0x%08lx\n", AmiGUS_CAMD_Base ));
+  LOG_D(( "D: AmiGUS_CAMD_Base ready @ 0x%08lx\n", base ));
   return TRUE;
 }
 
@@ -224,7 +256,12 @@ ASM( VOID ) SAVEDS AmiGUS_Expunge( VOID ) {
 
   LOG_D(( "D: AmiGUS_CAMD_Base @ 0x%08lx leaving the building...\n",
           AmiGUS_CAMD_Base ));
-  
+
+  // Even if reserve failed, would not matter at all...
+  AmiGUS_FreeCard( AmiGUS_CAMD_Base->agb_AmiGUS,
+                   AMIGUS_FLAG_WAVETABLE,
+                   AmiGUS_CAMD_Base );
+
   if ( AmiGUS_CAMD_Base->agb_LogFile ) {
 
     Close( AmiGUS_CAMD_Base->agb_LogFile );
@@ -237,17 +274,17 @@ ASM( VOID ) SAVEDS AmiGUS_Expunge( VOID ) {
     FreeMem( AmiGUS_CAMD_Base->agb_LogMem, ... );
   }    
   */
-  if ( DOSBase ) {
+  if ( AmiGUS_Base ) {
 
-    CloseLibrary(( struct Library *) DOSBase );
+    CloseLibrary(( struct Library * ) AmiGUS_Base );
   }
   if ( IntuitionBase ) {
 
     CloseLibrary(( struct Library * ) IntuitionBase );
   }
-  if ( ExpansionBase ) {
+  if ( DOSBase ) {
 
-    CloseLibrary(( struct Library * ) ExpansionBase );
+    CloseLibrary(( struct Library *) DOSBase );
   }
   if ( AmiGUS_CAMD_Base ) {
 

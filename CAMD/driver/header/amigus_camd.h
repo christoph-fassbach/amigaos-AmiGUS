@@ -19,6 +19,7 @@
 #ifndef AMIGUS_CAMD_H
 #define AMIGUS_CAMD_H
 
+#include <amigus/amigus.h>
 #include <dos/dos.h>
 
 #include "SDI_compiler.h"
@@ -116,8 +117,8 @@ typedef VOID ( ASM( * ) ReceiveFunctionType )(
 struct AmiGUS_CAMD {
 
   /* AmiGUS specific member variables */
-  APTR                          agb_CardBase;      // Codec base address
-  struct ConfigDev            * agb_ConfigDevice;  // Expansion device address
+  APTR                          agb_CardBase;      // WaveTable base address
+  struct AmiGUS               * agb_AmiGUS;        // AmiGUS card handle
 
   struct Process              * agb_MainProcess;
   struct Process              * agb_WorkerProcess;
@@ -139,9 +140,9 @@ struct AmiGUS_CAMD {
 /*
  * All libraries' base pointers used by the CAMD MIDI driver library.
  */
+extern struct Library           * AmiGUS_Base;
 extern struct AmiGUS_CAMD       * AmiGUS_CAMD_Base;
 extern struct DosLibrary        * DOSBase;
-extern struct Library           * ExpansionBase;
 extern struct IntuitionBase     * IntuitionBase;
 extern struct ExecBase          * SysBase;
 

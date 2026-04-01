@@ -67,7 +67,7 @@ SDIR   = src/
 HDIR   = header/
 
 LIB_CPU        ?= 000
-LIB_LOG        ?= NO_LOG
+LIB_LOG        ?= SER_LOG
 # NO_LOG
 # SER_LOG
 # FILE_LOG

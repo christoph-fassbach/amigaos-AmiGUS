@@ -67,7 +67,7 @@ struct ErrorMessage errors[] = {
   { ELibraryBaseInconsistency, "Library memory somehow damaged, expecting a crash soon.", "Have a nice day!" },
   { EOpenDosBase, "Can not open dos.library.", "What the ...?" },
   { EOpenIntuitionBase, "Can not open intuition.library.", "What the ...?" },
-  { EOpenExpansionBase, "Can not open expansion.library.", "What the ...?" },
+  { EOpenAmiGusBase, "Can not open amigus.library.", "Oh No!" },
   { EOpenLogFile, "Can not create log file RAM:AmiGUS-CAMD.log.", "Oops!" },
   { EAllocateLogMem, "Can not allocate memory blob for extra-dirty logging.", "Meh." },
   { EAllocateAmiGUSCAMDBase, "No base struct - out of memory!", "Shit!" },

@@ -38,6 +38,7 @@ ifeq ($(findstring /home,$(HOME)), /home)
   # machine <ip> login username password pass
   # Could do --user username:pass instead - but not cool in repo ;)
   INSTALL1      = curl --netrc --upload-file $(LIB_FILE_DEST)       ftp://192.168.0.4/cf0/Devs/MIDI/$(LIB_NAME)
+  INSTALL1      = curl --netrc --upload-file $(LIB_FILE_DEST)       ftp://192.168.0.12/sda4/Devs/MIDI/$(LIB_NAME)
   INSTALL0      = cp $(LIB_FILE_DEST) ~/Documents/FS-UAE/Shared/CAMD/$(LIB_NAME)
 else
   AMIGAOS       = 1
@@ -252,11 +253,13 @@ get_mem_log:
 	$(LD) $(LFLAGS) target/$@ $(LFLAGS1) $(LFLAGST1) support/$@.o $(LFLAGST2)
 	-cp target/$@ ~/Documents/FS-UAE/Shared/CAMD/GetCamdMemLog
 	-curl --netrc --upload-file target/$@       ftp://192.168.0.4/cf0/Expansion/AmiGUS/GetCamdMemLog
+	-curl --netrc --upload-file target/$@       ftp://192.168.0.12/sda4/Expansion/AmiGUS/GetCamdMemLog
 
 camd_lib_check:
 	$(CC) $(CFLAGS) support/$@.o support/$@.c
 	$(LD) $(LFLAGS) target/$@ $(LFLAGS1) $(LFLAGST1) support/$@.o $(LFLAGST2)
 	-cp target/$@ ~/Documents/FS-UAE/Shared/CAMD/
 	-curl --netrc --upload-file target/$@       ftp://192.168.0.4/cf0/Expansion/AmiGUS/
+	-curl --netrc --upload-file target/$@       ftp://192.168.0.12/sda4/Expansion/AmiGUS/
 
 ###############################################################################

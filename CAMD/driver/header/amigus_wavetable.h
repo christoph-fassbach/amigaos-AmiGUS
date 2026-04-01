@@ -20,26 +20,9 @@
 #define AMIGUS_WAVETABLE_H
 
 #include <exec/types.h>
-#include <libraries/configvars.h>
 
 /******************************************************************************
  * Wavetable convenience functions.
  *****************************************************************************/
-
-/**
- * Finds an available, matching AmiGUS wavetable device and 
- * fills its properties into the provided device.
- *
- * Does not prevent any conflicts due to concurrency,
- * but works fine in Permit()/Forbid().
- *
- * @param[out] device "struct ConfigDev *" provided by expansion.library
- *                    if a suitable AmiGUS wavetable device is available,
- *                    NULL otherwise.
- *
- * @return ENoError if an AmiGUS wavetable device was found,
- *         error value describing the reason otherwise.
- */
-LONG FindAmiGusWavetable( struct ConfigDev ** device );
 
 #endif /* AMIGUS_WAVETABLE_H */
