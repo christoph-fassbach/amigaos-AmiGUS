@@ -52,8 +52,8 @@
  */
 struct ErrorMessage {
   ULONG iError;    // Unique error code/ID/number from TErrorCodes.
-  UBYTE* iMessage; // Message to show.
-  UBYTE* iButton;  // Text for the button to close the dialog.
+  UBYTE * iMessage; // Message to show.
+  UBYTE * iButton;  // Text for the button to close the dialog.
 };
 
 /**
