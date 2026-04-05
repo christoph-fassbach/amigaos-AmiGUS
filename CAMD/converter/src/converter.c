@@ -20,7 +20,6 @@
 #include <libraries/gadtools.h>
 #include <reaction/reaction_macros.h>
 #include <gadgets/getfile.h>
-#include <midi/camddevices.h>
 
 #include <proto/alib.h>
 #include <proto/dos.h>
@@ -326,75 +325,6 @@ STRPTR RequestFileName( struct Window * window, struct Gadget * gadget ) {
   return path;
 }
 
-struct AmiGUS_MidiDeviceData {
-
-  struct MidiDeviceData mdd;
-  VOID ( * AmiGUS_ReloadSoundFont )( VOID );
-	VOID ( * AmiGUS_PlayNote )( VOID );
-	VOID ( * AmiGUS_PlaySound )( VOID );
-};
-
-ULONG OpenCamdDriver( VOID ) {
-
-  BPTR segment;
-  BPTR segments = LoadSeg( "Devs:midi/amigus" );
-  ULONG i;
-  ULONG * ptr;
-
-  if ( NULL == segments ) {
-
-    return EAmiGUSDriverLoadFailed;
-  }
-
-  LOG_D(( "D: segments 0x%08lx\n", segments ));
-
-  segment = segments;
-  while ( NULL != segment ) {
-  
-    APTR segmentA = ( APTR )( segment << 2 );
-    ULONG size = ( * (( ULONG * )(( segment << 2 ) - sizeof( ULONG ))));
-
-    LOG_D(( "D: segmentA 0x%08lx with size %ld\n", segmentA, size ));
-
-    for ( i = 0; i < size; i += sizeof( APTR )) {
-
-      ULONG * ptr = ( ULONG * )(( ULONG ) segmentA + i );
-
-      if ( MDD_Magic == (* ptr )) {
-
-        struct AmiGUS_MidiDeviceData * amdd = 
-          ( struct AmiGUS_MidiDeviceData * )( ptr );
-        LOG_D(( "D: Found magic LONG at 0x%08lx for index %ld\n", ptr, i ));
-        LOG_D(( "D: +-> Name %s\n", amdd->mdd.Name ));
-        LOG_D(( "D: +-> ID %s\n", amdd->mdd.IDString ));
-        LOG_D(( "D: +-> Version %ld\n", amdd->mdd.Version ));
-        LOG_D(( "D: +-> Revision %ld\n", amdd->mdd.Revision ));
-        LOG_D(( "D: +-> NPorts %ld\n", amdd->mdd.NPorts ));
-        LOG_D(( "D: +-> Flags 0x%02lx\n", amdd->mdd.Flags ));
-https://github.com/aros-development-team/AROS/blob/master/workbench/libs/camd/drivers.c
-        if ( !C_strcmp( amdd->mdd.Name, "amigus" )) {
-          // Test if all ptrs are in segment!
-          amdd->mdd.Init( SysBase );
-//        amdd->AmiGUS_ReloadSoundFont();
-
-          amdd->AmiGUS_PlaySound();
-//        amdd->AmiGUS_PlayNote();
-          LOG_D(( "D: cool\n"));
-        }
-        
-        break;
-      }
-      LOG_V(( "V: Scanning 0x%08lx - index %2ld - value 0x%08lx\n",
-              ptr, i, *( ptr )));
-    }
-    segment = *(( ULONG *) segmentA );
-  }
-
-  UnLoadSeg( segments );
-  return ENoError;
-}
-
-
 ULONG Startup( VOID ) {
 
   LONG result;
@@ -423,7 +353,7 @@ ULONG Startup( VOID ) {
   CreateListLabels( &SF_Converter_Base->sfc_InstrumentLabels, instrumentNames );
 
   SF_Converter_Base->sfc_MainProcess = ( struct Process * ) FindTask( NULL );
-OpenCamdDriver();
+
   LOG_I(( "I: " STR( APP_NAME ) " startup complete.\n" ));
 }
 
