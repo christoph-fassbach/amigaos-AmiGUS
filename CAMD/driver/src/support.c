@@ -205,3 +205,55 @@ VOID DisplayError( ULONG error ) {
   }
   LOG_E(( "E: AmiGUS %ld - %s\n", error, errors[ i ].iMessage ));
 }
+
+struct MsgPort * CreatePort( BYTE * name, LONG priority ) {
+
+  struct MsgPort * result;
+  BYTE signal = AllocSignal( -1L );
+
+  if ( -1 == signal ) {
+
+    return NULL;
+  }
+
+  result = ( struct MsgPort * ) AllocMem( sizeof( struct MsgPort ),
+                                          MEMF_PUBLIC | MEMF_CLEAR );
+  if ( !result ) {
+
+    FreeSignal( signal );
+    return NULL;
+  }
+  result->mp_Node.ln_Name = name;
+  result->mp_Node.ln_Pri  = priority;
+  result->mp_Node.ln_Type = NT_MSGPORT;
+  result->mp_Flags        = PA_SIGNAL;
+  result->mp_SigBit       = signal;
+  result->mp_SigTask      = ( struct Task * ) FindTask( 0 ); // Current task!
+  if ( name ) {
+
+    AddPort(result);
+
+  } else {
+
+    NEW_LIST( &( result->mp_MsgList ));
+  }
+  return result;
+}
+
+VOID DeletePort( struct MsgPort * port ) {
+
+  if ( !port ) {
+
+    return;
+  }
+  if ( port->mp_Node.ln_Name ) {
+
+    RemPort(port);
+  }
+  if (( port->mp_Flags & PF_ACTION ) == PA_SIGNAL ) {
+
+    FreeSignal( port->mp_SigBit );
+    port->mp_Flags = PA_IGNORE;
+  }
+  FreeMem( port, sizeof( struct MsgPort ));
+}

@@ -127,6 +127,7 @@ struct AmiGUS_CAMD {
   BYTE                          agb_WorkerWorkSignal;
   BYTE                          agb_WorkerStopSignal;
   BYTE                          agb_Padding0;
+  struct MsgPort              * agb_WorkerPort;
 
   /* CAMD pointers */
   TransmitFunctionType          agb_TransmitFunction;

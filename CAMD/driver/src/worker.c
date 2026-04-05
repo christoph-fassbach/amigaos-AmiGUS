@@ -17,6 +17,7 @@
  */
 
 #include <dos/dostags.h>
+#include <exec/ports.h>
 
 #include <proto/dos.h>
 #include <proto/exec.h>
@@ -28,33 +29,67 @@
 #include "support.h"
 #include "worker.h"
 
+VOID HandleMessage( struct Message * message ) {
+  
+  ULONG messageId = *(( ULONG * ) message->mn_Node.ln_Name );
+
+  LOG_INT(( "WORKER: Got message type %ld name %s\n",
+            message->mn_Node.ln_Type,
+            message->mn_Node.ln_Name ));
+
+  switch ( messageId ) {
+/*
+    case CHAR_TO_ULONG( 'P', 'S', 'M', '0' ): {
+
+      LOG_INT(( "WORKER: Playing Sample...\n" ));
+      break;
+    }
+    case CHAR_TO_ULONG( 'P', 'I', 'N', 0 ): {
+
+      LOG_INT(( "WORKER: Playing Instrument...\n" ));
+      break;
+    }
+    case CHAR_TO_ULONG( 'R', 'S', 'F', 0 ): {
+
+      LOG_INT(( "WORKER: Reloading Sound Font...\n" ));
+      break;
+    }
+      */
+    default: {
+
+      LOG_INT(( "WORKER: Unknown message...\n" ));
+      break;
+    }
+  }
+}
+
 /*__entry for vbcc*/ SAVEDS VOID WorkerProcess( VOID ) {
 
   ULONG signals = TRUE;
+  struct AmiGUS_CAMD * base = AmiGUS_CAMD_Base;
 
   LOG_D(( "D: Worker for AmiGUS_CAMD_Base @ %08lx starting...\n",
-          (LONG) AmiGUS_CAMD_Base ));
+          (LONG) base ));
 
-  AmiGUS_CAMD_Base->agb_WorkerWorkSignal = AllocSignal( -1 );
-  AmiGUS_CAMD_Base->agb_WorkerStopSignal = AllocSignal( -1 );
+  base->agb_WorkerWorkSignal = AllocSignal( -1 );
+  base->agb_WorkerStopSignal = AllocSignal( -1 );
+  base->agb_WorkerPort = CreatePort( "AmiGUS CAMD Port", 0 );
   
-  if ( ( -1 != AmiGUS_CAMD_Base->agb_WorkerWorkSignal )
-    && ( -1 != AmiGUS_CAMD_Base->agb_WorkerStopSignal )) {
+  if ( ( -1 != base->agb_WorkerWorkSignal )
+    && ( -1 != base->agb_WorkerStopSignal )
+    && ( base->agb_WorkerPort )) {
 
     /* Tell master worker is alive */
-    Signal(
-      (struct Task *) AmiGUS_CAMD_Base->agb_MainProcess,
-      1 << AmiGUS_CAMD_Base->agb_MainSignal
-    );
+    Signal( (struct Task *) base->agb_MainProcess, 1 << base->agb_MainSignal );
     // SetSignal(0, 1 << agb_WorkerStopSignal );
     while ( signals ) {
 
       ULONG bufferEmpty = FALSE;
       ULONG midiData;
-      while ( !bufferEmpty ) {
+      while ((( 1 << base->agb_WorkerWorkSignal ) & signals )
+        && ( !( bufferEmpty ))) {
 
-        midiData = AmiGUS_CAMD_Base->agb_TransmitFunction(
-          AmiGUS_CAMD_Base->agb_CAMD_userdata );
+        midiData = base->agb_TransmitFunction( base->agb_CAMD_userdata );
         bufferEmpty = GET_REG( REG_D1 );
 
         LOG_INT(( "WORKER: Received data=0x%02lx empty=0x%02lx\n",
@@ -62,44 +97,48 @@
 
 // TODO: Translate MIDI information to AmiGUS actions and execute them!
       }
+      if (( 1 << base->agb_WorkerPort->mp_SigBit ) & signals ) {
+
+        struct Message * message;
+        while ( message = GetMsg( base->agb_WorkerPort )) {
+
+          HandleMessage( message );
+        }
+      }
       LOG_INT(( "WORKER: Going to sleep...\n" ));
 
-      AmiGUS_CAMD_Base->agb_WorkerReady = TRUE;
-      signals = Wait(
-          SIGBREAKF_CTRL_C
-        | ( 1 << AmiGUS_CAMD_Base->agb_WorkerWorkSignal )
-        | ( 1 << AmiGUS_CAMD_Base->agb_WorkerStopSignal )
-      );
+      base->agb_WorkerReady = TRUE;
+      signals = Wait( SIGBREAKF_CTRL_C
+                      | ( 1 << base->agb_WorkerWorkSignal )
+                      | ( 1 << base->agb_WorkerStopSignal )
+                      | ( 1 << base->agb_WorkerPort->mp_SigBit ));
       /* 
-       All signals break the wait, 
-       but only "work" continues the playback loop, 
-       so the others are masked away.
+       All signals break the wait, but only "stop" stops 
+       the playback loop, and needs to be masked out.
        */
-       signals &= ( 1 << AmiGUS_CAMD_Base->agb_WorkerWorkSignal );
+       signals &= ~( 1 << base->agb_WorkerStopSignal );
     }
   } else {
     /* Well... */
     DisplayError( EWorkerProcessSignalsFailed );
   }
   LOG_D(( "D: Worker for AmiGUS_CAMD_Base @ %08lx ending...\n",
-          (LONG) AmiGUS_CAMD_Base ));
+          (LONG) base ));
 
-  FreeSignal( AmiGUS_CAMD_Base->agb_WorkerWorkSignal );
-  AmiGUS_CAMD_Base->agb_WorkerWorkSignal = -1;
-  FreeSignal( AmiGUS_CAMD_Base->agb_WorkerStopSignal );
-  AmiGUS_CAMD_Base->agb_WorkerStopSignal = -1;
+  DeletePort( base->agb_WorkerPort );
+  base->agb_WorkerPort = NULL;
+  FreeSignal( base->agb_WorkerWorkSignal );
+  base->agb_WorkerWorkSignal = -1;
+  FreeSignal( base->agb_WorkerStopSignal );
+  base->agb_WorkerStopSignal = -1;
 
   /* Stop multitasking here - master will resume it TODO: ??? */
   //  Forbid();
 
-  Signal(
-      (struct Task *) AmiGUS_CAMD_Base->agb_MainProcess,
-      1 << AmiGUS_CAMD_Base->agb_MainSignal
-  );
-  AmiGUS_CAMD_Base->agb_WorkerProcess = NULL;
-  AmiGUS_CAMD_Base->agb_WorkerReady = FALSE;
-  LOG_D(( "D: Worker for AmiGUS_CAMD_Base @ %08lx ended.\n",
-          (LONG) AmiGUS_CAMD_Base ));
+  Signal(( struct Task * ) base->agb_MainProcess, 1 << base->agb_MainSignal );
+  base->agb_WorkerProcess = NULL;
+  base->agb_WorkerReady = FALSE;
+  LOG_D(( "D: Worker for AmiGUS_CAMD_Base @ %08lx ended.\n", ( LONG ) base ));
 }
 
 /*

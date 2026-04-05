@@ -28,6 +28,7 @@ enum ErrorCodes
   /* Insert errors below. */
   /* Global errors 0x0001 - 0x00ff */
   EWrongDriverCPUVersion,
+  EOpenCamdBase,
   EOpenDosBase,
   EOpenGfxBase,
   EOpenIntuitionBase,
@@ -42,7 +43,11 @@ enum ErrorCodes
   EOpenLogFile,
   EAllocateLogMem,
   EAllocateAmiGUSCAMDToolBase,
-  EAmiGUSDriverLoadFailed,
+  ENoMidiNodes,
+  ECreateMidi,
+  EAddMidiLink,
+  ENoAmigusFound,
+  ENoAmigusRetry,
 
   /* Missing implementation 100-199*/
   ESomethingNotImplemented = 100,  

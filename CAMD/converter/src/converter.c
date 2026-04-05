@@ -33,6 +33,8 @@
 
 #include "converter.h"
 
+#include "amigus_utils.h"
+#include "camd_utils.h"
 #include "debug.h"
 #include "errors.h"
 #include "sf2_reader.h"
@@ -41,6 +43,7 @@
 /* Globals defined somewhere - here ;) */
 struct SF_Converter      * SF_Converter_Base;   // Main app struct
 // System libraries:
+struct Library           * CamdBase;
 struct IntuitionBase     * IntuitionBase;
 struct UtilityBase       * UtilityBase;
 // and some more owned by the linker libraries:
@@ -327,6 +330,7 @@ STRPTR RequestFileName( struct Window * window, struct Gadget * gadget ) {
 
 ULONG Startup( VOID ) {
 
+  struct Message message;
   LONG result;
   if ( !SF_Converter_Base ) {
 
@@ -341,6 +345,7 @@ ULONG Startup( VOID ) {
   // TODO: error handling of all the below!
   OpenLib(( struct Library ** )&IntuitionBase, "intuition.library", 36, EOpenIntuitionBase );
   OpenLib(( struct Library ** )&UtilityBase, "utility.library", 36, EOpenUtilityBase );
+  OpenLib(( struct Library ** )&CamdBase, "camd.library", 37, EOpenCamdBase );
 
   OpenLib(( struct Library ** )&ButtonBase, "gadgets/button.gadget", 0, EOpenButtonBase );
   OpenLib(( struct Library ** )&GetFileBase, "gadgets/getfile.gadget", 0, EOpenGetFileBase );
@@ -354,10 +359,18 @@ ULONG Startup( VOID ) {
 
   SF_Converter_Base->sfc_MainProcess = ( struct Process * ) FindTask( NULL );
 
+  message.mn_Node.ln_Name = "PSM\0"; // Play a sample
+                         // "PIN\0"; // Play an instrument
+                         // "RSF\0"; // Reload SoundFont
+  SendAmigusMessage( &message );
+
   LOG_I(( "I: " STR( APP_NAME ) " startup complete.\n" ));
 }
 
 VOID Cleanup( VOID ) {
+
+  CloseMidiInOutput( &( SF_Converter_Base->sfc_MidiLink ));
+  CloseMidi( &( SF_Converter_Base->sfc_MidiNode ));
 
   FreeListLabels( &( SF_Converter_Base->sfc_InstrumentLabels ));
 
@@ -368,6 +381,7 @@ VOID Cleanup( VOID ) {
   CloseLib(( struct Library ** )&GetFileBase );
   CloseLib(( struct Library ** )&ButtonBase );
 
+  CloseLib(( struct Library ** )&CamdBase );
   CloseLib(( struct Library ** )&UtilityBase );
   CloseLib(( struct Library ** )&IntuitionBase );
   LOG_I(( "I: " STR( APP_NAME ) " cleanup starting.\n" ));

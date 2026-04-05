@@ -79,4 +79,11 @@
  */
 VOID DisplayError( ULONG aError );
 
+/******************************************************************************
+ * Message port support functions that would usually reside in amiga.lib.
+ *****************************************************************************/
+
+struct MsgPort * CreatePort( BYTE * name, LONG priority );
+VOID DeletePort( struct MsgPort * port );
+
 #endif /* SUPPORT_H */

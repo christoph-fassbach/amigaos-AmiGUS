@@ -23,6 +23,7 @@
 #include <exec/execbase.h>
 #include <intuition/classes.h>
 #include <intuition/intuitionbase.h>
+#include <midi/camd.h>
 #include <utility/utility.h>
 
 /******************************************************************************
@@ -72,6 +73,9 @@ struct SF_Converter {
 
   struct Process              * sfc_MainProcess;
 
+  struct MidiNode             * sfc_MidiNode;
+  struct MidiLink             * sfc_MidiLink;
+
   STRPTR                        sfc_SourceFileName;
   STRPTR                        sfc_TargetFileName;
 
@@ -87,6 +91,7 @@ struct SF_Converter {
  */
 extern struct SF_Converter      * SF_Converter_Base;
 
+extern struct Library           * CamdBase;
 extern struct DosLibrary        * DOSBase;
 extern struct IntuitionBase     * IntuitionBase;
 extern struct UtilityBase       * UtilityBase;

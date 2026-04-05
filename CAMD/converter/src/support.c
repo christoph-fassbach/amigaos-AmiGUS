@@ -149,7 +149,7 @@ VOID ShowError_v34( STRPTR title, STRPTR message, STRPTR button, LONG error ) {
 
 /**
  * Shows a(n error) message in a dialog window.
- * Here: OS1.3 / v34 compatible.
+ * Here: OS2.0 / v36 compatible.
  *
  * @param title Title bar text to show atop the window.
  * @param message Message text to show in the window.
@@ -192,7 +192,7 @@ VOID DisplayError( ULONG error ) {
 
   if ( IntuitionBase ) {
 
-    STRPTR title = STR( LIB_FILE );
+    STRPTR title = STR( APP_FILE );
     STRPTR message = errors[ i ].iMessage;
     STRPTR button = errors[ i ].iButton;
 #ifdef INCLUDE_VERSION
