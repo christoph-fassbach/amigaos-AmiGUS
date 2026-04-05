@@ -67,12 +67,6 @@ MDD ; struct MidiDeviceData
 	dc.b	Ports               ; mdd_NPorts
 	dc.b	1                   ; mdd_Flags
 
-AmiGUS_extension
-	dc.l	_AmiGUS_ReloadSoundFont
-	dc.l	_AmiGUS_PlayNote
-	dc.l	_AmiGUS_PlaySound
-
-
 Name		dc.b    'amigus',0  ; Needs to be in same segment,
                                 ; hence cannot be in C
 IDString	dc.b    'AmiGUS CAMD driver',0
