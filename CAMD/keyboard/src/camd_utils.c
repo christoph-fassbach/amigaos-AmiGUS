@@ -116,3 +116,71 @@ VOID FreeCamdDevices( struct List * devices ) {
   }
   LOG_D(( "V: Devices is empty = %ld\n", IS_EMPTY_LIST( devices )));
 }
+
+struct MidiNode * OpenMidi( CONST_STRPTR name ) {
+
+  struct MidiNode * node = CreateMidi( MIDI_Name, name,
+                                       MIDI_MsgQueue, 100L,
+                                       MIDI_SysExSize, 8L,
+                                       MIDI_ErrFilter, CMEF_All,
+                                       TAG_END );
+
+  LOG_D(( "D: Got MIDI node 0x%08lx for %s.\n", node, name ));
+  return node;
+}
+
+VOID CloseMidi( struct MidiNode ** node ) {
+
+  if ( *node ) {
+
+    DeleteMidi( *node );
+    LOG_D(( "D: Closed MIDI node 0x%08lx.\n", *node ));
+    *node = NULL;
+  }
+}
+
+struct MidiLink * OpenMidiInput( struct MidiNode * node,
+                                    CONST_STRPTR location,
+                                    CONST_STRPTR name ) {
+
+  struct MidiLink * link = AddMidiLink( node,
+                                        MLTYPE_Receiver,
+                                        MLINK_Comment, name,
+                                        MLINK_Name, "In",
+                                        MLINK_EventMask, CMF_Note,
+                                        //MLINK_Parse, TRUE, // TODO: needed?
+                                        MLINK_Location, location,
+                                        TAG_END );
+
+  LOG_D(( "D: Got input link 0x%08lx for %s at %s.\n", link, name, location ));
+
+  return link;
+}
+
+struct MidiLink * OpenMidiOutput( struct MidiNode * node,
+                                    CONST_STRPTR location,
+                                    CONST_STRPTR name ) {
+
+  struct MidiLink * link = AddMidiLink( node,
+                                        MLTYPE_Sender,
+                                        MLINK_Comment, name,
+                                        MLINK_Name, "Out",
+                                        MLINK_EventMask, CMF_Note,
+                                        //MLINK_Parse, TRUE, // TODO: needed?
+                                        MLINK_Location, location,
+                                        TAG_END );
+
+  LOG_D(( "D: Got output link 0x%08lx for %s at %s.\n", link, name, location ));
+
+  return link;
+}
+
+VOID CloseMidiInOutput( struct MidiLink ** link ) {
+
+  if ( *link ) {
+
+    RemoveMidiLink( *link );
+    LOG_D(( "D: Closed in/output link 0x%08lx.\n", *link ));
+    *link = NULL;
+  }
+}

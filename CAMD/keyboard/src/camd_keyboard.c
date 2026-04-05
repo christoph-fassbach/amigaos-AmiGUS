@@ -401,125 +401,9 @@ VOID FreeListLabels( struct List * list ) {
   LOG_D(( "V: List labels emptied.\n" ));
 }
 
-LONG OpenMidi( VOID ) {
-
-  STRPTR appName = STR( APP_NAME );
-
-  struct CAMD_Keyboard * base = CAMD_Keyboard_Base;
-
-  base->ck_MidiNode = CreateMidi( MIDI_Name, appName,
-                                  MIDI_MsgQueue, 100L,
-                                  MIDI_SysExSize, 8L,
-                                  MIDI_ErrFilter, CMEF_All,
-                                  TAG_END );
-  if ( !( base->ck_MidiNode )) {
-
-    return ECreateMidi;
-  }
-  LOG_D(( "D: Got MIDI node 0x%08lx for %s.\n",
-          base->ck_MidiNode, appName ));
-  return ENoError;
-}
-
-VOID CloseMidi( VOID ) {
-
-  struct CAMD_Keyboard * base = CAMD_Keyboard_Base;
-  if ( base->ck_MidiNode ) {
-
-    DeleteMidi( base->ck_MidiNode );
-    LOG_D(( "D: Closed MIDI node 0x%08lx.\n",
-            base->ck_MidiNode ));
-    base->ck_MidiNode = NULL;
-  }
-}
-
-LONG OpenMidiInput( ULONG index ) {
-
-  STRPTR linkName = STR( APP_NAME )" Link";
-
-  struct CAMD_Keyboard * base = CAMD_Keyboard_Base;
-  struct CAMD_Device_Node * node =
-    ( struct CAMD_Device_Node * )
-      NodeAtIndex( &( base->ck_InputDevices ), index );
-
-  if ( !node ) {
-
-    return ENoMidiNodes;
-  }
-
-  base->ck_MidiLinkIn = AddMidiLink( base->ck_MidiNode,
-                                     MLTYPE_Receiver,
-                                     MLINK_Comment, linkName,
-                                     MLINK_Name, "In",
-                                     MLINK_EventMask, CMF_Note,
-                                     //MLINK_Parse, TRUE, // TODO: needed?
-                                     MLINK_Location, node->cdn_Location,
-                                     TAG_END );
-  if ( !( base->ck_MidiLinkIn )) {
-
-    return EAddMidiLink;
-  }
-  LOG_D(( "D: Got input link 0x%08lx for %s at %s.\n",
-          base->ck_MidiLinkIn, linkName, node->cdn_Location ));
-
-  return ENoError;
-}
-
-VOID CloseMidiInput( VOID ) {
-
-  struct CAMD_Keyboard * base = CAMD_Keyboard_Base;
-  if ( base->ck_MidiLinkIn ) {
-
-    RemoveMidiLink( base->ck_MidiLinkIn );
-    LOG_D(( "D: Closed input link 0x%08lx.\n", base->ck_MidiLinkIn ));
-    base->ck_MidiLinkIn = NULL;
-  }
-}
-
-LONG OpenMidiOutput( ULONG index ) {
-  
-  STRPTR linkName = STR( APP_NAME )" Link";
-
-  struct CAMD_Keyboard * base = CAMD_Keyboard_Base;
-  struct CAMD_Device_Node * node =
-    ( struct CAMD_Device_Node * )
-      NodeAtIndex( &( base->ck_OutputDevices ), index );
-
-  if ( !node ) {
-
-    return ENoMidiNodes;
-  }
-
-  base->ck_MidiLinkOut = AddMidiLink( base->ck_MidiNode,
-                                      MLTYPE_Sender,
-                                      MLINK_Comment, linkName,
-                                      MLINK_Name, "Out",
-                                      //MLINK_Parse, TRUE, // TODO: needed?
-                                      MLINK_Location, node->cdn_Location,
-                                      TAG_END );
-  if ( !( base->ck_MidiLinkOut )) {
-
-    return EAddMidiLink;
-  }
-  LOG_D(( "D: Got output link 0x%08lx for %s at %s.\n",
-          base->ck_MidiLinkOut, linkName, node->cdn_Location ));
-
-  return ENoError;
-}
-
-VOID CloseMidiOutput( VOID ) {
-
-  struct CAMD_Keyboard * base = CAMD_Keyboard_Base;
-  if ( base->ck_MidiLinkOut ) {
-
-    RemoveMidiLink( base->ck_MidiLinkOut );
-    LOG_D(( "D: Closed output link 0x%08lx.\n", base->ck_MidiLinkOut ));
-    base->ck_MidiLinkOut = NULL;
-  }
-}
-
 ULONG Startup( VOID ) {
 
+  struct CAMD_Device_Node * node;
   LONG result;
   if ( !CAMD_Keyboard_Base ) {
 
@@ -576,15 +460,25 @@ ULONG Startup( VOID ) {
   }
   CreateChooserLabels();
 
-  result = OpenMidi();
-  if ( result ) {
+  CAMD_Keyboard_Base->ck_MidiNode = OpenMidi( STR( APP_NAME ));
+  if ( !( CAMD_Keyboard_Base->ck_MidiNode )) {
 
-    DisplayError( result );
+    DisplayError( ECreateMidi );
   }
-  result = OpenMidiOutput( 0 );
-  if ( result ) {
+  node =
+    ( struct CAMD_Device_Node * )
+      NodeAtIndex( &( CAMD_Keyboard_Base->ck_OutputDevices ), 0 );
+  if ( !( node )) {
 
-    DisplayError( result );
+    DisplayError( ENoMidiNodes );
+  }
+  CAMD_Keyboard_Base->ck_MidiLinkOut = OpenMidiOutput(
+    CAMD_Keyboard_Base->ck_MidiNode,
+    node->cdn_Location,
+    STR( APP_NAME )" Link" );
+  if ( !( CAMD_Keyboard_Base->ck_MidiLinkOut )) {
+
+    DisplayError( EAddMidiLink );
   }
 
   NEW_LIST( &( CAMD_Keyboard_Base->ck_InstrumentLabels ));
@@ -619,9 +513,10 @@ VOID Cleanup( VOID ) {
   FreeListLabels( &( CAMD_Keyboard_Base->ck_InstrumentLabels ));
   FreeListLabels( &( CAMD_Keyboard_Base->ck_PercussionLabels ));
 
-  CloseMidiInput();
-  CloseMidiOutput();
-  CloseMidi();
+  CloseMidiInOutput( &( CAMD_Keyboard_Base->ck_MidiLinkIn ) );
+  CloseMidiInOutput( &( CAMD_Keyboard_Base->ck_MidiLinkOut ) );
+  CloseMidi( &( CAMD_Keyboard_Base->ck_MidiNode ));
+
   FreeCamdDevices( &( CAMD_Keyboard_Base->ck_InputDevices ));
   FreeCamdDevices( &( CAMD_Keyboard_Base->ck_OutputDevices ));
   FreeChooserLabels();
@@ -1185,19 +1080,42 @@ VOID HandleEvents( VOID ) {
 
               LOG_I(( "I: Input chooser picked item %ld.\n",
                       windowMessageCode ));
-              CloseMidiInput();
+              CloseMidiInOutput( &( base->ck_MidiLinkIn ));
               if ( 0 < windowMessageCode ) {
 
-                OpenMidiInput( windowMessageCode - 1 );
+                struct CAMD_Device_Node * node =
+                  ( struct CAMD_Device_Node * )
+                    NodeAtIndex( &( base->ck_InputDevices ),
+                                 windowMessageCode - 1 );
+                if ( !node ) {
+
+                  DisplayError( ENoMidiNodes );
+                }
+                base->ck_MidiLinkIn = OpenMidiInput(
+                  base->ck_MidiNode,
+                  node->cdn_Location,
+                  STR( APP_NAME )" Link" );
               }
               break;
             }
             case GadgetId_OutputDeviceChooser: {
 
+              struct CAMD_Device_Node * node;
               LOG_I(( "I: Output chooser picked item %ld.\n",
                       windowMessageCode ));
-              CloseMidiOutput();
-              OpenMidiOutput( windowMessageCode );
+              CloseMidiInOutput( &( base->ck_MidiLinkOut ));
+              node =
+                ( struct CAMD_Device_Node * )
+                  NodeAtIndex( &( base->ck_OutputDevices ),
+                               windowMessageCode );
+              if ( !node ) {
+
+                DisplayError( ENoMidiNodes );
+              }
+              base->ck_MidiLinkOut = OpenMidiOutput(
+                base->ck_MidiNode,
+                node->cdn_Location,
+                STR( APP_NAME )" Link" );
               break;
             }
             case GadgetId_InfoButton: {
