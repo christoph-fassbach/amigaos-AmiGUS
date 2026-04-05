@@ -186,7 +186,7 @@ static LONG ReadPresetData( BPTR fileHandle,
   }
 
   i = ( size / PHDR_CHUNK_SIZE_MULTIPLE ) - 1;
-alosidfj
+//alosidfj
 
   // TODO: https://github.com/FluidSynth/fluidsynth/blob/master/src/sfloader/fluid_sffile.c#L1099
   Seek( fileHandle, size, OFFSET_CURRENT );

@@ -28,6 +28,9 @@ Ports	 equ 1
 	xref _AmiGUS_OpenPort
 	xref _AmiGUS_ClosePort
 	*xref _AmiGUS_ActivateXmit
+	xref _AmiGUS_ReloadSoundFont
+	xref _AmiGUS_PlayNote
+	xref _AmiGUS_PlaySound
 
 * ASM exports:
 	section driver,code
@@ -54,7 +57,7 @@ FalseStart
 MDD ; struct MidiDeviceData
 	dc.l	MDD_Magic           ; mdd_Magic
 	dc.l	Name                ; mdd_Name
-	dc.l	_AmiGUS_IDString    ; mdd_IDString
+	dc.l	IDString            ; mdd_IDString
 	dc.w	LIB_VERSION         ; mdd_Version
 	dc.w	LIB_REVISION        ; mdd_Revision
 	dc.l	_AmiGUS_Init        ; mdd_Init
@@ -64,9 +67,15 @@ MDD ; struct MidiDeviceData
 	dc.b	Ports               ; mdd_NPorts
 	dc.b	1                   ; mdd_Flags
 
+AmiGUS_extension
+	dc.l	_AmiGUS_ReloadSoundFont
+	dc.l	_AmiGUS_PlayNote
+	dc.l	_AmiGUS_PlaySound
+
+
 Name		dc.b    'amigus',0  ; Needs to be in same segment,
                                 ; hence cannot be in C
-*IDString	dc.b    'Idamigus',0
+IDString	dc.b    'AmiGUS CAMD driver',0
 
 *
 *	section driver,data	    ; data

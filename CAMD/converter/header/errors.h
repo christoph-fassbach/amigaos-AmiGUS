@@ -26,7 +26,7 @@ enum ErrorCodes
   {
   ENoError = 0,
   /* Insert errors below. */
-  /* Global errors 1-99 */
+  /* Global errors 0x0001 - 0x00ff */
   EWrongDriverCPUVersion,
   EOpenDosBase,
   EOpenGfxBase,
@@ -42,22 +42,15 @@ enum ErrorCodes
   EOpenLogFile,
   EAllocateLogMem,
   EAllocateAmiGUSCAMDToolBase,
+  EAmiGUSDriverLoadFailed,
 
   /* Missing implementation 100-199*/
   ESomethingNotImplemented = 100,  
 
-  /* Hardware errors 200-299 */
-  EAmiGUSNotFound = 200,
-  EAmiGUSDetectError,
-  EAmiGUSFirmwareOutdated,
+  /* amigus.library errors 0x0100 - 0x05ff */
 
-  /* Hardware errors 300-399 */
-  ELockPubScreen = 300,
-  EGadToolsGetVisualInfo,
-  EGadToolsCreateContext,
-
-  /* SF2 read errors 400-499 */
-  EOpenFileFailed = 400,
+  /* SF2 read errors 0x1000 - 0x10ff */
+  EOpenFileFailed = 0x1000,
   EInvalidFileSize,
   EParseFailed,
   ENoRiffChunk,

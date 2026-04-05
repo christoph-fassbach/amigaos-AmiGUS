@@ -41,8 +41,6 @@ struct Library           * AmiGUS_Base       = NULL;
 struct AmiGUS_CAMD       * AmiGUS_CAMD_Base  = NULL;
 
 STRPTR _LibVersionString = "$VER: " LIBRARY_IDSTRING "\r\n";
-STRPTR AmiGUS_IDString = LIBRARY_IDSTRING "\0";
-STRPTR AmiGUS_Name = LIBRARY_NAME;
 
 /******************************************************************************
  * CAMD MIDI driver's "public" function forward declarations.
@@ -131,6 +129,28 @@ ASM( VOID ) SAVEDS AmiGUS_ActivateXmit(
   REG( d0, LONG portnum ),
   REG( a2, APTR userdata ));
 
+/**
+ * Special AmiGUS extension function to
+ * force the CAMD driver to reload the settings and the SoundFont.
+ */
+ASM( VOID ) SAVEDS AmiGUS_ReloadSoundFont(
+  VOID );
+
+/**
+ * Special AmiGUS extension function to
+ * play a note set in the currently loaded SoundFont.
+ */
+ASM( VOID ) SAVEDS AmiGUS_PlayNote(
+  VOID );
+
+/**
+ * Special AmiGUS extension function to
+ * play a sound as provided completely in parameters to the function,
+ * independently from all the SoundFont whatsoever.
+ */
+ASM( VOID ) SAVEDS AmiGUS_PlaySound(
+  VOID );
+
 /******************************************************************************
  * CAMD MIDI driver's global data definitions.
  *****************************************************************************/
@@ -209,7 +229,8 @@ ASM( BOOL ) SAVEDS AmiGUS_Init( REG( a6, struct ExecBase * sysBase )) {
     AmiGUS_Expunge();
     return FALSE;
   }
-#if 1
+
+#if 0
 
   Forbid();
   do {
@@ -237,16 +258,21 @@ ASM( BOOL ) SAVEDS AmiGUS_Init( REG( a6, struct ExecBase * sysBase )) {
   error = ENoError;
 
 #endif
+
   if ( error ) {
 
     DisplayError( error );
     AmiGUS_Expunge();
     return FALSE;
   }
-  base->agb_CardBase = base->agb_AmiGUS->agus_WavetableBase;
-  LOG_D(( "D: AmiGUS_CAMD using Wavetable @ 0x%08lx on %s\n",
-          base->agb_CardBase,
-          base->agb_AmiGUS->agus_TypeName ));
+  if ( base->agb_AmiGUS ) {
+
+    base->agb_CardBase = base->agb_AmiGUS->agus_WavetableBase;
+
+    LOG_D(( "D: AmiGUS_CAMD using Wavetable @ 0x%08lx on %s\n",
+            base->agb_CardBase,
+            base->agb_AmiGUS->agus_TypeName ));
+  }
 
   LOG_D(( "D: AmiGUS_CAMD_Base ready @ 0x%08lx\n", base ));
   return TRUE;
@@ -375,4 +401,30 @@ ASM( VOID ) SAVEDS AmiGUS_ActivateXmit(
     // TODO: How do we handle worker not ready? Maybe crying? Starting worker?
     LOG_E(( "E: Worker not ready!!!" ));
   }
+}
+
+/**
+ * Special AmiGUS extension function to
+ * force the CAMD driver to reload the settings and the SoundFont.
+ */
+ASM( VOID ) SAVEDS AmiGUS_ReloadSoundFont(
+  VOID ) {
+
+  //LOG_D(( "D: AmiGUS_ReloadSoundFont triggered\n" ));
+}
+
+/**
+ * Special AmiGUS extension function to
+ * play a note set in the currently loaded SoundFont.
+ */
+ASM( VOID ) SAVEDS AmiGUS_PlayNote(
+  VOID ) {
+
+  LOG_D(( "D: AmiGUS_PlayNote triggered\n" ));
+}
+
+ASM( VOID ) SAVEDS AmiGUS_PlaySound(
+  VOID ) {
+
+  LOG_D(( "D: AmiGUS_PlaySound triggered\n" ));
 }

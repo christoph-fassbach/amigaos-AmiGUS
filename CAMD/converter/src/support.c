@@ -70,12 +70,6 @@ struct ErrorMessage errors[] = {
   { EAllocateLogMem, "Can not allocate memory blob for extra-dirty logging.", "Meh." },
   { EAllocateAmiGUSCAMDToolBase, "No base struct - out of memory!", "Shit!" },
 
-  { EAmiGUSNotFound, "AmiGUS card not found.", "Read?" },
-  { EAmiGUSDetectError, "AmiGUS card detection mess.", "Damn!" },
-  { EAmiGUSFirmwareOutdated, "AmiGUS card firmware outdated.", "Will update, promised!" },
-  
-  { EGadToolsGetVisualInfo, "GadTools failed to get visual info.", ":(" },
-  { ELockPubScreen, "Intuition failed to lock workbench screen.", ";(" },
   /* Insert errors above. */
 
   { EUnknownError, "Unknown error.", "Shit!" }
