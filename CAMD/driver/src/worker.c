@@ -24,6 +24,7 @@
 
 #include "amigus_camd.h"
 #include "amigus_hardware.h"
+#include "amigus_ports.h"
 #include "debug.h"
 #include "errors.h"
 #include "support.h"
@@ -31,30 +32,35 @@
 
 VOID HandleMessage( struct Message * message ) {
   
-  ULONG messageId = *(( ULONG * ) message->mn_Node.ln_Name );
-
   LOG_INT(( "WORKER: Got message type %ld name %s\n",
             message->mn_Node.ln_Type,
             message->mn_Node.ln_Name ));
 
-  switch ( messageId ) {
-/*
-    case CHAR_TO_ULONG( 'P', 'S', 'M', '0' ): {
+  switch ( *(( LONG * ) message->mn_Node.ln_Name )) {
+    case PLAY_NOTE_MESSAGE_NAME: {
 
-      LOG_INT(( "WORKER: Playing Sample...\n" ));
+      LOG_D(( "D: Replying PlayNoteMessage 0x%08lx...\n", message ));
+      ReplyMsg( message );
       break;
     }
-    case CHAR_TO_ULONG( 'P', 'I', 'N', 0 ): {
+    case PLAY_INSTRUMENT_MESSAGE_NAME: {
 
-      LOG_INT(( "WORKER: Playing Instrument...\n" ));
+      LOG_D(( "D: Replying PlayInstrumentMessage 0x%08lx...\n", message ));
+      ReplyMsg( message );
       break;
     }
-    case CHAR_TO_ULONG( 'R', 'S', 'F', 0 ): {
+    case LOAD_SOUNDFONT_NESSAGE_NAME: {
 
-      LOG_INT(( "WORKER: Reloading Sound Font...\n" ));
+      LOG_D(( "D: Replying LoadSoundFontMessage 0x%08lx...\n", message ));
+      ReplyMsg( message );
       break;
     }
-      */
+    case RELOAD_SETTINGS_MESSAGE_NAME: {
+
+      LOG_D(( "D: Replying ReloadSettingsMessage 0x%08lx...\n", message ));
+      ReplyMsg( message );
+      break;
+    }
     default: {
 
       LOG_INT(( "WORKER: Unknown message...\n" ));

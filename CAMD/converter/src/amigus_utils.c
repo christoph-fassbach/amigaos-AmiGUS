@@ -29,6 +29,43 @@
 #include "errors.h"
 #include "support.h"
 
+/******************************************************************************
+ * MIDI driver helper variables - private variables.
+ *****************************************************************************/
+
+LONG PlayNoteMessageName       = PLAY_NOTE_MESSAGE_NAME;
+LONG PlayInstrumentMessageName = PLAY_INSTRUMENT_MESSAGE_NAME;
+LONG LoadSoundFontMessageName  = LOAD_SOUNDFONT_NESSAGE_NAME;
+LONG ReloadSettingsMessageName = RELOAD_SETTINGS_MESSAGE_NAME;
+
+/******************************************************************************
+ * MIDI driver helper functions - private functions.
+ *****************************************************************************/
+
+APTR CreateAmigusMessage( struct List * storage,
+                          struct MsgPort * replyPort,
+                          ULONG messageSize,
+                          LONG * messageName ) {
+
+  // This is clearly larger than a message,
+  // but we access only the common part here.
+  struct Message * message = AllocVec( messageSize, MEMF_ANY | MEMF_CLEAR );
+
+  message->mn_Node.ln_Name = ( STRPTR ) messageName;
+  message->mn_ReplyPort = replyPort;
+
+  if ( storage ) {
+
+    AddTail( storage, ( struct Node * ) message );
+  }
+
+  return message;
+}
+
+/******************************************************************************
+ * MIDI driver helper functions - public function definitions.
+ *****************************************************************************/
+
 ULONG OpenAmigusPort( VOID ) {
 
   struct List devices;
@@ -108,4 +145,98 @@ LONG SendAmigusMessage( struct Message * message ) {
   PutMsg( port, message );
   Permit();
   return ENoError;
+}
+
+struct PlayNoteMessage * CreateAmigusPlayNoteMessage(
+  struct List * storage,
+  struct MsgPort * replyPort ) {
+
+  struct PlayNoteMessage * message =
+    CreateAmigusMessage( storage,
+                         replyPort,
+                         sizeof( struct PlayNoteMessage ),
+                         &( PlayNoteMessageName ));
+
+  return message;
+}
+
+struct PlayInstrumentMessage * CreateAmigusPlayInstrumentMessage(
+  struct List * storage,
+  struct MsgPort * replyPort ) {
+
+  struct PlayInstrumentMessage * message =
+    CreateAmigusMessage( storage,
+                         replyPort,
+                         sizeof( struct PlayInstrumentMessage ),
+                         &( PlayInstrumentMessageName ));
+
+  return message;
+}
+
+struct LoadSoundFontMessage * CreateAmigusLoadSoundFontMessage(
+  struct List * storage,
+  struct MsgPort * replyPort ) {
+
+  struct LoadSoundFontMessage * message =
+    CreateAmigusMessage( storage,
+                         replyPort,
+                         sizeof( struct LoadSoundFontMessage ),
+                         &( LoadSoundFontMessageName ));
+
+  return message;
+}
+
+struct ReloadSettingsMessage * CreateAmigusReloadSettingsMessage(
+  struct List * storage,
+  struct MsgPort * replyPort ) {
+
+  struct ReloadSettingsMessage * message =
+    CreateAmigusMessage( storage,
+                         replyPort,
+                         sizeof( struct ReloadSettingsMessage ),
+                         &( ReloadSettingsMessageName ));
+
+  return message;
+}
+
+VOID DeleteAmigusMessage( APTR message ) {
+
+  struct Message * mess = (struct Message * ) message;
+
+  switch ( *(( LONG * ) mess->mn_Node.ln_Name )) {
+    case PLAY_NOTE_MESSAGE_NAME: {
+
+      LOG_D(( "D: Deleting PlayNoteMessage 0x%08lx...\n", mess ));
+      break;
+    }
+    case PLAY_INSTRUMENT_MESSAGE_NAME: {
+
+      LOG_D(( "D: Deleting PlayInstrumentMessage 0x%08lx...\n", mess ));
+      break;
+    }
+    case LOAD_SOUNDFONT_NESSAGE_NAME: {
+
+      LOG_D(( "D: Deleting LoadSoundFontMessage 0x%08lx...\n", mess ));
+      break;
+    }
+    case RELOAD_SETTINGS_MESSAGE_NAME: {
+
+      LOG_D(( "D: Deleting ReloadSettingsMessage 0x%08lx...\n", mess ));
+      break;
+    }
+    default: {
+      break;
+    }
+  }
+  FreeVec( message );
+}
+
+VOID DeleteAmigusMessageList( struct List * list ) {
+
+  struct Node * node;
+
+  while ( node = RemHead( list )) {
+
+    DeleteAmigusMessage( node );
+  }
 }

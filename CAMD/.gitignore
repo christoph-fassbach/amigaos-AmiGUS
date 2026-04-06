@@ -64,3 +64,4 @@ dkms.conf
 # Some CAMD specifics
 **/include/*
 prepare-files
+converter/header/amigus_ports.h

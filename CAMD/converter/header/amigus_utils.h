@@ -19,9 +19,27 @@
 #ifndef AMIGUS_UTILS_H
 #define AMIGUS_UTILS_H
 
-#include <exec/ports.h>
+#include "amigus_ports.h"
 
 ULONG OpenAmigusPort( VOID );
 LONG SendAmigusMessage( struct Message * message );
+struct PlayNoteMessage * CreateAmigusPlayNoteMessage(
+  struct List * storage,
+  struct MsgPort * replyPort );
+
+struct PlayInstrumentMessage * CreateAmigusPlayInstrumentMessage(
+  struct List * storage,
+  struct MsgPort * replyPort );
+
+struct LoadSoundFontMessage * CreateAmigusLoadSoundFontMessage(
+  struct List * storage,
+  struct MsgPort * replyPort );
+
+struct ReloadSettingsMessage * CreateAmigusReloadSettingsMessage(
+  struct List * storage,
+  struct MsgPort * replyPort );
+
+VOID DeleteAmigusMessage( APTR message );
+VOID DeleteAmigusMessageList( struct List * list );
 
 #endif /* AMIGUS_UTILS_H */

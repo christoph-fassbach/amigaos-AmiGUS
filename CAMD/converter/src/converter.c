@@ -330,7 +330,8 @@ STRPTR RequestFileName( struct Window * window, struct Gadget * gadget ) {
 
 ULONG Startup( VOID ) {
 
-  struct Message message;
+struct LoadSoundFontMessage * message;
+
   LONG result;
   if ( !SF_Converter_Base ) {
 
@@ -354,20 +355,26 @@ ULONG Startup( VOID ) {
   OpenLib(( struct Library ** )&ListBrowserBase, "gadgets/listbrowser.gadget", 0, EOpenListBrowserBase );
   OpenLib(( struct Library ** )&WindowBase, "window.class", 0, EOpenWindowBase );
 
-  NEW_LIST( &( SF_Converter_Base->sfc_InstrumentLabels ));
+  NewList( &( SF_Converter_Base->sfc_InstrumentLabels ));
   CreateListLabels( &SF_Converter_Base->sfc_InstrumentLabels, instrumentNames );
 
   SF_Converter_Base->sfc_MainProcess = ( struct Process * ) FindTask( NULL );
 
-  message.mn_Node.ln_Name = "PSM\0"; // Play a sample
-                         // "PIN\0"; // Play an instrument
-                         // "RSF\0"; // Reload SoundFont
-  SendAmigusMessage( &message );
+  SF_Converter_Base->sfc_MidiReplyPort = CreateMsgPort();
+  NewList( &( SF_Converter_Base->sfc_MidiMessages ));
+
+  message = CreateAmigusLoadSoundFontMessage(
+    &( SF_Converter_Base->sfc_MidiMessages ),
+    SF_Converter_Base->sfc_MidiReplyPort );
+  SendAmigusMessage(( struct Message *) message );
 
   LOG_I(( "I: " STR( APP_NAME ) " startup complete.\n" ));
 }
 
 VOID Cleanup( VOID ) {
+
+  DeleteAmigusMessageList( &( SF_Converter_Base->sfc_MidiMessages ));
+  DeleteMsgPort( SF_Converter_Base->sfc_MidiReplyPort );
 
   CloseMidiInOutput( &( SF_Converter_Base->sfc_MidiLink ));
   CloseMidi( &( SF_Converter_Base->sfc_MidiNode ));
@@ -544,17 +551,30 @@ VOID HandleEvents( VOID ) {
   struct SF_Converter * base = SF_Converter_Base;
 
   const ULONG windowSignal = base->sfc_MainWindowSignal;
+  const ULONG replyPortSignal =
+    1 << SF_Converter_Base->sfc_MidiReplyPort->mp_SigBit;
 
   while ( !( stop )) {
 
     ULONG signals = Wait( windowSignal
+                          | replyPortSignal
                           | SIGBREAKF_CTRL_C );
     if ( SIGBREAKF_CTRL_C & signals) {
 
       stop = TRUE;
     }
 
-    for ( ; ; ) {
+    while ( replyPortSignal & signals ) {
+
+      struct Message * message = GetMsg( SF_Converter_Base->sfc_MidiReplyPort );
+      if ( !message ) {
+
+        break;
+      }
+      Remove(( struct Node * ) message );
+      DeleteAmigusMessage( message );
+    }
+    while ( windowSignal & signals ) {
 
       WORD windowMessageCode;
       ULONG windowMessage = DoMethod( base->sfc_MainWindowContent,
