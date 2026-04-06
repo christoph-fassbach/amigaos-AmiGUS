@@ -74,7 +74,6 @@ struct SF_Converter {
   struct Process              * sfc_MainProcess;
 
   struct MsgPort              * sfc_MidiReplyPort;
-  struct List                   sfc_MidiMessages;
   struct MidiNode             * sfc_MidiNode;
   struct MidiLink             * sfc_MidiLink;
 

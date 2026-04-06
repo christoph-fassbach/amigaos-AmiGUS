@@ -361,10 +361,8 @@ struct LoadSoundFontMessage * message;
   SF_Converter_Base->sfc_MainProcess = ( struct Process * ) FindTask( NULL );
 
   SF_Converter_Base->sfc_MidiReplyPort = CreateMsgPort();
-  NewList( &( SF_Converter_Base->sfc_MidiMessages ));
 
   message = CreateAmigusLoadSoundFontMessage(
-    &( SF_Converter_Base->sfc_MidiMessages ),
     SF_Converter_Base->sfc_MidiReplyPort );
   SendAmigusMessage(( struct Message *) message );
 
@@ -373,7 +371,6 @@ struct LoadSoundFontMessage * message;
 
 VOID Cleanup( VOID ) {
 
-  DeleteAmigusMessageList( &( SF_Converter_Base->sfc_MidiMessages ));
   DeleteMsgPort( SF_Converter_Base->sfc_MidiReplyPort );
 
   CloseMidiInOutput( &( SF_Converter_Base->sfc_MidiLink ));

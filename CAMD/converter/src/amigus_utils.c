@@ -42,8 +42,7 @@ LONG ReloadSettingsMessageName = RELOAD_SETTINGS_MESSAGE_NAME;
  * MIDI driver helper functions - private functions.
  *****************************************************************************/
 
-APTR CreateAmigusMessage( struct List * storage,
-                          struct MsgPort * replyPort,
+APTR CreateAmigusMessage( struct MsgPort * replyPort,
                           ULONG messageSize,
                           LONG * messageName ) {
 
@@ -53,11 +52,6 @@ APTR CreateAmigusMessage( struct List * storage,
 
   message->mn_Node.ln_Name = ( STRPTR ) messageName;
   message->mn_ReplyPort = replyPort;
-
-  if ( storage ) {
-
-    AddTail( storage, ( struct Node * ) message );
-  }
 
   return message;
 }
@@ -148,12 +142,10 @@ LONG SendAmigusMessage( struct Message * message ) {
 }
 
 struct PlayNoteMessage * CreateAmigusPlayNoteMessage(
-  struct List * storage,
   struct MsgPort * replyPort ) {
 
   struct PlayNoteMessage * message =
-    CreateAmigusMessage( storage,
-                         replyPort,
+    CreateAmigusMessage( replyPort,
                          sizeof( struct PlayNoteMessage ),
                          &( PlayNoteMessageName ));
 
@@ -161,12 +153,10 @@ struct PlayNoteMessage * CreateAmigusPlayNoteMessage(
 }
 
 struct PlayInstrumentMessage * CreateAmigusPlayInstrumentMessage(
-  struct List * storage,
   struct MsgPort * replyPort ) {
 
   struct PlayInstrumentMessage * message =
-    CreateAmigusMessage( storage,
-                         replyPort,
+    CreateAmigusMessage( replyPort,
                          sizeof( struct PlayInstrumentMessage ),
                          &( PlayInstrumentMessageName ));
 
@@ -174,12 +164,10 @@ struct PlayInstrumentMessage * CreateAmigusPlayInstrumentMessage(
 }
 
 struct LoadSoundFontMessage * CreateAmigusLoadSoundFontMessage(
-  struct List * storage,
   struct MsgPort * replyPort ) {
 
   struct LoadSoundFontMessage * message =
-    CreateAmigusMessage( storage,
-                         replyPort,
+    CreateAmigusMessage( replyPort,
                          sizeof( struct LoadSoundFontMessage ),
                          &( LoadSoundFontMessageName ));
 
@@ -187,12 +175,10 @@ struct LoadSoundFontMessage * CreateAmigusLoadSoundFontMessage(
 }
 
 struct ReloadSettingsMessage * CreateAmigusReloadSettingsMessage(
-  struct List * storage,
   struct MsgPort * replyPort ) {
 
   struct ReloadSettingsMessage * message =
-    CreateAmigusMessage( storage,
-                         replyPort,
+    CreateAmigusMessage( replyPort,
                          sizeof( struct ReloadSettingsMessage ),
                          &( ReloadSettingsMessageName ));
 
@@ -229,14 +215,4 @@ VOID DeleteAmigusMessage( APTR message ) {
     }
   }
   FreeVec( message );
-}
-
-VOID DeleteAmigusMessageList( struct List * list ) {
-
-  struct Node * node;
-
-  while ( node = RemHead( list )) {
-
-    DeleteAmigusMessage( node );
-  }
 }
