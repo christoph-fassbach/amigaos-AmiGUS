@@ -258,19 +258,61 @@ static LONG ReadPresetHeaders( BPTR fileHandle,
   return ENoError;
 }
 
-static LONG ReadPresetBag( BPTR fileHandle,
-                           UWORD * generatorIndex,
-                           UWORD * modulatorIndex,
-                           struct SF2_Preset * target ) {
+static LONG ReadZone( BPTR fileHandle,
+                      UWORD * lastGeneratorIndex,
+                      UWORD * lastModulatorIndex,
+                      struct SF2_Zone * target ) {
 
+  UWORD temp;
+  UWORD generatorIndex;
+  UWORD modulatorIndex;
+
+  ReadUWORD( fileHandle, &( temp ));
+  generatorIndex = Swap16( temp );
+  ReadUWORD( fileHandle, &( temp ));
+  modulatorIndex = Swap16( temp );
+
+  if ( target ) {
+
+    // So >1st zone
+    if ( generatorIndex < *lastGeneratorIndex ) {
+
+      return EInvalidGeneratorIndex;
+    }
+    if ( modulatorIndex < *lastModulatorIndex ) {
+
+      return EInvalidModulatorIndex;
+    }
+
+    temp = generatorIndex - *lastGeneratorIndex;
+    while ( temp ) {
+
+      struct SF2_Generator * generator =
+        AllocVec( sizeof( struct SF2_Generator ), MEMF_ANY | MEMF_CLEAR );
+      ADD_TAIL( &( target->sfz2_Generators ), generator );
+      --temp;
+    }
+    temp = modulatorIndex - *lastModulatorIndex;
+    while ( temp ) {
+
+      struct SF2_Modulator * modulator =
+        AllocVec( sizeof( struct SF2_Modulator ), MEMF_ANY | MEMF_CLEAR );
+      ADD_TAIL( &( target->sfz2_Modulators ), modulator );
+      --temp;
+    }
+  }
+  *( lastGeneratorIndex ) = generatorIndex;
+  *( lastModulatorIndex ) = modulatorIndex;
+
+  return ENoError;
 }
 
 static LONG ReadPresetBags( BPTR fileHandle,
                             LONG size,
                             struct MinList * target ) {
 
+  LONG result;
   struct SF2_Preset * preset;
-
   struct SF2_Zone * previousZone = NULL;
   UWORD previousGeneratorIndex = 0;
   UWORD previousModulatorIndex = 0;
@@ -280,56 +322,30 @@ static LONG ReadPresetBags( BPTR fileHandle,
     struct SF2_Zone * zone;
     FOR_LIST( &( preset->sf2p_Zones ), zone, struct SF2_Zone * ) {
 
-      UWORD temp;
-      UWORD generatorIndex;
-      UWORD modulatorIndex;
-
+      
       size -= PBAG_CHUNK_SIZE_MULTIPLE;
 
-      ReadUWORD( fileHandle, &( temp ));
-      generatorIndex = Swap16( temp );
-      ReadUWORD( fileHandle, &( temp ));
-      modulatorIndex = Swap16( temp );
+      result = ReadZone( fileHandle,
+                         &previousGeneratorIndex,
+                         &previousModulatorIndex,
+                         previousZone );
 
-      if ( previousZone ) {
+      if ( result ) {
 
-        // So >1st zone
-        if ( generatorIndex < previousGeneratorIndex ) {
-
-          return EInvalidGeneratorIndex;
-        }
-        if ( modulatorIndex < previousModulatorIndex ) {
-
-          return EInvalidModulatorIndex;
-        }
-
-        temp = generatorIndex - previousGeneratorIndex;
-        while ( temp ) {
-
-          struct SF2_Generator * generator =
-            AllocVec( sizeof( struct SF2_Generator ), MEMF_ANY | MEMF_CLEAR );
-          ADD_TAIL( &( previousZone->sfz2_Generators ), generator );
-          --temp;
-        }
-        temp = modulatorIndex - previousModulatorIndex;
-        while ( temp ) {
-
-          struct SF2_Modulator * modulator =
-            AllocVec( sizeof( struct SF2_Modulator ), MEMF_ANY | MEMF_CLEAR );
-          ADD_TAIL( &( previousZone->sfz2_Modulators ), modulator );
-          --temp;
-        }
+        return result;
       }
       previousZone = zone;
-      previousGeneratorIndex = generatorIndex;
-      previousModulatorIndex = modulatorIndex;
     }
   }
-LOG_D(( "D: %ld asdfasdf\n", size ));
-  // TODO: remove when done
-  Seek( fileHandle, size, OFFSET_CURRENT );
+  if ( PBAG_CHUNK_SIZE_MULTIPLE != size ) {
 
-  return ENoError;
+    return EInvalidPresetBags;
+  }
+  result = ReadZone( fileHandle,
+                      &previousGeneratorIndex,
+                      &previousModulatorIndex,
+                      previousZone );
+  return result;
 }
 
 static LONG ReadInfo( struct SF2_Parsed * sf2, ULONG size ) {
