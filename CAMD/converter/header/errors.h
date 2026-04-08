@@ -70,6 +70,8 @@ enum ErrorCodes
   EInvalidInfoSubChunkSize,
   EInvalidPresetSubChunk,
   EInvalidPresetDataSize,
+  ENoPresets,
+  EInvalidPresetIndex,
   EDuplicatedSmplChunk,
   EDuplicatedSm24Chunk,
 

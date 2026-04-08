@@ -19,6 +19,7 @@
 #include <libraries/dos.h>
 
 #include <proto/dos.h>
+#include <proto/exec.h>
 
 #include "sf2_reader.h"
 
@@ -101,6 +102,12 @@ static LONG ReadUWORD( BPTR fileHandle, UWORD * target ) {
   return FRead( fileHandle, target, sizeof( UWORD ), 1 );
 }
 
+static LONG ReadString( BPTR fileHandle, UBYTE * target ) {
+
+  return FRead( fileHandle, target, sizeof( UBYTE ), 20 );
+}
+
+
 static LONG ReadChunk( BPTR fileHandle, struct SF2_Chunk * target ) {
 
   LONG result = FRead( fileHandle, target, sizeof( struct SF2_Chunk ), 1 );
@@ -179,6 +186,10 @@ static LONG ReadPresetData( BPTR fileHandle,
                             struct MinList * target ) {
 
   LONG i;
+  UWORD temp;
+  UWORD index;
+  UWORD previousIndex = 0;
+  struct SF2_Preset * previousPreset = NULL;
 
   if (( !( size )) || ( size % PHDR_CHUNK_SIZE_MULTIPLE )) {
 
@@ -186,11 +197,61 @@ static LONG ReadPresetData( BPTR fileHandle,
   }
 
   i = ( size / PHDR_CHUNK_SIZE_MULTIPLE ) - 1;
-//alosidfj
+  if ( 0 >= i ) {
 
-  // TODO: https://github.com/FluidSynth/fluidsynth/blob/master/src/sfloader/fluid_sffile.c#L1099
-  Seek( fileHandle, size, OFFSET_CURRENT );
-  // Remove after done ;)
+    return ENoPresets;
+  }
+  LOG_D(( "D: Found %ld presets in %ld.\n", i + 1, size ));
+
+  while ( 0 <= i ) {
+
+    struct SF2_Preset * preset;
+    if ( 0 < i ) {
+
+      preset = AllocVec( sizeof( struct SF2_Preset ), MEMF_ANY | MEMF_CLEAR );
+      NEW_LIST( &( preset->sf2p_Zones ));
+      ADD_TAIL( target, &( preset->sf2p_Node ));
+      ReadString( fileHandle, preset->sf2p_Name );
+      ReadUWORD( fileHandle, &( temp ));
+      preset->sf2p_Number = Swap16( temp );
+      ReadUWORD( fileHandle, &( temp ));
+      preset->sf2p_Bank = Swap16( temp );
+
+    } else {
+
+      Seek( fileHandle, 24, OFFSET_CURRENT );
+    }
+    ReadUWORD( fileHandle, &( temp ));
+    index = Swap16( temp );
+    Seek( fileHandle, 12 /* library + genre + morphology */, OFFSET_CURRENT );
+
+    if ( previousPreset ) {
+
+      // So >1st preset
+      if ( index > previousIndex ) {
+
+        LONG h = index - previousIndex;
+        LOG_D(( "D: Adding %ld zones to preset %ld\n",
+                h, ( size / PHDR_CHUNK_SIZE_MULTIPLE ) - 1 - i ));
+        while ( h ) {
+
+          struct SF2_Zone * zone = AllocVec( sizeof( struct SF2_Zone ),
+                                             MEMF_ANY | MEMF_CLEAR );
+          ADD_TAIL( &( previousPreset->sf2p_Zones ), zone );
+          --h;
+        }
+      } else {
+
+        return EInvalidPresetIndex;
+      }
+    } else if ( index > 0 ) {
+      LOG_W(( "W: %ld preset zones unused!\n" ));
+    }
+
+    previousPreset = preset;
+    previousIndex = index;
+    --i;
+  }
 
   return ENoError;
 }

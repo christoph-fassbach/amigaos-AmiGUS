@@ -84,6 +84,8 @@
  */
 struct Node * NodeAtIndex( struct List * list, const LONG index );
 
+#define ADD_TAIL( list, node ) \
+  AddTail(( struct List * ) list, ( struct Node * ) node )
 /******************************************************************************
  * Error messaging functions.
  *****************************************************************************/

@@ -22,6 +22,22 @@
 #include <exec/types.h>
 #include <exec/lists.h>
 
+struct SF2_Zone {
+
+  struct MinNode sf2z_Node;
+  UWORD sfz2_GeneratorIndex;
+  UWORD sfz2_ModulatorIndex;
+};
+
+struct SF2_Preset {
+
+  struct MinNode sf2p_Node;
+  UWORD sf2p_Bank;
+  UWORD sf2p_Number;
+  UBYTE sf2p_Name[21];
+  struct MinList sf2p_Zones;
+};
+
 struct SF2_Parsed {
 
   STRPTR sf2_FilePath;
