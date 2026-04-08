@@ -181,9 +181,9 @@ static LONG ReadPresetSubChunk( BPTR fileHandle,
   return ENoError;
 }
 
-static LONG ReadPresetData( BPTR fileHandle,
-                            const LONG size,
-                            struct MinList * target ) {
+static LONG ReadPresetHeaders( BPTR fileHandle,
+                               const LONG size,
+                               struct MinList * target ) {
 
   LONG i;
   UWORD temp;
@@ -231,12 +231,14 @@ static LONG ReadPresetData( BPTR fileHandle,
       if ( index > previousIndex ) {
 
         LONG h = index - previousIndex;
-        LOG_D(( "D: Adding %ld zones to preset %ld\n",
+        LOG_V(( "V: Adding %ld zones to preset %ld\n",
                 h, ( size / PHDR_CHUNK_SIZE_MULTIPLE ) - 1 - i ));
         while ( h ) {
 
           struct SF2_Zone * zone = AllocVec( sizeof( struct SF2_Zone ),
                                              MEMF_ANY | MEMF_CLEAR );
+          NEW_LIST( &( zone->sfz2_Generators ));
+          NEW_LIST( &( zone->sfz2_Modulators ));
           ADD_TAIL( &( previousPreset->sf2p_Zones ), zone );
           --h;
         }
@@ -252,6 +254,80 @@ static LONG ReadPresetData( BPTR fileHandle,
     previousIndex = index;
     --i;
   }
+
+  return ENoError;
+}
+
+static LONG ReadPresetBag( BPTR fileHandle,
+                           UWORD * generatorIndex,
+                           UWORD * modulatorIndex,
+                           struct SF2_Preset * target ) {
+
+}
+
+static LONG ReadPresetBags( BPTR fileHandle,
+                            LONG size,
+                            struct MinList * target ) {
+
+  struct SF2_Preset * preset;
+
+  struct SF2_Zone * previousZone = NULL;
+  UWORD previousGeneratorIndex = 0;
+  UWORD previousModulatorIndex = 0;
+
+  FOR_LIST( target, preset, struct SF2_Preset * ) {
+
+    struct SF2_Zone * zone;
+    FOR_LIST( &( preset->sf2p_Zones ), zone, struct SF2_Zone * ) {
+
+      UWORD temp;
+      UWORD generatorIndex;
+      UWORD modulatorIndex;
+
+      size -= PBAG_CHUNK_SIZE_MULTIPLE;
+
+      ReadUWORD( fileHandle, &( temp ));
+      generatorIndex = Swap16( temp );
+      ReadUWORD( fileHandle, &( temp ));
+      modulatorIndex = Swap16( temp );
+
+      if ( previousZone ) {
+
+        // So >1st zone
+        if ( generatorIndex < previousGeneratorIndex ) {
+
+          return EInvalidGeneratorIndex;
+        }
+        if ( modulatorIndex < previousModulatorIndex ) {
+
+          return EInvalidModulatorIndex;
+        }
+
+        temp = generatorIndex - previousGeneratorIndex;
+        while ( temp ) {
+
+          struct SF2_Generator * generator =
+            AllocVec( sizeof( struct SF2_Generator ), MEMF_ANY | MEMF_CLEAR );
+          ADD_TAIL( &( previousZone->sfz2_Generators ), generator );
+          --temp;
+        }
+        temp = modulatorIndex - previousModulatorIndex;
+        while ( temp ) {
+
+          struct SF2_Modulator * modulator =
+            AllocVec( sizeof( struct SF2_Modulator ), MEMF_ANY | MEMF_CLEAR );
+          ADD_TAIL( &( previousZone->sfz2_Modulators ), modulator );
+          --temp;
+        }
+      }
+      previousZone = zone;
+      previousGeneratorIndex = generatorIndex;
+      previousModulatorIndex = modulatorIndex;
+    }
+  }
+LOG_D(( "D: %ld asdfasdf\n", size ));
+  // TODO: remove when done
+  Seek( fileHandle, size, OFFSET_CURRENT );
 
   return ENoError;
 }
@@ -431,8 +507,9 @@ static LONG ReadPresetInfo( struct SF2_Parsed * sf2, ULONG size ) {
 
   sf2->sf2_PresetsPosition = Seek( sf2->sf2_FileHandle, 0, OFFSET_CURRENT );
   sf2->sf2_PresetsSize = size;
+  LOG_D(( "D: Initial preset size is %ld\n", size ));
 
-  LOG_D(( "D: size %ld\n", size ));
+  // Preset Headers
   result = ReadPresetSubChunk( sf2->sf2_FileHandle,
                                &( chunk ),
                                PHDR_CHUNK_ID,
@@ -442,7 +519,26 @@ static LONG ReadPresetInfo( struct SF2_Parsed * sf2, ULONG size ) {
 
     return result;
   }
-  result = ReadPresetData( sf2->sf2_FileHandle,
+  result = ReadPresetHeaders( sf2->sf2_FileHandle,
+                              chunk.size,
+                              &( sf2->sf2_Presets ));
+  if ( result ) {
+
+    return result;
+  }
+
+  LOG_D(( "D: After headers, preset size is %ld\n", size ));
+  // Preset Bags
+  result = ReadPresetSubChunk( sf2->sf2_FileHandle,
+                               &( chunk ),
+                               PBAG_CHUNK_ID,
+                               PBAG_CHUNK_SIZE_MULTIPLE,
+                               &( size ));
+  if ( result ) {
+
+    return result;
+  }
+  result = ReadPresetBags( sf2->sf2_FileHandle,
                            chunk.size,
                            &( sf2->sf2_Presets ));
   if ( result ) {
@@ -450,7 +546,7 @@ static LONG ReadPresetInfo( struct SF2_Parsed * sf2, ULONG size ) {
     return result;
   }
 
-  LOG_D(( "D: size %ld\n", size ));
+  LOG_D(( "D: Remaining preset size is %ld\n", size ));
   Seek( sf2->sf2_FileHandle, size, OFFSET_CURRENT );
   return ENoError;
 }

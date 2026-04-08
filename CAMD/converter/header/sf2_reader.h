@@ -22,11 +22,28 @@
 #include <exec/types.h>
 #include <exec/lists.h>
 
+struct SF2_Modulator {
+
+  struct MinNode sf2m_Node;
+  UWORD sf2m_Source;       // Source modulator
+  UWORD sf2m_Target;       // Target generator 
+  WORD sf2m_Amount;        // Degree of modulation
+  UWORD sf2m_AmountSource; // Second source controlling amount of first source
+  UWORD sf2m_Transform;    // Transform applied to first source
+};
+
+struct SF2_Generator {
+
+  struct MinNode sf2g_Node;
+  UWORD sf2g_Id;
+  UWORD sf2g_Amount;
+};
+
 struct SF2_Zone {
 
   struct MinNode sf2z_Node;
-  UWORD sfz2_GeneratorIndex;
-  UWORD sfz2_ModulatorIndex;
+  struct MinList sfz2_Generators;
+  struct MinList sfz2_Modulators;
 };
 
 struct SF2_Preset {

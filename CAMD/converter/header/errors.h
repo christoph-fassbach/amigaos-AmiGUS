@@ -72,6 +72,8 @@ enum ErrorCodes
   EInvalidPresetDataSize,
   ENoPresets,
   EInvalidPresetIndex,
+  EInvalidGeneratorIndex,
+  EInvalidModulatorIndex,
   EDuplicatedSmplChunk,
   EDuplicatedSm24Chunk,
 
