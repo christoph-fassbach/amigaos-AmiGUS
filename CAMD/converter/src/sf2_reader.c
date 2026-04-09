@@ -205,7 +205,7 @@ static LONG ReadPresetHeaders( BPTR fileHandle,
 
   while ( 0 <= i ) {
 
-    struct SF2_Preset * preset;
+    struct SF2_Preset * preset = NULL;
     if ( 0 < i ) {
 
       preset = AllocVec( sizeof( struct SF2_Preset ), MEMF_ANY | MEMF_CLEAR );
@@ -347,6 +347,63 @@ static LONG ReadPresetBags( BPTR fileHandle,
                       previousZone );
   return result;
 }
+
+static LONG ReadPresetModulators( BPTR fileHandle,
+                                  LONG size,
+                                  struct MinList * target ) {
+
+  LONG i = 0;
+  struct SF2_Preset * preset;
+
+  FOR_LIST( target, preset, struct SF2_Preset * ) {
+
+    struct SF2_Zone * zone;
+    FOR_LIST( &( preset->sf2p_Zones ), zone, struct SF2_Zone * ) {
+
+      struct SF2_Modulator * modulator;
+      FOR_LIST( &( zone->sfz2_Modulators ),
+                modulator,
+                struct SF2_Modulator * ) {
+
+        UWORD temp;
+
+        size -= PMOD_CHUNK_SIZE_MULTIPLE;
+        if ( 0 > size ) {
+
+          return EInvalidPresetModulators;
+        }
+        ReadUWORD( fileHandle, &temp );
+        modulator->sf2m_Source = Swap16( temp );
+        ReadUWORD( fileHandle, &temp );
+        modulator->sf2m_Target = Swap16( temp );
+        ReadUWORD( fileHandle, &temp );
+        modulator->sf2m_Amount = Swap16( temp );
+        ReadUWORD( fileHandle, &temp );
+        modulator->sf2m_AmountSource = Swap16( temp );
+        ReadUWORD( fileHandle, &temp );
+        modulator->sf2m_Transform = Swap16( temp );
+
+        ++i;
+      }      
+    }
+  }
+  LOG_D(( "D: Read %ld modulators.\n", i ));
+
+  if ( size ) {
+
+    // This should be default!
+    Seek( fileHandle, PMOD_CHUNK_SIZE_MULTIPLE, OFFSET_CURRENT );
+    size -= PMOD_CHUNK_SIZE_MULTIPLE;
+  }
+
+  if ( size ) {
+
+    return EInvalidPresetModulators;
+  }
+
+  return ENoError;
+}
+
 
 static LONG ReadInfo( struct SF2_Parsed * sf2, ULONG size ) {
 
@@ -517,9 +574,6 @@ static LONG ReadPresetInfo( struct SF2_Parsed * sf2, ULONG size ) {
 
   LONG result;
   struct SF2_Chunk chunk;
-  union { ULONG id;
-          BYTE idAsString[ 8 ];
-        } chunkHelper;
 
   sf2->sf2_PresetsPosition = Seek( sf2->sf2_FileHandle, 0, OFFSET_CURRENT );
   sf2->sf2_PresetsSize = size;
@@ -542,8 +596,8 @@ static LONG ReadPresetInfo( struct SF2_Parsed * sf2, ULONG size ) {
 
     return result;
   }
+  LOG_D(( "D: After preset headers, preset size is %ld\n", size ));
 
-  LOG_D(( "D: After headers, preset size is %ld\n", size ));
   // Preset Bags
   result = ReadPresetSubChunk( sf2->sf2_FileHandle,
                                &( chunk ),
@@ -561,6 +615,27 @@ static LONG ReadPresetInfo( struct SF2_Parsed * sf2, ULONG size ) {
 
     return result;
   }
+  LOG_D(( "D: After preset bags, preset size is %ld\n", size ));
+
+  // Preset Modulators
+  result = ReadPresetSubChunk( sf2->sf2_FileHandle,
+                               &( chunk ),
+                               PMOD_CHUNK_ID,
+                               PMOD_CHUNK_SIZE_MULTIPLE,
+                               &( size ));
+  if ( result ) {
+
+    return result;
+  }
+  result = ReadPresetModulators( sf2->sf2_FileHandle,
+                                 chunk.size,
+                                 &( sf2->sf2_Presets ));
+  if ( result ) {
+
+    return result;
+  }
+  LOG_D(( "D: After preset modulators, preset size is %ld\n", size ));
+https://github.com/FluidSynth/fluidsynth/blob/master/src/sfloader/fluid_sffile.c#L1025
 
   LOG_D(( "D: Remaining preset size is %ld\n", size ));
   Seek( sf2->sf2_FileHandle, size, OFFSET_CURRENT );
