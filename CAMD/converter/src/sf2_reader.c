@@ -72,6 +72,72 @@
 #define CHUNK_SIZE_LIMIT_8bit    (   256 )
 #define CHUNK_SIZE_LIMIT_16bit   ( 65536 )
 
+/**
+ * Generator (effect) numbers (Soundfont 2.01 specifications section 8.1.3)
+ */
+enum SF2_Generator_Ids {
+    GEN_STARTADDROFS,       // Sample start address offset (0-32767)
+    GEN_ENDADDROFS,         // Sample end address offset (-32767-0)
+    GEN_STARTLOOPADDROFS,   // Sample loop start address offset (-32767-32767)
+    GEN_ENDLOOPADDROFS,     // Sample loop end address offset (-32767-32767)
+    GEN_STARTADDRCOARSEOFS, // Sample start address coarse offset (X 32768)
+    GEN_MODLFOTOPITCH,      // Modulation LFO to pitch
+    GEN_VIBLFOTOPITCH,      // Vibrato LFO to pitch
+    GEN_MODENVTOPITCH,      // Modulation envelope to pitch
+    GEN_FILTERFC,           // Filter cutoff
+    GEN_FILTERQ,            // Filter Q
+    GEN_MODLFOTOFILTERFC,   // Modulation LFO to filter cutoff
+    GEN_MODENVTOFILTERFC,   // Modulation envelope to filter cutoff
+    GEN_ENDADDRCOARSEOFS,   // Sample end address coarse offset (X 32768)
+    GEN_MODLFOTOVOL,        // Modulation LFO to volume
+    GEN_UNUSED1,            // Unused
+    GEN_CHORUSSEND,         // Chorus send amount
+    GEN_REVERBSEND,         // Reverb send amount
+    GEN_PAN,                // Stereo panning
+    GEN_UNUSED2,            // Unused
+    GEN_UNUSED3,            // Unused
+    GEN_UNUSED4,            // Unused
+    GEN_MODLFODELAY,        // Modulation LFO delay
+    GEN_MODLFOFREQ,         // Modulation LFO frequency
+    GEN_VIBLFODELAY,        // Vibrato LFO delay
+    GEN_VIBLFOFREQ,         // Vibrato LFO frequency
+    GEN_MODENVDELAY,        // Modulation envelope delay
+    GEN_MODENVATTACK,       // Modulation envelope attack
+    GEN_MODENVHOLD,         // Modulation envelope hold
+    GEN_MODENVDECAY,        // Modulation envelope decay
+    GEN_MODENVSUSTAIN,      // Modulation envelope sustain
+    GEN_MODENVRELEASE,      // Modulation envelope release
+    GEN_KEYTOMODENVHOLD,    // Key to modulation envelope hold
+    GEN_KEYTOMODENVDECAY,   // Key to modulation envelope decay
+    GEN_VOLENVDELAY,        // Volume envelope delay
+    GEN_VOLENVATTACK,       // Volume envelope attack
+    GEN_VOLENVHOLD,         // Volume envelope hold
+    GEN_VOLENVDECAY,        // Volume envelope decay
+    GEN_VOLENVSUSTAIN,      // Volume envelope sustain
+    GEN_VOLENVRELEASE,      // Volume envelope release
+    GEN_KEYTOVOLENVHOLD,    // Key to volume envelope hold
+    GEN_KEYTOVOLENVDECAY,   // Key to volume envelope decay
+    GEN_INSTRUMENT,         // Instrument ID (shouldn't be set by user)
+    GEN_RESERVED1,          // Reserved
+    GEN_KEYRANGE,           // MIDI note range
+    GEN_VELRANGE,           // MIDI velocity range
+    GEN_STARTLOOPCOARSE,    // Sample start loop address coarse offset (X 32768)
+    GEN_KEYNUM,             // Fixed MIDI note number
+    GEN_VELOCITY,           // Fixed MIDI velocity value
+    GEN_ATTENUATION,        // Initial volume attenuation
+    GEN_RESERVED2,          // Reserved
+    GEN_ENDLOOPCOARSE,      // Sample end loop address coarse offset (X 32768)
+    GEN_COARSETUNE,         // Coarse tuning
+    GEN_FINETUNE,           // Fine tuning
+    GEN_SAMPLEID,           // Sample ID (shouldn't be set by user)
+    GEN_SAMPLEMODE,         // Sample mode flags
+    GEN_RESERVED3,          // Reserved
+    GEN_SCALETUNE,          // Scale tuning
+    GEN_EXCLUSIVECLASS,     // Exclusive class number
+    GEN_OVERRIDEROOTKEY,    // Sample root note override
+    GEN_LAST                // Count of generators - not to be used or exceeded!
+};
+
 struct SF2_Chunk {
 
   ULONG id;
@@ -322,7 +388,6 @@ static LONG ReadPresetBags( BPTR fileHandle,
     struct SF2_Zone * zone;
     FOR_LIST( &( preset->sf2p_Zones ), zone, struct SF2_Zone * ) {
 
-      
       size -= PBAG_CHUNK_SIZE_MULTIPLE;
 
       result = ReadZone( fileHandle,
@@ -400,6 +465,290 @@ static LONG ReadPresetModulators( BPTR fileHandle,
 
     return EInvalidPresetModulators;
   }
+
+  return ENoError;
+}
+
+static BOOL IsValidInstrumentGeneratorId( UWORD id ) {
+
+  if ( GEN_OVERRIDEROOTKEY < id ) {
+
+    return FALSE;
+  }
+  switch ( id ) {
+    case GEN_UNUSED1:
+    case GEN_UNUSED2:
+    case GEN_UNUSED3:
+    case GEN_UNUSED4:
+    case GEN_RESERVED1:
+    case GEN_RESERVED2:
+    case GEN_RESERVED3:
+    case GEN_INSTRUMENT: {
+
+      return FALSE;
+    }
+    default: {
+
+      return TRUE;
+    }
+  }
+}
+
+static BOOL IsValidPresetGeneratorId( UWORD id ) {
+
+  if ( !( IsValidInstrumentGeneratorId( id ))) {
+
+    return FALSE;
+  }
+  switch ( id ) {
+    case GEN_STARTADDROFS:
+    case GEN_ENDADDROFS:
+    case GEN_STARTLOOPADDROFS:
+    case GEN_ENDLOOPADDROFS:
+    case GEN_STARTADDRCOARSEOFS:
+    case GEN_ENDADDRCOARSEOFS:
+    case GEN_STARTLOOPCOARSE:
+    case GEN_KEYNUM:
+    case GEN_VELOCITY:
+    case GEN_ENDLOOPCOARSE:
+    case GEN_SAMPLEMODE:
+    case GEN_EXCLUSIVECLASS:
+    case GEN_OVERRIDEROOTKEY:
+    case GEN_SAMPLEID: {
+
+      return FALSE;
+    }
+    default: {
+
+      return TRUE;
+    }
+  }
+}
+
+static struct SF2_Generator * FindGeneratorById( struct MinList * generators,
+                                                 const UWORD id ) {
+
+  struct SF2_Generator * generator;
+
+  FOR_LIST( generators, generator, struct SF2_Generator * ) {
+
+    if ( id == generator->sf2g_Id ) {
+
+      return generator;
+    }
+  }
+
+  return NULL;
+}
+
+static LONG ReadPresetGenerators( BPTR fileHandle,
+                                  LONG size,
+                                  struct MinList * target ) {
+
+  ULONG generatorCount = 0;
+  UWORD presetIndex = 0;
+  struct SF2_Preset * preset;
+
+  FOR_LIST( target, preset, struct SF2_Preset * ) {
+
+    UWORD zoneIndex = 0;
+    struct SF2_Zone * zone;
+
+    LOG_V(( "V: New Preset\n" ));
+    FOR_LIST( &( preset->sf2p_Zones ), zone, struct SF2_Zone * ) {
+
+      UWORD level = 0;
+      struct SF2_Generator * generator;
+
+      LOG_V(( "V: New Zone\n" ));
+      FOR_LIST( &( zone->sfz2_Generators ),
+                generator,
+                struct SF2_Generator * ) {
+
+        UWORD temp;
+
+        size -= PGEN_CHUNK_SIZE_MULTIPLE;
+        if ( 0 > size ) {
+
+          return EInvalidPresetGenerators;
+        }
+
+        ReadUWORD( fileHandle, &temp );
+        generator->sf2g_Id = Swap16( temp );
+        LOG_V(( "V: New generator with ID 0x%04lx - swapped 0x%04lx = %ld\n",
+                temp, generator->sf2g_Id, generator->sf2g_Id ));
+        ReadUWORD( fileHandle, &temp );
+        generator->sf2g_Amount = temp;
+
+        ++generatorCount;
+
+        switch ( generator->sf2g_Id ) {
+          case GEN_KEYRANGE: {
+
+            LOG_V(( "V: Handling key range generator.\n" ));
+
+            if ( 0 == level ) {
+
+              level = 1;
+
+            } else {
+
+              LOG_I(( "I: Discarding out of order KeyRange "
+                      "in preset %ld-%ld / %s of zone %d\n",
+                      preset->sf2p_Bank,
+                      preset->sf2p_Number,
+                      preset->sf2p_Name,
+                      zoneIndex ));
+              Remove(( struct Node * ) generator );
+              // TODO: fix memory leak here and at all Removes in this function!
+            }
+            break;
+          }
+          case GEN_VELRANGE: {
+
+            LOG_V(( "V: Handling velocity range generator.\n" ));
+            if ( 1 >= level ) {
+
+              level = 2;
+            
+            } else {
+
+              LOG_I(( "I: Discarding out of order VelRange "
+                      "in preset %ld-%ld / %s of zone %d\n",
+                      preset->sf2p_Bank,
+                      preset->sf2p_Number,
+                      preset->sf2p_Name,
+                      zoneIndex ));
+              Remove(( struct Node * ) generator );
+              // TODO: fix memory leak here and at all Removes in this function!
+            }
+            break;
+          }
+          case GEN_INSTRUMENT: {
+
+            LOG_V(( "V: Handling instrument generator.\n" ));
+            level = 3;
+            break;
+          }
+          default: {
+
+            LOG_V(( "V: Handling other generator.\n" ));
+            if ( IsValidPresetGeneratorId( generator->sf2g_Id )) {
+
+              struct SF2_Generator * duplicate = FindGeneratorById(
+                &( zone->sfz2_Generators ),
+                generator->sf2g_Id );
+              if ( duplicate != generator ) {
+
+                LOG_I(( "I: Duplicate generator 0x%08lx-%ld overwriting 0x%08lx-%ld in preset "
+                        "%ld-%ld / %s of zone %d, only latest kept\n",
+                        duplicate, 
+                        duplicate->sf2g_Id,
+                        generator,
+                        generator->sf2g_Id,
+                        preset->sf2p_Bank,
+                        preset->sf2p_Number,
+                        preset->sf2p_Name,
+                        zoneIndex ));
+                duplicate->sf2g_Id = generator->sf2g_Id;
+                duplicate->sf2g_Amount = generator->sf2g_Amount;
+                Remove(( struct Node * ) generator );
+                // TODO: fix memory leak here and at all Removes in this function!
+              }
+
+            } else {
+
+              LOG_I(( "I: Discarding generator %ld in preset %ld-%ld / %s of "
+                      "zone %d for unusable ID\n",
+                      generator->sf2g_Id,
+                      preset->sf2p_Bank,
+                      preset->sf2p_Number,
+                      preset->sf2p_Name,
+                      zoneIndex ));
+              Remove(( struct Node * ) generator );
+              // TODO: fix memory leak here and at all Removes in this function!
+            }
+            break;
+          }
+        }
+
+        if ( 3 == level ) {
+
+          generator = ( struct SF2_Generator * ) generator->sf2g_Node.mln_Succ;
+          if ( generator->sf2g_Node.mln_Succ ) {
+
+            LOG_W(( "W: Last level reached, some remaining, "
+                    "maybe an issue, will clean up later.\n" ));
+          }
+          // End parsing generators for this zone,
+          // remaining will be scrapped below!
+          break;
+        }
+      }
+
+      if (( 3 > level) &&
+          ( zone != ( struct SF2_Zone * ) preset->sf2p_Zones.mlh_Head )) {
+
+        LOG_W(( "W: Discarding zone as global zone not appearing first!\n" ));
+        // TODO: fix memory leak here and at all Removes in this function!
+        Remove(( struct Node * ) zone );
+        continue;
+      }
+
+      while ( generator->sf2g_Node.mln_Succ ) {
+
+        Remove(( struct Node * ) generator );
+        // TODO: fix memory leak here and at all Removes in this function!
+
+        size -= PGEN_CHUNK_SIZE_MULTIPLE;
+        if ( 0 > size ) {
+
+          return EInvalidPresetGenerators;
+        }
+        Seek( fileHandle, PGEN_CHUNK_SIZE_MULTIPLE, OFFSET_CURRENT );
+
+        if ( generator->sf2g_Id ) {
+
+          LOG_W(( "W: Discarding generator %ld in preset %ld-%ld / %s of "
+                  "zone %d after sample ID\n",
+                  generator->sf2g_Id,
+                  preset->sf2p_Bank,
+                  preset->sf2p_Number,
+                  preset->sf2p_Name,
+                  zoneIndex ));
+
+        } else {
+
+          LOG_D(( "V: Discarding empty generator %ld in preset %ld-%ld / %s of "
+                  "zone %d after sample ID\n",
+                  generator->sf2g_Id,
+                  preset->sf2p_Bank,
+                  preset->sf2p_Number,
+                  preset->sf2p_Name,
+                  zoneIndex ));
+        }
+
+        generator = ( struct SF2_Generator * ) generator->sf2g_Node.mln_Succ;
+      }
+      // https://github.com/FluidSynth/fluidsynth/blob/master/src/sfloader/fluid_sffile.c#L1588
+
+      ++zoneIndex;
+    }
+
+    ++presetIndex;
+  }
+  if ( !size ) {
+  
+    return ENoError;
+  }
+  size -= PGEN_CHUNK_SIZE_MULTIPLE;
+  if ( size ) {
+
+    return EInvalidPresetGenerators;
+  }
+  Seek( fileHandle, PGEN_CHUNK_SIZE_MULTIPLE, OFFSET_CURRENT );
+
+  LOG_D(( "D: Read %ld generators.\n", generatorCount ));
 
   return ENoError;
 }
@@ -635,6 +984,25 @@ static LONG ReadPresetInfo( struct SF2_Parsed * sf2, ULONG size ) {
     return result;
   }
   LOG_D(( "D: After preset modulators, preset size is %ld\n", size ));
+
+  // Preset Generators
+  result = ReadPresetSubChunk( sf2->sf2_FileHandle,
+                               &( chunk ),
+                               PGEN_CHUNK_ID,
+                               PGEN_CHUNK_SIZE_MULTIPLE,
+                               &( size ));
+  if ( result ) {
+
+    return result;
+  }
+  result = ReadPresetGenerators( sf2->sf2_FileHandle,
+                                 chunk.size,
+                                 &( sf2->sf2_Presets ));
+  if ( result ) {
+
+    return result;
+  }
+  LOG_D(( "D: After preset generators, preset size is %ld\n", size ));
 https://github.com/FluidSynth/fluidsynth/blob/master/src/sfloader/fluid_sffile.c#L1025
 
   LOG_D(( "D: Remaining preset size is %ld\n", size ));

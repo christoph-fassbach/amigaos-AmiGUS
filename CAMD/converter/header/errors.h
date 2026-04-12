@@ -76,6 +76,7 @@ enum ErrorCodes
   EInvalidModulatorIndex,
   EInvalidPresetBags,
   EInvalidPresetModulators,
+  EInvalidPresetGenerators,
   EDuplicatedSmplChunk,
   EDuplicatedSm24Chunk,
 
