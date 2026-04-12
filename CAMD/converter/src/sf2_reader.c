@@ -68,6 +68,9 @@
 #define PMOD_CHUNK_SIZE_MULTIPLE (    10 )
 #define PGEN_CHUNK_SIZE_MULTIPLE (     4 )
 #define IHDR_CHUNK_SIZE_MULTIPLE (    22 )
+#define IBAG_CHUNK_SIZE_MULTIPLE (     4 )
+#define IMOD_CHUNK_SIZE_MULTIPLE (    10 )
+#define IGEN_CHUNK_SIZE_MULTIPLE (     4 )
 #define SHDR_CHUNK_SIZE_MULTIPLE (    46 )
 #define CHUNK_SIZE_LIMIT_8bit    (   256 )
 #define CHUNK_SIZE_LIMIT_16bit   ( 65536 )
@@ -730,7 +733,6 @@ static LONG ReadPresetGenerators( BPTR fileHandle,
 
         generator = ( struct SF2_Generator * ) generator->sf2g_Node.mln_Succ;
       }
-      // https://github.com/FluidSynth/fluidsynth/blob/master/src/sfloader/fluid_sffile.c#L1588
 
       ++zoneIndex;
     }
@@ -750,6 +752,42 @@ static LONG ReadPresetGenerators( BPTR fileHandle,
 
   LOG_D(( "D: Read %ld generators.\n", generatorCount ));
 
+  return ENoError;
+}
+
+static LONG ReadInstrumentHeaders( BPTR fileHandle,
+                                   LONG size,
+                                   struct MinList * target ) {
+
+  // TODO: https://github.com/FluidSynth/fluidsynth/blob/master/src/sfloader/fluid_sffile.c#L1649
+  Seek( fileHandle, size, OFFSET_CURRENT );
+  return ENoError;
+}
+
+static LONG ReadInstrumentBags( BPTR fileHandle,
+                                LONG size,
+                                struct MinList * target ) {
+
+  // TODO: https://github.com/FluidSynth/fluidsynth/blob/master/src/sfloader/fluid_sffile.c#L1732
+  Seek( fileHandle, size, OFFSET_CURRENT );
+  return ENoError;
+}
+
+static LONG ReadInstrumentModulators( BPTR fileHandle,
+                                      LONG size,
+                                      struct MinList * target ) {
+
+  // TODO: https://github.com/FluidSynth/fluidsynth/blob/master/src/sfloader/fluid_sffile.c#L1870
+  Seek( fileHandle, size, OFFSET_CURRENT );
+  return ENoError;
+}
+
+static LONG ReadInstrumentGenerators( BPTR fileHandle,
+                                      LONG size,
+                                      struct MinList * target ) {
+
+  // TODO: https://github.com/FluidSynth/fluidsynth/blob/master/src/sfloader/fluid_sffile.c#L1942
+  Seek( fileHandle, size, OFFSET_CURRENT );
   return ENoError;
 }
 
@@ -1002,7 +1040,84 @@ static LONG ReadPresetInfo( struct SF2_Parsed * sf2, ULONG size ) {
     return result;
   }
   LOG_D(( "D: After preset generators, preset size is %ld\n", size ));
-https://github.com/FluidSynth/fluidsynth/blob/master/src/sfloader/fluid_sffile.c#L1025
+
+  // Instrument Headers
+  result = ReadPresetSubChunk( sf2->sf2_FileHandle,
+                               &( chunk ),
+                               IHDR_CHUNK_ID,
+                               IHDR_CHUNK_SIZE_MULTIPLE,
+                               &( size ));
+  if ( result ) {
+
+    return result;
+  }
+  result = ReadInstrumentHeaders( sf2->sf2_FileHandle,
+                                  chunk.size,
+                                  &( sf2->sf2_Presets ));
+  if ( result ) {
+
+    return result;
+  }
+  LOG_D(( "D: After instrument headers, preset size is %ld\n", size ));
+
+  // Instrument Bags
+  result = ReadPresetSubChunk( sf2->sf2_FileHandle,
+                               &( chunk ),
+                               IBAG_CHUNK_ID,
+                               IBAG_CHUNK_SIZE_MULTIPLE,
+                               &( size ));
+  if ( result ) {
+
+    return result;
+  }
+  result = ReadInstrumentBags( sf2->sf2_FileHandle,
+                               chunk.size,
+                               &( sf2->sf2_Presets ));
+  if ( result ) {
+
+    return result;
+  }
+  LOG_D(( "D: After instrument bags, preset size is %ld\n", size ));
+
+  // Instrument Modulators
+  result = ReadPresetSubChunk( sf2->sf2_FileHandle,
+                               &( chunk ),
+                               IMOD_CHUNK_ID,
+                               IMOD_CHUNK_SIZE_MULTIPLE,
+                               &( size ));
+  if ( result ) {
+
+    return result;
+  }
+  result = ReadInstrumentModulators( sf2->sf2_FileHandle,
+                                     chunk.size,
+                                     &( sf2->sf2_Presets ));
+  if ( result ) {
+
+    return result;
+  }
+  LOG_D(( "D: After instrument modulators, preset size is %ld\n", size ));
+
+  // Instrument Generators
+  result = ReadPresetSubChunk( sf2->sf2_FileHandle,
+                               &( chunk ),
+                               IGEN_CHUNK_ID,
+                               IGEN_CHUNK_SIZE_MULTIPLE,
+                               &( size ));
+  if ( result ) {
+
+    return result;
+  }
+  result = ReadInstrumentGenerators( sf2->sf2_FileHandle,
+                                     chunk.size,
+                                     &( sf2->sf2_Presets ));
+  if ( result ) {
+
+    return result;
+  }
+  LOG_D(( "D: After instrument generators, preset size is %ld\n", size ));
+
+  // TODO Load Sample headers here, finally
 
   LOG_D(( "D: Remaining preset size is %ld\n", size ));
   Seek( sf2->sf2_FileHandle, size, OFFSET_CURRENT );
