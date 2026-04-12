@@ -753,7 +753,6 @@ static LONG ReadPresetGenerators( BPTR fileHandle,
   return ENoError;
 }
 
-
 static LONG ReadInfo( struct SF2_Parsed * sf2, ULONG size ) {
 
   LONG result;

@@ -110,7 +110,10 @@ LONG SendAmigusMessage( struct Message * message ) {
     request.es_StructSize = sizeof( struct EasyStruct );
     request.es_Flags = 0;
     request.es_Title = "Error";
-    request.es_TextFormat = "Could not reach AmiGUS CAMD Port.";
+    request.es_TextFormat = "Could not reach AmiGUS CAMD Port.\n"
+                            "Shall I retry and open AmiGUS CAMD for that?\n"
+                            "This will prevent using another applications,\n"
+                            "e.g. CAMDkeyboard, for testing the outcomes...";
     request.es_GadgetFormat = "Retry|Cancel";
 
     result = EasyRequest( SF_Converter_Base->sfc_MainWindow, &request, NULL );
