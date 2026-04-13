@@ -19,7 +19,6 @@
 #ifndef SF2_READER_H
 #define SF2_READER_H
 
-#include <exec/types.h>
 #include <exec/lists.h>
 
 struct SF2_Modulator {
@@ -46,13 +45,28 @@ struct SF2_Zone {
   struct MinList sfz2_Modulators;
 };
 
+struct SF2_Common {
+
+  struct MinNode sf2c_Node;
+  struct MinList sf2c_Zones;
+};
+
 struct SF2_Preset {
 
-  struct MinNode sf2p_Node;
+  struct SF2_Common sf2p_Common;
   UWORD sf2p_Bank;
   UWORD sf2p_Number;
   UBYTE sf2p_Name[21];
-  struct MinList sf2p_Zones;
+  UBYTE sf2p_Padding0;
+  UWORD sf2p_Padding1;
+};
+
+struct SF2_Instrument {
+
+  struct SF2_Common sf2i_Common;
+  UWORD sf2i_Number;
+  UBYTE sf2i_Name[21];
+  UBYTE sf2i_Padding0;
 };
 
 struct SF2_Parsed {

@@ -77,6 +77,9 @@ enum ErrorCodes
   EInvalidPresetBags,
   EInvalidPresetModulators,
   EInvalidPresetGenerators,
+  EInvalidInstrumentDataSize,
+  ENoInstruments,
+  EInvalidInstrumentIndex,
   EDuplicatedSmplChunk,
   EDuplicatedSm24Chunk,
 

@@ -22,6 +22,7 @@
 #include <proto/exec.h>
 
 #include "sf2_reader.h"
+#include "amisf.h"
 
 #include "converter.h"
 #include "debug.h"
@@ -278,8 +279,8 @@ static LONG ReadPresetHeaders( BPTR fileHandle,
     if ( 0 < i ) {
 
       preset = AllocVec( sizeof( struct SF2_Preset ), MEMF_ANY | MEMF_CLEAR );
-      NEW_LIST( &( preset->sf2p_Zones ));
-      ADD_TAIL( target, &( preset->sf2p_Node ));
+      NEW_LIST( &( preset->sf2p_Common.sf2c_Zones ));
+      ADD_TAIL( target, &( preset->sf2p_Common.sf2c_Node ));
       ReadString( fileHandle, preset->sf2p_Name );
       ReadUWORD( fileHandle, &( temp ));
       preset->sf2p_Number = Swap16( temp );
@@ -308,7 +309,7 @@ static LONG ReadPresetHeaders( BPTR fileHandle,
                                              MEMF_ANY | MEMF_CLEAR );
           NEW_LIST( &( zone->sfz2_Generators ));
           NEW_LIST( &( zone->sfz2_Modulators ));
-          ADD_TAIL( &( previousPreset->sf2p_Zones ), zone );
+          ADD_TAIL( &( previousPreset->sf2p_Common.sf2c_Zones ), zone );
           --h;
         }
       } else {
@@ -389,7 +390,7 @@ static LONG ReadPresetBags( BPTR fileHandle,
   FOR_LIST( target, preset, struct SF2_Preset * ) {
 
     struct SF2_Zone * zone;
-    FOR_LIST( &( preset->sf2p_Zones ), zone, struct SF2_Zone * ) {
+    FOR_LIST( &( preset->sf2p_Common.sf2c_Zones ), zone, struct SF2_Zone * ) {
 
       size -= PBAG_CHUNK_SIZE_MULTIPLE;
 
@@ -426,7 +427,7 @@ static LONG ReadPresetModulators( BPTR fileHandle,
   FOR_LIST( target, preset, struct SF2_Preset * ) {
 
     struct SF2_Zone * zone;
-    FOR_LIST( &( preset->sf2p_Zones ), zone, struct SF2_Zone * ) {
+    FOR_LIST( &( preset->sf2p_Common.sf2c_Zones ), zone, struct SF2_Zone * ) {
 
       struct SF2_Modulator * modulator;
       FOR_LIST( &( zone->sfz2_Modulators ),
@@ -558,7 +559,7 @@ static LONG ReadPresetGenerators( BPTR fileHandle,
     struct SF2_Zone * zone;
 
     LOG_V(( "V: New Preset\n" ));
-    FOR_LIST( &( preset->sf2p_Zones ), zone, struct SF2_Zone * ) {
+    FOR_LIST( &( preset->sf2p_Common.sf2c_Zones ), zone, struct SF2_Zone * ) {
 
       UWORD level = 0;
       struct SF2_Generator * generator;
@@ -690,7 +691,7 @@ static LONG ReadPresetGenerators( BPTR fileHandle,
       }
 
       if (( 3 > level) &&
-          ( zone != ( struct SF2_Zone * ) preset->sf2p_Zones.mlh_Head )) {
+          ( zone != ( struct SF2_Zone * ) preset->sf2p_Common.sf2c_Zones.mlh_Head )) {
 
         LOG_W(( "W: Discarding zone as global zone not appearing first!\n" ));
         // TODO: fix memory leak here and at all Removes in this function!
@@ -759,8 +760,73 @@ static LONG ReadInstrumentHeaders( BPTR fileHandle,
                                    LONG size,
                                    struct MinList * target ) {
 
-  // TODO: https://github.com/FluidSynth/fluidsynth/blob/master/src/sfloader/fluid_sffile.c#L1649
-  Seek( fileHandle, size, OFFSET_CURRENT );
+  LONG i;
+  UWORD temp;
+  UWORD index;
+  UWORD previousIndex = 0;
+  struct SF2_Instrument * previousInstrument = NULL;
+
+  if (( !( size )) || ( size % IHDR_CHUNK_SIZE_MULTIPLE )) {
+
+    return EInvalidInstrumentDataSize;
+  }
+
+  i = ( size / IHDR_CHUNK_SIZE_MULTIPLE ) - 1;
+  if ( 0 >= i ) {
+
+    return ENoInstruments;
+  }
+  LOG_D(( "D: Found %ld ionstruments in %ld.\n", i + 1, size ));
+
+  while ( 0 <= i ) {
+
+    struct SF2_Instrument * instrument = NULL;
+    if ( 0 < i ) {
+
+      instrument = AllocVec( sizeof( struct SF2_Instrument ),
+                             MEMF_ANY | MEMF_CLEAR );
+      NEW_LIST( &( instrument->sf2i_Common.sf2c_Zones ));
+      ADD_TAIL( target, &( instrument->sf2i_Common.sf2c_Node ));
+      ReadString( fileHandle, instrument->sf2i_Name );
+
+    } else {
+
+      Seek( fileHandle, IHDR_CHUNK_SIZE_MULTIPLE - 2, OFFSET_CURRENT );
+    }
+    ReadUWORD( fileHandle, &( temp ));
+    index = Swap16( temp );
+    
+    if ( previousInstrument ) {
+
+      // So >1st instrument
+      if ( index > previousIndex ) {
+
+        LONG h = index - previousIndex;
+        LOG_V(( "V: Adding %ld zones to instrument %ld\n",
+                h, ( size / IHDR_CHUNK_SIZE_MULTIPLE ) - 1 - i ));
+        while ( h ) {
+
+          struct SF2_Zone * zone = AllocVec( sizeof( struct SF2_Zone ),
+                                             MEMF_ANY | MEMF_CLEAR );
+          NEW_LIST( &( zone->sfz2_Generators ));
+          NEW_LIST( &( zone->sfz2_Modulators ));
+          ADD_TAIL( &( previousInstrument->sf2i_Common.sf2c_Zones ), zone );
+          previousInstrument->sf2i_Number = previousIndex;
+          --h;
+        }
+      } else {
+
+        return EInvalidInstrumentIndex;
+      }
+    } else if ( index > 0 ) {
+      LOG_W(( "W: %ld instrument zones unused!\n" ));
+    }
+
+    previousInstrument = instrument;
+    previousIndex = index;
+    --i;
+  }
+
   return ENoError;
 }
 
@@ -1053,7 +1119,7 @@ static LONG ReadPresetInfo( struct SF2_Parsed * sf2, ULONG size ) {
   }
   result = ReadInstrumentHeaders( sf2->sf2_FileHandle,
                                   chunk.size,
-                                  &( sf2->sf2_Presets ));
+                                  &( sf2->sf2_Instruments ));
   if ( result ) {
 
     return result;
@@ -1250,7 +1316,12 @@ struct SF2_Parsed * AllocSf2FromFile( STRPTR filePath ) {
     Close( sf2->sf2_FileHandle );
     return NULL;
   }
+/*
+  LOG_D(( "D: %ld is das gross\n",
+sizeof( struct AmiSF_Data ) + ( 127 * ( sizeof( struct AmiSF_Note ) << 7 ))
 
+));
+*/
   Close( sf2->sf2_FileHandle );
   return NULL;
 }
