@@ -65,13 +65,10 @@
 
 /* SF2 well known chunk size multiples and sizes */
 #define PHDR_CHUNK_SIZE_MULTIPLE (    38 )
-#define PBAG_CHUNK_SIZE_MULTIPLE (     4 )
-#define PMOD_CHUNK_SIZE_MULTIPLE (    10 )
-#define PGEN_CHUNK_SIZE_MULTIPLE (     4 )
+#define  BAG_CHUNK_SIZE_MULTIPLE (     4 )
+#define  MOD_CHUNK_SIZE_MULTIPLE (    10 )
+#define  GEN_CHUNK_SIZE_MULTIPLE (     4 )
 #define IHDR_CHUNK_SIZE_MULTIPLE (    22 )
-#define IBAG_CHUNK_SIZE_MULTIPLE (     4 )
-#define IMOD_CHUNK_SIZE_MULTIPLE (    10 )
-#define IGEN_CHUNK_SIZE_MULTIPLE (     4 )
 #define SHDR_CHUNK_SIZE_MULTIPLE (    46 )
 #define CHUNK_SIZE_LIMIT_8bit    (   256 )
 #define CHUNK_SIZE_LIMIT_16bit   ( 65536 )
@@ -177,6 +174,15 @@ static LONG ReadString( BPTR fileHandle, UBYTE * target ) {
   return FRead( fileHandle, target, sizeof( UBYTE ), 20 );
 }
 
+static WORD GetBankFromCommon( struct SF2_Common * common ) {
+
+  if ( SF2_COMMON_PRESET_TYPE != common->sf2c_Type ) {
+
+    return -1;
+  }
+
+  return ( WORD )(( struct SF2_Preset * ) common )->sf2p_Bank;
+}
 
 static LONG ReadChunk( BPTR fileHandle, struct SF2_Chunk * target ) {
 
@@ -279,11 +285,12 @@ static LONG ReadPresetHeaders( BPTR fileHandle,
     if ( 0 < i ) {
 
       preset = AllocVec( sizeof( struct SF2_Preset ), MEMF_ANY | MEMF_CLEAR );
+      preset->sf2p_Common.sf2c_Type = SF2_COMMON_PRESET_TYPE;
       NEW_LIST( &( preset->sf2p_Common.sf2c_Zones ));
       ADD_TAIL( target, &( preset->sf2p_Common.sf2c_Node ));
-      ReadString( fileHandle, preset->sf2p_Name );
+      ReadString( fileHandle, preset->sf2p_Common.sf2c_Name );
       ReadUWORD( fileHandle, &( temp ));
-      preset->sf2p_Number = Swap16( temp );
+      preset->sf2p_Common.sf2c_Number = Swap16( temp );
       ReadUWORD( fileHandle, &( temp ));
       preset->sf2p_Bank = Swap16( temp );
 
@@ -377,22 +384,22 @@ static LONG ReadZone( BPTR fileHandle,
   return ENoError;
 }
 
-static LONG ReadPresetBags( BPTR fileHandle,
-                            LONG size,
-                            struct MinList * target ) {
+static LONG ReadBags( BPTR fileHandle,
+                      LONG size,
+                      struct MinList * target ) {
 
   LONG result;
-  struct SF2_Preset * preset;
+  struct SF2_Common * common;
   struct SF2_Zone * previousZone = NULL;
   UWORD previousGeneratorIndex = 0;
   UWORD previousModulatorIndex = 0;
 
-  FOR_LIST( target, preset, struct SF2_Preset * ) {
+  FOR_LIST( target, common, struct SF2_Common * ) {
 
     struct SF2_Zone * zone;
-    FOR_LIST( &( preset->sf2p_Common.sf2c_Zones ), zone, struct SF2_Zone * ) {
+    FOR_LIST( &( common->sf2c_Zones ), zone, struct SF2_Zone * ) {
 
-      size -= PBAG_CHUNK_SIZE_MULTIPLE;
+      size -= BAG_CHUNK_SIZE_MULTIPLE;
 
       result = ReadZone( fileHandle,
                          &previousGeneratorIndex,
@@ -406,9 +413,9 @@ static LONG ReadPresetBags( BPTR fileHandle,
       previousZone = zone;
     }
   }
-  if ( PBAG_CHUNK_SIZE_MULTIPLE != size ) {
+  if ( BAG_CHUNK_SIZE_MULTIPLE != size ) {
 
-    return EInvalidPresetBags;
+    return EInvalidBags;
   }
   result = ReadZone( fileHandle,
                       &previousGeneratorIndex,
@@ -417,17 +424,17 @@ static LONG ReadPresetBags( BPTR fileHandle,
   return result;
 }
 
-static LONG ReadPresetModulators( BPTR fileHandle,
-                                  LONG size,
-                                  struct MinList * target ) {
+static LONG ReadModulators( BPTR fileHandle,
+                            LONG size,
+                            struct MinList * target ) {
 
   LONG i = 0;
-  struct SF2_Preset * preset;
+  struct SF2_Common * common;
 
-  FOR_LIST( target, preset, struct SF2_Preset * ) {
+  FOR_LIST( target, common, struct SF2_Common * ) {
 
     struct SF2_Zone * zone;
-    FOR_LIST( &( preset->sf2p_Common.sf2c_Zones ), zone, struct SF2_Zone * ) {
+    FOR_LIST( &( common->sf2c_Zones ), zone, struct SF2_Zone * ) {
 
       struct SF2_Modulator * modulator;
       FOR_LIST( &( zone->sfz2_Modulators ),
@@ -436,10 +443,10 @@ static LONG ReadPresetModulators( BPTR fileHandle,
 
         UWORD temp;
 
-        size -= PMOD_CHUNK_SIZE_MULTIPLE;
+        size -= MOD_CHUNK_SIZE_MULTIPLE;
         if ( 0 > size ) {
 
-          return EInvalidPresetModulators;
+          return EInvalidModulators;
         }
         ReadUWORD( fileHandle, &temp );
         modulator->sf2m_Source = Swap16( temp );
@@ -461,13 +468,13 @@ static LONG ReadPresetModulators( BPTR fileHandle,
   if ( size ) {
 
     // This should be default!
-    Seek( fileHandle, PMOD_CHUNK_SIZE_MULTIPLE, OFFSET_CURRENT );
-    size -= PMOD_CHUNK_SIZE_MULTIPLE;
+    Seek( fileHandle, MOD_CHUNK_SIZE_MULTIPLE, OFFSET_CURRENT );
+    size -= MOD_CHUNK_SIZE_MULTIPLE;
   }
 
   if ( size ) {
 
-    return EInvalidPresetModulators;
+    return EInvalidModulators;
   }
 
   return ENoError;
@@ -545,21 +552,21 @@ static struct SF2_Generator * FindGeneratorById( struct MinList * generators,
   return NULL;
 }
 
-static LONG ReadPresetGenerators( BPTR fileHandle,
-                                  LONG size,
-                                  struct MinList * target ) {
+static LONG ReadGenerators( BPTR fileHandle,
+                            LONG size,
+                            struct MinList * target ) {
 
   ULONG generatorCount = 0;
   UWORD presetIndex = 0;
-  struct SF2_Preset * preset;
+  struct SF2_Common * common;
 
-  FOR_LIST( target, preset, struct SF2_Preset * ) {
+  FOR_LIST( target, common, struct SF2_Common * ) {
 
     UWORD zoneIndex = 0;
     struct SF2_Zone * zone;
 
-    LOG_V(( "V: New Preset\n" ));
-    FOR_LIST( &( preset->sf2p_Common.sf2c_Zones ), zone, struct SF2_Zone * ) {
+    LOG_V(( "V: Next Common\n" ));
+    FOR_LIST( &( common->sf2c_Zones ), zone, struct SF2_Zone * ) {
 
       UWORD level = 0;
       struct SF2_Generator * generator;
@@ -571,10 +578,10 @@ static LONG ReadPresetGenerators( BPTR fileHandle,
 
         UWORD temp;
 
-        size -= PGEN_CHUNK_SIZE_MULTIPLE;
+        size -= GEN_CHUNK_SIZE_MULTIPLE;
         if ( 0 > size ) {
 
-          return EInvalidPresetGenerators;
+          return EInvalidGenerators;
         }
 
         ReadUWORD( fileHandle, &temp );
@@ -598,10 +605,10 @@ static LONG ReadPresetGenerators( BPTR fileHandle,
             } else {
 
               LOG_I(( "I: Discarding out of order KeyRange "
-                      "in preset %ld-%ld / %s of zone %d\n",
-                      preset->sf2p_Bank,
-                      preset->sf2p_Number,
-                      preset->sf2p_Name,
+                      "in Common %ld-%ld / %s of zone %d\n",
+                      GetBankFromCommon( common ),
+                      common->sf2c_Number,
+                      common->sf2c_Name,
                       zoneIndex ));
               Remove(( struct Node * ) generator );
               // TODO: fix memory leak here and at all Removes in this function!
@@ -618,10 +625,10 @@ static LONG ReadPresetGenerators( BPTR fileHandle,
             } else {
 
               LOG_I(( "I: Discarding out of order VelRange "
-                      "in preset %ld-%ld / %s of zone %d\n",
-                      preset->sf2p_Bank,
-                      preset->sf2p_Number,
-                      preset->sf2p_Name,
+                      "in Common %ld-%ld / %s of zone %d\n",
+                      GetBankFromCommon( common ),
+                      common->sf2c_Number,
+                      common->sf2c_Name,
                       zoneIndex ));
               Remove(( struct Node * ) generator );
               // TODO: fix memory leak here and at all Removes in this function!
@@ -631,28 +638,68 @@ static LONG ReadPresetGenerators( BPTR fileHandle,
           case GEN_INSTRUMENT: {
 
             LOG_V(( "V: Handling instrument generator.\n" ));
-            level = 3;
+            if ( SF2_COMMON_PRESET_TYPE == common->sf2c_Type ) {
+
+              level = 3;
+
+            } else {
+
+              LOG_W(( "W: Only Presets shall have instruments!\n" ));
+              LOG_I(( "I: Discarding generator %ld in %ld-%ld / %s of "
+                      "zone %d for unusable ID\n",
+                      generator->sf2g_Id,
+                      GetBankFromCommon( common ),
+                      common->sf2c_Number,
+                      common->sf2c_Name,
+                      zoneIndex ));
+              Remove(( struct Node * ) generator );
+            }
+            break;
+          }
+          case GEN_SAMPLEID: {
+
+            LOG_V(( "V: Handling sample generator.\n" ));
+            if ( SF2_COMMON_INSTRUMENT_TYPE == common->sf2c_Type ) {
+
+              level = 3;
+
+            } else {
+
+              LOG_W(( "W: Only Instruments shall have samples!\n" ));
+              LOG_I(( "I: Discarding generator %ld in %ld-%ld / %s of "
+                      "zone %d for unusable ID\n",
+                      generator->sf2g_Id,
+                      GetBankFromCommon( common ),
+                      common->sf2c_Number,
+                      common->sf2c_Name,
+                      zoneIndex ));
+              Remove(( struct Node * ) generator );
+            }
             break;
           }
           default: {
 
             LOG_V(( "V: Handling other generator.\n" ));
-            if ( IsValidPresetGeneratorId( generator->sf2g_Id )) {
+            if ((( SF2_COMMON_PRESET_TYPE == common->sf2c_Type ) &&
+                 ( IsValidPresetGeneratorId( generator->sf2g_Id )))
+              || (( SF2_COMMON_INSTRUMENT_TYPE == common->sf2c_Type ) &&
+                  ( IsValidInstrumentGeneratorId( generator->sf2g_Id )))) {
 
               struct SF2_Generator * duplicate = FindGeneratorById(
                 &( zone->sfz2_Generators ),
                 generator->sf2g_Id );
               if ( duplicate != generator ) {
 
-                LOG_I(( "I: Duplicate generator 0x%08lx-%ld overwriting 0x%08lx-%ld in preset "
-                        "%ld-%ld / %s of zone %d, only latest kept\n",
+                LOG_I(( "I: Duplicate generator 0x%08lx-%ld overwriting "
+                        "0x%08lx-%ld in preset %ld-%ld / %s of zone %d, "
+                        "only latest kept\n",
                         duplicate, 
                         duplicate->sf2g_Id,
                         generator,
                         generator->sf2g_Id,
-                        preset->sf2p_Bank,
-                        preset->sf2p_Number,
-                        preset->sf2p_Name,
+                        GetBankFromCommon( common ),
+                        common->sf2c_Number,
+                        common->sf2c_Name,
                         zoneIndex ));
                 duplicate->sf2g_Id = generator->sf2g_Id;
                 duplicate->sf2g_Amount = generator->sf2g_Amount;
@@ -665,9 +712,9 @@ static LONG ReadPresetGenerators( BPTR fileHandle,
               LOG_I(( "I: Discarding generator %ld in preset %ld-%ld / %s of "
                       "zone %d for unusable ID\n",
                       generator->sf2g_Id,
-                      preset->sf2p_Bank,
-                      preset->sf2p_Number,
-                      preset->sf2p_Name,
+                      GetBankFromCommon( common ),
+                      common->sf2c_Number,
+                      common->sf2c_Name,
                       zoneIndex ));
               Remove(( struct Node * ) generator );
               // TODO: fix memory leak here and at all Removes in this function!
@@ -691,7 +738,7 @@ static LONG ReadPresetGenerators( BPTR fileHandle,
       }
 
       if (( 3 > level) &&
-          ( zone != ( struct SF2_Zone * ) preset->sf2p_Common.sf2c_Zones.mlh_Head )) {
+          ( zone != ( struct SF2_Zone * ) common->sf2c_Zones.mlh_Head )) {
 
         LOG_W(( "W: Discarding zone as global zone not appearing first!\n" ));
         // TODO: fix memory leak here and at all Removes in this function!
@@ -704,31 +751,31 @@ static LONG ReadPresetGenerators( BPTR fileHandle,
         Remove(( struct Node * ) generator );
         // TODO: fix memory leak here and at all Removes in this function!
 
-        size -= PGEN_CHUNK_SIZE_MULTIPLE;
+        size -= GEN_CHUNK_SIZE_MULTIPLE;
         if ( 0 > size ) {
 
-          return EInvalidPresetGenerators;
+          return EInvalidGenerators;
         }
-        Seek( fileHandle, PGEN_CHUNK_SIZE_MULTIPLE, OFFSET_CURRENT );
+        Seek( fileHandle, GEN_CHUNK_SIZE_MULTIPLE, OFFSET_CURRENT );
 
         if ( generator->sf2g_Id ) {
 
-          LOG_W(( "W: Discarding generator %ld in preset %ld-%ld / %s of "
+          LOG_W(( "W: Discarding generator %ld in Common %ld-%ld / %s of "
                   "zone %d after sample ID\n",
                   generator->sf2g_Id,
-                  preset->sf2p_Bank,
-                  preset->sf2p_Number,
-                  preset->sf2p_Name,
+                  GetBankFromCommon( common ),
+                  common->sf2c_Number,
+                  common->sf2c_Name,
                   zoneIndex ));
 
         } else {
 
-          LOG_D(( "V: Discarding empty generator %ld in preset %ld-%ld / %s of "
+          LOG_D(( "V: Discarding empty generator %ld in Common %ld-%ld / %s of "
                   "zone %d after sample ID\n",
                   generator->sf2g_Id,
-                  preset->sf2p_Bank,
-                  preset->sf2p_Number,
-                  preset->sf2p_Name,
+                  GetBankFromCommon( common ),
+                  common->sf2c_Number,
+                  common->sf2c_Name,
                   zoneIndex ));
         }
 
@@ -744,12 +791,12 @@ static LONG ReadPresetGenerators( BPTR fileHandle,
   
     return ENoError;
   }
-  size -= PGEN_CHUNK_SIZE_MULTIPLE;
+  size -= GEN_CHUNK_SIZE_MULTIPLE;
   if ( size ) {
 
-    return EInvalidPresetGenerators;
+    return EInvalidGenerators;
   }
-  Seek( fileHandle, PGEN_CHUNK_SIZE_MULTIPLE, OFFSET_CURRENT );
+  Seek( fileHandle, GEN_CHUNK_SIZE_MULTIPLE, OFFSET_CURRENT );
 
   LOG_D(( "D: Read %ld generators.\n", generatorCount ));
 
@@ -785,9 +832,10 @@ static LONG ReadInstrumentHeaders( BPTR fileHandle,
 
       instrument = AllocVec( sizeof( struct SF2_Instrument ),
                              MEMF_ANY | MEMF_CLEAR );
+      instrument->sf2i_Common.sf2c_Type = SF2_COMMON_INSTRUMENT_TYPE;
       NEW_LIST( &( instrument->sf2i_Common.sf2c_Zones ));
       ADD_TAIL( target, &( instrument->sf2i_Common.sf2c_Node ));
-      ReadString( fileHandle, instrument->sf2i_Name );
+      ReadString( fileHandle, instrument->sf2i_Common.sf2c_Name );
 
     } else {
 
@@ -811,7 +859,7 @@ static LONG ReadInstrumentHeaders( BPTR fileHandle,
           NEW_LIST( &( zone->sfz2_Generators ));
           NEW_LIST( &( zone->sfz2_Modulators ));
           ADD_TAIL( &( previousInstrument->sf2i_Common.sf2c_Zones ), zone );
-          previousInstrument->sf2i_Number = previousIndex;
+          previousInstrument->sf2i_Common.sf2c_Number = previousIndex;
           --h;
         }
       } else {
@@ -827,33 +875,6 @@ static LONG ReadInstrumentHeaders( BPTR fileHandle,
     --i;
   }
 
-  return ENoError;
-}
-
-static LONG ReadInstrumentBags( BPTR fileHandle,
-                                LONG size,
-                                struct MinList * target ) {
-
-  // TODO: https://github.com/FluidSynth/fluidsynth/blob/master/src/sfloader/fluid_sffile.c#L1732
-  Seek( fileHandle, size, OFFSET_CURRENT );
-  return ENoError;
-}
-
-static LONG ReadInstrumentModulators( BPTR fileHandle,
-                                      LONG size,
-                                      struct MinList * target ) {
-
-  // TODO: https://github.com/FluidSynth/fluidsynth/blob/master/src/sfloader/fluid_sffile.c#L1870
-  Seek( fileHandle, size, OFFSET_CURRENT );
-  return ENoError;
-}
-
-static LONG ReadInstrumentGenerators( BPTR fileHandle,
-                                      LONG size,
-                                      struct MinList * target ) {
-
-  // TODO: https://github.com/FluidSynth/fluidsynth/blob/master/src/sfloader/fluid_sffile.c#L1942
-  Seek( fileHandle, size, OFFSET_CURRENT );
   return ENoError;
 }
 
@@ -1054,15 +1075,15 @@ static LONG ReadPresetInfo( struct SF2_Parsed * sf2, ULONG size ) {
   result = ReadPresetSubChunk( sf2->sf2_FileHandle,
                                &( chunk ),
                                PBAG_CHUNK_ID,
-                               PBAG_CHUNK_SIZE_MULTIPLE,
+                               BAG_CHUNK_SIZE_MULTIPLE,
                                &( size ));
   if ( result ) {
 
     return result;
   }
-  result = ReadPresetBags( sf2->sf2_FileHandle,
-                           chunk.size,
-                           &( sf2->sf2_Presets ));
+  result = ReadBags( sf2->sf2_FileHandle,
+                     chunk.size,
+                     &( sf2->sf2_Presets ));
   if ( result ) {
 
     return result;
@@ -1073,15 +1094,15 @@ static LONG ReadPresetInfo( struct SF2_Parsed * sf2, ULONG size ) {
   result = ReadPresetSubChunk( sf2->sf2_FileHandle,
                                &( chunk ),
                                PMOD_CHUNK_ID,
-                               PMOD_CHUNK_SIZE_MULTIPLE,
+                               MOD_CHUNK_SIZE_MULTIPLE,
                                &( size ));
   if ( result ) {
 
     return result;
   }
-  result = ReadPresetModulators( sf2->sf2_FileHandle,
-                                 chunk.size,
-                                 &( sf2->sf2_Presets ));
+  result = ReadModulators( sf2->sf2_FileHandle,
+                           chunk.size,
+                           &( sf2->sf2_Presets ));
   if ( result ) {
 
     return result;
@@ -1092,15 +1113,15 @@ static LONG ReadPresetInfo( struct SF2_Parsed * sf2, ULONG size ) {
   result = ReadPresetSubChunk( sf2->sf2_FileHandle,
                                &( chunk ),
                                PGEN_CHUNK_ID,
-                               PGEN_CHUNK_SIZE_MULTIPLE,
+                               GEN_CHUNK_SIZE_MULTIPLE,
                                &( size ));
   if ( result ) {
 
     return result;
   }
-  result = ReadPresetGenerators( sf2->sf2_FileHandle,
-                                 chunk.size,
-                                 &( sf2->sf2_Presets ));
+  result = ReadGenerators( sf2->sf2_FileHandle,
+                           chunk.size,
+                           &( sf2->sf2_Presets ));
   if ( result ) {
 
     return result;
@@ -1130,15 +1151,15 @@ static LONG ReadPresetInfo( struct SF2_Parsed * sf2, ULONG size ) {
   result = ReadPresetSubChunk( sf2->sf2_FileHandle,
                                &( chunk ),
                                IBAG_CHUNK_ID,
-                               IBAG_CHUNK_SIZE_MULTIPLE,
+                               BAG_CHUNK_SIZE_MULTIPLE,
                                &( size ));
   if ( result ) {
 
     return result;
   }
-  result = ReadInstrumentBags( sf2->sf2_FileHandle,
-                               chunk.size,
-                               &( sf2->sf2_Presets ));
+  result = ReadBags( sf2->sf2_FileHandle,
+                     chunk.size,
+                     &( sf2->sf2_Instruments ));
   if ( result ) {
 
     return result;
@@ -1149,15 +1170,15 @@ static LONG ReadPresetInfo( struct SF2_Parsed * sf2, ULONG size ) {
   result = ReadPresetSubChunk( sf2->sf2_FileHandle,
                                &( chunk ),
                                IMOD_CHUNK_ID,
-                               IMOD_CHUNK_SIZE_MULTIPLE,
+                               MOD_CHUNK_SIZE_MULTIPLE,
                                &( size ));
   if ( result ) {
 
     return result;
   }
-  result = ReadInstrumentModulators( sf2->sf2_FileHandle,
-                                     chunk.size,
-                                     &( sf2->sf2_Presets ));
+  result = ReadModulators( sf2->sf2_FileHandle,
+                           chunk.size,
+                           &( sf2->sf2_Instruments ));
   if ( result ) {
 
     return result;
@@ -1168,15 +1189,15 @@ static LONG ReadPresetInfo( struct SF2_Parsed * sf2, ULONG size ) {
   result = ReadPresetSubChunk( sf2->sf2_FileHandle,
                                &( chunk ),
                                IGEN_CHUNK_ID,
-                               IGEN_CHUNK_SIZE_MULTIPLE,
+                               GEN_CHUNK_SIZE_MULTIPLE,
                                &( size ));
   if ( result ) {
 
     return result;
   }
-  result = ReadInstrumentGenerators( sf2->sf2_FileHandle,
-                                     chunk.size,
-                                     &( sf2->sf2_Presets ));
+  result = ReadGenerators( sf2->sf2_FileHandle,
+                           chunk.size,
+                           &( sf2->sf2_Instruments ));
   if ( result ) {
 
     return result;

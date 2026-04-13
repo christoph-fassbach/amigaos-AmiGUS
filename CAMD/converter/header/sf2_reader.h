@@ -21,6 +21,17 @@
 
 #include <exec/lists.h>
 
+/*
+ * defines are limited to 32 chars due to a SAS/C insufficiency !!!
+ *
+ * So define below is just kind of a ruler...
+ */
+#define SASC_MAXIMUM_DEFINE_LENGTH_IS_32 12345678
+
+#define SF2_COMMON_NO_TYPE               0
+#define SF2_COMMON_PRESET_TYPE           1
+#define SF2_COMMON_INSTRUMENT_TYPE       2
+
 struct SF2_Modulator {
 
   struct MinNode sf2m_Node;
@@ -49,24 +60,21 @@ struct SF2_Common {
 
   struct MinNode sf2c_Node;
   struct MinList sf2c_Zones;
+  UWORD sf2c_Number;
+  UBYTE sf2c_Name[21];
+  UBYTE sf2c_Type;
 };
 
 struct SF2_Preset {
 
   struct SF2_Common sf2p_Common;
   UWORD sf2p_Bank;
-  UWORD sf2p_Number;
-  UBYTE sf2p_Name[21];
-  UBYTE sf2p_Padding0;
-  UWORD sf2p_Padding1;
+  UWORD sf2p_Padding0;
 };
 
 struct SF2_Instrument {
 
   struct SF2_Common sf2i_Common;
-  UWORD sf2i_Number;
-  UBYTE sf2i_Name[21];
-  UBYTE sf2i_Padding0;
 };
 
 struct SF2_Parsed {
