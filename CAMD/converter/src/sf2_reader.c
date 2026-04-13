@@ -169,6 +169,11 @@ static LONG ReadUWORD( BPTR fileHandle, UWORD * target ) {
   return FRead( fileHandle, target, sizeof( UWORD ), 1 );
 }
 
+static LONG ReadUBYTE( BPTR fileHandle, UBYTE * target ) {
+
+  return FRead( fileHandle, target, sizeof( UBYTE ), 1 );
+}
+
 static LONG ReadString( BPTR fileHandle, UBYTE * target ) {
 
   return FRead( fileHandle, target, sizeof( UBYTE ), 20 );
@@ -803,6 +808,56 @@ static LONG ReadGenerators( BPTR fileHandle,
   return ENoError;
 }
 
+static LONG ReadSamples( BPTR fileHandle,
+                         LONG size,
+                         struct MinList * target ) {
+
+  LONG i;
+
+  if (( size % SHDR_CHUNK_SIZE_MULTIPLE ) || ( !size )) {
+
+    return EInvalidSampleSize;
+  }
+
+  size = ( size / SHDR_CHUNK_SIZE_MULTIPLE ) - 1;
+  if ( !size ) {
+
+    LOG_W(( "W: No samples available!\n" ));
+    Seek( fileHandle, SHDR_CHUNK_SIZE_MULTIPLE, OFFSET_CURRENT );
+    return ENoError;
+  }
+
+  for ( i = 0; i < size; ++i ) {
+
+    union {
+      ULONG l;
+      UWORD w;
+    } temp;
+    struct SF2_Sample * sample = AllocVec( sizeof( struct SF2_Sample ),
+                                           MEMF_ANY | MEMF_CLEAR );
+    ADD_HEAD( target, sample );
+    sample->sf2s_Number = i;
+    ReadString( fileHandle, sample->sf2s_Name );
+    ReadULONG( fileHandle, &temp.l );
+    sample->sf2s_SampleStartOffset = Swap32( temp.l );
+    ReadULONG( fileHandle, &temp.l );
+    sample->sf2s_SampleEndOffset = Swap32( temp.l );
+    ReadULONG( fileHandle, &temp.l );
+    sample->sf2s_LoopStartOffset = Swap32( temp.l );
+    ReadULONG( fileHandle, &temp.l );
+    sample->sf2s_LoopEndOffset = Swap32( temp.l );
+    ReadULONG( fileHandle, &temp.l );
+    sample->sf2s_SampleRate = Swap32( temp.l );
+    ReadUBYTE( fileHandle, &( sample->sf2s_SampleNote ));
+    Seek( fileHandle, 3 /* pitch adjust + link */, OFFSET_CURRENT );
+    ReadUWORD( fileHandle, &temp.w );
+    sample->sf2s_SampleType = Swap16( temp.w );
+  }
+  Seek( fileHandle, SHDR_CHUNK_SIZE_MULTIPLE, OFFSET_CURRENT );
+
+  return ENoError;
+}
+
 static LONG ReadInstrumentHeaders( BPTR fileHandle,
                                    LONG size,
                                    struct MinList * target ) {
@@ -1204,7 +1259,24 @@ static LONG ReadPresetInfo( struct SF2_Parsed * sf2, ULONG size ) {
   }
   LOG_D(( "D: After instrument generators, preset size is %ld\n", size ));
 
-  // TODO Load Sample headers here, finally
+  // Instrument Generators
+  result = ReadPresetSubChunk( sf2->sf2_FileHandle,
+                               &( chunk ),
+                               SHDR_CHUNK_ID,
+                               SHDR_CHUNK_SIZE_MULTIPLE,
+                               &( size ));
+  if ( result ) {
+
+    return result;
+  }
+  result = ReadSamples( sf2->sf2_FileHandle,
+                        chunk.size,
+                        &( sf2->sf2_Samples ));
+  if ( result ) {
+
+    return result;
+  }
+  LOG_D(( "D: After sample headers, preset size is %ld\n", size ));
 
   LOG_D(( "D: Remaining preset size is %ld\n", size ));
   Seek( sf2->sf2_FileHandle, size, OFFSET_CURRENT );

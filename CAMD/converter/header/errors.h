@@ -84,6 +84,7 @@ enum ErrorCodes
   EInvalidSampleGenerator,
   EDuplicatedSmplChunk,
   EDuplicatedSm24Chunk,
+  EInvalidSampleSize,
 
   /* Insert errors above. */
   EUnknownError,

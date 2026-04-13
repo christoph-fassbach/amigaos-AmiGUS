@@ -77,6 +77,20 @@ struct SF2_Instrument {
   struct SF2_Common sf2i_Common;
 };
 
+struct SF2_Sample {
+
+  struct MinNode sf2s_Node;
+  ULONG sf2s_SampleStartOffset;
+  ULONG sf2s_SampleEndOffset;
+  ULONG sf2s_LoopStartOffset;
+  ULONG sf2s_LoopEndOffset;
+  ULONG sf2s_SampleRate;
+  UWORD sf2s_Number;
+  UWORD sf2s_SampleType;
+  UBYTE sf2s_SampleNote;
+  UBYTE sf2s_Name[21];
+};
+
 struct SF2_Parsed {
 
   STRPTR sf2_FilePath;
