@@ -145,6 +145,10 @@ struct SF2_Chunk {
   ULONG size;
 };
 
+/******************************************************************************
+ * SF2 reader - private helper functions.
+ *****************************************************************************/
+
 static UWORD Swap16( UWORD value ) {
 
   return ( UWORD )((( value & 0xFF00 ) >> 8 ) |
@@ -179,16 +183,6 @@ static LONG ReadString( BPTR fileHandle, UBYTE * target ) {
   return FRead( fileHandle, target, sizeof( UBYTE ), 20 );
 }
 
-static WORD GetBankFromCommon( struct SF2_Common * common ) {
-
-  if ( SF2_COMMON_PRESET_TYPE != common->sf2c_Type ) {
-
-    return -1;
-  }
-
-  return ( WORD )(( struct SF2_Preset * ) common )->sf2p_Bank;
-}
-
 static LONG ReadChunk( BPTR fileHandle, struct SF2_Chunk * target ) {
 
   LONG result = FRead( fileHandle, target, sizeof( struct SF2_Chunk ), 1 );
@@ -212,133 +206,6 @@ static LONG ReadListChunk( BPTR fileHandle, struct SF2_Chunk * target ) {
   return result;
 }
 
-static LONG ReadPresetSubChunk( BPTR fileHandle,
-                                struct SF2_Chunk * target,
-                                const LONG expectedId,
-                                const LONG expectedSizeMultiple,
-                                ULONG * remainingSize ) {
-
-  union { ULONG id;
-          BYTE idAsString[ 8 ];
-        } chunkHelper[ 2 ];
-  LONG result = ReadChunk( fileHandle, target );
-
-  *( remainingSize ) -= 8;
-  chunkHelper[ 0 ].id = expectedId;
-  chunkHelper[ 0 ].idAsString[ 4 ] = 0;
-
-  if ( 1 != result ) {
-
-    LOG_E(( "E: Preset sub chunk '%s' expected, but read %ld.\n",
-            chunkHelper[ 0 ].idAsString, result ));
-    return EInvalidPresetSubChunk;
-  }
-  if ( expectedId != target->id ) {
-
-    chunkHelper[ 1 ].id = target->id;
-    chunkHelper[ 1 ].idAsString[ 4 ] = 0;
-
-    LOG_E(( "E: Preset sub chunk expected '%s', actual '%s'\n",
-            chunkHelper[ 0 ].idAsString, chunkHelper[ 1 ].idAsString ));
-    return EInvalidPresetSubChunk;
-  }
-  if ( target->size % expectedSizeMultiple ) {
-
-    LOG_E(( "E: Preset sub chunk '%s' size multiple of expected %ld, "
-            "actual %ld.\n",
-            chunkHelper[ 0 ].idAsString,
-            expectedSizeMultiple,
-            target->size ));
-    return EInvalidPresetSubChunk;
-  }
-  if ( *( remainingSize ) < target->size ) {
-
-    LOG_E(( "E: Preset sub chunk '%s' size %ld exceeds remaining size %ld.\n",
-            chunkHelper[ 0 ].idAsString,
-            target->size,
-            remainingSize ));
-  }
-  *( remainingSize ) -= target->size;
-  return ENoError;
-}
-
-static LONG ReadPresetHeaders( BPTR fileHandle,
-                               const LONG size,
-                               struct MinList * target ) {
-
-  LONG i;
-  UWORD temp;
-  UWORD index;
-  UWORD previousIndex = 0;
-  struct SF2_Preset * previousPreset = NULL;
-
-  if (( !( size )) || ( size % PHDR_CHUNK_SIZE_MULTIPLE )) {
-
-    return EInvalidPresetDataSize;
-  }
-
-  i = ( size / PHDR_CHUNK_SIZE_MULTIPLE ) - 1;
-  if ( 0 >= i ) {
-
-    return ENoPresets;
-  }
-  LOG_D(( "D: Found %ld presets in %ld.\n", i + 1, size ));
-
-  while ( 0 <= i ) {
-
-    struct SF2_Preset * preset = NULL;
-    if ( 0 < i ) {
-
-      preset = AllocMem( sizeof( struct SF2_Preset ), MEMF_ANY | MEMF_CLEAR );
-      preset->sf2p_Common.sf2c_Type = SF2_COMMON_PRESET_TYPE;
-      NEW_LIST( &( preset->sf2p_Common.sf2c_Zones ));
-      ADD_TAIL( target, &( preset->sf2p_Common.sf2c_Node ));
-      ReadString( fileHandle, preset->sf2p_Common.sf2c_Name );
-      ReadUWORD( fileHandle, &( temp ));
-      preset->sf2p_Common.sf2c_Number = Swap16( temp );
-      ReadUWORD( fileHandle, &( temp ));
-      preset->sf2p_Bank = Swap16( temp );
-
-    } else {
-
-      Seek( fileHandle, 24, OFFSET_CURRENT );
-    }
-    ReadUWORD( fileHandle, &( temp ));
-    index = Swap16( temp );
-    Seek( fileHandle, 12 /* library + genre + morphology */, OFFSET_CURRENT );
-
-    if ( previousPreset ) {
-
-      // So >1st preset
-      if ( index > previousIndex ) {
-
-        LONG h = index - previousIndex;
-        LOG_V(( "V: Adding %ld zones to preset %ld\n",
-                h, ( size / PHDR_CHUNK_SIZE_MULTIPLE ) - 1 - i ));
-        while ( h ) {
-
-          struct SF2_Zone * zone = AllocMem( sizeof( struct SF2_Zone ),
-                                             MEMF_ANY | MEMF_CLEAR );
-          NEW_LIST( &( zone->sfz2_Generators ));
-          NEW_LIST( &( zone->sfz2_Modulators ));
-          ADD_TAIL( &( previousPreset->sf2p_Common.sf2c_Zones ), zone );
-          --h;
-        }
-      } else {
-
-        return EInvalidPresetIndex;
-      }
-    } else if ( index > 0 ) {
-      LOG_W(( "W: %ld preset zones unused!\n" ));
-    }
-
-    previousPreset = preset;
-    previousIndex = index;
-    --i;
-  }
-
-  return ENoError;
-}
 
 static LONG ReadZone( BPTR fileHandle,
                       UWORD * lastGeneratorIndex,
@@ -389,100 +256,30 @@ static LONG ReadZone( BPTR fileHandle,
   return ENoError;
 }
 
-static LONG ReadBags( BPTR fileHandle,
-                      LONG size,
-                      struct MinList * target ) {
+static struct SF2_Generator * FindGeneratorById( struct MinList * generators,
+                                                 const UWORD id ) {
 
-  LONG result;
-  struct SF2_Common * common;
-  struct SF2_Zone * previousZone = NULL;
-  UWORD previousGeneratorIndex = 0;
-  UWORD previousModulatorIndex = 0;
+  struct SF2_Generator * generator;
 
-  FOR_LIST( target, common, struct SF2_Common * ) {
+  FOR_LIST( generators, generator, struct SF2_Generator * ) {
 
-    struct SF2_Zone * zone;
-    FOR_LIST( &( common->sf2c_Zones ), zone, struct SF2_Zone * ) {
+    if ( id == generator->sf2g_Id ) {
 
-      size -= BAG_CHUNK_SIZE_MULTIPLE;
-
-      result = ReadZone( fileHandle,
-                         &previousGeneratorIndex,
-                         &previousModulatorIndex,
-                         previousZone );
-
-      if ( result ) {
-
-        return result;
-      }
-      previousZone = zone;
+      return generator;
     }
   }
-  if ( BAG_CHUNK_SIZE_MULTIPLE != size ) {
 
-    return EInvalidBags;
-  }
-  result = ReadZone( fileHandle,
-                      &previousGeneratorIndex,
-                      &previousModulatorIndex,
-                      previousZone );
-  return result;
+  return NULL;
 }
 
-static LONG ReadModulators( BPTR fileHandle,
-                            LONG size,
-                            struct MinList * target ) {
+static WORD GetBankFromCommon( struct SF2_Common * common ) {
 
-  LONG i = 0;
-  struct SF2_Common * common;
+  if ( SF2_COMMON_PRESET_TYPE != common->sf2c_Type ) {
 
-  FOR_LIST( target, common, struct SF2_Common * ) {
-
-    struct SF2_Zone * zone;
-    FOR_LIST( &( common->sf2c_Zones ), zone, struct SF2_Zone * ) {
-
-      struct SF2_Modulator * modulator;
-      FOR_LIST( &( zone->sfz2_Modulators ),
-                modulator,
-                struct SF2_Modulator * ) {
-
-        UWORD temp;
-
-        size -= MOD_CHUNK_SIZE_MULTIPLE;
-        if ( 0 > size ) {
-
-          return EInvalidModulators;
-        }
-        ReadUWORD( fileHandle, &temp );
-        modulator->sf2m_Source = Swap16( temp );
-        ReadUWORD( fileHandle, &temp );
-        modulator->sf2m_Target = Swap16( temp );
-        ReadUWORD( fileHandle, &temp );
-        modulator->sf2m_Amount = Swap16( temp );
-        ReadUWORD( fileHandle, &temp );
-        modulator->sf2m_AmountSource = Swap16( temp );
-        ReadUWORD( fileHandle, &temp );
-        modulator->sf2m_Transform = Swap16( temp );
-
-        ++i;
-      }      
-    }
-  }
-  LOG_D(( "D: Read %ld modulators.\n", i ));
-
-  if ( size ) {
-
-    // This should be default!
-    Seek( fileHandle, MOD_CHUNK_SIZE_MULTIPLE, OFFSET_CURRENT );
-    size -= MOD_CHUNK_SIZE_MULTIPLE;
+    return -1;
   }
 
-  if ( size ) {
-
-    return EInvalidModulators;
-  }
-
-  return ENoError;
+  return ( WORD )(( struct SF2_Preset * ) common )->sf2p_Bank;
 }
 
 static BOOL IsValidInstrumentGeneratorId( UWORD id ) {
@@ -541,25 +338,159 @@ static BOOL IsValidPresetGeneratorId( UWORD id ) {
   }
 }
 
-static struct SF2_Generator * FindGeneratorById( struct MinList * generators,
-                                                 const UWORD id ) {
+/******************************************************************************
+ * SF2 reader - private hydra header parsing functions.
+ *****************************************************************************/
 
-  struct SF2_Generator * generator;
+static LONG ReadHydraSubChunk( BPTR fileHandle,
+                               struct SF2_Chunk * target,
+                               const LONG expectedId,
+                               const LONG expectedSizeMultiple,
+                               ULONG * remainingSize ) {
 
-  FOR_LIST( generators, generator, struct SF2_Generator * ) {
+  union { ULONG id;
+          BYTE idAsString[ 8 ];
+        } chunkHelper[ 2 ];
+  LONG result = ReadChunk( fileHandle, target );
 
-    if ( id == generator->sf2g_Id ) {
+  *( remainingSize ) -= 8;
+  chunkHelper[ 0 ].id = expectedId;
+  chunkHelper[ 0 ].idAsString[ 4 ] = 0;
 
-      return generator;
-    }
+  if ( 1 != result ) {
+
+    LOG_E(( "E: Preset sub chunk '%s' expected, but read %ld.\n",
+            chunkHelper[ 0 ].idAsString, result ));
+    return EInvalidPresetSubChunk;
   }
+  if ( expectedId != target->id ) {
 
-  return NULL;
+    chunkHelper[ 1 ].id = target->id;
+    chunkHelper[ 1 ].idAsString[ 4 ] = 0;
+
+    LOG_E(( "E: Preset sub chunk expected '%s', actual '%s'\n",
+            chunkHelper[ 0 ].idAsString, chunkHelper[ 1 ].idAsString ));
+    return EInvalidPresetSubChunk;
+  }
+  if ( target->size % expectedSizeMultiple ) {
+
+    LOG_E(( "E: Preset sub chunk '%s' size multiple of expected %ld, "
+            "actual %ld.\n",
+            chunkHelper[ 0 ].idAsString,
+            expectedSizeMultiple,
+            target->size ));
+    return EInvalidPresetSubChunk;
+  }
+  if ( *( remainingSize ) < target->size ) {
+
+    LOG_E(( "E: Preset sub chunk '%s' size %ld exceeds remaining size %ld.\n",
+            chunkHelper[ 0 ].idAsString,
+            target->size,
+            remainingSize ));
+  }
+  *( remainingSize ) -= target->size;
+  return ENoError;
 }
 
-static LONG ReadGenerators( BPTR fileHandle,
-                            LONG size,
-                            struct MinList * target ) {
+static LONG ReadHydraBags( BPTR fileHandle,
+                           LONG size,
+                           struct MinList * target ) {
+
+  LONG result;
+  struct SF2_Common * common;
+  struct SF2_Zone * previousZone = NULL;
+  UWORD previousGeneratorIndex = 0;
+  UWORD previousModulatorIndex = 0;
+
+  FOR_LIST( target, common, struct SF2_Common * ) {
+
+    struct SF2_Zone * zone;
+    FOR_LIST( &( common->sf2c_Zones ), zone, struct SF2_Zone * ) {
+
+      size -= BAG_CHUNK_SIZE_MULTIPLE;
+
+      result = ReadZone( fileHandle,
+                         &previousGeneratorIndex,
+                         &previousModulatorIndex,
+                         previousZone );
+
+      if ( result ) {
+
+        return result;
+      }
+      previousZone = zone;
+    }
+  }
+  if ( BAG_CHUNK_SIZE_MULTIPLE != size ) {
+
+    return EInvalidBags;
+  }
+  result = ReadZone( fileHandle,
+                      &previousGeneratorIndex,
+                      &previousModulatorIndex,
+                      previousZone );
+  return result;
+}
+
+static LONG ReadHydraModulators( BPTR fileHandle,
+                                 LONG size,
+                                 struct MinList * target ) {
+
+  LONG i = 0;
+  struct SF2_Common * common;
+
+  FOR_LIST( target, common, struct SF2_Common * ) {
+
+    struct SF2_Zone * zone;
+    FOR_LIST( &( common->sf2c_Zones ), zone, struct SF2_Zone * ) {
+
+      struct SF2_Modulator * modulator;
+      FOR_LIST( &( zone->sfz2_Modulators ),
+                modulator,
+                struct SF2_Modulator * ) {
+
+        UWORD temp;
+
+        size -= MOD_CHUNK_SIZE_MULTIPLE;
+        if ( 0 > size ) {
+
+          return EInvalidModulators;
+        }
+        ReadUWORD( fileHandle, &temp );
+        modulator->sf2m_Source = Swap16( temp );
+        ReadUWORD( fileHandle, &temp );
+        modulator->sf2m_Target = Swap16( temp );
+        ReadUWORD( fileHandle, &temp );
+        modulator->sf2m_Amount = Swap16( temp );
+        ReadUWORD( fileHandle, &temp );
+        modulator->sf2m_AmountSource = Swap16( temp );
+        ReadUWORD( fileHandle, &temp );
+        modulator->sf2m_Transform = Swap16( temp );
+
+        ++i;
+      }      
+    }
+  }
+  LOG_D(( "D: Read %ld modulators.\n", i ));
+
+  if ( size ) {
+
+    // This should be default!
+    Seek( fileHandle, MOD_CHUNK_SIZE_MULTIPLE, OFFSET_CURRENT );
+    size -= MOD_CHUNK_SIZE_MULTIPLE;
+  }
+
+  if ( size ) {
+
+    return EInvalidModulators;
+  }
+
+  return ENoError;
+}
+
+static LONG ReadHydraGenerators( BPTR fileHandle,
+                                 LONG size,
+                                 struct MinList * target ) {
 
   ULONG generatorCount = 0;
   UWORD presetIndex = 0;
@@ -808,59 +739,87 @@ static LONG ReadGenerators( BPTR fileHandle,
   return ENoError;
 }
 
-static LONG ReadSamples( BPTR fileHandle,
-                         LONG size,
-                         struct MinList * target ) {
+static LONG ReadHydraPresets( BPTR fileHandle,
+                              const LONG size,
+                              struct MinList * target ) {
 
   LONG i;
+  UWORD temp;
+  UWORD index;
+  UWORD previousIndex = 0;
+  struct SF2_Preset * previousPreset = NULL;
 
-  if (( size % SHDR_CHUNK_SIZE_MULTIPLE ) || ( !size )) {
+  if (( !( size )) || ( size % PHDR_CHUNK_SIZE_MULTIPLE )) {
 
-    return EInvalidSampleSize;
+    return EInvalidPresetDataSize;
   }
 
-  size = ( size / SHDR_CHUNK_SIZE_MULTIPLE ) - 1;
-  if ( !size ) {
+  i = ( size / PHDR_CHUNK_SIZE_MULTIPLE ) - 1;
+  if ( 0 >= i ) {
 
-    LOG_W(( "W: No samples available!\n" ));
-    Seek( fileHandle, SHDR_CHUNK_SIZE_MULTIPLE, OFFSET_CURRENT );
-    return ENoError;
+    return ENoPresets;
   }
+  LOG_D(( "D: Found %ld presets in %ld.\n", i + 1, size ));
 
-  for ( i = 0; i < size; ++i ) {
+  while ( 0 <= i ) {
 
-    union {
-      ULONG l;
-      UWORD w;
-    } temp;
-    struct SF2_Sample * sample = AllocMem( sizeof( struct SF2_Sample ),
-                                           MEMF_ANY | MEMF_CLEAR );
-    ADD_HEAD( target, sample );
-    sample->sf2s_Number = i;
-    ReadString( fileHandle, sample->sf2s_Name );
-    ReadULONG( fileHandle, &temp.l );
-    sample->sf2s_SampleStartOffset = Swap32( temp.l );
-    ReadULONG( fileHandle, &temp.l );
-    sample->sf2s_SampleEndOffset = Swap32( temp.l );
-    ReadULONG( fileHandle, &temp.l );
-    sample->sf2s_LoopStartOffset = Swap32( temp.l );
-    ReadULONG( fileHandle, &temp.l );
-    sample->sf2s_LoopEndOffset = Swap32( temp.l );
-    ReadULONG( fileHandle, &temp.l );
-    sample->sf2s_SampleRate = Swap32( temp.l );
-    ReadUBYTE( fileHandle, &( sample->sf2s_SampleNote ));
-    Seek( fileHandle, 3 /* pitch adjust + link */, OFFSET_CURRENT );
-    ReadUWORD( fileHandle, &temp.w );
-    sample->sf2s_SampleType = Swap16( temp.w );
+    struct SF2_Preset * preset = NULL;
+    if ( 0 < i ) {
+
+      preset = AllocMem( sizeof( struct SF2_Preset ), MEMF_ANY | MEMF_CLEAR );
+      preset->sf2p_Common.sf2c_Type = SF2_COMMON_PRESET_TYPE;
+      NEW_LIST( &( preset->sf2p_Common.sf2c_Zones ));
+      ADD_TAIL( target, &( preset->sf2p_Common.sf2c_Node ));
+      ReadString( fileHandle, preset->sf2p_Common.sf2c_Name );
+      ReadUWORD( fileHandle, &( temp ));
+      preset->sf2p_Common.sf2c_Number = Swap16( temp );
+      ReadUWORD( fileHandle, &( temp ));
+      preset->sf2p_Bank = Swap16( temp );
+
+    } else {
+
+      Seek( fileHandle, 24, OFFSET_CURRENT );
+    }
+    ReadUWORD( fileHandle, &( temp ));
+    index = Swap16( temp );
+    Seek( fileHandle, 12 /* library + genre + morphology */, OFFSET_CURRENT );
+
+    if ( previousPreset ) {
+
+      // So >1st preset
+      if ( index > previousIndex ) {
+
+        LONG h = index - previousIndex;
+        LOG_V(( "V: Adding %ld zones to preset %ld\n",
+                h, ( size / PHDR_CHUNK_SIZE_MULTIPLE ) - 1 - i ));
+        while ( h ) {
+
+          struct SF2_Zone * zone = AllocMem( sizeof( struct SF2_Zone ),
+                                             MEMF_ANY | MEMF_CLEAR );
+          NEW_LIST( &( zone->sfz2_Generators ));
+          NEW_LIST( &( zone->sfz2_Modulators ));
+          ADD_TAIL( &( previousPreset->sf2p_Common.sf2c_Zones ), zone );
+          --h;
+        }
+      } else {
+
+        return EInvalidPresetIndex;
+      }
+    } else if ( index > 0 ) {
+      LOG_W(( "W: %ld preset zones unused!\n" ));
+    }
+
+    previousPreset = preset;
+    previousIndex = index;
+    --i;
   }
-  Seek( fileHandle, SHDR_CHUNK_SIZE_MULTIPLE, OFFSET_CURRENT );
 
   return ENoError;
 }
 
-static LONG ReadInstrumentHeaders( BPTR fileHandle,
-                                   LONG size,
-                                   struct MinList * target ) {
+static LONG ReadHydraInstruments( BPTR fileHandle,
+                                  LONG size,
+                                  struct MinList * target ) {
 
   LONG i;
   UWORD temp;
@@ -933,7 +892,61 @@ static LONG ReadInstrumentHeaders( BPTR fileHandle,
   return ENoError;
 }
 
-static LONG ReadInfo( struct SF2 * sf2, ULONG size ) {
+static LONG ReadHydraSamples( BPTR fileHandle,
+                              LONG size,
+                              struct MinList * target ) {
+
+  LONG i;
+
+  if (( size % SHDR_CHUNK_SIZE_MULTIPLE ) || ( !size )) {
+
+    return EInvalidSampleSize;
+  }
+
+  size = ( size / SHDR_CHUNK_SIZE_MULTIPLE ) - 1;
+  if ( !size ) {
+
+    LOG_W(( "W: No samples available!\n" ));
+    Seek( fileHandle, SHDR_CHUNK_SIZE_MULTIPLE, OFFSET_CURRENT );
+    return ENoError;
+  }
+
+  for ( i = 0; i < size; ++i ) {
+
+    union {
+      ULONG l;
+      UWORD w;
+    } temp;
+    struct SF2_Sample * sample = AllocMem( sizeof( struct SF2_Sample ),
+                                           MEMF_ANY | MEMF_CLEAR );
+    ADD_HEAD( target, sample );
+    sample->sf2s_Number = i;
+    ReadString( fileHandle, sample->sf2s_Name );
+    ReadULONG( fileHandle, &temp.l );
+    sample->sf2s_SampleStartOffset = Swap32( temp.l );
+    ReadULONG( fileHandle, &temp.l );
+    sample->sf2s_SampleEndOffset = Swap32( temp.l );
+    ReadULONG( fileHandle, &temp.l );
+    sample->sf2s_LoopStartOffset = Swap32( temp.l );
+    ReadULONG( fileHandle, &temp.l );
+    sample->sf2s_LoopEndOffset = Swap32( temp.l );
+    ReadULONG( fileHandle, &temp.l );
+    sample->sf2s_SampleRate = Swap32( temp.l );
+    ReadUBYTE( fileHandle, &( sample->sf2s_SampleNote ));
+    Seek( fileHandle, 3 /* pitch adjust + link */, OFFSET_CURRENT );
+    ReadUWORD( fileHandle, &temp.w );
+    sample->sf2s_SampleType = Swap16( temp.w );
+  }
+  Seek( fileHandle, SHDR_CHUNK_SIZE_MULTIPLE, OFFSET_CURRENT );
+
+  return ENoError;
+}
+
+/******************************************************************************
+ * SF2 reader - private file header parsing functions.
+ *****************************************************************************/
+
+static LONG ReadSoundFontInfo( struct SF2 * sf2, ULONG size ) {
 
   LONG result;
   struct SF2_Chunk chunk;
@@ -1020,7 +1033,7 @@ static LONG ReadInfo( struct SF2 * sf2, ULONG size ) {
   return ENoError;
 }
 
-static LONG ReadSampleInfo( struct SF2 * sf2, ULONG size ) {
+static LONG ReadSampleBinaryInfo( struct SF2 * sf2, ULONG size ) {
 
   LONG result;
   struct SF2_Chunk chunk;
@@ -1098,7 +1111,7 @@ static LONG ReadSampleInfo( struct SF2 * sf2, ULONG size ) {
   return ENoError;
 }
 
-static LONG ReadPresetInfo( struct SF2 * sf2, ULONG size ) {
+static LONG ReadHydraData( struct SF2 * sf2, ULONG size ) {
 
   LONG result;
   struct SF2_Chunk chunk;
@@ -1108,18 +1121,18 @@ static LONG ReadPresetInfo( struct SF2 * sf2, ULONG size ) {
   LOG_D(( "D: Initial preset size is %ld\n", size ));
 
   // Preset Headers
-  result = ReadPresetSubChunk( sf2->sf2_FileHandle,
-                               &( chunk ),
-                               PHDR_CHUNK_ID,
-                               PHDR_CHUNK_SIZE_MULTIPLE,
-                               &( size ));
+  result = ReadHydraSubChunk( sf2->sf2_FileHandle,
+                              &( chunk ),
+                              PHDR_CHUNK_ID,
+                              PHDR_CHUNK_SIZE_MULTIPLE,
+                              &( size ));
   if ( result ) {
 
     return result;
   }
-  result = ReadPresetHeaders( sf2->sf2_FileHandle,
-                              chunk.size,
-                              &( sf2->sf2_Presets ));
+  result = ReadHydraPresets( sf2->sf2_FileHandle,
+                             chunk.size,
+                             &( sf2->sf2_Presets ));
   if ( result ) {
 
     return result;
@@ -1127,18 +1140,18 @@ static LONG ReadPresetInfo( struct SF2 * sf2, ULONG size ) {
   LOG_D(( "D: After preset headers, preset size is %ld\n", size ));
 
   // Preset Bags
-  result = ReadPresetSubChunk( sf2->sf2_FileHandle,
-                               &( chunk ),
-                               PBAG_CHUNK_ID,
-                               BAG_CHUNK_SIZE_MULTIPLE,
-                               &( size ));
+  result = ReadHydraSubChunk( sf2->sf2_FileHandle,
+                              &( chunk ),
+                              PBAG_CHUNK_ID,
+                              BAG_CHUNK_SIZE_MULTIPLE,
+                              &( size ));
   if ( result ) {
 
     return result;
   }
-  result = ReadBags( sf2->sf2_FileHandle,
-                     chunk.size,
-                     &( sf2->sf2_Presets ));
+  result = ReadHydraBags( sf2->sf2_FileHandle,
+                          chunk.size,
+                          &( sf2->sf2_Presets ));
   if ( result ) {
 
     return result;
@@ -1146,18 +1159,18 @@ static LONG ReadPresetInfo( struct SF2 * sf2, ULONG size ) {
   LOG_D(( "D: After preset bags, preset size is %ld\n", size ));
 
   // Preset Modulators
-  result = ReadPresetSubChunk( sf2->sf2_FileHandle,
-                               &( chunk ),
-                               PMOD_CHUNK_ID,
-                               MOD_CHUNK_SIZE_MULTIPLE,
-                               &( size ));
+  result = ReadHydraSubChunk( sf2->sf2_FileHandle,
+                              &( chunk ),
+                              PMOD_CHUNK_ID,
+                              MOD_CHUNK_SIZE_MULTIPLE,
+                              &( size ));
   if ( result ) {
 
     return result;
   }
-  result = ReadModulators( sf2->sf2_FileHandle,
-                           chunk.size,
-                           &( sf2->sf2_Presets ));
+  result = ReadHydraModulators( sf2->sf2_FileHandle,
+                                chunk.size,
+                                &( sf2->sf2_Presets ));
   if ( result ) {
 
     return result;
@@ -1165,18 +1178,18 @@ static LONG ReadPresetInfo( struct SF2 * sf2, ULONG size ) {
   LOG_D(( "D: After preset modulators, preset size is %ld\n", size ));
 
   // Preset Generators
-  result = ReadPresetSubChunk( sf2->sf2_FileHandle,
-                               &( chunk ),
-                               PGEN_CHUNK_ID,
-                               GEN_CHUNK_SIZE_MULTIPLE,
-                               &( size ));
+  result = ReadHydraSubChunk( sf2->sf2_FileHandle,
+                              &( chunk ),
+                              PGEN_CHUNK_ID,
+                              GEN_CHUNK_SIZE_MULTIPLE,
+                              &( size ));
   if ( result ) {
 
     return result;
   }
-  result = ReadGenerators( sf2->sf2_FileHandle,
-                           chunk.size,
-                           &( sf2->sf2_Presets ));
+  result = ReadHydraGenerators( sf2->sf2_FileHandle,
+                                chunk.size,
+                                &( sf2->sf2_Presets ));
   if ( result ) {
 
     return result;
@@ -1184,18 +1197,18 @@ static LONG ReadPresetInfo( struct SF2 * sf2, ULONG size ) {
   LOG_D(( "D: After preset generators, preset size is %ld\n", size ));
 
   // Instrument Headers
-  result = ReadPresetSubChunk( sf2->sf2_FileHandle,
-                               &( chunk ),
-                               IHDR_CHUNK_ID,
-                               IHDR_CHUNK_SIZE_MULTIPLE,
-                               &( size ));
+  result = ReadHydraSubChunk( sf2->sf2_FileHandle,
+                              &( chunk ),
+                              IHDR_CHUNK_ID,
+                              IHDR_CHUNK_SIZE_MULTIPLE,
+                              &( size ));
   if ( result ) {
 
     return result;
   }
-  result = ReadInstrumentHeaders( sf2->sf2_FileHandle,
-                                  chunk.size,
-                                  &( sf2->sf2_Instruments ));
+  result = ReadHydraInstruments( sf2->sf2_FileHandle,
+                                 chunk.size,
+                                 &( sf2->sf2_Instruments ));
   if ( result ) {
 
     return result;
@@ -1203,18 +1216,18 @@ static LONG ReadPresetInfo( struct SF2 * sf2, ULONG size ) {
   LOG_D(( "D: After instrument headers, preset size is %ld\n", size ));
 
   // Instrument Bags
-  result = ReadPresetSubChunk( sf2->sf2_FileHandle,
-                               &( chunk ),
-                               IBAG_CHUNK_ID,
-                               BAG_CHUNK_SIZE_MULTIPLE,
-                               &( size ));
+  result = ReadHydraSubChunk( sf2->sf2_FileHandle,
+                              &( chunk ),
+                              IBAG_CHUNK_ID,
+                              BAG_CHUNK_SIZE_MULTIPLE,
+                              &( size ));
   if ( result ) {
 
     return result;
   }
-  result = ReadBags( sf2->sf2_FileHandle,
-                     chunk.size,
-                     &( sf2->sf2_Instruments ));
+  result = ReadHydraBags( sf2->sf2_FileHandle,
+                          chunk.size,
+                          &( sf2->sf2_Instruments ));
   if ( result ) {
 
     return result;
@@ -1222,18 +1235,18 @@ static LONG ReadPresetInfo( struct SF2 * sf2, ULONG size ) {
   LOG_D(( "D: After instrument bags, preset size is %ld\n", size ));
 
   // Instrument Modulators
-  result = ReadPresetSubChunk( sf2->sf2_FileHandle,
-                               &( chunk ),
-                               IMOD_CHUNK_ID,
-                               MOD_CHUNK_SIZE_MULTIPLE,
-                               &( size ));
+  result = ReadHydraSubChunk( sf2->sf2_FileHandle,
+                              &( chunk ),
+                              IMOD_CHUNK_ID,
+                              MOD_CHUNK_SIZE_MULTIPLE,
+                              &( size ));
   if ( result ) {
 
     return result;
   }
-  result = ReadModulators( sf2->sf2_FileHandle,
-                           chunk.size,
-                           &( sf2->sf2_Instruments ));
+  result = ReadHydraModulators( sf2->sf2_FileHandle,
+                                chunk.size,
+                                &( sf2->sf2_Instruments ));
   if ( result ) {
 
     return result;
@@ -1241,18 +1254,18 @@ static LONG ReadPresetInfo( struct SF2 * sf2, ULONG size ) {
   LOG_D(( "D: After instrument modulators, preset size is %ld\n", size ));
 
   // Instrument Generators
-  result = ReadPresetSubChunk( sf2->sf2_FileHandle,
-                               &( chunk ),
-                               IGEN_CHUNK_ID,
-                               GEN_CHUNK_SIZE_MULTIPLE,
-                               &( size ));
+  result = ReadHydraSubChunk( sf2->sf2_FileHandle,
+                              &( chunk ),
+                              IGEN_CHUNK_ID,
+                              GEN_CHUNK_SIZE_MULTIPLE,
+                              &( size ));
   if ( result ) {
 
     return result;
   }
-  result = ReadGenerators( sf2->sf2_FileHandle,
-                           chunk.size,
-                           &( sf2->sf2_Instruments ));
+  result = ReadHydraGenerators( sf2->sf2_FileHandle,
+                                chunk.size,
+                                &( sf2->sf2_Instruments ));
   if ( result ) {
 
     return result;
@@ -1260,18 +1273,18 @@ static LONG ReadPresetInfo( struct SF2 * sf2, ULONG size ) {
   LOG_D(( "D: After instrument generators, preset size is %ld\n", size ));
 
   // Instrument Generators
-  result = ReadPresetSubChunk( sf2->sf2_FileHandle,
-                               &( chunk ),
-                               SHDR_CHUNK_ID,
-                               SHDR_CHUNK_SIZE_MULTIPLE,
-                               &( size ));
+  result = ReadHydraSubChunk( sf2->sf2_FileHandle,
+                              &( chunk ),
+                              SHDR_CHUNK_ID,
+                              SHDR_CHUNK_SIZE_MULTIPLE,
+                              &( size ));
   if ( result ) {
 
     return result;
   }
-  result = ReadSamples( sf2->sf2_FileHandle,
-                        chunk.size,
-                        &( sf2->sf2_Samples ));
+  result = ReadHydraSamples( sf2->sf2_FileHandle,
+                             chunk.size,
+                             &( sf2->sf2_Samples ));
   if ( result ) {
 
     return result;
@@ -1283,7 +1296,11 @@ static LONG ReadPresetInfo( struct SF2 * sf2, ULONG size ) {
   return ENoError;
 }
 
-static LONG ReadHeader( struct SF2 * sf2 ) {
+/******************************************************************************
+ * SF2 reader - private functions offloading public work.
+ *****************************************************************************/
+
+static LONG ReadFileHeader( struct SF2 * sf2 ) {
 
   LONG result;
   LONG expectedPosition;
@@ -1296,7 +1313,7 @@ static LONG ReadHeader( struct SF2 * sf2 ) {
     DisplayError( ENoRiffChunk );
     return ENoRiffChunk;
   }
-  LOG_D(( "D: RIFF passed.\n" ));
+  LOG_D(( "D: RIFF chunk passed.\n" ));
 
   result = ReadULONG( sf2->sf2_FileHandle, &( chunk.id ));
   if (( 1 != result ) || ( SFBK_CHUNK_ID != chunk.id )) {
@@ -1304,14 +1321,14 @@ static LONG ReadHeader( struct SF2 * sf2 ) {
     DisplayError( ENoSfbkChunk );
     return ENoSfbkChunk;
   }
-  LOG_D(( "D: SoundFont passed.\n" ));
+  LOG_D(( "D: SoundFont bank chunk passed.\n" ));
 
   if ( chunk.size != ( sf2->sf2_FileSize - 8 )) {
 
     DisplayError( EInvalidFileSize );
     return EInvalidFileSize;
   }
-  LOG_D(( "D: Size passed.\n" ));
+  LOG_D(( "D: Size check passed.\n" ));
 
   result = ReadListChunk( sf2->sf2_FileHandle, &( chunk ));
   if (( 1 != result ) || ( INFO_CHUNK_ID != chunk.id )) {
@@ -1319,13 +1336,13 @@ static LONG ReadHeader( struct SF2 * sf2 ) {
     DisplayError( ENoInfoChunk );
     return ENoInfoChunk;
   }
-  result = ReadInfo( sf2, chunk.size );
+  result = ReadSoundFontInfo( sf2, chunk.size );
   if ( ENoError != result ) {
 
     DisplayError( result );
     return result;
   }
-  LOG_D(( "D: Info passed.\n" ));
+  LOG_D(( "D: Metadata chunk passed.\n" ));
 
   result = ReadListChunk( sf2->sf2_FileHandle, &( chunk ));
   if (( 1 != result ) || ( SDTA_CHUNK_ID != chunk.id )) {
@@ -1333,13 +1350,13 @@ static LONG ReadHeader( struct SF2 * sf2 ) {
     DisplayError( ENoSdtaChunk );
     return ENoSdtaChunk;
   }
-  result = ReadSampleInfo( sf2, chunk.size );
+  result = ReadSampleBinaryInfo( sf2, chunk.size );
   if ( ENoError != result ) {
 
     DisplayError( result );
     return result;
   }
-  LOG_D(( "D: Sample info passed.\n" ));
+  LOG_D(( "D: Sample data chunk info passed.\n" ));
 
   result = ReadListChunk( sf2->sf2_FileHandle, &( chunk ));
   if (( 1 != result ) || ( PDTA_CHUNK_ID != chunk.id )) {
@@ -1347,13 +1364,13 @@ static LONG ReadHeader( struct SF2 * sf2 ) {
     DisplayError( ENoPdtaChunk );
     return ENoPdtaChunk;
   }
-  result = ReadPresetInfo( sf2, chunk.size );
+  result = ReadHydraData( sf2, chunk.size );
   if ( ENoError != result ) {
 
     DisplayError( result );
     return result;
   }
-  LOG_D(( "D: Preset data passed.\n" ));
+  LOG_D(( "D: Hydra data passed.\n" ));
 
   actualPosition = Seek( sf2->sf2_FileHandle, 0, OFFSET_END );
   expectedPosition = Seek( sf2->sf2_FileHandle, 0, OFFSET_CURRENT );
@@ -1366,6 +1383,34 @@ static LONG ReadHeader( struct SF2 * sf2 ) {
 
   return ENoError;
 }
+
+static VOID FreeZone( struct SF2_Zone * zone ) {
+
+  APTR t;
+  LONG i;
+
+  i = 0;
+  while ( t = REM_HEAD( &( zone->sfz2_Generators ))) {
+
+    FreeMem( t, sizeof( struct SF2_Generator ));
+    ++i;
+  }
+  LOG_V(( "V: Free'd %ld generators.\n", i ));
+
+  i = 0;
+  while ( t = REM_HEAD( &( zone->sfz2_Modulators ))) {
+
+    FreeMem( t, sizeof( struct SF2_Modulator ));
+    ++i;
+  }
+  LOG_V(( "V: Free'd %ld modulators.\n", i ));
+
+  FreeMem( zone, sizeof( struct SF2_Zone ));
+}
+
+/******************************************************************************
+ * SF2 reader - public functions.
+ *****************************************************************************/
 
 struct SF2 * AllocSf2FromFile( STRPTR filePath ) {
 
@@ -1394,7 +1439,7 @@ struct SF2 * AllocSf2FromFile( STRPTR filePath ) {
     return NULL;
   }
 
-  result = ReadHeader( sf2 );
+  result = ReadFileHeader( sf2 );
   if ( result ) {
 
     FreeSf2( sf2 );
@@ -1403,30 +1448,6 @@ struct SF2 * AllocSf2FromFile( STRPTR filePath ) {
   }
 
   return sf2;
-}
-
-VOID FreeZone( struct SF2_Zone * zone ) {
-
-  APTR t;
-  LONG i;
-
-  i = 0;
-  while ( t = REM_HEAD( &( zone->sfz2_Generators ))) {
-
-    FreeMem( t, sizeof( struct SF2_Generator ));
-    ++i;
-  }
-  LOG_V(( "V: Free'd %ld generators.\n", i ));
-
-  i = 0;
-  while ( t = REM_HEAD( &( zone->sfz2_Modulators ))) {
-
-    FreeMem( t, sizeof( struct SF2_Modulator ));
-    ++i;
-  }
-  LOG_V(( "V: Free'd %ld modulators.\n", i ));
-
-  FreeMem( zone, sizeof( struct SF2_Zone ));
 }
 
 VOID FreeSf2( struct SF2 * sf2 ) {
