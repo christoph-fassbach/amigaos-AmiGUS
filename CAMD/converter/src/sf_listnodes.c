@@ -27,7 +27,7 @@
 #include "support.h"
 
 static const struct ColumnInfo instrumentColumns[] = {
-   // 8 + 8 * chars
+// chars * 8   + 8 margin left / right
   { (  3 * 8 ) + 8, "B#", CIF_CENTER },
   { (  3 * 8 ) + 8, "P#", CIF_CENTER },
   { ( 23 * 8 ) + 8, "GM Name", CIF_CENTER },
