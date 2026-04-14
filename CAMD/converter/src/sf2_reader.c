@@ -272,6 +272,30 @@ static struct SF2_Generator * FindGeneratorById( struct MinList * generators,
   return NULL;
 }
 
+static VOID FreeZone( struct SF2_Zone * zone ) {
+
+  APTR t;
+  LONG i;
+
+  i = 0;
+  while ( t = REM_HEAD( &( zone->sfz2_Generators ))) {
+
+    FreeMem( t, sizeof( struct SF2_Generator ));
+    ++i;
+  }
+  LOG_V(( "V: Free'd %ld generators.\n", i ));
+
+  i = 0;
+  while ( t = REM_HEAD( &( zone->sfz2_Modulators ))) {
+
+    FreeMem( t, sizeof( struct SF2_Modulator ));
+    ++i;
+  }
+  LOG_V(( "V: Free'd %ld modulators.\n", i ));
+
+  FreeMem( zone, sizeof( struct SF2_Zone ));
+}
+
 static WORD GetBankFromCommon( struct SF2_Common * common ) {
 
   if ( SF2_COMMON_PRESET_TYPE != common->sf2c_Type ) {
@@ -547,7 +571,7 @@ static LONG ReadHydraGenerators( BPTR fileHandle,
                       common->sf2c_Name,
                       zoneIndex ));
               Remove(( struct Node * ) generator );
-              // TODO: fix memory leak here and at all Removes in this function!
+              FreeMem( generator, sizeof( struct SF2_Generator ));
             }
             break;
           }
@@ -567,7 +591,7 @@ static LONG ReadHydraGenerators( BPTR fileHandle,
                       common->sf2c_Name,
                       zoneIndex ));
               Remove(( struct Node * ) generator );
-              // TODO: fix memory leak here and at all Removes in this function!
+              FreeMem( generator, sizeof( struct SF2_Generator ));
             }
             break;
           }
@@ -589,6 +613,7 @@ static LONG ReadHydraGenerators( BPTR fileHandle,
                       common->sf2c_Name,
                       zoneIndex ));
               Remove(( struct Node * ) generator );
+              FreeMem( generator, sizeof( struct SF2_Generator ));
             }
             break;
           }
@@ -610,6 +635,7 @@ static LONG ReadHydraGenerators( BPTR fileHandle,
                       common->sf2c_Name,
                       zoneIndex ));
               Remove(( struct Node * ) generator );
+              FreeMem( generator, sizeof( struct SF2_Generator ));
             }
             break;
           }
@@ -640,7 +666,7 @@ static LONG ReadHydraGenerators( BPTR fileHandle,
                 duplicate->sf2g_Id = generator->sf2g_Id;
                 duplicate->sf2g_Amount = generator->sf2g_Amount;
                 Remove(( struct Node * ) generator );
-                // TODO: fix memory leak here and at all Removes in this function!
+                FreeMem( generator, sizeof( struct SF2_Generator ));
               }
 
             } else {
@@ -653,7 +679,7 @@ static LONG ReadHydraGenerators( BPTR fileHandle,
                       common->sf2c_Name,
                       zoneIndex ));
               Remove(( struct Node * ) generator );
-              // TODO: fix memory leak here and at all Removes in this function!
+              FreeMem( generator, sizeof( struct SF2_Generator ));
             }
             break;
           }
@@ -677,15 +703,15 @@ static LONG ReadHydraGenerators( BPTR fileHandle,
           ( zone != ( struct SF2_Zone * ) common->sf2c_Zones.mlh_Head )) {
 
         LOG_W(( "W: Discarding zone as global zone not appearing first!\n" ));
-        // TODO: fix memory leak here and at all Removes in this function!
         Remove(( struct Node * ) zone );
+        FreeZone( zone );
         continue;
       }
 
       while ( generator->sf2g_Node.mln_Succ ) {
 
         Remove(( struct Node * ) generator );
-        // TODO: fix memory leak here and at all Removes in this function!
+        FreeMem( generator, sizeof( struct SF2_Generator ));
 
         size -= GEN_CHUNK_SIZE_MULTIPLE;
         if ( 0 > size ) {
@@ -1382,30 +1408,6 @@ static LONG ReadFileHeader( struct SF2 * sf2 ) {
   }
 
   return ENoError;
-}
-
-static VOID FreeZone( struct SF2_Zone * zone ) {
-
-  APTR t;
-  LONG i;
-
-  i = 0;
-  while ( t = REM_HEAD( &( zone->sfz2_Generators ))) {
-
-    FreeMem( t, sizeof( struct SF2_Generator ));
-    ++i;
-  }
-  LOG_V(( "V: Free'd %ld generators.\n", i ));
-
-  i = 0;
-  while ( t = REM_HEAD( &( zone->sfz2_Modulators ))) {
-
-    FreeMem( t, sizeof( struct SF2_Modulator ));
-    ++i;
-  }
-  LOG_V(( "V: Free'd %ld modulators.\n", i ));
-
-  FreeMem( zone, sizeof( struct SF2_Zone ));
 }
 
 /******************************************************************************
