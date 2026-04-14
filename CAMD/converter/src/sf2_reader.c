@@ -1384,8 +1384,6 @@ struct SF2 * AllocSf2FromFile( STRPTR filePath ) {
     return NULL;
   }
 
-  sf2->sf2_FilePath = C_strcpy_D( filePath );
-
   Seek( sf2->sf2_FileHandle, 0, OFFSET_END );
   sf2->sf2_FileSize = Seek( sf2->sf2_FileHandle, 0, OFFSET_BEGINING );
   LOG_D(("D: SF2 file size %ld\n", sf2->sf2_FileSize ));
@@ -1418,7 +1416,7 @@ VOID FreeZone( struct SF2_Zone * zone ) {
     FreeMem( t, sizeof( struct SF2_Generator ));
     ++i;
   }
-  LOG_D(( "V: Free'd %ld generators.\n", i ));
+  LOG_V(( "V: Free'd %ld generators.\n", i ));
 
   i = 0;
   while ( t = REM_HEAD( &( zone->sfz2_Modulators ))) {
@@ -1426,7 +1424,7 @@ VOID FreeZone( struct SF2_Zone * zone ) {
     FreeMem( t, sizeof( struct SF2_Modulator ));
     ++i;
   }
-  LOG_D(( "V: Free'd %ld modulators.\n", i ));
+  LOG_V(( "V: Free'd %ld modulators.\n", i ));
 
   FreeMem( zone, sizeof( struct SF2_Zone ));
 }
@@ -1461,7 +1459,7 @@ VOID FreeSf2( struct SF2 * sf2 ) {
       FreeZone( u );
       ++h;
     }
-    LOG_D(( "V: Free'd %ld zones.\n", h ));
+    LOG_V(( "V: Free'd %ld zones.\n", h ));
     FreeMem( t, sizeof( struct SF2_Instrument ));
     ++i;
   }
@@ -1478,7 +1476,7 @@ VOID FreeSf2( struct SF2 * sf2 ) {
       FreeZone( u );
       ++h;
     }
-    LOG_D(( "V: Free'd %ld zones.\n", h ));
+    LOG_V(( "V: Free'd %ld zones.\n", h ));
     FreeMem( t, sizeof( struct SF2_Preset ));
     ++i;
   }
@@ -1489,8 +1487,7 @@ VOID FreeSf2( struct SF2 * sf2 ) {
     Close( sf2->sf2_FileHandle );
     sf2->sf2_FileHandle = NULL;
   }
-  i = C_strlen( sf2->sf2_FilePath );
-  FreeMem( sf2->sf2_FilePath, i );
 
   FreeMem( sf2, sizeof( struct SF2 ));
+  LOG_D(( "D: Free'd SF2 - was 0x%08lx.\n", sf2 ));
 }

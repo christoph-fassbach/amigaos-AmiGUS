@@ -259,10 +259,10 @@ void B_strncpy(STRPTR target, BSTR source, UWORD max) {
   C_strncpy(target, sptr, max);
 }
 
-STRPTR C_strcpy_D(STRPTR string) {
+STRPTR C_strcpy_VD(STRPTR string) {
 
   LONG length = C_strlen(string) + 1;
-  STRPTR result = AllocMem(length, MEMF_ANY);
+  STRPTR result = AllocVec(length, MEMF_ANY);
   C_strncpy(result, string, length);
 
   return result;

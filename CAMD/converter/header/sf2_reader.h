@@ -93,7 +93,6 @@ struct SF2_Sample {
 
 struct SF2 {
 
-  STRPTR sf2_FilePath;
   BPTR sf2_FileHandle;
   ULONG sf2_FileSize;
   UWORD sf2_MajorVersion;

@@ -93,7 +93,6 @@ struct Node * NodeAtIndex( struct List * list, const LONG index );
 #define REM_HEAD( list ) \
   RemHead(( struct List * ) list )
 
-
 /******************************************************************************
  * Error messaging functions.
  *****************************************************************************/
@@ -175,9 +174,9 @@ void B_strncpy(STRPTR target, BSTR source, UWORD max);
  * @param string Input string.
  *
  * @return Copy of the string,
- *         transferring ownership of it to the caller.
+ *         transferring ownership of the vector to the caller.
  */
-STRPTR C_strcpy_D(STRPTR string);
+STRPTR C_strcpy_VD(STRPTR string);
 
 /**
  * Returns target, adding as much of source into it as max permits.

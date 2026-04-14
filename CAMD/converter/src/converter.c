@@ -617,11 +617,10 @@ VOID HandleEvents( VOID ) {
             }
             case GadgetId_ReadButton: {
 
-              APTR x;
               LOG_D(( "D: Reading %s.\n", base->sfc_SourceFileName ));
-              x = AllocSf2FromFile( base->sfc_SourceFileName );
-              LOG_D(( "D: result is 0x%08lx\n", x ));
-              FreeSf2( x );
+              base->sfc_Sf2 = AllocSf2FromFile( base->sfc_SourceFileName );
+              LOG_D(( "D: result is 0x%08lx\n", base->sfc_Sf2 ));
+              FreeSf2( base->sfc_Sf2 );
               break;
             }
             case GadgetId_WriteButton: {
