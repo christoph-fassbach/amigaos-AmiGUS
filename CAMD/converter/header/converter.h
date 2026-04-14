@@ -80,6 +80,7 @@ struct SF_Converter {
   STRPTR                        sfc_SourceFileName;
   STRPTR                        sfc_TargetFileName;
 
+  struct SF2                  * sfc_Sf2;
   /* Debug output handling */
   BPTR                          sfc_LogFile;       // Debug log file handle
   APTR                          sfc_LogMem;        // Debug log memory blob

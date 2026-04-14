@@ -91,7 +91,7 @@ struct SF2_Sample {
   UBYTE sf2s_Name[21];
 };
 
-struct SF2_Parsed {
+struct SF2 {
 
   STRPTR sf2_FilePath;
   BPTR sf2_FileHandle;
@@ -106,12 +106,11 @@ struct SF2_Parsed {
   ULONG sf2_PresetsSize;
 
   struct MinList sf2_Samples;
-  struct MinList sf2_Modulators;
   struct MinList sf2_Instruments;
   struct MinList sf2_Presets;
 };
 
-struct SF2_Parsed * AllocSf2FromFile( STRPTR filePath );
-VOID FreeSf2( struct SF2_Parsed * soundFont );
+struct SF2 * AllocSf2FromFile( STRPTR filePath );
+VOID FreeSf2( struct SF2 * sf2 );
 
 #endif /* SF2_READER_H */

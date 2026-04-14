@@ -621,6 +621,7 @@ VOID HandleEvents( VOID ) {
               LOG_D(( "D: Reading %s.\n", base->sfc_SourceFileName ));
               x = AllocSf2FromFile( base->sfc_SourceFileName );
               LOG_D(( "D: result is 0x%08lx\n", x ));
+              FreeSf2( x );
               break;
             }
             case GadgetId_WriteButton: {

@@ -289,7 +289,7 @@ static LONG ReadPresetHeaders( BPTR fileHandle,
     struct SF2_Preset * preset = NULL;
     if ( 0 < i ) {
 
-      preset = AllocVec( sizeof( struct SF2_Preset ), MEMF_ANY | MEMF_CLEAR );
+      preset = AllocMem( sizeof( struct SF2_Preset ), MEMF_ANY | MEMF_CLEAR );
       preset->sf2p_Common.sf2c_Type = SF2_COMMON_PRESET_TYPE;
       NEW_LIST( &( preset->sf2p_Common.sf2c_Zones ));
       ADD_TAIL( target, &( preset->sf2p_Common.sf2c_Node ));
@@ -317,7 +317,7 @@ static LONG ReadPresetHeaders( BPTR fileHandle,
                 h, ( size / PHDR_CHUNK_SIZE_MULTIPLE ) - 1 - i ));
         while ( h ) {
 
-          struct SF2_Zone * zone = AllocVec( sizeof( struct SF2_Zone ),
+          struct SF2_Zone * zone = AllocMem( sizeof( struct SF2_Zone ),
                                              MEMF_ANY | MEMF_CLEAR );
           NEW_LIST( &( zone->sfz2_Generators ));
           NEW_LIST( &( zone->sfz2_Modulators ));
@@ -370,7 +370,7 @@ static LONG ReadZone( BPTR fileHandle,
     while ( temp ) {
 
       struct SF2_Generator * generator =
-        AllocVec( sizeof( struct SF2_Generator ), MEMF_ANY | MEMF_CLEAR );
+        AllocMem( sizeof( struct SF2_Generator ), MEMF_ANY | MEMF_CLEAR );
       ADD_TAIL( &( target->sfz2_Generators ), generator );
       --temp;
     }
@@ -378,7 +378,7 @@ static LONG ReadZone( BPTR fileHandle,
     while ( temp ) {
 
       struct SF2_Modulator * modulator =
-        AllocVec( sizeof( struct SF2_Modulator ), MEMF_ANY | MEMF_CLEAR );
+        AllocMem( sizeof( struct SF2_Modulator ), MEMF_ANY | MEMF_CLEAR );
       ADD_TAIL( &( target->sfz2_Modulators ), modulator );
       --temp;
     }
@@ -833,7 +833,7 @@ static LONG ReadSamples( BPTR fileHandle,
       ULONG l;
       UWORD w;
     } temp;
-    struct SF2_Sample * sample = AllocVec( sizeof( struct SF2_Sample ),
+    struct SF2_Sample * sample = AllocMem( sizeof( struct SF2_Sample ),
                                            MEMF_ANY | MEMF_CLEAR );
     ADD_HEAD( target, sample );
     sample->sf2s_Number = i;
@@ -885,7 +885,7 @@ static LONG ReadInstrumentHeaders( BPTR fileHandle,
     struct SF2_Instrument * instrument = NULL;
     if ( 0 < i ) {
 
-      instrument = AllocVec( sizeof( struct SF2_Instrument ),
+      instrument = AllocMem( sizeof( struct SF2_Instrument ),
                              MEMF_ANY | MEMF_CLEAR );
       instrument->sf2i_Common.sf2c_Type = SF2_COMMON_INSTRUMENT_TYPE;
       NEW_LIST( &( instrument->sf2i_Common.sf2c_Zones ));
@@ -909,7 +909,7 @@ static LONG ReadInstrumentHeaders( BPTR fileHandle,
                 h, ( size / IHDR_CHUNK_SIZE_MULTIPLE ) - 1 - i ));
         while ( h ) {
 
-          struct SF2_Zone * zone = AllocVec( sizeof( struct SF2_Zone ),
+          struct SF2_Zone * zone = AllocMem( sizeof( struct SF2_Zone ),
                                              MEMF_ANY | MEMF_CLEAR );
           NEW_LIST( &( zone->sfz2_Generators ));
           NEW_LIST( &( zone->sfz2_Modulators ));
@@ -933,7 +933,7 @@ static LONG ReadInstrumentHeaders( BPTR fileHandle,
   return ENoError;
 }
 
-static LONG ReadInfo( struct SF2_Parsed * sf2, ULONG size ) {
+static LONG ReadInfo( struct SF2 * sf2, ULONG size ) {
 
   LONG result;
   struct SF2_Chunk chunk;
@@ -1020,7 +1020,7 @@ static LONG ReadInfo( struct SF2_Parsed * sf2, ULONG size ) {
   return ENoError;
 }
 
-static LONG ReadSampleInfo( struct SF2_Parsed * sf2, ULONG size ) {
+static LONG ReadSampleInfo( struct SF2 * sf2, ULONG size ) {
 
   LONG result;
   struct SF2_Chunk chunk;
@@ -1098,7 +1098,7 @@ static LONG ReadSampleInfo( struct SF2_Parsed * sf2, ULONG size ) {
   return ENoError;
 }
 
-static LONG ReadPresetInfo( struct SF2_Parsed * sf2, ULONG size ) {
+static LONG ReadPresetInfo( struct SF2 * sf2, ULONG size ) {
 
   LONG result;
   struct SF2_Chunk chunk;
@@ -1283,7 +1283,7 @@ static LONG ReadPresetInfo( struct SF2_Parsed * sf2, ULONG size ) {
   return ENoError;
 }
 
-static LONG ReadHeader( struct SF2_Parsed * sf2 ) {
+static LONG ReadHeader( struct SF2 * sf2 ) {
 
   LONG result;
   LONG expectedPosition;
@@ -1367,58 +1367,130 @@ static LONG ReadHeader( struct SF2_Parsed * sf2 ) {
   return ENoError;
 }
 
-struct SF2_Parsed * AllocSf2FromFile( STRPTR filePath ) {
+struct SF2 * AllocSf2FromFile( STRPTR filePath ) {
 
   LONG result;
-  struct SF2_Parsed X;
-  struct SF2_Parsed * sf2 = &( X );
-
-  sf2->sf2_16bitSamplePosition = 0;
-  sf2->sf2_24bitSamplePosition = 0;
+  struct SF2 * sf2 = AllocMem( sizeof( struct SF2 ), MEMF_ANY | MEMF_CLEAR );
 
   NEW_LIST( &( sf2->sf2_Samples ));
-  NEW_LIST( &( sf2->sf2_Modulators ));
   NEW_LIST( &( sf2->sf2_Instruments ));
   NEW_LIST( &( sf2->sf2_Presets ));
 
   sf2->sf2_FileHandle = Open( filePath, MODE_OLDFILE );
   if ( !( sf2->sf2_FileHandle )) {
 
+    FreeSf2( sf2 );
     DisplayError( EOpenFileFailed );
     return NULL;
   }
 
-  sf2->sf2_FilePath = C_strcpy_VD( filePath );
-
-  // SFData https://github.com/FluidSynth/fluidsynth/blob/master/src/sfloader/fluid_sffile.h#L135
-  // read https://github.com/FluidSynth/fluidsynth/blob/master/src/sfloader/fluid_sffile.c#L354
+  sf2->sf2_FilePath = C_strcpy_D( filePath );
 
   Seek( sf2->sf2_FileHandle, 0, OFFSET_END );
   sf2->sf2_FileSize = Seek( sf2->sf2_FileHandle, 0, OFFSET_BEGINING );
   LOG_D(("D: SF2 file size %ld\n", sf2->sf2_FileSize ));
   if ( 0 >= sf2->sf2_FileSize ) {
 
+    FreeSf2( sf2 );
     DisplayError( EInvalidFileSize );
-    Close( sf2->sf2_FileHandle );
     return NULL;
   }
 
   result = ReadHeader( sf2 );
   if ( result ) {
 
-    Close( sf2->sf2_FileHandle );
+    FreeSf2( sf2 );
+    DisplayError( result );
     return NULL;
   }
-/*
-  LOG_D(( "D: %ld is das gross\n",
-sizeof( struct AmiSF_Data ) + ( 127 * ( sizeof( struct AmiSF_Note ) << 7 ))
 
-));
-*/
-  Close( sf2->sf2_FileHandle );
-  return NULL;
+  return sf2;
 }
 
-VOID FreeSf2( struct SF2_Parsed * soundFont ) {
+VOID FreeZone( struct SF2_Zone * zone ) {
 
+  APTR t;
+  LONG i;
+
+  i = 0;
+  while ( t = REM_HEAD( &( zone->sfz2_Generators ))) {
+
+    FreeMem( t, sizeof( struct SF2_Generator ));
+    ++i;
+  }
+  LOG_D(( "V: Free'd %ld generators.\n", i ));
+
+  i = 0;
+  while ( t = REM_HEAD( &( zone->sfz2_Modulators ))) {
+
+    FreeMem( t, sizeof( struct SF2_Modulator ));
+    ++i;
+  }
+  LOG_D(( "V: Free'd %ld modulators.\n", i ));
+
+  FreeMem( zone, sizeof( struct SF2_Zone ));
+}
+
+VOID FreeSf2( struct SF2 * sf2 ) {
+
+  APTR t;
+  LONG i;
+
+  if ( !sf2 ) {
+
+    LOG_D(( "V: Cannot free NULL.\n" ));
+    return;
+  }
+
+  i = 0;
+  while ( t = REM_HEAD( &( sf2->sf2_Samples ))) {
+
+    FreeMem( t, sizeof( struct SF2_Sample ));
+    ++i;
+  }
+  LOG_D(( "V: Free'd %ld samples.\n",i ));
+
+  i = 0;
+  while ( t = REM_HEAD( &( sf2->sf2_Instruments ))) {
+
+    struct SF2_Instrument * instrument = ( struct SF2_Instrument * ) t;
+    APTR u;
+    LONG h = 0;
+    while ( u = REM_HEAD( &( instrument->sf2i_Common.sf2c_Zones ))) {
+
+      FreeZone( u );
+      ++h;
+    }
+    LOG_D(( "V: Free'd %ld zones.\n", h ));
+    FreeMem( t, sizeof( struct SF2_Instrument ));
+    ++i;
+  }
+  LOG_D(( "V: Free'd %ld instruments.\n", i ));
+
+  i = 0;
+  while ( t = REM_HEAD( &( sf2->sf2_Presets ))) {
+
+    struct SF2_Preset * preset = ( struct SF2_Preset * ) t;
+    APTR u;
+    LONG h = 0;
+    while ( u = REM_HEAD( &( preset->sf2p_Common.sf2c_Zones ))) {
+
+      FreeZone( u );
+      ++h;
+    }
+    LOG_D(( "V: Free'd %ld zones.\n", h ));
+    FreeMem( t, sizeof( struct SF2_Preset ));
+    ++i;
+  }
+  LOG_D(( "V: Free'd %ld presets.\n", i ));
+
+  if ( sf2->sf2_FileHandle ) {
+
+    Close( sf2->sf2_FileHandle );
+    sf2->sf2_FileHandle = NULL;
+  }
+  i = C_strlen( sf2->sf2_FilePath );
+  FreeMem( sf2->sf2_FilePath, i );
+
+  FreeMem( sf2, sizeof( struct SF2 ));
 }
