@@ -19,6 +19,7 @@
 #ifndef SF2_H
 #define SF2_H
 
+#include <dos/dos.h>
 #include <exec/lists.h>
 
 /*

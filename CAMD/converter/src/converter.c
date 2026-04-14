@@ -201,12 +201,15 @@ struct LoadSoundFontMessage * message;
 
 VOID Cleanup( VOID ) {
 
-  DeleteMsgPort( SF_Converter_Base->sfc_MidiReplyPort );
+  struct SF_Converter * base = SF_Converter_Base;
 
-  CloseMidiInOutput( &( SF_Converter_Base->sfc_MidiLink ));
-  CloseMidi( &( SF_Converter_Base->sfc_MidiNode ));
+  FreeSf2( base->sfc_Sf2 );
+  DeleteMsgPort( base->sfc_MidiReplyPort );
 
-  FreeListLabels( &( SF_Converter_Base->sfc_InstrumentLabels ));
+  CloseMidiInOutput( &( base->sfc_MidiLink ));
+  CloseMidi( &( base->sfc_MidiNode ));
+
+  FreeListLabels( &( base->sfc_InstrumentLabels ));
 
   CloseLib(( struct Library ** )&WindowBase );
   CloseLib(( struct Library ** )&ListBrowserBase );
@@ -219,17 +222,17 @@ VOID Cleanup( VOID ) {
   CloseLib(( struct Library ** )&UtilityBase );
   CloseLib(( struct Library ** )&IntuitionBase );
   LOG_I(( "I: " STR( APP_NAME ) " cleanup starting.\n" ));
-  if ( SF_Converter_Base ) {
+  if ( base ) {
 
-    if ( SF_Converter_Base->sfc_LogFile ) {
+    if ( base->sfc_LogFile ) {
 
       LOG_I(( "I: Attempting SF_Converter_Base->sfc_LogFile.\n" ));
-      Close( SF_Converter_Base->sfc_LogFile );
+      Close( base->sfc_LogFile );
     }
     /* Free'ing agt_LogMem deliberately not happening here! */
 
     LOG_I(( "I: Attempting SF_Converter_Base.\n" ));
-    FreeMem( SF_Converter_Base, sizeof( struct SF_Converter ));
+    FreeMem( base, sizeof( struct SF_Converter ));
     SF_Converter_Base = NULL;
   }
   // No logging after this anymore!
@@ -448,9 +451,19 @@ VOID HandleEvents( VOID ) {
             case GadgetId_ReadButton: {
 
               LOG_D(( "D: Reading %s.\n", base->sfc_SourceFileName ));
+              FreeSf2( base->sfc_Sf2 );
               base->sfc_Sf2 = AllocSf2FromFile( base->sfc_SourceFileName );
               LOG_D(( "D: result is 0x%08lx\n", base->sfc_Sf2 ));
-              FreeSf2( base->sfc_Sf2 );
+
+              FreeListLabels( &( base->sfc_InstrumentLabels ));
+              CreateSf2ListLabels( &( base->sfc_InstrumentLabels ),
+                                   base->sfc_Sf2 );
+              SetGadgetAttrs( base->sfc_ListBrowser,
+                              base->sfc_MainWindow,
+                              NULL,
+                              LISTBROWSER_Labels, &( base->sfc_InstrumentLabels ),
+                              TAG_DONE );
+
               break;
             }
             case GadgetId_WriteButton: {

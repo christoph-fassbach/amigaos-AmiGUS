@@ -15,6 +15,7 @@
  *
  * If not, see <http://www.gnu.org/licenses/>.
  */
+#define ALIB_STDIO
 
 #include <proto/alib.h>
 #include <proto/exec.h>
@@ -25,6 +26,7 @@
 #include "converter.h"
 #include "debug.h"
 #include "support.h"
+#include "SDI_compiler.h"
 
 static const struct ColumnInfo instrumentColumns[] = {
 // chars * 8   + 8 margin left / right
@@ -169,6 +171,79 @@ static const UBYTE * instrumentNames[] = {
   NULL
 };
 
+struct Node * CreateListBrowserNode( CONST_STRPTR string0,
+                                     CONST_STRPTR string1,
+                                     CONST_STRPTR string2,
+                                     CONST_STRPTR string3,
+                                     CONST_STRPTR string4,
+                                     CONST_STRPTR string5,
+                                     CONST_STRPTR string6 ) {
+
+  LONG columns = sizeof( instrumentColumns ) / sizeof( struct ColumnInfo );
+  return AllocListBrowserNode( columns,
+                               LBNA_Column, 0,
+                                 LBNCA_CopyText, TRUE,
+                                 LBNCA_Text, string0,
+                                 LBNCA_Justification, LCJ_CENTER,
+                               LBNA_Column, 1,
+                                 LBNCA_CopyText, TRUE,
+                                 LBNCA_Text, string1,
+                                 LBNCA_Justification, LCJ_CENTER,
+                               LBNA_Column, 2,
+                                 LBNCA_CopyText, TRUE,
+                                 LBNCA_Text, string2,
+                               LBNA_Column, 3,
+                                 LBNCA_CopyText, TRUE,
+                                 LBNCA_Text, string3,
+                               LBNA_Column, 4,
+                                 LBNCA_CopyText, TRUE,
+                                 LBNCA_Text, string4,
+                               LBNA_Column, 5,
+                                 LBNCA_CopyText, TRUE,
+                                 LBNCA_Text, string5,
+                               LBNA_Column, 6,
+                                 LBNCA_CopyText, TRUE,
+                                 LBNCA_Text, string6,
+                               TAG_DONE );
+}
+
+VOID OrderedInsertListBrowserNode( struct List * list,
+                                   struct Node * node,
+                                   STRPTR bank,
+                                   STRPTR number ) {
+
+  struct Node * next;
+  struct Node * previous = NULL;
+
+  STRPTR nextBank = NULL;
+  STRPTR nextNumber = NULL;
+  BOOL added = FALSE;
+
+  FOR_LIST ( list, next, struct Node * ) {
+    GetListBrowserNodeAttrs( next,
+                             LBNA_Column, 0,
+                               LBNCA_Text, &nextBank,
+                             LBNA_Column, 1,
+                               LBNCA_Text, &nextNumber,
+                             TAG_END );
+    if (( 0 <= C_strcmp( nextBank, bank )) && 
+        ( 0 < C_strcmp( nextNumber, number ))) {
+      if ( previous ) {
+        Insert( list, node, previous );
+        
+      } else {
+        AddHead( list, node );
+      }
+      added = TRUE;
+      break;
+    }
+    previous = next;
+  }
+  if ( !added ) {
+    AddTail( list, node );
+  }
+}
+
 const struct ColumnInfo * GetSoundFontColumnInfos( VOID ) {
 
   return instrumentColumns;
@@ -191,55 +266,64 @@ const ULONG GetSoundFontColumnsWidth( VOID ) {
 VOID CreateEmptyListLabels( struct List * labels ) {
 
   LONG i = 0;
-  LONG bankNumber = 0;
-  UBYTE bankText[ 4 ];
-  LONG columns = sizeof( instrumentColumns ) / sizeof( struct ColumnInfo );
-
-  bankText[ 0 ] = ' ';
-  bankText[ 1 ] = ' ';
-  bankText[ 2 ] = '0';
-  bankText[ 3 ] = 0;
 
   while ( NULL != instrumentNames[ i ] ) {
-    
-    struct Node * label = AllocListBrowserNode(
-      columns,
-      LBNA_Column, 0,
-        LBNCA_CopyText, TRUE,
-        LBNCA_Text, bankText,
-        LBNCA_Justification, LCJ_CENTER,
-      LBNA_Column, 1,
-        LBNCA_CopyText, TRUE,
-        LBNCA_Text, instrumentNames[ i++ ],
-        LBNCA_Justification, LCJ_CENTER,
-      LBNA_Column, 2,
-        LBNCA_CopyText, TRUE,
-        LBNCA_Text, instrumentNames[ i++ ],
-      LBNA_Column, 3,
-        LBNCA_CopyText, TRUE,
-        LBNCA_Text, "",
-      LBNA_Column, 4,
-        LBNCA_CopyText, TRUE,
-        LBNCA_Text, "",
-      LBNA_Column, 5,
-        LBNCA_CopyText, TRUE,
-        LBNCA_Text, "",
-      LBNA_Column, 6,
-        LBNCA_CopyText, TRUE,
-        LBNCA_Text, "",
-      TAG_DONE
-    );
+
+    struct Node * label =
+      CreateListBrowserNode( "  0",
+                             instrumentNames[ i++ ],
+                             instrumentNames[ i++ ],
+                             "",
+                             "",
+                             "",
+                             "" );
     AddTail( labels, label );
   }
-  //++bank;
+}
+
+CONST_STRPTR FindInstrumentForPreset( struct SF2 * sf2,
+                                      struct SF2_Preset * preset,
+                                      UBYTE bank,
+                                      UBYTE number ) {
+  //
+  TODO
+  return "FindMe";
+}
+
+VOID CreateSf2ListLabels( struct List * labels, struct SF2 * sf2 ) {
+
+  struct SF2_Preset * preset;
+  FOR_LIST( &( sf2->sf2_Presets ), preset, struct SF2_Preset * ) {
+
+    UBYTE presetBank = preset->sf2p_Bank;
+    UBYTE presetNumber = preset->sf2p_Common.sf2c_Number;
+    CONST_STRPTR presetName = preset->sf2p_Common.sf2c_Name;
+    CONST_STRPTR gmName = instrumentNames[ ( presetNumber << 1 ) + 1 ];
+    CONST_STRPTR instrumentName = 
+      FindInstrumentForPreset( sf2, preset, presetBank, presetNumber );
+    CONST_STRPTR sampleName = "findmetoo";
+    UBYTE bank[ 4 ];
+    UBYTE number[ 4 ];
+
+    struct Node * label;
+
+    sprintf( bank, "%3ld\0", presetBank );
+    sprintf( number, "%3ld\0", presetNumber );
+    label = CreateListBrowserNode( bank,
+                                   number,
+                                   gmName,
+                                   presetName,
+                                   instrumentName,
+                                   sampleName,
+                                   "" );
+    OrderedInsertListBrowserNode( labels, label, bank, number );
+  }
 }
 
 VOID FreeListLabels( struct List * list ) {
 
   struct Node * label;
-  FOR_LIST( list,
-            label,
-            struct Node * ) {
+  while ( label = RemHead( list )) {
 
     FreeListBrowserNode( label );
   }

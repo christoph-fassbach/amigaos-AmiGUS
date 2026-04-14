@@ -1459,7 +1459,7 @@ VOID FreeSf2( struct SF2 * sf2 ) {
 
   if ( !sf2 ) {
 
-    LOG_D(( "V: Cannot free NULL.\n" ));
+    LOG_D(( "D: Cannot free SF2 at NULL.\n" ));
     return;
   }
 
@@ -1469,7 +1469,7 @@ VOID FreeSf2( struct SF2 * sf2 ) {
     FreeMem( t, sizeof( struct SF2_Sample ));
     ++i;
   }
-  LOG_D(( "V: Free'd %ld samples.\n",i ));
+  LOG_D(( "D: Free'd %ld samples.\n",i ));
 
   i = 0;
   while ( t = REM_HEAD( &( sf2->sf2_Instruments ))) {
@@ -1486,7 +1486,7 @@ VOID FreeSf2( struct SF2 * sf2 ) {
     FreeMem( t, sizeof( struct SF2_Instrument ));
     ++i;
   }
-  LOG_D(( "V: Free'd %ld instruments.\n", i ));
+  LOG_D(( "D: Free'd %ld instruments.\n", i ));
 
   i = 0;
   while ( t = REM_HEAD( &( sf2->sf2_Presets ))) {
@@ -1503,7 +1503,7 @@ VOID FreeSf2( struct SF2 * sf2 ) {
     FreeMem( t, sizeof( struct SF2_Preset ));
     ++i;
   }
-  LOG_D(( "V: Free'd %ld presets.\n", i ));
+  LOG_D(( "D: Free'd %ld presets.\n", i ));
 
   if ( sf2->sf2_FileHandle ) {
 
