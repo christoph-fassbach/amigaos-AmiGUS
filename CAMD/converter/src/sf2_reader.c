@@ -73,72 +73,6 @@
 #define CHUNK_SIZE_LIMIT_8bit    (   256 )
 #define CHUNK_SIZE_LIMIT_16bit   ( 65536 )
 
-/**
- * Generator (effect) numbers (Soundfont 2.01 specifications section 8.1.3)
- */
-enum SF2_Generator_Ids {
-    GEN_STARTADDROFS,       // Sample start address offset (0-32767)
-    GEN_ENDADDROFS,         // Sample end address offset (-32767-0)
-    GEN_STARTLOOPADDROFS,   // Sample loop start address offset (-32767-32767)
-    GEN_ENDLOOPADDROFS,     // Sample loop end address offset (-32767-32767)
-    GEN_STARTADDRCOARSEOFS, // Sample start address coarse offset (X 32768)
-    GEN_MODLFOTOPITCH,      // Modulation LFO to pitch
-    GEN_VIBLFOTOPITCH,      // Vibrato LFO to pitch
-    GEN_MODENVTOPITCH,      // Modulation envelope to pitch
-    GEN_FILTERFC,           // Filter cutoff
-    GEN_FILTERQ,            // Filter Q
-    GEN_MODLFOTOFILTERFC,   // Modulation LFO to filter cutoff
-    GEN_MODENVTOFILTERFC,   // Modulation envelope to filter cutoff
-    GEN_ENDADDRCOARSEOFS,   // Sample end address coarse offset (X 32768)
-    GEN_MODLFOTOVOL,        // Modulation LFO to volume
-    GEN_UNUSED1,            // Unused
-    GEN_CHORUSSEND,         // Chorus send amount
-    GEN_REVERBSEND,         // Reverb send amount
-    GEN_PAN,                // Stereo panning
-    GEN_UNUSED2,            // Unused
-    GEN_UNUSED3,            // Unused
-    GEN_UNUSED4,            // Unused
-    GEN_MODLFODELAY,        // Modulation LFO delay
-    GEN_MODLFOFREQ,         // Modulation LFO frequency
-    GEN_VIBLFODELAY,        // Vibrato LFO delay
-    GEN_VIBLFOFREQ,         // Vibrato LFO frequency
-    GEN_MODENVDELAY,        // Modulation envelope delay
-    GEN_MODENVATTACK,       // Modulation envelope attack
-    GEN_MODENVHOLD,         // Modulation envelope hold
-    GEN_MODENVDECAY,        // Modulation envelope decay
-    GEN_MODENVSUSTAIN,      // Modulation envelope sustain
-    GEN_MODENVRELEASE,      // Modulation envelope release
-    GEN_KEYTOMODENVHOLD,    // Key to modulation envelope hold
-    GEN_KEYTOMODENVDECAY,   // Key to modulation envelope decay
-    GEN_VOLENVDELAY,        // Volume envelope delay
-    GEN_VOLENVATTACK,       // Volume envelope attack
-    GEN_VOLENVHOLD,         // Volume envelope hold
-    GEN_VOLENVDECAY,        // Volume envelope decay
-    GEN_VOLENVSUSTAIN,      // Volume envelope sustain
-    GEN_VOLENVRELEASE,      // Volume envelope release
-    GEN_KEYTOVOLENVHOLD,    // Key to volume envelope hold
-    GEN_KEYTOVOLENVDECAY,   // Key to volume envelope decay
-    GEN_INSTRUMENT,         // Instrument ID (shouldn't be set by user)
-    GEN_RESERVED1,          // Reserved
-    GEN_KEYRANGE,           // MIDI note range
-    GEN_VELRANGE,           // MIDI velocity range
-    GEN_STARTLOOPCOARSE,    // Sample start loop address coarse offset (X 32768)
-    GEN_KEYNUM,             // Fixed MIDI note number
-    GEN_VELOCITY,           // Fixed MIDI velocity value
-    GEN_ATTENUATION,        // Initial volume attenuation
-    GEN_RESERVED2,          // Reserved
-    GEN_ENDLOOPCOARSE,      // Sample end loop address coarse offset (X 32768)
-    GEN_COARSETUNE,         // Coarse tuning
-    GEN_FINETUNE,           // Fine tuning
-    GEN_SAMPLEID,           // Sample ID (shouldn't be set by user)
-    GEN_SAMPLEMODE,         // Sample mode flags
-    GEN_RESERVED3,          // Reserved
-    GEN_SCALETUNE,          // Scale tuning
-    GEN_EXCLUSIVECLASS,     // Exclusive class number
-    GEN_OVERRIDEROOTKEY,    // Sample root note override
-    GEN_LAST                // Count of generators - not to be used or exceeded!
-};
-
 struct SF2_Chunk {
 
   ULONG id;
@@ -549,7 +483,7 @@ static LONG ReadHydraGenerators( BPTR fileHandle,
         LOG_V(( "V: New generator with ID 0x%04lx - swapped 0x%04lx = %ld\n",
                 temp, generator->sf2g_Id, generator->sf2g_Id ));
         ReadUWORD( fileHandle, &temp );
-        generator->sf2g_Amount = temp;
+        generator->sf2g_Amount = Swap16( temp );
 
         ++generatorCount;
 
@@ -767,7 +701,8 @@ static LONG ReadHydraGenerators( BPTR fileHandle,
 
 static LONG ReadHydraPresets( BPTR fileHandle,
                               const LONG size,
-                              struct MinList * target ) {
+                              struct MinList * target,
+                              ULONG * targetCount ) {
 
   LONG i;
   UWORD temp;
@@ -786,6 +721,7 @@ static LONG ReadHydraPresets( BPTR fileHandle,
     return ENoPresets;
   }
   LOG_D(( "D: Found %ld presets in %ld.\n", i + 1, size ));
+  *targetCount = i;
 
   while ( 0 <= i ) {
 
@@ -845,12 +781,14 @@ static LONG ReadHydraPresets( BPTR fileHandle,
 
 static LONG ReadHydraInstruments( BPTR fileHandle,
                                   LONG size,
-                                  struct MinList * target ) {
+                                  struct MinList * target,
+                                  ULONG * targetCount ) {
 
   LONG i;
   UWORD temp;
-  UWORD index;
-  UWORD previousIndex = 0;
+  UWORD instrumentIndex = 0;
+  UWORD zoneIndex;
+  UWORD previousZoneIndex = 0;
   struct SF2_Instrument * previousInstrument = NULL;
 
   if (( !( size )) || ( size % IHDR_CHUNK_SIZE_MULTIPLE )) {
@@ -863,8 +801,10 @@ static LONG ReadHydraInstruments( BPTR fileHandle,
 
     return ENoInstruments;
   }
-  LOG_D(( "D: Found %ld ionstruments in %ld.\n", i + 1, size ));
+  LOG_D(( "D: Found %ld instruments in %ld.\n", i + 1, size ));
+  *targetCount = i;
 
+  // Deliberately running until (size + 1)-th in the for-loop!
   while ( 0 <= i ) {
 
     struct SF2_Instrument * instrument = NULL;
@@ -876,20 +816,23 @@ static LONG ReadHydraInstruments( BPTR fileHandle,
       NEW_LIST( &( instrument->sf2i_Common.sf2c_Zones ));
       ADD_TAIL( target, &( instrument->sf2i_Common.sf2c_Node ));
       ReadString( fileHandle, instrument->sf2i_Common.sf2c_Name );
+      instrument->sf2i_Common.sf2c_Number = instrumentIndex;
+      ++instrumentIndex;
 
     } else {
 
       Seek( fileHandle, IHDR_CHUNK_SIZE_MULTIPLE - 2, OFFSET_CURRENT );
     }
+
     ReadUWORD( fileHandle, &( temp ));
-    index = Swap16( temp );
+    zoneIndex = Swap16( temp );
     
     if ( previousInstrument ) {
 
       // So >1st instrument
-      if ( index > previousIndex ) {
+      if ( zoneIndex > previousZoneIndex ) {
 
-        LONG h = index - previousIndex;
+        LONG h = zoneIndex - previousZoneIndex;
         LOG_V(( "V: Adding %ld zones to instrument %ld\n",
                 h, ( size / IHDR_CHUNK_SIZE_MULTIPLE ) - 1 - i ));
         while ( h ) {
@@ -899,19 +842,18 @@ static LONG ReadHydraInstruments( BPTR fileHandle,
           NEW_LIST( &( zone->sfz2_Generators ));
           NEW_LIST( &( zone->sfz2_Modulators ));
           ADD_TAIL( &( previousInstrument->sf2i_Common.sf2c_Zones ), zone );
-          previousInstrument->sf2i_Common.sf2c_Number = previousIndex;
           --h;
         }
       } else {
 
         return EInvalidInstrumentIndex;
       }
-    } else if ( index > 0 ) {
+    } else if ( zoneIndex > 0 ) {
       LOG_W(( "W: %ld instrument zones unused!\n" ));
     }
 
     previousInstrument = instrument;
-    previousIndex = index;
+    previousZoneIndex = zoneIndex;
     --i;
   }
 
@@ -919,8 +861,9 @@ static LONG ReadHydraInstruments( BPTR fileHandle,
 }
 
 static LONG ReadHydraSamples( BPTR fileHandle,
-                              LONG size,
-                              struct MinList * target ) {
+                              const LONG size,
+                              struct MinList * target,
+                              ULONG * targetCount ) {
 
   LONG i;
 
@@ -929,15 +872,15 @@ static LONG ReadHydraSamples( BPTR fileHandle,
     return EInvalidSampleSize;
   }
 
-  size = ( size / SHDR_CHUNK_SIZE_MULTIPLE ) - 1;
-  if ( !size ) {
+  *targetCount = ( size / SHDR_CHUNK_SIZE_MULTIPLE ) - 1;
+  if ( !( *targetCount )) {
 
     LOG_W(( "W: No samples available!\n" ));
     Seek( fileHandle, SHDR_CHUNK_SIZE_MULTIPLE, OFFSET_CURRENT );
     return ENoError;
   }
 
-  for ( i = 0; i < size; ++i ) {
+  for ( i = 0; i < *targetCount; ++i ) {
 
     union {
       ULONG l;
@@ -1158,7 +1101,8 @@ static LONG ReadHydraData( struct SF2 * sf2, ULONG size ) {
   }
   result = ReadHydraPresets( sf2->sf2_FileHandle,
                              chunk.size,
-                             &( sf2->sf2_Presets ));
+                             &( sf2->sf2_Presets ),
+                             &( sf2->sf2_PresetCount ));
   if ( result ) {
 
     return result;
@@ -1234,7 +1178,8 @@ static LONG ReadHydraData( struct SF2 * sf2, ULONG size ) {
   }
   result = ReadHydraInstruments( sf2->sf2_FileHandle,
                                  chunk.size,
-                                 &( sf2->sf2_Instruments ));
+                                 &( sf2->sf2_Instruments ),
+                                 &( sf2->sf2_InstrumentCount ));
   if ( result ) {
 
     return result;
@@ -1310,7 +1255,8 @@ static LONG ReadHydraData( struct SF2 * sf2, ULONG size ) {
   }
   result = ReadHydraSamples( sf2->sf2_FileHandle,
                              chunk.size,
-                             &( sf2->sf2_Samples ));
+                             &( sf2->sf2_Samples ),
+                             &( sf2->sf2_SampleCount ));
   if ( result ) {
 
     return result;
@@ -1410,6 +1356,45 @@ static LONG ReadFileHeader( struct SF2 * sf2 ) {
   return ENoError;
 }
 
+VOID PrepareIndex( struct SF2 * sf2 ) {
+
+  struct SF2_Sample * sample;
+  struct SF2_Instrument * instrument;
+
+  sf2->sf2_SampleArray =
+    AllocMem( sf2->sf2_SampleCount * sizeof( struct SF2_Sample * ),
+              MEMF_ANY | MEMF_CLEAR );
+  FOR_LIST( &( sf2->sf2_Samples ), sample, struct SF2_Sample * ) {
+
+    LONG i = sample->sf2s_Number;
+    if ( !( sf2->sf2_SampleArray[ i ] )) {
+
+      sf2->sf2_SampleArray[ i ] = sample;
+
+    } else {
+
+      LOG_E(( "E: Cannot create sample index!\n" ));
+    }
+  }
+
+  sf2->sf2_InstrumentArray =
+    AllocMem( sf2->sf2_InstrumentCount * sizeof( struct SF2_Instrument * ),
+              MEMF_ANY | MEMF_CLEAR );
+  FOR_LIST( &( sf2->sf2_Instruments ), instrument, struct SF2_Instrument * ) {
+
+    LONG i = instrument->sf2i_Common.sf2c_Number;
+    if ( !( sf2->sf2_InstrumentArray[ i ] )) {
+
+      sf2->sf2_InstrumentArray[ i ] = instrument;
+
+    } else {
+
+      LOG_E(( "E: Cannot create instrument index!\n" ));
+    }
+  }
+  LOG_I(( "I: Indices created.\n" ));
+}
+
 /******************************************************************************
  * SF2 reader - public functions.
  *****************************************************************************/
@@ -1448,6 +1433,8 @@ struct SF2 * AllocSf2FromFile( STRPTR filePath ) {
     DisplayError( result );
     return NULL;
   }
+
+  PrepareIndex( sf2 );
 
   return sf2;
 }

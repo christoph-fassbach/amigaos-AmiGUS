@@ -190,19 +190,19 @@ struct Node * CreateListBrowserNode( CONST_STRPTR string0,
                                  LBNCA_Text, string1,
                                  LBNCA_Justification, LCJ_CENTER,
                                LBNA_Column, 2,
-                                 LBNCA_CopyText, TRUE,
+                                 LBNCA_CopyText, FALSE,
                                  LBNCA_Text, string2,
                                LBNA_Column, 3,
-                                 LBNCA_CopyText, TRUE,
+                                 LBNCA_CopyText, FALSE,
                                  LBNCA_Text, string3,
                                LBNA_Column, 4,
-                                 LBNCA_CopyText, TRUE,
+                                 LBNCA_CopyText, FALSE,
                                  LBNCA_Text, string4,
                                LBNA_Column, 5,
-                                 LBNCA_CopyText, TRUE,
+                                 LBNCA_CopyText, FALSE,
                                  LBNCA_Text, string5,
                                LBNA_Column, 6,
-                                 LBNCA_CopyText, TRUE,
+                                 LBNCA_CopyText, FALSE,
                                  LBNCA_Text, string6,
                                TAG_DONE );
 }
@@ -281,43 +281,108 @@ VOID CreateEmptyListLabels( struct List * labels ) {
   }
 }
 
-CONST_STRPTR FindInstrumentForPreset( struct SF2 * sf2,
-                                      struct SF2_Preset * preset,
-                                      UBYTE bank,
-                                      UBYTE number ) {
-  //
-  TODO
-  return "FindMe";
+VOID AddSf2Label(
+  struct SF2 * sf2,
+  struct List * labels,
+  struct SF2_Preset * preset,
+  struct SF2_Instrument * instrument,
+  struct SF2_Sample * sample ) {
+
+  UBYTE presetBank = preset->sf2p_Bank;
+  UBYTE presetNumber = preset->sf2p_Common.sf2c_Number;
+  CONST_STRPTR presetName = preset->sf2p_Common.sf2c_Name;
+  CONST_STRPTR gmName = instrumentNames[ ( presetNumber << 1 ) + 1 ];
+  CONST_STRPTR instrumentName = instrument->sf2i_Common.sf2c_Name;
+  CONST_STRPTR sampleName = sample->sf2s_Name;
+
+  UBYTE bank[ 4 ];
+  UBYTE number[ 4 ];
+
+  struct Node * label;
+
+  sprintf( bank, "%3ld\0", presetBank );
+  sprintf( number, "%3ld\0", presetNumber );
+  label = CreateListBrowserNode( bank,
+                                 number,
+                                 gmName,
+                                 presetName,
+                                 instrumentName,
+                                 sampleName,
+                                 "" );
+  OrderedInsertListBrowserNode( labels, label, bank, number );
 }
 
-VOID CreateSf2ListLabels( struct List * labels, struct SF2 * sf2 ) {
+VOID CreateSf2ListLabels(
+  struct List * labels,
+  struct SF2 * sf2 ) {
 
+  ULONG progress = 0;
+  ULONG maxProgress = sf2->sf2_PresetCount;/*sf2->sf2_SampleCount 
+                    * sf2->sf2_InstrumentCount
+                    * sf2->sf2_PresetCount;*/
+  LONG countP = 0;
+  LONG countO = 0;
   struct SF2_Preset * preset;
-  FOR_LIST( &( sf2->sf2_Presets ), preset, struct SF2_Preset * ) {
+  FOR_LIST( &( sf2->sf2_Presets ),
+            preset,
+            struct SF2_Preset * ) {
 
-    UBYTE presetBank = preset->sf2p_Bank;
-    UBYTE presetNumber = preset->sf2p_Common.sf2c_Number;
-    CONST_STRPTR presetName = preset->sf2p_Common.sf2c_Name;
-    CONST_STRPTR gmName = instrumentNames[ ( presetNumber << 1 ) + 1 ];
-    CONST_STRPTR instrumentName = 
-      FindInstrumentForPreset( sf2, preset, presetBank, presetNumber );
-    CONST_STRPTR sampleName = "findmetoo";
-    UBYTE bank[ 4 ];
-    UBYTE number[ 4 ];
+    struct SF2_Zone * zoneP;
 
-    struct Node * label;
+    FOR_LIST( &( preset->sf2p_Common.sf2c_Zones ),
+              zoneP,
+              struct SF2_Zone * ) {
 
-    sprintf( bank, "%3ld\0", presetBank );
-    sprintf( number, "%3ld\0", presetNumber );
-    label = CreateListBrowserNode( bank,
-                                   number,
-                                   gmName,
-                                   presetName,
-                                   instrumentName,
-                                   sampleName,
-                                   "" );
-    OrderedInsertListBrowserNode( labels, label, bank, number );
+      struct SF2_Generator * generatorP;
+      FOR_LIST( &( zoneP->sfz2_Generators ),
+                generatorP,
+                struct SF2_Generator * ) {
+
+        if ( GEN_INSTRUMENT == generatorP->sf2g_Id ) {
+
+          struct SF2_Instrument * instrument = 
+            sf2->sf2_InstrumentArray[ generatorP->sf2g_Amount ];
+          struct SF2_Zone * zoneI;
+
+          LOG_V(( "V: Found instrument %ld\n",
+                  instrument->sf2i_Common.sf2c_Number ));
+
+          FOR_LIST( &( instrument->sf2i_Common.sf2c_Zones ),
+                    zoneI,
+                    struct SF2_Zone * ) {
+
+            struct SF2_Generator * generatorI;
+            FOR_LIST( &( zoneI->sfz2_Generators ),
+                      generatorI,
+                      struct SF2_Generator * ) {
+
+              if ( GEN_SAMPLEID == generatorI->sf2g_Id ) {
+
+                struct SF2_Sample * sample =
+                  sf2->sf2_SampleArray[ generatorI->sf2g_Amount ];
+                LOG_V(( "V: Preset %ld-%ld instrument %ld sample %ld\n",
+                        preset->sf2p_Bank,
+                        preset->sf2p_Common.sf2c_Number,
+                        generatorP->sf2g_Amount,
+                        generatorI->sf2g_Amount ));
+
+                LOG_V(( "V: Found sample %ld\n",
+                        sample->sf2s_Number ));
+                AddSf2Label( sf2, labels, preset, instrument, sample );
+                ++countO;
+                break;
+              }
+            }
+          }
+        }
+      }
+    }
+    ++countP;
+    ++progress;
+    LOG_D(("D: Progress %ld of %ld\n", progress, maxProgress ));
   }
+  LOG_I(( "I: %ld presets created %ld labels\n",
+          countP, countO ));
 }
 
 VOID FreeListLabels( struct List * list ) {
