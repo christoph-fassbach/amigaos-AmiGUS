@@ -127,16 +127,16 @@ struct SF2_Common {
 
   struct MinNode sf2c_Node;
   struct MinList sf2c_Zones;
-  UWORD sf2c_Number;
+  LONG sf2c_Number; // UWORD - but need long for display.
   UBYTE sf2c_Name[21];
   UBYTE sf2c_Type;
+  UWORD sf2c_Padding;
 };
 
 struct SF2_Preset {
 
   struct SF2_Common sf2p_Common;
-  UWORD sf2p_Bank;
-  UWORD sf2p_Padding0;
+  LONG sf2p_Bank; // UWORD - but need long for display.
 };
 
 struct SF2_Instrument {
