@@ -337,49 +337,6 @@ struct Node * CreateListBrowserNode( const LONG * integer0,
                                TAG_DONE );
 }
 
-VOID OrderedInsertListBrowserNode( struct List * list,
-                                   struct Node * node,
-                                   LONG bank,
-                                   LONG number ) {
-
-  struct Node * next;
-  struct Node * previous = NULL;
-
-  LONG * nextBank = NULL;
-  LONG * nextNumber = NULL;
-  BOOL added = FALSE;
-
-  LOG_V(( "V: Inserting \n" ));
-  FOR_LIST ( list, next, struct Node * ) {
-    GetListBrowserNodeAttrs( next,
-                             LBNA_Column, 0,
-                               LBNCA_Integer, &nextBank,
-                             LBNA_Column, 1,
-                               LBNCA_Integer, &nextNumber,
-                             TAG_END );
-    if (( *nextBank > bank ) ||
-        (( *nextBank == bank ) && ( *nextNumber > number ))) {
-
-      if ( previous ) {
-
-        Insert( list, node, previous );
-        
-      } else {
-
-        AddHead( list, node );
-      }
-
-      added = TRUE;
-      break;
-    }
-    previous = next;
-  }
-  if ( !added ) {
-
-    AddTail( list, node );
-  }
-}
-
 const struct ColumnInfo * GetSoundFontColumnInfos( VOID ) {
 
   return instrumentColumns;
@@ -443,7 +400,7 @@ VOID AddSf2Label(
                                  sampleName,
                                  "" );
   LOG_V(( "V: Inserting label\n" ));
-  OrderedInsertListBrowserNode( labels, label, *bank, *number );
+  AddTail( labels, label );
 }
 
 VOID CreateSf2ListLabels(

@@ -93,6 +93,51 @@ struct Node * NodeAtIndex( struct List * list, const LONG index ) {
   return NULL;
 }
 
+VOID InsertSorted( struct Node * node,
+                   struct List * list,
+                   CompareFunction compare ) {
+
+                          
+  struct Node * old;
+  FOR_LIST( list, old, struct Node * ) {
+
+    if ( 0 > compare(old, node)) {
+
+      break;
+    }
+  }
+  Insert( list, node, old->ln_Pred );
+}
+
+VOID InsertionSortA2B( struct List * source,
+                       struct List * target,
+                       CompareFunction compare ) {
+
+  struct Node * node;
+  while ( node = RemHead( source )) {
+
+    InsertSorted( node, target, compare );
+  }
+}
+
+VOID InsertionSort( struct List * list, CompareFunction compare ) {
+
+  struct MinList temp;
+  NEW_LIST(( struct List * ) &temp );
+  InsertionSortA2B( list, ( struct List * ) &temp, compare );
+  SwapList(( struct List * ) &temp, list );
+}
+
+VOID SwapList( struct List * source, struct List * target ) {
+
+  target->lh_Head = source->lh_Head;
+  target->lh_Tail = source->lh_Tail;
+  target->lh_TailPred = source->lh_TailPred;
+  target->lh_Head->ln_Pred = LIST_START(target);
+  target->lh_TailPred->ln_Succ = LIST_END(target);
+}
+
+
 /******************************************************************************
  * Error messaging - private functions.
  *****************************************************************************/

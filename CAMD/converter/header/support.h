@@ -93,6 +93,75 @@ struct Node * NodeAtIndex( struct List * list, const LONG index );
 #define REM_HEAD( list ) \
   RemHead(( struct List * ) list )
 
+/**
+ * Returns the start marker of AmigaOS's linked lists.
+ *
+ * @param list Input list.
+ *
+ * @return Start of the list.
+ */
+#define LIST_START(list) ((struct Node *)&((list)->lh_Head))
+
+/**
+ * Returns the end marker of AmigaOS's linked lists.
+ *
+ * @param list Input list.
+ *
+ * @return End of the list.
+ */
+#define LIST_END(list)   ((struct Node *)&((list)->lh_Tail))
+
+/**
+ * Definition for compare functions like AmigaOS's utility.library's strcmp / strncmp.
+ *
+ * @param a Node to be compared by the function.
+ * @param b Node to be compared by the function.
+ *
+ * @return  1 if a < b,
+ *          0 if a = b,
+ *         -1 if a > b
+ */
+typedef LONG ( * CompareFunction )( struct Node * a, struct Node * b );
+
+/**
+ * Inserts a node ordered into a sorted list.
+ *
+ * @param node Node to be inserted.
+ * @param sorted Pre-sorted - or empty - list.
+ * @param compare Function pointer to the compare function used to sort the list.
+ */
+VOID InsertSorted( struct Node * node,
+                   struct List * list,
+                   CompareFunction compare );
+
+/**
+ * Runs insertion sort from one list to another.
+ *
+ * @param source Source list.
+ * @param target Target pre-sorted - or empty - list.
+ * @param compare Function pointer to the compare function used to sort the list.
+ */
+VOID InsertionSortA2B( struct List * source,
+                       struct List * target,
+                       CompareFunction compare );
+
+/**
+ * Runs insertion sort on a list.
+ *
+ * @param list List to sort.
+ * @param compare Function pointer to the compare function used to sort the list.
+ */
+VOID InsertionSort( struct List * list, CompareFunction compare );
+
+/**
+ * Swaps all nodes from source to target list.
+ * Destroys the source list thereby - if you want it empty re-initialize it with NewList.
+ *
+ * @param source Source list.
+ * @param target Target list.
+ */
+VOID SwapList( struct List * source, struct List * target );
+
 /******************************************************************************
  * Error messaging functions.
  *****************************************************************************/

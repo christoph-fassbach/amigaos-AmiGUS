@@ -1395,6 +1395,23 @@ VOID PrepareIndex( struct SF2 * sf2 ) {
   LOG_I(( "I: Indices created.\n" ));
 }
 
+LONG PresetNodeCompare( struct Node * a, struct Node * b ) {
+
+  struct SF2_Preset * aa = ( struct SF2_Preset * ) a;
+  struct SF2_Preset * bb = ( struct SF2_Preset * ) b;
+  LONG major = bb->sf2p_Bank - aa->sf2p_Bank;
+  LONG minor = bb->sf2p_Common.sf2c_Number - aa->sf2p_Common.sf2c_Number;
+  LONG result = ( major ) ? major : minor;
+
+  LOG_V(( "V: Comparing 0x%08lx with bank %ld preset %ld "
+          "and 0x%08lx with bank %ld preset %ld "
+          "is %ld (%ld vs %ld)\n",
+          aa, aa->sf2p_Bank, aa->sf2p_Common.sf2c_Number,
+          bb, bb->sf2p_Bank, bb->sf2p_Common.sf2c_Number,
+          result, major, minor ));
+  return result;
+}
+
 /******************************************************************************
  * SF2 reader - public functions.
  *****************************************************************************/
@@ -1435,6 +1452,8 @@ struct SF2 * AllocSf2FromFile( STRPTR filePath ) {
   }
 
   PrepareIndex( sf2 );
+  InsertionSort(( struct List * ) &( sf2->sf2_Presets ),
+                 &PresetNodeCompare );
 
   return sf2;
 }
