@@ -67,6 +67,7 @@ struct SF_Converter {
   struct Gadget               * sfc_OutputGetFile;
   struct Gadget               * sfc_WriteButton;
   struct Gadget               * sfc_ListBrowser;
+  struct ProgressDialog       * sfc_ProgressDialog;
 
   struct List                   sfc_InstrumentLabels;
   struct List                   sfc_PercussionLabels;
@@ -100,6 +101,7 @@ extern struct UtilityBase       * UtilityBase;
 extern struct ExecBase          * SysBase;
 
 extern struct ClassLibrary      * ButtonBase;
+extern struct ClassLibrary      * FuelGaugeBase;
 extern struct ClassLibrary      * GetFileBase;
 extern struct ClassLibrary      * LabelBase;
 extern struct ClassLibrary      * LayoutBase;

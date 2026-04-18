@@ -17,7 +17,6 @@
  */
 
 #include <intuition/intuitionbase.h>
-#include <libraries/gadtools.h>
 #include <reaction/reaction_macros.h>
 #include <gadgets/getfile.h>
 
@@ -37,6 +36,7 @@
 #include "camd_utils.h"
 #include "debug.h"
 #include "errors.h"
+#include "progress_dialog.h"
 #include "sf_listnodes.h"
 #include "sf2_reader.h"
 #include "support.h"
@@ -52,6 +52,7 @@ struct UtilityBase       * UtilityBase;
 // struct ExecBase       * SysBase;
 // And for ReAction:
 struct ClassLibrary      * ButtonBase;
+struct ClassLibrary      * FuelGaugeBase;
 struct ClassLibrary      * GetFileBase;
 struct ClassLibrary      * LabelBase;
 struct ClassLibrary      * LayoutBase;
@@ -179,6 +180,7 @@ struct LoadSoundFontMessage * message;
   OpenLib(( struct Library ** )&CamdBase, "camd.library", 37, EOpenCamdBase );
 
   OpenLib(( struct Library ** )&ButtonBase, "gadgets/button.gadget", 0, EOpenButtonBase );
+  OpenLib(( struct Library ** )&FuelGaugeBase, "gadgets/fuelgauge.gadget", 0, EOpenFuelGaugeBase );
   OpenLib(( struct Library ** )&GetFileBase, "gadgets/getfile.gadget", 0, EOpenGetFileBase );
   OpenLib(( struct Library ** )&LabelBase, "images/label.image", 0, EOpenLabelBase );
   OpenLib(( struct Library ** )&LayoutBase, "gadgets/layout.gadget", 0, EOpenLayoutBase );
@@ -216,6 +218,7 @@ VOID Cleanup( VOID ) {
   CloseLib(( struct Library ** )&LayoutBase );
   CloseLib(( struct Library ** )&LabelBase );
   CloseLib(( struct Library ** )&GetFileBase );
+  CloseLib(( struct Library ** )&FuelGaugeBase );
   CloseLib(( struct Library ** )&ButtonBase );
 
   CloseLib(( struct Library ** )&CamdBase );
@@ -375,6 +378,65 @@ VOID OpenWin( VOID ) { // TODO: enable error handling and return values
   return;
 }
 
+VOID HandleReadButton( VOID ) {
+
+  struct SF_Converter * base = SF_Converter_Base;
+  BOOL abort = FALSE;
+  
+  base->sfc_ProgressDialog =
+    CreateProgressDialog( base->sfc_MainWindow,
+                          "Please wait...",
+                          "Loading and parsing SoundFont ...",
+                          "Cancel" );
+  ShowProgressDialog( base->sfc_ProgressDialog );
+
+  LOG_D(( "D: Reading %s.\n", base->sfc_SourceFileName ));
+
+  if ( !( abort )) {
+
+    FreeSf2( base->sfc_Sf2 );
+    abort = HandleProgressDialogTick( base->sfc_ProgressDialog,
+                                      1,
+                                      100 );
+  }
+  if ( !( abort )) {
+
+    FreeListLabels( &( base->sfc_InstrumentLabels ));
+    abort = HandleProgressDialogTick( base->sfc_ProgressDialog,
+                                      2,
+                                      100 );
+  }
+  if ( !( abort )) {
+
+    base->sfc_Sf2 = AllocSf2FromFile( base->sfc_SourceFileName );
+    abort = HandleProgressDialogTick( base->sfc_ProgressDialog,
+                                      10,
+                                      base->sfc_Sf2->sf2_PresetCount );
+    LOG_D(( "D: SF2 will be at 0x%08lx\n", base->sfc_Sf2 ));
+  }
+  if ( !( abort )) {
+
+    CreateSf2ListLabels( &( base->sfc_InstrumentLabels ),
+                         base->sfc_Sf2 );
+    abort = HandleProgressDialogTick( base->sfc_ProgressDialog,
+                                      100,
+                                      base->sfc_Sf2->sf2_PresetCount );
+  }
+
+  if ( abort ) {
+
+    LOG_D(( "D: Handling cancelled load.\n" ));
+    FreeListLabels( &( base->sfc_InstrumentLabels ));
+  }
+  SetGadgetAttrs( base->sfc_ListBrowser,
+                  base->sfc_MainWindow,
+                  NULL,
+                  LISTBROWSER_Labels, &( base->sfc_InstrumentLabels ),
+                  TAG_DONE );
+
+  CloseProgressDialog( base->sfc_ProgressDialog );
+}
+
 VOID HandleEvents( VOID ) {
 
   BOOL stop = FALSE;
@@ -450,20 +512,7 @@ VOID HandleEvents( VOID ) {
             }
             case GadgetId_ReadButton: {
 
-              LOG_D(( "D: Reading %s.\n", base->sfc_SourceFileName ));
-              FreeSf2( base->sfc_Sf2 );
-              base->sfc_Sf2 = AllocSf2FromFile( base->sfc_SourceFileName );
-              LOG_D(( "D: result is 0x%08lx\n", base->sfc_Sf2 ));
-
-              FreeListLabels( &( base->sfc_InstrumentLabels ));
-              CreateSf2ListLabels( &( base->sfc_InstrumentLabels ),
-                                   base->sfc_Sf2 );
-              SetGadgetAttrs( base->sfc_ListBrowser,
-                              base->sfc_MainWindow,
-                              NULL,
-                              LISTBROWSER_Labels, &( base->sfc_InstrumentLabels ),
-                              TAG_DONE );
-
+              HandleReadButton();
               break;
             }
             case GadgetId_WriteButton: {
@@ -473,7 +522,8 @@ VOID HandleEvents( VOID ) {
             }
             case GadgetId_Instruments: {
 
-              LOG_D(( "D: List element pressed.\n" ));
+              LOG_D(( "D: List element pressed\n" ));
+
               break;
             }
             default: {

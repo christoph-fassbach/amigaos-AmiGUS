@@ -33,6 +33,7 @@ enum ErrorCodes
   EOpenGfxBase,
   EOpenIntuitionBase,
   EOpenButtonBase,
+  EOpenFuelGaugeBase,
   EOpenGetFileBase,
   EOpenLabelBase,
   EOpenLayoutBase,
@@ -48,6 +49,7 @@ enum ErrorCodes
   EAddMidiLink,
   ENoAmigusFound,
   ENoAmigusRetry,
+  EAllocateProgressDialog,
 
   /* Missing implementation 100-199*/
   ESomethingNotImplemented = 100,  
