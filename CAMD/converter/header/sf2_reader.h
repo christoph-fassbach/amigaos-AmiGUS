@@ -33,12 +33,15 @@ BOOL PrepareIndex( struct SF2 * sf2 );
 // BOOL True = abort
 BOOL FlattenPresetHierarchy( struct SF2 * sf2,
                              struct ProgressDialog * dialog,
-                             ULONG currentProgress,
+                             ULONG * currentProgress,
                              ULONG maxProgress );
 
 // # Instruments progress
 // BOOL True = abort
-BOOL FlattenInstrumentHierarchy( struct SF2 * sf2 );
+BOOL FlattenInstrumentHierarchy( struct SF2 * sf2,
+                                 struct ProgressDialog * dialog,
+                                 ULONG * currentProgress,
+                                 ULONG maxProgress );
 
 VOID FreeSf2( struct SF2 * sf2 );
 

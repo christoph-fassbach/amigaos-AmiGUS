@@ -815,6 +815,7 @@ static LONG ReadHydraInstruments( BPTR fileHandle,
                              MEMF_ANY | MEMF_CLEAR );
       instrument->sf2i_Common.sf2c_Type = SF2_COMMON_INSTRUMENT_TYPE;
       NEW_LIST( &( instrument->sf2i_Common.sf2c_Zones ));
+      NEW_LIST( &( instrument->sf2i_Args ));
       ADD_TAIL( target, &( instrument->sf2i_Common.sf2c_Node ));
       ReadString( fileHandle, instrument->sf2i_Common.sf2c_Name );
       instrument->sf2i_Common.sf2c_Number = instrumentIndex;
@@ -1470,7 +1471,7 @@ BOOL PrepareIndex( struct SF2 * sf2 ) {
 
 BOOL FlattenPresetHierarchy( struct SF2 * sf2,
                              struct ProgressDialog * dialog,
-                             ULONG currentProgress,
+                             ULONG * currentProgress,
                              ULONG maxProgress ) {
 
   struct SF2_Preset * preset;
@@ -1486,10 +1487,12 @@ BOOL FlattenPresetHierarchy( struct SF2 * sf2,
               struct SF2_Zone * ) {
 
       struct SF2_Generator * generatorP;
-      struct SF2_ArgValues ArgValues;
       ULONG argValueFlags = 0x00000000;
+      struct SF2_ArgValues ArgValues;
+      ArgValues.sf2v_LowNote = 0;
+      ArgValues.sf2v_HighNote = 127;
 
-      LOG_D(( "V: Preset %ld-%ld\n",
+      LOG_V(( "V: Preset %ld-%ld\n",
               preset->sf2p_Bank,
               preset->sf2p_Common.sf2c_Number ));
       FOR_LIST( &( zoneP->sfz2_Generators ),
@@ -1501,7 +1504,7 @@ BOOL FlattenPresetHierarchy( struct SF2 * sf2,
 
             UBYTE low = ( 0x00FF & generatorP->sf2g_Amount );
             UBYTE high = (( 0xFF00 & generatorP->sf2g_Amount ) >> 8 );
-            LOG_D(( "V:   +-> Has KeyRange %ld-%ld\n", low, high ));
+            LOG_V(( "V:   +-> Has KeyRange %ld-%ld\n", low, high ));
             ArgValues.sf2v_LowNote = low;
             ArgValues.sf2v_HighNote = high;
             argValueFlags |= SF2_ARG_VALUE_FLAG_LOW_NOTE;
@@ -1511,7 +1514,7 @@ BOOL FlattenPresetHierarchy( struct SF2 * sf2,
           case GEN_INSTRUMENT: {
 
             UWORD next = generatorP->sf2g_Amount;
-            LOG_D(( "V:   +-> Has Instrument %ld\n", next ));
+            LOG_V(( "V:   +-> Has Instrument %ld\n", next ));
             ArgValues.sf2v_NextNumber = next;
             argValueFlags |= SF2_ARG_VALUE_FLAG_NEXT_NUMBER;
             break;
@@ -1527,7 +1530,7 @@ BOOL FlattenPresetHierarchy( struct SF2 * sf2,
              == ( SF2_ARG_VALUE_FLAG_ALL_REQUIRED & argValueFlags )) {
 
           struct SF2_Args * args = AllocMem( sizeof( struct SF2_Args ),
-                                             MEMF_ANY );
+                                             MEMF_ANY | MEMF_CLEAR );
           CopyMem( &ArgValues,
                    &( args->sf2a_Values ),
                    sizeof( struct SF2_ArgValues ));
@@ -1538,19 +1541,96 @@ BOOL FlattenPresetHierarchy( struct SF2 * sf2,
       }
     }
     abort = HandleProgressDialogTick( dialog,
-                                      currentProgress,
+                                      *currentProgress,
                                       maxProgress );
     if ( abort ) {
 
       return TRUE;
     }
-    ++currentProgress;
+    ++( *currentProgress );
   }
   return FALSE;
 }
 
-BOOL FlattenInstrumentHierarchy( struct SF2 * sf2 ) {
+BOOL FlattenInstrumentHierarchy( struct SF2 * sf2,
+                                 struct ProgressDialog * dialog,
+                                 ULONG * currentProgress,
+                                 ULONG maxProgress ) {
 
+  struct SF2_Instrument * instrument;
+  FOR_LIST( &( sf2->sf2_Instruments ),
+            instrument,
+            struct SF2_Instrument * ) {
+
+    BOOL abort;
+    struct SF2_Zone * zoneI;
+
+    FOR_LIST( &( instrument->sf2i_Common.sf2c_Zones ),
+              zoneI,
+              struct SF2_Zone * ) {
+
+      struct SF2_Generator * generatorI;
+      ULONG argValueFlags = 0x00000000;
+      struct SF2_ArgValues ArgValues;
+      ArgValues.sf2v_LowNote = 0;
+      ArgValues.sf2v_HighNote = 127;
+
+      LOG_V(( "V: Instrument %ld\n",
+              instrument->sf2i_Common.sf2c_Number ));
+      FOR_LIST( &( zoneI->sfz2_Generators ),
+                generatorI,
+                struct SF2_Generator * ) {
+
+        switch ( generatorI->sf2g_Id ) {
+          case GEN_KEYRANGE: {
+
+            UBYTE low = ( 0x00FF & generatorI->sf2g_Amount );
+            UBYTE high = (( 0xFF00 & generatorI->sf2g_Amount ) >> 8 );
+            LOG_V(( "V:   +-> Has KeyRange %ld-%ld\n", low, high ));
+            ArgValues.sf2v_LowNote = low;
+            ArgValues.sf2v_HighNote = high;
+            argValueFlags |= SF2_ARG_VALUE_FLAG_LOW_NOTE;
+            argValueFlags |= SF2_ARG_VALUE_FLAG_HIGH_NOTE;
+            break;
+          }
+          case GEN_SAMPLEID: {
+
+            UWORD next = generatorI->sf2g_Amount;
+            LOG_V(( "V:   +-> Has Sample %ld\n", next ));
+            ArgValues.sf2v_NextNumber = next;
+            argValueFlags |= SF2_ARG_VALUE_FLAG_NEXT_NUMBER;
+            break;
+          }
+          default: {
+            LOG_V(( "V:   +-> Has id %ld and value %ld\n",
+                    generatorI->sf2g_Id,
+                    generatorI->sf2g_Amount ));
+            break;
+          }
+        }
+        if ( SF2_ARG_VALUE_FLAG_ALL_REQUIRED 
+             == ( SF2_ARG_VALUE_FLAG_ALL_REQUIRED & argValueFlags )) {
+
+          struct SF2_Args * args = AllocMem( sizeof( struct SF2_Args ),
+                                             MEMF_ANY );
+          CopyMem( &ArgValues,
+                   &( args->sf2a_Values ),
+                   sizeof( struct SF2_ArgValues ));
+          InsertSorted(( struct Node * ) &( args->sf2a_Node ),
+                       ( struct List * ) &( instrument->sf2i_Args ),
+                       &PresetArgsNodeCompare );
+        }
+      }
+    }
+    abort = HandleProgressDialogTick( dialog,
+                                      *currentProgress,
+                                      maxProgress );
+    if ( abort ) {
+
+      return TRUE;
+    }
+    ++( *currentProgress );
+  }
   return FALSE;
 }
 

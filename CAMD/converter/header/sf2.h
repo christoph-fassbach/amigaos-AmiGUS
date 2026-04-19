@@ -102,7 +102,7 @@ enum SF2_Generator_Ids {
 #define SF2_ARG_VALUE_FLAG_NEXT_NUMBER   0x00000001
 #define SF2_ARG_VALUE_FLAG_LOW_NOTE      0x00000002
 #define SF2_ARG_VALUE_FLAG_HIGH_NOTE     0x00000004
-#define SF2_ARG_VALUE_FLAG_ALL_REQUIRED  0x00000007
+#define SF2_ARG_VALUE_FLAG_ALL_REQUIRED  0x00000001
 
 // Used for the comparable part
 struct SF2_ArgValues {
@@ -164,7 +164,11 @@ struct SF2_Preset {
 
 struct SF2_Instrument {
 
+  // From File:
   struct SF2_Common sf2i_Common;
+
+  // From Flattening:
+  struct MinList sf2i_Args;
 };
 
 struct SF2_Sample {

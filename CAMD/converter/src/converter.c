@@ -399,21 +399,33 @@ VOID HandleReadButton( VOID ) {
     FreeSf2( base->sfc_Sf2 );
     abort = HandleProgressDialogTick( base->sfc_ProgressDialog,
                                       1,
-                                      100 );
+                                      maxProgress );
   }
   if ( !( abort )) {
 
     FreeListLabels( &( base->sfc_InstrumentLabels ));
     abort = HandleProgressDialogTick( base->sfc_ProgressDialog,
                                       2,
-                                      100 );
+                                      maxProgress );
   }
   if ( !( abort )) {
 
+    ULONG pCount;
+    ULONG iCount;
+    ULONG sCount;
+
     base->sfc_Sf2 = AllocSf2FromFile( base->sfc_SourceFileName );
+    pCount = base->sfc_Sf2->sf2_PresetCount;
+    iCount = base->sfc_Sf2->sf2_InstrumentCount;
+    sCount = base->sfc_Sf2->sf2_SampleCount;
+    
+    maxProgress = 
+      (( pCount + iCount + sCount ) >> 2) // PrepareIndex
+        + pCount                          // FlattenPresetHierarchy
+        + iCount;                         // FlattenInstrumentHierarchy
     abort = HandleProgressDialogTick( base->sfc_ProgressDialog,
-                                      10,
-                                      base->sfc_Sf2->sf2_PresetCount );
+                                      5,
+                                      maxProgress );
     LOG_D(( "D: SF2 will be at 0x%08lx\n", base->sfc_Sf2 ));
   }
   if ( !( abort )) {
@@ -432,15 +444,15 @@ VOID HandleReadButton( VOID ) {
 
     abort = FlattenPresetHierarchy( base->sfc_Sf2,
                                     base->sfc_ProgressDialog,
-                                    currentProgress,
+                                    &currentProgress,
                                     maxProgress );
   }
   if ( !( abort )) {
 
-    FlattenInstrumentHierarchy( base->sfc_Sf2 );
-    abort = HandleProgressDialogTick( base->sfc_ProgressDialog,
-                                      20,
-                                      base->sfc_Sf2->sf2_PresetCount );
+    abort = FlattenInstrumentHierarchy( base->sfc_Sf2,
+                                        base->sfc_ProgressDialog,
+                                        &currentProgress,
+                                        maxProgress );
   }
   if ( !( abort )) {
 

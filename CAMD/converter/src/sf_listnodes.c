@@ -38,6 +38,8 @@ static const struct ColumnInfo instrumentColumns[] = {
   { (  5 * 8 ) + 8, "INmax", CIF_CENTER },
   { (  5 * 8 ) + 8, "I#", CIF_CENTER },
   { ( 20 * 8 ) + 8, "Instrument Name", CIF_CENTER },
+  { (  5 * 8 ) + 8, "SNmin", CIF_CENTER },
+  { (  5 * 8 ) + 8, "SNmax", CIF_CENTER },
   { (  5 * 8 ) + 8, "S#", CIF_CENTER },
   { ( 20 * 8 ) + 8, "Sample Name", CIF_CENTER },
   { -1, (STRPTR)~0, -1 }
@@ -316,6 +318,8 @@ struct Node * CreateListBrowserNode( const LONG * integer0,
                                      const LONG * integer4,
                                      CONST_STRPTR string2,
                                      const LONG * integer5,
+                                     const LONG * integer6,
+                                     const LONG * integer7,
                                      CONST_STRPTR string3,
                                      CONST_STRPTR string4 ) {
 
@@ -349,9 +353,15 @@ struct Node * CreateListBrowserNode( const LONG * integer0,
                                  LBNCA_Integer, integer5,
                                  LBNCA_Justification, LCJ_RIGHT,
                                LBNA_Column, 9,
+                                 LBNCA_Integer, integer6,
+                                 LBNCA_Justification, LCJ_RIGHT,
+                               LBNA_Column, 10,
+                                 LBNCA_Integer, integer7,
+                                 LBNCA_Justification, LCJ_RIGHT,
+                               LBNA_Column, 11,
                                  LBNCA_CopyText, FALSE,
                                  LBNCA_Text, string3,
-                               LBNA_Column, 10,
+                               LBNA_Column, 12,
                                  LBNCA_CopyText, FALSE,
                                  LBNCA_Text, string4,
                                TAG_DONE );
@@ -392,6 +402,8 @@ VOID CreateEmptyListLabels( struct List * labels ) {
                              NULL,
                              "",
                              NULL,
+                             NULL,
+                             NULL,
                              "",
                              "" );
     i++;
@@ -405,6 +417,7 @@ VOID AddSf2Label(
   struct SF2_Preset * preset,
   struct SF2_ArgValues * instrumentArgValues,
   struct SF2_Instrument * instrument,
+  struct SF2_ArgValues * sampleArgValues,
   struct SF2_Sample * sample ) {
 
   LONG * bank = &( preset->sf2p_Bank );
@@ -412,6 +425,8 @@ VOID AddSf2Label(
   LONG * instrumentMin = &( instrumentArgValues->sf2v_LowNote );
   LONG * instrumentMax = &( instrumentArgValues->sf2v_HighNote );
   LONG * instrumentNumber = &( instrument->sf2i_Common.sf2c_Number );
+  LONG * sampleMin = &( sampleArgValues->sf2v_LowNote );
+  LONG * sampleMax = &( sampleArgValues->sf2v_HighNote );
   LONG * sampleNumber = &( sample->sf2s_Number );
   CONST_STRPTR presetName = preset->sf2p_Common.sf2c_Name;
   CONST_STRPTR gmName = instrumentNames[ *presetNumber ];
@@ -431,6 +446,8 @@ VOID AddSf2Label(
                                  instrumentMax,
                                  instrumentNumber,
                                  instrumentName,
+                                 sampleMin,
+                                 sampleMax,
                                  sampleNumber,
                                  sampleName,
                                  "" );
@@ -461,30 +478,23 @@ VOID CreateSf2ListLabels(
 
       struct SF2_Instrument * instrument = 
         sf2->sf2_InstrumentArray[ argsP->sf2a_Values.sf2v_NextNumber ];
-      struct SF2_Zone * zoneI;
-      FOR_LIST( &( instrument->sf2i_Common.sf2c_Zones ),
-                zoneI,
-                struct SF2_Zone * ) {
+      struct SF2_Args * argsI;
 
-        struct SF2_Generator * generatorI;
-        FOR_LIST( &( zoneI->sfz2_Generators ),
-                  generatorI,
-                  struct SF2_Generator * ) {
+      FOR_LIST( &( instrument->sf2i_Args ),
+                argsI,
+                struct SF2_Args * ) {
 
-          if ( GEN_SAMPLEID == generatorI->sf2g_Id ) {
+        struct SF2_Sample * sample =
+          sf2->sf2_SampleArray[ argsI->sf2a_Values.sf2v_NextNumber ];
 
-            struct SF2_Sample * sample =
-              sf2->sf2_SampleArray[ generatorI->sf2g_Amount ];
-            AddSf2Label( sf2,
-                         labels,
-                         preset,
-                         &( argsP->sf2a_Values ),
-                         instrument,
-                         sample );
-            ++countO;
-            break;
-          }
-        }
+        AddSf2Label( sf2,
+                     labels,
+                     preset,
+                     &( argsP->sf2a_Values ),
+                     instrument,
+                     &( argsI->sf2a_Values ),
+                     sample );
+        ++countO;
       }
     }
     ++countP;
