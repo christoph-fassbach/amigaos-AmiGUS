@@ -99,6 +99,25 @@ enum SF2_Generator_Ids {
     GEN_LAST                // Count of generators - not to be used or exceeded!
 };
 
+#define SF2_ARG_VALUE_FLAG_NEXT_NUMBER   0x00000001
+#define SF2_ARG_VALUE_FLAG_LOW_NOTE      0x00000002
+#define SF2_ARG_VALUE_FLAG_HIGH_NOTE     0x00000004
+#define SF2_ARG_VALUE_FLAG_ALL_REQUIRED  0x00000007
+
+// Used for the comparable part
+struct SF2_ArgValues {
+
+  UWORD sf2v_NextNumber;
+  ULONG sf2v_LowNote;  // UBYTE - but need long for display.
+  ULONG sf2v_HighNote; // UBYTE - but need long for display.
+};
+
+struct SF2_Args {
+
+  struct MinNode       sf2a_Node;
+  struct SF2_ArgValues sf2a_Values;
+};
+
 struct SF2_Modulator {
 
   struct MinNode sf2m_Node;
@@ -135,8 +154,12 @@ struct SF2_Common {
 
 struct SF2_Preset {
 
+  // From File:
   struct SF2_Common sf2p_Common;
   LONG sf2p_Bank; // UWORD - but need long for display.
+
+  // From Flattening:
+  struct MinList sf2p_Args;
 };
 
 struct SF2_Instrument {

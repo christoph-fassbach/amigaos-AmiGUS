@@ -34,6 +34,8 @@ static const struct ColumnInfo instrumentColumns[] = {
   { (  3 * 8 ) + 8, "P#", CIF_CENTER },
   { ( 23 * 8 ) + 8, "GM Name", CIF_CENTER },
   { ( 20 * 8 ) + 8, "Preset Name", CIF_CENTER },
+  { (  5 * 8 ) + 8, "INmin", CIF_CENTER },
+  { (  5 * 8 ) + 8, "INmax", CIF_CENTER },
   { (  5 * 8 ) + 8, "I#", CIF_CENTER },
   { ( 20 * 8 ) + 8, "Instrument Name", CIF_CENTER },
   { (  5 * 8 ) + 8, "S#", CIF_CENTER },
@@ -310,8 +312,10 @@ struct Node * CreateListBrowserNode( const LONG * integer0,
                                      CONST_STRPTR string0,
                                      CONST_STRPTR string1,
                                      const LONG * integer2,
-                                     CONST_STRPTR string2,
                                      const LONG * integer3,
+                                     const LONG * integer4,
+                                     CONST_STRPTR string2,
+                                     const LONG * integer5,
                                      CONST_STRPTR string3,
                                      CONST_STRPTR string4 ) {
 
@@ -333,15 +337,21 @@ struct Node * CreateListBrowserNode( const LONG * integer0,
                                  LBNCA_Integer, integer2,
                                  LBNCA_Justification, LCJ_RIGHT,
                                LBNA_Column, 5,
-                                 LBNCA_CopyText, FALSE,
-                                 LBNCA_Text, string2,
-                               LBNA_Column, 6,
                                  LBNCA_Integer, integer3,
+                                 LBNCA_Justification, LCJ_RIGHT,
+                               LBNA_Column, 6,
+                                 LBNCA_Integer, integer4,
                                  LBNCA_Justification, LCJ_RIGHT,
                                LBNA_Column, 7,
                                  LBNCA_CopyText, FALSE,
-                                 LBNCA_Text, string3,
+                                 LBNCA_Text, string2,
                                LBNA_Column, 8,
+                                 LBNCA_Integer, integer5,
+                                 LBNCA_Justification, LCJ_RIGHT,
+                               LBNA_Column, 9,
+                                 LBNCA_CopyText, FALSE,
+                                 LBNCA_Text, string3,
+                               LBNA_Column, 10,
                                  LBNCA_CopyText, FALSE,
                                  LBNCA_Text, string4,
                                TAG_DONE );
@@ -378,6 +388,8 @@ VOID CreateEmptyListLabels( struct List * labels ) {
                              instrumentNames[ i ],
                              "",
                              NULL,
+                             NULL,
+                             NULL,
                              "",
                              NULL,
                              "",
@@ -391,11 +403,14 @@ VOID AddSf2Label(
   struct SF2 * sf2,
   struct List * labels,
   struct SF2_Preset * preset,
+  struct SF2_ArgValues * instrumentArgValues,
   struct SF2_Instrument * instrument,
   struct SF2_Sample * sample ) {
 
   LONG * bank = &( preset->sf2p_Bank );
   LONG * presetNumber = &( preset->sf2p_Common.sf2c_Number );
+  LONG * instrumentMin = &( instrumentArgValues->sf2v_LowNote );
+  LONG * instrumentMax = &( instrumentArgValues->sf2v_HighNote );
   LONG * instrumentNumber = &( instrument->sf2i_Common.sf2c_Number );
   LONG * sampleNumber = &( sample->sf2s_Number );
   CONST_STRPTR presetName = preset->sf2p_Common.sf2c_Name;
@@ -412,6 +427,8 @@ VOID AddSf2Label(
                                  presetNumber,
                                  gmName,
                                  presetName,
+                                 instrumentMin,
+                                 instrumentMax,
                                  instrumentNumber,
                                  instrumentName,
                                  sampleNumber,
@@ -436,55 +453,36 @@ VOID CreateSf2ListLabels(
             preset,
             struct SF2_Preset * ) {
 
-    struct SF2_Zone * zoneP;
+    struct SF2_Args * argsP;
 
-    FOR_LIST( &( preset->sf2p_Common.sf2c_Zones ),
-              zoneP,
-              struct SF2_Zone * ) {
+    FOR_LIST( &( preset->sf2p_Args ),
+              argsP,
+              struct SF2_Args * ) {
 
-      struct SF2_Generator * generatorP;
-      LOG_V(( "V: Preset %ld-%ld\n",
-              preset->sf2p_Bank,
-              preset->sf2p_Common.sf2c_Number ));
-      FOR_LIST( &( zoneP->sfz2_Generators ),
-                generatorP,
-                struct SF2_Generator * ) {
+      struct SF2_Instrument * instrument = 
+        sf2->sf2_InstrumentArray[ argsP->sf2a_Values.sf2v_NextNumber ];
+      struct SF2_Zone * zoneI;
+      FOR_LIST( &( instrument->sf2i_Common.sf2c_Zones ),
+                zoneI,
+                struct SF2_Zone * ) {
 
-        if ( GEN_INSTRUMENT == generatorP->sf2g_Id ) {
+        struct SF2_Generator * generatorI;
+        FOR_LIST( &( zoneI->sfz2_Generators ),
+                  generatorI,
+                  struct SF2_Generator * ) {
 
-          struct SF2_Instrument * instrument = 
-            sf2->sf2_InstrumentArray[ generatorP->sf2g_Amount ];
-          struct SF2_Zone * zoneI;
+          if ( GEN_SAMPLEID == generatorI->sf2g_Id ) {
 
-          LOG_V(( "V: Found instrument %ld\n",
-                  instrument->sf2i_Common.sf2c_Number ));
-
-          FOR_LIST( &( instrument->sf2i_Common.sf2c_Zones ),
-                    zoneI,
-                    struct SF2_Zone * ) {
-
-            struct SF2_Generator * generatorI;
-            FOR_LIST( &( zoneI->sfz2_Generators ),
-                      generatorI,
-                      struct SF2_Generator * ) {
-
-              if ( GEN_SAMPLEID == generatorI->sf2g_Id ) {
-
-                struct SF2_Sample * sample =
-                  sf2->sf2_SampleArray[ generatorI->sf2g_Amount ];
-                LOG_V(( "V: Preset %ld-%ld instrument %ld sample %ld\n",
-                        preset->sf2p_Bank,
-                        preset->sf2p_Common.sf2c_Number,
-                        generatorP->sf2g_Amount,
-                        generatorI->sf2g_Amount ));
-
-                LOG_V(( "V: Found sample %ld\n",
-                        sample->sf2s_Number ));
-                AddSf2Label( sf2, labels, preset, instrument, sample );
-                ++countO;
-                break;
-              }
-            }
+            struct SF2_Sample * sample =
+              sf2->sf2_SampleArray[ generatorI->sf2g_Amount ];
+            AddSf2Label( sf2,
+                         labels,
+                         preset,
+                         &( argsP->sf2a_Values ),
+                         instrument,
+                         sample );
+            ++countO;
+            break;
           }
         }
       }

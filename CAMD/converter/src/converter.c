@@ -382,6 +382,8 @@ VOID HandleReadButton( VOID ) {
 
   struct SF_Converter * base = SF_Converter_Base;
   BOOL abort = FALSE;
+  ULONG currentProgress = 0;
+  ULONG maxProgress = 100;
   
   base->sfc_ProgressDialog =
     CreateProgressDialog( base->sfc_MainWindow,
@@ -419,6 +421,25 @@ VOID HandleReadButton( VOID ) {
     PrepareIndex( base->sfc_Sf2 );
     abort = HandleProgressDialogTick( base->sfc_ProgressDialog,
                                       15,
+                                      base->sfc_Sf2->sf2_PresetCount );
+                                      /*
+    abort = PrepareIndex( base->sfc_Sf2,
+                          base->sfc_ProgressDialog,
+                          currentProgress,
+                          maxProgress );*/
+  }
+  if ( !( abort )) {
+
+    abort = FlattenPresetHierarchy( base->sfc_Sf2,
+                                    base->sfc_ProgressDialog,
+                                    currentProgress,
+                                    maxProgress );
+  }
+  if ( !( abort )) {
+
+    FlattenInstrumentHierarchy( base->sfc_Sf2 );
+    abort = HandleProgressDialogTick( base->sfc_ProgressDialog,
+                                      20,
                                       base->sfc_Sf2->sf2_PresetCount );
   }
   if ( !( abort )) {

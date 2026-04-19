@@ -20,6 +20,7 @@
 #define PROGRESS_DIALOG_H
 
 #include <intuition/classes.h>
+#include <intuition/intuition.h>
 
 struct ProgressDialog {
 

@@ -731,6 +731,7 @@ static LONG ReadHydraPresets( BPTR fileHandle,
       preset = AllocMem( sizeof( struct SF2_Preset ), MEMF_ANY | MEMF_CLEAR );
       preset->sf2p_Common.sf2c_Type = SF2_COMMON_PRESET_TYPE;
       NEW_LIST( &( preset->sf2p_Common.sf2c_Zones ));
+      NEW_LIST( &( preset->sf2p_Args ));
       ADD_TAIL( target, &( preset->sf2p_Common.sf2c_Node ));
       ReadString( fileHandle, preset->sf2p_Common.sf2c_Name );
       ReadUWORD( fileHandle, &( temp ));
@@ -1373,6 +1374,15 @@ LONG PresetNodeCompare( struct Node * a, struct Node * b ) {
   return result;
 }
 
+LONG PresetArgsNodeCompare( struct Node * a, struct Node * b ) {
+
+  struct SF2_Args * aa = ( struct SF2_Args * ) a;
+  struct SF2_Args * bb = ( struct SF2_Args * ) b;
+  LONG result = bb->sf2a_Values.sf2v_LowNote - aa->sf2a_Values.sf2v_LowNote;
+
+  return result;
+}
+
 /******************************************************************************
  * SF2 reader - public functions.
  *****************************************************************************/
@@ -1415,7 +1425,7 @@ struct SF2 * AllocSf2FromFile( STRPTR filePath ) {
   return sf2;
 }
 
-VOID PrepareIndex( struct SF2 * sf2 ) {
+BOOL PrepareIndex( struct SF2 * sf2 ) {
 
   struct SF2_Sample * sample;
   struct SF2_Instrument * instrument;
@@ -1455,6 +1465,93 @@ VOID PrepareIndex( struct SF2 * sf2 ) {
   InsertionSort(( struct List * ) &( sf2->sf2_Presets ),
                   &PresetNodeCompare );
   LOG_I(( "I: Indices created.\n" ));
+  return FALSE;
+}
+
+BOOL FlattenPresetHierarchy( struct SF2 * sf2,
+                             struct ProgressDialog * dialog,
+                             ULONG currentProgress,
+                             ULONG maxProgress ) {
+
+  struct SF2_Preset * preset;
+  FOR_LIST( &( sf2->sf2_Presets ),
+            preset,
+            struct SF2_Preset * ) {
+
+    BOOL abort;
+    struct SF2_Zone * zoneP;
+
+    FOR_LIST( &( preset->sf2p_Common.sf2c_Zones ),
+              zoneP,
+              struct SF2_Zone * ) {
+
+      struct SF2_Generator * generatorP;
+      struct SF2_ArgValues ArgValues;
+      ULONG argValueFlags = 0x00000000;
+
+      LOG_D(( "V: Preset %ld-%ld\n",
+              preset->sf2p_Bank,
+              preset->sf2p_Common.sf2c_Number ));
+      FOR_LIST( &( zoneP->sfz2_Generators ),
+                generatorP,
+                struct SF2_Generator * ) {
+
+        switch ( generatorP->sf2g_Id ) {
+          case GEN_KEYRANGE: {
+
+            UBYTE low = ( 0x00FF & generatorP->sf2g_Amount );
+            UBYTE high = (( 0xFF00 & generatorP->sf2g_Amount ) >> 8 );
+            LOG_D(( "V:   +-> Has KeyRange %ld-%ld\n", low, high ));
+            ArgValues.sf2v_LowNote = low;
+            ArgValues.sf2v_HighNote = high;
+            argValueFlags |= SF2_ARG_VALUE_FLAG_LOW_NOTE;
+            argValueFlags |= SF2_ARG_VALUE_FLAG_HIGH_NOTE;
+            break;
+          }
+          case GEN_INSTRUMENT: {
+
+            UWORD next = generatorP->sf2g_Amount;
+            LOG_D(( "V:   +-> Has Instrument %ld\n", next ));
+            ArgValues.sf2v_NextNumber = next;
+            argValueFlags |= SF2_ARG_VALUE_FLAG_NEXT_NUMBER;
+            break;
+          }
+          default: {
+            LOG_V(( "V:   +-> Has id %ld and value %ld\n",
+                    generatorP->sf2g_Id,
+                    generatorP->sf2g_Amount ));
+            break;
+          }
+        }
+        if ( SF2_ARG_VALUE_FLAG_ALL_REQUIRED 
+             == ( SF2_ARG_VALUE_FLAG_ALL_REQUIRED & argValueFlags )) {
+
+          struct SF2_Args * args = AllocMem( sizeof( struct SF2_Args ),
+                                             MEMF_ANY );
+          CopyMem( &ArgValues,
+                   &( args->sf2a_Values ),
+                   sizeof( struct SF2_ArgValues ));
+          InsertSorted(( struct Node * ) &( args->sf2a_Node ),
+                       ( struct List * ) &( preset->sf2p_Args ),
+                       &PresetArgsNodeCompare );
+        }
+      }
+    }
+    abort = HandleProgressDialogTick( dialog,
+                                      currentProgress,
+                                      maxProgress );
+    if ( abort ) {
+
+      return TRUE;
+    }
+    ++currentProgress;
+  }
+  return FALSE;
+}
+
+BOOL FlattenInstrumentHierarchy( struct SF2 * sf2 ) {
+
+  return FALSE;
 }
 
 VOID FreeSf2( struct SF2 * sf2 ) {
