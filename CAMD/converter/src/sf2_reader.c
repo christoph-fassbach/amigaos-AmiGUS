@@ -1356,45 +1356,6 @@ static LONG ReadFileHeader( struct SF2 * sf2 ) {
   return ENoError;
 }
 
-VOID PrepareIndex( struct SF2 * sf2 ) {
-
-  struct SF2_Sample * sample;
-  struct SF2_Instrument * instrument;
-
-  sf2->sf2_SampleArray =
-    AllocMem( sf2->sf2_SampleCount * sizeof( struct SF2_Sample * ),
-              MEMF_ANY | MEMF_CLEAR );
-  FOR_LIST( &( sf2->sf2_Samples ), sample, struct SF2_Sample * ) {
-
-    LONG i = sample->sf2s_Number;
-    if ( !( sf2->sf2_SampleArray[ i ] )) {
-
-      sf2->sf2_SampleArray[ i ] = sample;
-
-    } else {
-
-      LOG_E(( "E: Cannot create sample index!\n" ));
-    }
-  }
-
-  sf2->sf2_InstrumentArray =
-    AllocMem( sf2->sf2_InstrumentCount * sizeof( struct SF2_Instrument * ),
-              MEMF_ANY | MEMF_CLEAR );
-  FOR_LIST( &( sf2->sf2_Instruments ), instrument, struct SF2_Instrument * ) {
-
-    LONG i = instrument->sf2i_Common.sf2c_Number;
-    if ( !( sf2->sf2_InstrumentArray[ i ] )) {
-
-      sf2->sf2_InstrumentArray[ i ] = instrument;
-
-    } else {
-
-      LOG_E(( "E: Cannot create instrument index!\n" ));
-    }
-  }
-  LOG_I(( "I: Indices created.\n" ));
-}
-
 LONG PresetNodeCompare( struct Node * a, struct Node * b ) {
 
   struct SF2_Preset * aa = ( struct SF2_Preset * ) a;
@@ -1451,11 +1412,49 @@ struct SF2 * AllocSf2FromFile( STRPTR filePath ) {
     return NULL;
   }
 
-  PrepareIndex( sf2 );
-  InsertionSort(( struct List * ) &( sf2->sf2_Presets ),
-                 &PresetNodeCompare );
-
   return sf2;
+}
+
+VOID PrepareIndex( struct SF2 * sf2 ) {
+
+  struct SF2_Sample * sample;
+  struct SF2_Instrument * instrument;
+
+  sf2->sf2_SampleArray =
+    AllocMem( sf2->sf2_SampleCount * sizeof( struct SF2_Sample * ),
+              MEMF_ANY | MEMF_CLEAR );
+  FOR_LIST( &( sf2->sf2_Samples ), sample, struct SF2_Sample * ) {
+
+    LONG i = sample->sf2s_Number;
+    if ( !( sf2->sf2_SampleArray[ i ] )) {
+
+      sf2->sf2_SampleArray[ i ] = sample;
+
+    } else {
+
+      LOG_E(( "E: Cannot create sample index!\n" ));
+    }
+  }
+
+  sf2->sf2_InstrumentArray =
+    AllocMem( sf2->sf2_InstrumentCount * sizeof( struct SF2_Instrument * ),
+              MEMF_ANY | MEMF_CLEAR );
+  FOR_LIST( &( sf2->sf2_Instruments ), instrument, struct SF2_Instrument * ) {
+
+    LONG i = instrument->sf2i_Common.sf2c_Number;
+    if ( !( sf2->sf2_InstrumentArray[ i ] )) {
+
+      sf2->sf2_InstrumentArray[ i ] = instrument;
+
+    } else {
+
+      LOG_E(( "E: Cannot create instrument index!\n" ));
+    }
+  }
+
+  InsertionSort(( struct List * ) &( sf2->sf2_Presets ),
+                  &PresetNodeCompare );
+  LOG_I(( "I: Indices created.\n" ));
 }
 
 VOID FreeSf2( struct SF2 * sf2 ) {
@@ -1515,6 +1514,20 @@ VOID FreeSf2( struct SF2 * sf2 ) {
 
     Close( sf2->sf2_FileHandle );
     sf2->sf2_FileHandle = NULL;
+  }
+
+  if ( sf2->sf2_SampleArray ) {
+
+    FreeMem( sf2->sf2_SampleArray,
+             sf2->sf2_SampleCount * sizeof( struct SF2_Sample * ));
+    sf2->sf2_SampleArray = NULL;
+  }
+
+  if ( sf2->sf2_InstrumentArray ) {
+
+    FreeMem( sf2->sf2_InstrumentArray,
+             sf2->sf2_InstrumentCount * sizeof( struct SF2_Instrument * ));
+    sf2->sf2_InstrumentArray = NULL;
   }
 
   FreeMem( sf2, sizeof( struct SF2 ));

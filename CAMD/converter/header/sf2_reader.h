@@ -22,6 +22,7 @@
 #include "sf2.h"
 
 struct SF2 * AllocSf2FromFile( STRPTR filePath );
+VOID PrepareIndex( struct SF2 * sf2 );
 VOID FreeSf2( struct SF2 * sf2 );
 
 #endif /* SF2_READER_H */

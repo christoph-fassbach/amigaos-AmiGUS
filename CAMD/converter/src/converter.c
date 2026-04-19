@@ -416,6 +416,13 @@ VOID HandleReadButton( VOID ) {
   }
   if ( !( abort )) {
 
+    PrepareIndex( base->sfc_Sf2 );
+    abort = HandleProgressDialogTick( base->sfc_ProgressDialog,
+                                      15,
+                                      base->sfc_Sf2->sf2_PresetCount );
+  }
+  if ( !( abort )) {
+
     CreateSf2ListLabels( &( base->sfc_InstrumentLabels ),
                          base->sfc_Sf2 );
     abort = HandleProgressDialogTick( base->sfc_ProgressDialog,
