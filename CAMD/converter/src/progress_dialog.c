@@ -189,3 +189,8 @@ VOID CloseProgressDialog( struct ProgressDialog * dialog ) {
                     WA_BusyPointer, FALSE,
                     TAG_DONE );
 }
+
+VOID FreeProgressDialog( struct ProgressDialog * dialog ) {
+
+  FreeMem( dialog, sizeof( struct ProgressDialog ));
+}

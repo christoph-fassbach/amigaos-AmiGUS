@@ -46,4 +46,6 @@ BOOL HandleProgressDialogTick( struct ProgressDialog * dialog,
 
 VOID CloseProgressDialog( struct ProgressDialog * dialog );
 
+VOID FreeProgressDialog( struct ProgressDialog * dialog );
+
 #endif /* PROGRESS_DIALOG_H */

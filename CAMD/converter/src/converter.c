@@ -471,6 +471,8 @@ VOID HandleReadButton( VOID ) {
                   TAG_DONE );
 
   CloseProgressDialog( base->sfc_ProgressDialog );
+  FreeProgressDialog( base->sfc_ProgressDialog );
+  base->sfc_ProgressDialog = NULL;
 }
 
 VOID HandleEvents( VOID ) {
