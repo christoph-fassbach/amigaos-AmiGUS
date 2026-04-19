@@ -1665,6 +1665,13 @@ VOID FreeSf2( struct SF2 * sf2 ) {
       ++h;
     }
     LOG_V(( "V: Free'd %ld zones.\n", h ));
+    h = 0;
+    while ( u = REM_HEAD( &( instrument->sf2i_Args ))) {
+
+      FreeMem( u, sizeof( struct SF2_Args ));
+      ++h;
+    }
+    LOG_V(( "V: Free'd %ld args.\n", h ));
     FreeMem( t, sizeof( struct SF2_Instrument ));
     ++i;
   }
@@ -1682,6 +1689,13 @@ VOID FreeSf2( struct SF2 * sf2 ) {
       ++h;
     }
     LOG_V(( "V: Free'd %ld zones.\n", h ));
+    h = 0;
+    while ( u = REM_HEAD( &( preset->sf2p_Args ))) {
+
+      FreeMem( u, sizeof( struct SF2_Args ));
+      ++h;
+    }
+    LOG_V(( "V: Free'd %ld args.\n", h ));
     FreeMem( t, sizeof( struct SF2_Preset ));
     ++i;
   }
