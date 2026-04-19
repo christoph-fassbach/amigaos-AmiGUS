@@ -22,13 +22,18 @@
 #include <exec/lists.h>
 #include <gadgets/listbrowser.h>
 
+#include "progress_dialog.h"
 #include "sf2.h"
 
 const struct ColumnInfo * GetSoundFontColumnInfos( VOID );
 const ULONG GetSoundFontColumnsWidth( VOID );
 
 VOID CreateEmptyListLabels( struct List * labels );
-VOID CreateSf2ListLabels( struct List * labels, struct SF2 * sf2 );
+BOOL CreateSf2ListLabels( struct List * labels,
+                          struct SF2 * sf2,
+                          struct ProgressDialog * dialog,
+                          ULONG * currentProgress,
+                          ULONG maxProgress );
 
 VOID FreeListLabels( struct List * list );
 

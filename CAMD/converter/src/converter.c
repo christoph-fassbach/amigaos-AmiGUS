@@ -422,7 +422,8 @@ VOID HandleReadButton( VOID ) {
     maxProgress = 
       (( pCount + iCount + sCount ) >> 2) // PrepareIndex
         + pCount                          // FlattenPresetHierarchy
-        + iCount;                         // FlattenInstrumentHierarchy
+        + iCount                          // FlattenInstrumentHierarchy
+        + pCount;                         // CreateSf2ListLabels
     abort = HandleProgressDialogTick( base->sfc_ProgressDialog,
                                       5,
                                       maxProgress );
@@ -430,15 +431,10 @@ VOID HandleReadButton( VOID ) {
   }
   if ( !( abort )) {
 
-    PrepareIndex( base->sfc_Sf2 );
-    abort = HandleProgressDialogTick( base->sfc_ProgressDialog,
-                                      15,
-                                      base->sfc_Sf2->sf2_PresetCount );
-                                      /*
     abort = PrepareIndex( base->sfc_Sf2,
                           base->sfc_ProgressDialog,
-                          currentProgress,
-                          maxProgress );*/
+                          &currentProgress,
+                          maxProgress );
   }
   if ( !( abort )) {
 
@@ -456,11 +452,11 @@ VOID HandleReadButton( VOID ) {
   }
   if ( !( abort )) {
 
-    CreateSf2ListLabels( &( base->sfc_InstrumentLabels ),
-                         base->sfc_Sf2 );
-    abort = HandleProgressDialogTick( base->sfc_ProgressDialog,
-                                      100,
-                                      base->sfc_Sf2->sf2_PresetCount );
+    abort = CreateSf2ListLabels( &( base->sfc_InstrumentLabels ),
+                                 base->sfc_Sf2,
+                                 base->sfc_ProgressDialog,
+                                 &currentProgress,
+                                 maxProgress );
   }
 
   if ( abort ) {

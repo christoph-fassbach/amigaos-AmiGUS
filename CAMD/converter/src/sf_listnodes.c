@@ -34,12 +34,12 @@ static const struct ColumnInfo instrumentColumns[] = {
   { (  3 * 8 ) + 8, "P#", CIF_CENTER },
   { ( 23 * 8 ) + 8, "GM Name", CIF_CENTER },
   { ( 20 * 8 ) + 8, "Preset Name", CIF_CENTER },
-  { (  5 * 8 ) + 8, "INmin", CIF_CENTER },
-  { (  5 * 8 ) + 8, "INmax", CIF_CENTER },
+  { (  3 * 8 ) + 8, "I>N", CIF_CENTER },
+  { (  3 * 8 ) + 8, "I<N", CIF_CENTER },
   { (  5 * 8 ) + 8, "I#", CIF_CENTER },
   { ( 20 * 8 ) + 8, "Instrument Name", CIF_CENTER },
-  { (  5 * 8 ) + 8, "SNmin", CIF_CENTER },
-  { (  5 * 8 ) + 8, "SNmax", CIF_CENTER },
+  { (  3 * 8 ) + 8, "S>N", CIF_CENTER },
+  { (  3 * 8 ) + 8, "S<N", CIF_CENTER },
   { (  5 * 8 ) + 8, "S#", CIF_CENTER },
   { ( 20 * 8 ) + 8, "Sample Name", CIF_CENTER },
   { -1, (STRPTR)~0, -1 }
@@ -455,16 +455,15 @@ VOID AddSf2Label(
   AddTail( labels, label );
 }
 
-VOID CreateSf2ListLabels(
+BOOL CreateSf2ListLabels(
   struct List * labels,
-  struct SF2 * sf2 ) {
+  struct SF2 * sf2,
+  struct ProgressDialog * dialog,
+  ULONG * currentProgress,
+  ULONG maxProgress ) {
 
-  ULONG progress = 0;
-  ULONG maxProgress = sf2->sf2_PresetCount;/*sf2->sf2_SampleCount 
-                    * sf2->sf2_InstrumentCount
-                    * sf2->sf2_PresetCount;*/
-  LONG countP = 0;
-  LONG countO = 0;
+  BOOL abort = FALSE;
+  ULONG count = 0;
   struct SF2_Preset * preset;
   FOR_LIST( &( sf2->sf2_Presets ),
             preset,
@@ -494,15 +493,20 @@ VOID CreateSf2ListLabels(
                      instrument,
                      &( argsI->sf2a_Values ),
                      sample );
-        ++countO;
+        ++count;
       }
     }
-    ++countP;
-    ++progress;
-    LOG_D(("D: Progress %ld of %ld\n", progress, maxProgress ));
+    ++( *currentProgress );
+    abort |= HandleProgressDialogTick( dialog,
+                                       *currentProgress,
+                                       maxProgress );
+    if ( abort ) {
+  
+      return TRUE;
+    }
   }
-  LOG_I(( "I: %ld presets created %ld labels\n",
-          countP, countO ));
+  LOG_I(( "I: Created %ld labels, progress %ld/%ld\n", count, *currentProgress, maxProgress ));
+  return FALSE;
 }
 
 VOID FreeListLabels( struct List * list ) {

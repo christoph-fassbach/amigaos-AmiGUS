@@ -1426,8 +1426,12 @@ struct SF2 * AllocSf2FromFile( STRPTR filePath ) {
   return sf2;
 }
 
-BOOL PrepareIndex( struct SF2 * sf2 ) {
+BOOL PrepareIndex( struct SF2 * sf2,
+                   struct ProgressDialog * dialog,
+                   ULONG * currentProgress,
+                   ULONG maxProgress ) {
 
+  BOOL abort = FALSE;
   struct SF2_Sample * sample;
   struct SF2_Instrument * instrument;
 
@@ -1446,6 +1450,14 @@ BOOL PrepareIndex( struct SF2 * sf2 ) {
       LOG_E(( "E: Cannot create sample index!\n" ));
     }
   }
+  *currentProgress += ( sf2->sf2_SampleCount >> 2 );
+  abort |= HandleProgressDialogTick( dialog,
+                                     *currentProgress,
+                                     maxProgress );
+  if ( abort ) {
+
+    return abort;
+  }
 
   sf2->sf2_InstrumentArray =
     AllocMem( sf2->sf2_InstrumentCount * sizeof( struct SF2_Instrument * ),
@@ -1462,9 +1474,26 @@ BOOL PrepareIndex( struct SF2 * sf2 ) {
       LOG_E(( "E: Cannot create instrument index!\n" ));
     }
   }
+  *currentProgress += ( sf2->sf2_InstrumentCount >> 2 );
+  abort |= HandleProgressDialogTick( dialog,
+                                     *currentProgress,
+                                     maxProgress );
+  if ( abort ) {
+
+    return abort;
+  }
 
   InsertionSort(( struct List * ) &( sf2->sf2_Presets ),
                   &PresetNodeCompare );
+  *currentProgress += ( sf2->sf2_PresetCount >> 2 );
+  abort |= HandleProgressDialogTick( dialog,
+                                     *currentProgress,
+                                     maxProgress );
+  if ( abort ) {
+
+    return abort;
+  }
+
   LOG_I(( "I: Indices created.\n" ));
   return FALSE;
 }

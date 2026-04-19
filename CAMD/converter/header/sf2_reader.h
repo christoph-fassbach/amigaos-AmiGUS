@@ -27,7 +27,10 @@ struct SF2 * AllocSf2FromFile( STRPTR filePath );
 
 // (# Presets + # Instruments + #Samples) >> 2 progress
 // BOOL True = abort
-BOOL PrepareIndex( struct SF2 * sf2 );
+BOOL PrepareIndex( struct SF2 * sf2,
+                   struct ProgressDialog * dialog,
+                   ULONG * currentProgress,
+                   ULONG maxProgress );
 
 // # Presets progress
 // BOOL True = abort
