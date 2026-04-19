@@ -34,7 +34,9 @@ static const struct ColumnInfo instrumentColumns[] = {
   { (  3 * 8 ) + 8, "P#", CIF_CENTER },
   { ( 23 * 8 ) + 8, "GM Name", CIF_CENTER },
   { ( 20 * 8 ) + 8, "Preset Name", CIF_CENTER },
+  { (  5 * 8 ) + 8, "I#", CIF_CENTER },
   { ( 20 * 8 ) + 8, "Instrument Name", CIF_CENTER },
+  { (  5 * 8 ) + 8, "S#", CIF_CENTER },
   { ( 20 * 8 ) + 8, "Sample Name", CIF_CENTER },
   { -1, (STRPTR)~0, -1 }
 };
@@ -305,11 +307,13 @@ static const UBYTE * instrumentNames[] = {
 
 struct Node * CreateListBrowserNode( const LONG * integer0,
                                      const LONG * integer1,
+                                     CONST_STRPTR string0,
+                                     CONST_STRPTR string1,
+                                     const LONG * integer2,
                                      CONST_STRPTR string2,
+                                     const LONG * integer3,
                                      CONST_STRPTR string3,
-                                     CONST_STRPTR string4,
-                                     CONST_STRPTR string5,
-                                     CONST_STRPTR string6 ) {
+                                     CONST_STRPTR string4 ) {
 
   LONG columns = sizeof( instrumentColumns ) / sizeof( struct ColumnInfo );
   return AllocListBrowserNode( columns,
@@ -321,19 +325,25 @@ struct Node * CreateListBrowserNode( const LONG * integer0,
                                  LBNCA_Justification, LCJ_RIGHT,
                                LBNA_Column, 2,
                                  LBNCA_CopyText, FALSE,
-                                 LBNCA_Text, string2,
+                                 LBNCA_Text, string0,
                                LBNA_Column, 3,
                                  LBNCA_CopyText, FALSE,
-                                 LBNCA_Text, string3,
+                                 LBNCA_Text, string1,
                                LBNA_Column, 4,
-                                 LBNCA_CopyText, FALSE,
-                                 LBNCA_Text, string4,
+                                 LBNCA_Integer, integer2,
+                                 LBNCA_Justification, LCJ_RIGHT,
                                LBNA_Column, 5,
                                  LBNCA_CopyText, FALSE,
-                                 LBNCA_Text, string5,
+                                 LBNCA_Text, string2,
                                LBNA_Column, 6,
-                                 LBNCA_CopyText, TRUE,
-                                 LBNCA_Text, string6,
+                                 LBNCA_Integer, integer3,
+                                 LBNCA_Justification, LCJ_RIGHT,
+                               LBNA_Column, 7,
+                                 LBNCA_CopyText, FALSE,
+                                 LBNCA_Text, string3,
+                               LBNA_Column, 8,
+                                 LBNCA_CopyText, FALSE,
+                                 LBNCA_Text, string4,
                                TAG_DONE );
 }
 
@@ -367,7 +377,9 @@ VOID CreateEmptyListLabels( struct List * labels ) {
                              &( instrumentNumbers[ i ]),
                              instrumentNames[ i ],
                              "",
+                             NULL,
                              "",
+                             NULL,
                              "",
                              "" );
     i++;
@@ -383,20 +395,26 @@ VOID AddSf2Label(
   struct SF2_Sample * sample ) {
 
   LONG * bank = &( preset->sf2p_Bank );
-  LONG * number = &( preset->sf2p_Common.sf2c_Number );
+  LONG * presetNumber = &( preset->sf2p_Common.sf2c_Number );
+  LONG * instrumentNumber = &( instrument->sf2i_Common.sf2c_Number );
+  LONG * sampleNumber = &( sample->sf2s_Number );
   CONST_STRPTR presetName = preset->sf2p_Common.sf2c_Name;
-  CONST_STRPTR gmName = instrumentNames[ *number ];
+  CONST_STRPTR gmName = instrumentNames[ *presetNumber ];
   CONST_STRPTR instrumentName = instrument->sf2i_Common.sf2c_Name;
   CONST_STRPTR sampleName = sample->sf2s_Name;
 
   struct Node * label;
-  LOG_V(( "V: Creating label %ld %ld %s %s %s %s\n",
-          *bank, *number, presetName, gmName, instrumentName, sampleName ));
+  LOG_V(( "V: Creating label %ld %ld %s %s %ld %s %ld %s\n",
+          *bank, *presetNumber, presetName, gmName,
+          *instrumentNumber, instrumentName,
+          *sampleNumber, sampleName ));
   label = CreateListBrowserNode( bank,
-                                 number,
+                                 presetNumber,
                                  gmName,
                                  presetName,
+                                 instrumentNumber,
                                  instrumentName,
+                                 sampleNumber,
                                  sampleName,
                                  "" );
   LOG_V(( "V: Inserting label\n" ));

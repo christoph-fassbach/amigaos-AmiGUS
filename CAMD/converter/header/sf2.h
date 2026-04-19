@@ -152,7 +152,7 @@ struct SF2_Sample {
   ULONG sf2s_LoopStartOffset;
   ULONG sf2s_LoopEndOffset;
   ULONG sf2s_SampleRate;
-  UWORD sf2s_Number;
+  LONG sf2s_Number; // UWORD - but need long for display.
   UWORD sf2s_SampleType;
   UBYTE sf2s_SampleNote;
   UBYTE sf2s_Name[21];
