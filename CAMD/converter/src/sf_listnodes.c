@@ -34,12 +34,12 @@ static const struct ColumnInfo instrumentColumns[] = {
   { (  3 * 8 ) + 8, "P#", CIF_CENTER },
   { ( 23 * 8 ) + 8, "GM Name", CIF_CENTER },
   { ( 20 * 8 ) + 8, "Preset Name", CIF_CENTER },
-  { (  3 * 8 ) + 8, "I>N", CIF_CENTER },
-  { (  3 * 8 ) + 8, "I<N", CIF_CENTER },
+  { (  3 * 8 ) + 8, "IN>", CIF_CENTER },
+  { (  3 * 8 ) + 8, "<IN", CIF_CENTER },
   { (  5 * 8 ) + 8, "I#", CIF_CENTER },
   { ( 20 * 8 ) + 8, "Instrument Name", CIF_CENTER },
-  { (  3 * 8 ) + 8, "S>N", CIF_CENTER },
-  { (  3 * 8 ) + 8, "S<N", CIF_CENTER },
+  { (  3 * 8 ) + 8, "SN>", CIF_CENTER },
+  { (  3 * 8 ) + 8, "<SN", CIF_CENTER },
   { (  5 * 8 ) + 8, "S#", CIF_CENTER },
   { ( 20 * 8 ) + 8, "Sample Name", CIF_CENTER },
   { -1, (STRPTR)~0, -1 }
@@ -412,7 +412,6 @@ VOID CreateEmptyListLabels( struct List * labels ) {
 }
 
 VOID AddSf2Label(
-  struct SF2 * sf2,
   struct List * labels,
   struct SF2_Preset * preset,
   struct SF2_ArgValues * instrumentArgValues,
@@ -486,8 +485,7 @@ BOOL CreateSf2ListLabels(
         struct SF2_Sample * sample =
           sf2->sf2_SampleArray[ argsI->sf2a_Values.sf2v_NextNumber ];
 
-        AddSf2Label( sf2,
-                     labels,
+        AddSf2Label( labels,
                      preset,
                      &( argsP->sf2a_Values ),
                      instrument,

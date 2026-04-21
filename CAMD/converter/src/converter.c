@@ -39,6 +39,7 @@
 #include "progress_dialog.h"
 #include "sf_listnodes.h"
 #include "sf2_reader.h"
+#include "sf2_tools.h"
 #include "support.h"
 
 /* Globals defined somewhere - here ;) */
@@ -47,6 +48,8 @@ struct SF_Converter      * SF_Converter_Base;   // Main app struct
 struct Library           * CamdBase;
 struct IntuitionBase     * IntuitionBase;
 struct UtilityBase       * UtilityBase;
+struct Library           * MathIeeeDoubBasBase;
+struct Library           * MathIeeeDoubTransBase;
 // and some more owned by the linker libraries:
 // struct DosLibrary     * DOSBase;
 // struct ExecBase       * SysBase;
@@ -175,9 +178,11 @@ struct LoadSoundFontMessage * message;
   }
 
   // TODO: error handling of all the below!
-  OpenLib(( struct Library ** )&IntuitionBase, "intuition.library", 36, EOpenIntuitionBase );
-  OpenLib(( struct Library ** )&UtilityBase, "utility.library", 36, EOpenUtilityBase );
   OpenLib(( struct Library ** )&CamdBase, "camd.library", 37, EOpenCamdBase );
+  OpenLib(( struct Library ** )&IntuitionBase, "intuition.library", 36, EOpenIntuitionBase );
+  OpenLib(( struct Library ** )&MathIeeeDoubBasBase, "mathieeedoubbas.library", 36, EOpenDoubBasBase );
+  OpenLib(( struct Library ** )&MathIeeeDoubTransBase, "mathieeedoubtrans.library", 36, EOpenDoubTransBase );
+  OpenLib(( struct Library ** )&UtilityBase, "utility.library", 36, EOpenUtilityBase );
 
   OpenLib(( struct Library ** )&ButtonBase, "gadgets/button.gadget", 0, EOpenButtonBase );
   OpenLib(( struct Library ** )&FuelGaugeBase, "gadgets/fuelgauge.gadget", 0, EOpenFuelGaugeBase );
@@ -221,9 +226,11 @@ VOID Cleanup( VOID ) {
   CloseLib(( struct Library ** )&FuelGaugeBase );
   CloseLib(( struct Library ** )&ButtonBase );
 
-  CloseLib(( struct Library ** )&CamdBase );
   CloseLib(( struct Library ** )&UtilityBase );
+  CloseLib(( struct Library ** )&MathIeeeDoubTransBase );
+  CloseLib(( struct Library ** )&MathIeeeDoubBasBase );
   CloseLib(( struct Library ** )&IntuitionBase );
+  CloseLib(( struct Library ** )&CamdBase );
   LOG_I(( "I: " STR( APP_NAME ) " cleanup starting.\n" ));
   if ( base ) {
 
@@ -475,6 +482,20 @@ VOID HandleReadButton( VOID ) {
   base->sfc_ProgressDialog = NULL;
 }
 
+VOID HandleListElement( ULONG index ) {
+
+  struct SF_Converter * base = SF_Converter_Base;
+  struct AmiSF_Note * note;
+
+  if ( !( base->sfc_Sf2 )) {
+
+    LOG_I(( "I: List element %ld pushed, but no SoundFont loaded!\n", index ));
+    return;
+  }
+  note = GetNoteAtIndex( base->sfc_Sf2, index );
+  LOG_D(( "V: Got note at 0x%08lx\n", note ));
+}
+
 VOID HandleEvents( VOID ) {
 
   BOOL stop = FALSE;
@@ -560,8 +581,7 @@ VOID HandleEvents( VOID ) {
             }
             case GadgetId_Instruments: {
 
-              LOG_D(( "D: List element pressed\n" ));
-
+              HandleListElement( windowMessageCode );
               break;
             }
             default: {

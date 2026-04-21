@@ -97,6 +97,8 @@ extern struct SF_Converter      * SF_Converter_Base;
 extern struct Library           * CamdBase;
 extern struct DosLibrary        * DOSBase;
 extern struct IntuitionBase     * IntuitionBase;
+extern struct Library           * MathIeeeDoubBasBase;
+extern struct Library           * MathIeeeDoubTransBase;
 extern struct UtilityBase       * UtilityBase;
 extern struct ExecBase          * SysBase;
 

@@ -33,6 +33,8 @@ enum ErrorCodes
   EOpenGfxBase,
   EOpenIntuitionBase,
   EOpenButtonBase,
+  EOpenDoubBasBase,
+  EOpenDoubTransBase,
   EOpenFuelGaugeBase,
   EOpenGetFileBase,
   EOpenLabelBase,

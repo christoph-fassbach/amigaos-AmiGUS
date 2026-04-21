@@ -19,6 +19,7 @@
 #ifndef AMISF_H
 #define AMISF_H
 
+#include <dos/dos.h>
 #include <exec/types.h>
 
 /*
@@ -36,8 +37,8 @@
 struct AmiSF_Note {
 
     UWORD amisf_NoteFlags;
-    UBYTE amisf_OtherBank;
-    UBYTE amisf_OtherPreset;
+    UBYTE amisf_OtherBank;   // not so sure...
+    UBYTE amisf_OtherPreset; // not sure either...
     ULONG amisf_StartOffset;
     ULONG amisf_LoopOffset;
     ULONG amisf_EndOffset;
