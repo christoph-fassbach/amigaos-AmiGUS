@@ -485,14 +485,33 @@ VOID HandleReadButton( VOID ) {
 VOID HandleListElement( ULONG index ) {
 
   struct SF_Converter * base = SF_Converter_Base;
+  struct SF2 * sf2 = base->sfc_Sf2;
+  struct PlaySampleMessage * message;
   struct AmiSF_Note * note;
+  APTR sample;
+  ULONG size;
 
-  if ( !( base->sfc_Sf2 )) {
+  if ( !( sf2 )) {
 
     LOG_I(( "I: List element %ld pushed, but no SoundFont loaded!\n", index ));
     return;
   }
-  note = GetNoteAtIndex( base->sfc_Sf2, index );
+  note = GetNoteAtIndex( sf2, index );
+  size = note->amisf_EndOffset - note->amisf_StartOffset;
+  sample = AllocMem( size, MEMF_ANY | MEMF_CLEAR );
+  LOG_D(( "V: Sample @ 0x%08lx, start %ld - end %ld = size %ld\n",
+          sample,
+          note->amisf_StartOffset, note->amisf_EndOffset, size ));
+  Seek( sf2->sf2_FileHandle, 
+        sf2->sf2_16bitSamplePosition + note->amisf_StartOffset,
+        OFFSET_BEGINNING );
+  Read( sf2->sf2_FileHandle, sample, size );
+
+  message = CreateAmigusPlaySampleMessage(
+    SF_Converter_Base->sfc_MidiReplyPort,
+    note,
+    sample );
+  SendAmigusMessage(( struct Message * ) message );
   LOG_D(( "V: Got note at 0x%08lx\n", note ));
 }
 

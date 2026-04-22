@@ -1,17 +1,17 @@
 /*
- * This file is part of the SoundFontConverter.
+ * This file is part of the AmiGUS CAMD MIDI.
  *
- * SoundFontConverter is free software: you can redistribute it and/or
+ * AmiGUS CAMD MIDI is free software: you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
  * published by the Free Software Foundation, version 3 of the License only.
  *
- * SoundFontConverter is distributed in the hope that it will be useful,
+ * AmiGUS CAMD MIDI is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with SoundFontConverter.
+ * along with AmiGUS CAMD MIDI.
  *
  * If not, see <http://www.gnu.org/licenses/>.
  */
@@ -42,7 +42,7 @@ struct AmiSF_Note {
     ULONG amisf_StartOffset;
     ULONG amisf_LoopOffset;
     ULONG amisf_EndOffset;
-    ULONG amisf_PlaybackRate;
+    ULONG amisf_PlaybackRate;    // Version 01: AmiGUS register format - Version 11: real sample rate
     UWORD amisf_Attack;
     UWORD amisf_Decay;
     UWORD amisf_Sustain;
@@ -86,7 +86,7 @@ struct AmiSF_Data {
   APTR              amisf_SampleBlob;
   // Check only: AMISF_IDENTIFIER_0
   // Check only: AMISF_IDENTIFIER_1
-  UBYTE             amisf_Version;
+  UBYTE             amisf_Version;   // Version 1 -> AmiGUS only
   UBYTE             amisf_Revision;
   UBYTE             amisf_MaxBank;
   UBYTE             amisf_Padding;

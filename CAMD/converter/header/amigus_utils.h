@@ -19,10 +19,17 @@
 #ifndef AMIGUS_UTILS_H
 #define AMIGUS_UTILS_H
 
-#include "amigus_ports.h"
+#include <amigus/amigus_ports.h>
+#include <amigus/amisf.h>
 
 ULONG OpenAmigusPort( VOID );
 LONG SendAmigusMessage( struct Message * message );
+
+struct PlaySampleMessage * CreateAmigusPlaySampleMessage(
+  struct MsgPort * replyPort,
+  struct AmiSF_Note * note,
+  APTR sample );
+
 struct PlayNoteMessage * CreateAmigusPlayNoteMessage(
   struct MsgPort * replyPort );
 

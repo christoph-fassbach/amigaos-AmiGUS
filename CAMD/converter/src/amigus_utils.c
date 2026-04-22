@@ -33,6 +33,7 @@
  * MIDI driver helper variables - private variables.
  *****************************************************************************/
 
+LONG PlaySampleMessageName     = PLAY_SAMPLE_MESSAGE_NAME;
 LONG PlayNoteMessageName       = PLAY_NOTE_MESSAGE_NAME;
 LONG PlayInstrumentMessageName = PLAY_INSTRUMENT_MESSAGE_NAME;
 LONG LoadSoundFontMessageName  = LOAD_SOUNDFONT_NESSAGE_NAME;
@@ -144,6 +145,21 @@ LONG SendAmigusMessage( struct Message * message ) {
   return ENoError;
 }
 
+struct PlaySampleMessage * CreateAmigusPlaySampleMessage(
+  struct MsgPort * replyPort,
+  struct AmiSF_Note * note,
+  APTR sample ) {
+
+  struct PlaySampleMessage * message =
+    CreateAmigusMessage( replyPort,
+                         sizeof( struct PlaySampleMessage ),
+                         &( PlaySampleMessageName ));
+  message->note = note;
+  message->sample = sample;
+
+  return message;
+}
+
 struct PlayNoteMessage * CreateAmigusPlayNoteMessage(
   struct MsgPort * replyPort ) {
 
@@ -193,6 +209,18 @@ VOID DeleteAmigusMessage( APTR message ) {
   struct Message * mess = (struct Message * ) message;
 
   switch ( *(( LONG * ) mess->mn_Node.ln_Name )) {
+    case PLAY_SAMPLE_MESSAGE_NAME: {
+
+      struct PlaySampleMessage * sampleMessage =
+        ( struct PlaySampleMessage * ) message;
+      ULONG size = sampleMessage->note->amisf_EndOffset
+        - sampleMessage->note->amisf_StartOffset;
+      LOG_D(( "D: Deleting PlaySampleMessage 0x%08lx...\n", mess ));
+      FreeMem( sampleMessage->sample, size );
+      FreeMem( sampleMessage->note, sizeof( struct AmiSF_Note ));
+      FreeMem( sampleMessage, sizeof( struct PlaySampleMessage ));
+      break;
+    }
     case PLAY_NOTE_MESSAGE_NAME: {
 
       LOG_D(( "D: Deleting PlayNoteMessage 0x%08lx...\n", mess ));
@@ -214,6 +242,9 @@ VOID DeleteAmigusMessage( APTR message ) {
       break;
     }
     default: {
+      LOG_E(( "E: Cannot delete message 0x%08lx of unknown type %s!\n",
+              mess,
+              mess->mn_Node.ln_Name ));
       break;
     }
   }

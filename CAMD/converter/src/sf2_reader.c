@@ -22,7 +22,6 @@
 #include <proto/exec.h>
 
 #include "sf2_reader.h"
-#include "amisf.h"
 
 #include "converter.h"
 #include "debug.h"

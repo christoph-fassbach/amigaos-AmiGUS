@@ -19,7 +19,8 @@
 #ifndef SF2_TOOLS_H
 #define SF2_TOOLS_H
 
-#include "amisf.h"
+#include <amigus/amisf.h>
+
 #include "sf2.h"
 
 struct AmiSF_Note * GetNoteAtIndex( struct SF2 * sf2, const ULONG index );

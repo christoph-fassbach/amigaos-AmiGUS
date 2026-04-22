@@ -25,6 +25,7 @@
 #include "amigus_camd.h"
 #include "amigus_hardware.h"
 #include "amigus_ports.h"
+#include "amisf.h"
 #include "debug.h"
 #include "errors.h"
 #include "support.h"
@@ -37,6 +38,18 @@ VOID HandleMessage( struct Message * message ) {
             message->mn_Node.ln_Name ));
 
   switch ( *(( LONG * ) message->mn_Node.ln_Name )) {
+    case PLAY_SAMPLE_MESSAGE_NAME: {
+
+      struct PlaySampleMessage * sampleMessage =
+        ( struct PlaySampleMessage * ) message;
+
+      LOG_D(( "D: Got sample @ 0x%08lx with rate 0x%08lx\n",
+              sampleMessage->sample,
+              sampleMessage->note->amisf_PlaybackRate ));
+      LOG_D(( "D: Replying PlaySampleMessage 0x%08lx...\n", message ));
+      ReplyMsg( message );
+      break;
+    }
     case PLAY_NOTE_MESSAGE_NAME: {
 
       LOG_D(( "D: Replying PlayNoteMessage 0x%08lx...\n", message ));

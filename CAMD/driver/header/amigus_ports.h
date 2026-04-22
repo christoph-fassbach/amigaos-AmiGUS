@@ -30,10 +30,17 @@
  */
 #define SASC_MAXIMUM_DEFINE_LENGTH_IS_32 12345678
 
+#define PLAY_SAMPLE_MESSAGE_NAME         (( LONG ) CHAR_TO_ULONG( 'P', 'S', 'M', 0 ))
 #define PLAY_NOTE_MESSAGE_NAME           (( LONG ) CHAR_TO_ULONG( 'P', 'N', 'M', 0 ))
 #define PLAY_INSTRUMENT_MESSAGE_NAME     (( LONG ) CHAR_TO_ULONG( 'P', 'I', 'M', 0 ))
 #define LOAD_SOUNDFONT_NESSAGE_NAME      (( LONG ) CHAR_TO_ULONG( 'L', 'S', 'M', 0 ))
 #define RELOAD_SETTINGS_MESSAGE_NAME     (( LONG ) CHAR_TO_ULONG( 'R', 'S', 'M', 0 ))
+
+struct PlaySampleMessage {
+  struct Message pnm_Message;
+  struct AmiSF_Note * note;
+  APTR sample;
+};
 
 struct PlayNoteMessage {
   struct Message pnm_Message;

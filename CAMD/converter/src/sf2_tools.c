@@ -63,14 +63,14 @@ struct AmiSF_Note * CreateAmiSF_Note(
   double j = IEEEDPFlt( maxValue );
   double k = IEEEDPMul( i, j );
   LONG targetRegisterValue = IEEEDPFix( k );
+
   struct AmiSF_Note * note = AllocMem( sizeof( struct AmiSF_Note ),
                                        MEMF_ANY | MEMF_CLEAR );
 
   note->amisf_StartOffset = sample->sf2s_SampleStartOffset;
   note->amisf_LoopOffset = sample->sf2s_LoopStartOffset;
   note->amisf_EndOffset = sample->sf2s_LoopEndOffset;
-  note->amisf_PlaybackRate = targetRate;
-
+  note->amisf_PlaybackRate = targetRegisterValue;
   LOG_V(( "V: a=%ld b=%ld c=%ld d=%ld e=%ld f=%ld "
           "g=%ld h=%ld i=%ld j=%ld k=%ld=0x%08lx\n",
           IEEEDPFix( a ),
@@ -88,22 +88,6 @@ struct AmiSF_Note * CreateAmiSF_Note(
   LOG_D(( "D: Source: Note %ld, sample rate %ld\n", sourceNote, sourceRate ));
   LOG_D(( "D: Target: Note %ld, sample rate %ld, register value 0x%08lx\n",
           targetNote, targetRate, targetRegisterValue ));
-
-  // UWORD amisf_Attack;
-  // UWORD amisf_Decay;
-  // UWORD amisf_Sustain;
-  // UWORD amisf_Release;
-  // LONG * presetNumber = &(  );
-  // LONG * instrumentMin = &( instrumentArgValues->sf2v_LowNote );
-  // LONG * instrumentMax = &( instrumentArgValues->sf2v_HighNote );
-  // LONG * instrumentNumber = &( instrument->sf2i_Common.sf2c_Number );
-  // LONG * sampleMin = &( sampleArgValues->sf2v_LowNote );
-  // LONG * sampleMax = &( sampleArgValues->sf2v_HighNote );
-  // LONG * sampleNumber = &( sample->sf2s_Number );
-  // CONST_STRPTR presetName = preset->sf2p_Common.sf2c_Name;
-  // CONST_STRPTR gmName = instrumentNames[ *presetNumber ];
-  // CONST_STRPTR instrumentName = instrument->sf2i_Common.sf2c_Name;
-  // CONST_STRPTR sampleName = sample->sf2s_Name;
 
   return note;
 }
