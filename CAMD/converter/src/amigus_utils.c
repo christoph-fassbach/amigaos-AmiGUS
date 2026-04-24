@@ -49,7 +49,7 @@ APTR CreateAmigusMessage( struct MsgPort * replyPort,
 
   // This is clearly larger than a message,
   // but we access only the common part here.
-  struct Message * message = AllocVec( messageSize, MEMF_ANY | MEMF_CLEAR );
+  struct Message * message = AllocMem( messageSize, MEMF_ANY | MEMF_CLEAR );
 
   message->mn_Node.ln_Name = ( STRPTR ) messageName;
   message->mn_ReplyPort = replyPort;
@@ -120,11 +120,13 @@ LONG SendAmigusMessage( struct Message * message ) {
     result = EasyRequest( SF_Converter_Base->sfc_MainWindow, &request, NULL );
     if ( !result ) {
 
-      return ENoAmigusRetry;
+      LOG_I(( "I: Not retrying...\n" ));
+      return ENoError;
     }
     result = OpenAmigusPort();
     if ( result ) {
 
+      LOG_I(( "I: Failed opening AmiGUS port...\n" ));
       DisplayError( result );
       return result;
     }
@@ -135,6 +137,7 @@ LONG SendAmigusMessage( struct Message * message ) {
   if ( !( port )) {
 
     Permit();
+    LOG_I(( "I: AmiGUS port not found...\n" ));
     DisplayError( ENoAmigusRetry );
     return ENoAmigusRetry;
   }
@@ -224,21 +227,25 @@ VOID DeleteAmigusMessage( APTR message ) {
     case PLAY_NOTE_MESSAGE_NAME: {
 
       LOG_D(( "D: Deleting PlayNoteMessage 0x%08lx...\n", mess ));
+      FreeMem( message, sizeof( struct PlayNoteMessage ));
       break;
     }
     case PLAY_INSTRUMENT_MESSAGE_NAME: {
 
       LOG_D(( "D: Deleting PlayInstrumentMessage 0x%08lx...\n", mess ));
+      FreeMem( message, sizeof( struct PlayInstrumentMessage ));
       break;
     }
     case LOAD_SOUNDFONT_NESSAGE_NAME: {
 
       LOG_D(( "D: Deleting LoadSoundFontMessage 0x%08lx...\n", mess ));
+      FreeMem( message, sizeof( struct LoadSoundFontMessage ));
       break;
     }
     case RELOAD_SETTINGS_MESSAGE_NAME: {
 
       LOG_D(( "D: Deleting ReloadSettingsMessage 0x%08lx...\n", mess ));
+      FreeMem( message, sizeof( struct ReloadSettingsMessage ));
       break;
     }
     default: {
@@ -248,5 +255,4 @@ VOID DeleteAmigusMessage( APTR message ) {
       break;
     }
   }
-  FreeVec( message );
 }
