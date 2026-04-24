@@ -32,13 +32,13 @@ struct AmiSF_Note * CreateAmiSF_Note(
   struct SF2_ArgValues * instrumentArgValues,
   struct SF2_Instrument * instrument,
   struct SF2_ArgValues * sampleArgValues,
-  struct SF2_Sample * sample ) {
+  struct SF2_Sample * sample,
+  ULONG targetNote ) {
 
   const LONG maxRate = 192000;
   const LONG maxValue = 0x40000000;
   LONG sourceNote = sample->sf2s_SampleNote;
   LONG sourceRate = sample->sf2s_SampleRate;
-  LONG targetNote = preset->sf2p_Common.sf2c_Number;
   // targetRate = sourceRate * 2 ^ (( targetNote - sourceNote ) / 12 )
   // targetRate = sourceRate * 2 ^ (             a              /  b )
   // targetRate = sourceRate * d ^ (                  c              )
@@ -125,7 +125,8 @@ struct AmiSF_Note * GetNoteAtIndex( struct SF2 * sf2, const ULONG index ) {
                                    instrumentArgValues,
                                    instrument,
                                    sampleArgValues,
-                                   sample );
+                                   sample,
+                                   sample->sf2s_SampleNote );
         }
         ++current;
       }
