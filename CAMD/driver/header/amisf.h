@@ -55,7 +55,8 @@ struct AmiSF_Note {
 
 #define AMISF_NOTE_LOOPED_MASK           0x0002
 #define AMISF_NOTE_INTERPOLATION_MASK    0x0004
-#define AMISF_NOTE_ENVELOPE_MASK         0x0008
+//efine AMISF_NOTE_ENDIANESS_MASK        0x0008 // No, we do not do that here!
+#define AMISF_NOTE_ENVELOPE_MASK         0x0010
 
 #define AMISF_NOTE_OTHER_NOTE_MASK       0x1000
 #define AMISF_NOTE_NOT_OTHER_NOTE_MASK   0x0000

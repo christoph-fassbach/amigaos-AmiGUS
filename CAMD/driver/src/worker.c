@@ -25,6 +25,7 @@
 #include "amigus_camd.h"
 #include "amigus_hardware.h"
 #include "amigus_ports.h"
+#include "amigus_wavetable.h"
 #include "amisf.h"
 #include "debug.h"
 #include "errors.h"
@@ -42,10 +43,15 @@ VOID HandleMessage( struct Message * message ) {
 
       struct PlaySampleMessage * sampleMessage =
         ( struct PlaySampleMessage * ) message;
-
+      ULONG size = sampleMessage->note->amisf_EndOffset
+                 - sampleMessage->note->amisf_StartOffset;
       LOG_D(( "D: Got sample @ 0x%08lx with rate 0x%08lx\n",
               sampleMessage->sample,
               sampleMessage->note->amisf_PlaybackRate ));
+      LoadAmiGusWavetableSample( sampleMessage->sample,
+                                 sampleMessage->note->amisf_StartOffset,
+                                 size );
+      StartAmiGusWavetablePlayback( sampleMessage->note );
       LOG_D(( "D: Replying PlaySampleMessage 0x%08lx...\n", message ));
       ReplyMsg( message );
       break;

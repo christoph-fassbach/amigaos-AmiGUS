@@ -230,7 +230,7 @@ ASM( BOOL ) SAVEDS AmiGUS_Init( REG( a6, struct ExecBase * sysBase )) {
     return FALSE;
   }
 
-#if 0
+#if 1
 
   Forbid();
   do {
@@ -272,6 +272,7 @@ ASM( BOOL ) SAVEDS AmiGUS_Init( REG( a6, struct ExecBase * sysBase )) {
     LOG_D(( "D: AmiGUS_CAMD using Wavetable @ 0x%08lx on %s\n",
             base->agb_CardBase,
             base->agb_AmiGUS->agus_TypeName ));
+    InitAmiGus();
   }
 
   LOG_D(( "D: AmiGUS_CAMD_Base ready @ 0x%08lx\n", base ));

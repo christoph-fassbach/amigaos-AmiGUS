@@ -270,6 +270,51 @@
                                             / MICROS_PER_SECOND )
 
 /******************************************************************************
+ * AmiGUS Wavetable hardware definitions below
+ *****************************************************************************/
+
+#define AMIGUS_WT_RESET                 0x18
+
+#define AMIGUS_WT_ADDRESS_32BIT         0x14
+#define AMIGUS_WT_DATA_32BIT            0x10
+
+#define AMIGUS_WT_ADDRESS_HIGH          0x14
+#define AMIGUS_WT_ADDRESS_LOW           0x16
+#define AMIGUS_WT_DATA_HIGH             0x10
+#define AMIGUS_WT_DATA_LOW              0x12
+
+#define AMIGUS_WT_CHANNEL_NUMBER        0x1e
+#define AMIGUS_WT_CHANNEL_CONTROL       0x20
+
+#define AMIGUS_WT_CHANNEL_START_32BIT   0x22
+#define AMIGUS_WT_CHANNEL_LOOP_32BIT    0x26
+#define AMIGUS_WT_CHANNEL_END_32BIT     0x2a
+#define AMIGUS_WT_CHANNEL_RATE_32BIT    0x2e
+
+#define AMIGUS_WT_CHANNEL_START_HIGH    0x22
+#define AMIGUS_WT_CHANNEL_START_LOW     0x24
+#define AMIGUS_WT_CHANNEL_LOOP_HIGH     0x26
+#define AMIGUS_WT_CHANNEL_LOOP_LOW      0x28
+#define AMIGUS_WT_CHANNEL_END_HIGH      0x2a
+#define AMIGUS_WT_CHANNEL_END_LOW       0x2c
+#define AMIGUS_WT_CHANNEL_RATE_HIGH     0x2e
+#define AMIGUS_WT_CHANNEL_RATE_LOW      0x30
+
+#define AMIGUS_WT_CHANNEL_ATTACK        0x36
+#define AMIGUS_WT_CHANNEL_DECAY         0x38
+#define AMIGUS_WT_CHANNEL_SUSTAIN       0x3a
+#define AMIGUS_WT_CHANNEL_RELEASE       0x3c
+
+#define AMIGUS_WT_CHANNEL_VOLUME_LEFT   0x32
+#define AMIGUS_WT_CHANNEL_VOLUME_RIGHT  0x34
+
+#define AMIGUS_WT_MASTER_VOLUME_LEFT    0x40
+#define AMIGUS_WT_MASTER_VOLUME_RIGHT   0x42
+
+/* FIFO Reset */
+#define AMIGUS_WT_F_RESET_STROBE        0x0000
+
+/******************************************************************************
  * Low-Level hardware access functions.
  *****************************************************************************/
 

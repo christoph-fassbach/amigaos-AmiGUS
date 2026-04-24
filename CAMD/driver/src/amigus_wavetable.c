@@ -26,3 +26,82 @@
 /******************************************************************************
  * Wavetable convenience functions - public function definitions.
  *****************************************************************************/
+
+VOID InitAmiGus( VOID ) {
+
+  struct AmiGUS_CAMD * base = AmiGUS_CAMD_Base;
+  APTR card = base->agb_AmiGUS->agus_WavetableBase;
+  WORD i;
+
+  WriteReg16( card, AMIGUS_WT_RESET, AMIGUS_WT_F_RESET_STROBE );
+  for ( i = 0; i < 32; ++i ) {
+
+    WriteReg16( card, AMIGUS_WT_CHANNEL_NUMBER, i );
+    WriteReg16( card, AMIGUS_WT_CHANNEL_CONTROL, 0x0000 );
+    WriteReg32( card, AMIGUS_WT_CHANNEL_START_32BIT, 0x00000000 );
+    WriteReg32( card, AMIGUS_WT_CHANNEL_LOOP_32BIT, 0x00000000 );
+    WriteReg32( card, AMIGUS_WT_CHANNEL_END_32BIT, 0x00000000 );
+    WriteReg16( card, AMIGUS_WT_CHANNEL_VOLUME_LEFT, 0x8000 );
+    WriteReg16( card, AMIGUS_WT_CHANNEL_VOLUME_RIGHT, 0x8000 );
+  }
+  // Set master volume
+  WriteReg16( card, AMIGUS_WT_MASTER_VOLUME_LEFT, 0xffff);
+  WriteReg16( card, AMIGUS_WT_MASTER_VOLUME_RIGHT, 0xffff);
+  LOG_V(( "V: Wavetable @ 0x%08lx init'ed\n", card ));
+}
+
+VOID LoadAmiGusWavetableSample( ULONG * source, ULONG target, ULONG size ) {
+
+  struct AmiGUS_CAMD * base = AmiGUS_CAMD_Base;
+  APTR card = base->agb_AmiGUS->agus_WavetableBase;
+  ULONG i;
+
+  if ( 0x00000003 & size ) {
+
+    LOG_E(( "E: Loading sample will go sideways... "
+            "size is %ld needs to be ULONGs!\n",
+            size ));
+  }
+  size >>= 2;
+  if ( 0xFF000001 & target ) {
+
+    LOG_E(( "E: Loading sample will go sideways... "
+            "target is 0x%08lx needs to be UWORDs!\n",
+            target ));
+    target &= 0x00FFFFFE;
+  }
+
+  WriteReg32( card, AMIGUS_WT_ADDRESS_32BIT, target );
+  for ( i = 0; i < size; ++i ) {
+
+    ULONG data = source[ i ];
+    WriteReg32( card, AMIGUS_WT_DATA_32BIT, data );
+  }
+  LOG_D(( "D: Copied %ld LONGs to 0x%08lx\n", i, target ));
+}
+
+VOID StartAmiGusWavetablePlayback( struct AmiSF_Note * note ) {
+
+  struct AmiGUS_CAMD * base = AmiGUS_CAMD_Base;
+  APTR card = base->agb_AmiGUS->agus_WavetableBase;
+
+  WriteReg16( card, AMIGUS_WT_CHANNEL_NUMBER, 0x0000 );
+  WriteReg16( card, AMIGUS_WT_CHANNEL_CONTROL, 0x0000 );
+
+  LOG_D(( "D: Playing from %lx to 0x%08lx\n", 
+          note->amisf_StartOffset, note->amisf_EndOffset ));
+  WriteReg32( card, AMIGUS_WT_CHANNEL_START_32BIT, note->amisf_StartOffset );
+  WriteReg32( card, AMIGUS_WT_CHANNEL_LOOP_32BIT, note->amisf_LoopOffset );
+  WriteReg32( card, AMIGUS_WT_CHANNEL_END_32BIT, note->amisf_EndOffset );
+  WriteReg32( card, AMIGUS_WT_CHANNEL_RATE_32BIT, note->amisf_PlaybackRate );
+
+  WriteReg16( card, AMIGUS_WT_CHANNEL_VOLUME_LEFT, 50000 );
+  WriteReg16( card, AMIGUS_WT_CHANNEL_VOLUME_RIGHT, 50000 );
+
+  WriteReg16( card, AMIGUS_WT_CHANNEL_ATTACK, note->amisf_Attack );
+  WriteReg16( card, AMIGUS_WT_CHANNEL_DECAY, note->amisf_Decay );
+  WriteReg16( card, AMIGUS_WT_CHANNEL_SUSTAIN, note->amisf_Sustain );
+  WriteReg16( card, AMIGUS_WT_CHANNEL_RELEASE, note->amisf_Release );
+
+  WriteReg16( card, AMIGUS_WT_CHANNEL_CONTROL, 0x8006 );
+}

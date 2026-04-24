@@ -21,8 +21,19 @@
 
 #include <exec/types.h>
 
+#include "amisf.h"
+
 /******************************************************************************
  * Wavetable convenience functions.
  *****************************************************************************/
+
+VOID InitAmiGus( VOID );
+
+// Size in byte!
+// data needs to be long aligned unfortunately...
+VOID LoadAmiGusWavetableSample( ULONG * source, ULONG target, ULONG size );
+
+// Only plays from inside Wavetable memory!
+VOID StartAmiGusWavetablePlayback( struct AmiSF_Note * note );
 
 #endif /* AMIGUS_WAVETABLE_H */
