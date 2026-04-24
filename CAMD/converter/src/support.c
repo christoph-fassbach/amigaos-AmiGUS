@@ -312,3 +312,21 @@ STRPTR C_strcpy_VD(STRPTR string) {
 
   return result;
 }
+
+/******************************************************************************
+ * Endianess helpers - public functions.
+ *****************************************************************************/
+
+UWORD Swap16( UWORD value ) {
+
+  return ( UWORD )((( value & 0xFF00 ) >> 8 ) |
+                   (( value & 0x00FF ) << 8 ));
+}
+
+ULONG Swap32( ULONG value ) {
+
+  return ((( value & 0xFF000000 ) >> 24 ) |
+          (( value & 0x00FF0000 ) >>  8 ) |
+          (( value & 0x0000FF00 ) <<  8 ) |
+          (( value & 0x000000FF ) << 24 ));
+}

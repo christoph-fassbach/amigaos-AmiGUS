@@ -17,6 +17,7 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <proto/dos.h>
 #include <proto/exec.h>
 #include <proto/mathieeedoubbas.h>
 #include <proto/mathieeedoubtrans.h>
@@ -67,9 +68,15 @@ struct AmiSF_Note * CreateAmiSF_Note(
   struct AmiSF_Note * note = AllocMem( sizeof( struct AmiSF_Note ),
                                        MEMF_ANY | MEMF_CLEAR );
 
-  note->amisf_StartOffset = sample->sf2s_SampleStartOffset;
-  note->amisf_LoopOffset = sample->sf2s_LoopStartOffset;
-  note->amisf_EndOffset = sample->sf2s_LoopEndOffset;
+  note->amisf_NoteFlags =
+      AMISF_NOTE_RESOLUTION_16BIT // SF2 only knows 16 or 24bit
+    | AMISF_NOTE_LOOPED_MASK
+    | AMISF_NOTE_IN_FILE
+    | AMISF_NOTE_NOT_IN_RAM
+    | AMISF_NOTE_NOT_IN_CARD;
+  note->amisf_StartOffset = ( sample->sf2s_SampleStartOffset ) << 1; // 16bit
+  note->amisf_LoopOffset = ( sample->sf2s_LoopStartOffset ) << 1;    // 16bit
+  note->amisf_EndOffset = ( sample->sf2s_LoopEndOffset ) << 1;       // 16bit
   note->amisf_PlaybackRate = targetRegisterValue;
   LOG_V(( "V: a=%ld b=%ld c=%ld d=%ld e=%ld f=%ld "
           "g=%ld h=%ld i=%ld j=%ld k=%ld=0x%08lx\n",
@@ -133,4 +140,31 @@ struct AmiSF_Note * GetNoteAtIndex( struct SF2 * sf2, const ULONG index ) {
     }
   }
   return NULL;
+}
+
+APTR GetSampleForNote( struct SF2 * sf2, struct AmiSF_Note * note ) {
+
+  ULONG size = note->amisf_EndOffset - note->amisf_StartOffset;
+  APTR samples = AllocMem( size, MEMF_ANY | MEMF_CLEAR );
+  UWORD * sample = samples;
+
+  LOG_D(( "V: Samples @ 0x%08lx, start %ld - end %ld = size %ld\n",
+          samples,
+          note->amisf_StartOffset, note->amisf_EndOffset, size ));
+  Seek( sf2->sf2_FileHandle, 
+        sf2->sf2_16bitSamplePosition + note->amisf_StartOffset,
+        OFFSET_BEGINNING );
+  Read( sf2->sf2_FileHandle, samples, size );
+
+  // Now counting size in 16bit samples!
+  size >>= 1;
+  while ( size ) {
+
+    sample[ size ] = Swap16( sample[ size ]);
+    size--;
+  }
+
+  note->amisf_NoteFlags |= AMISF_NOTE_IN_RAM;
+
+  return samples;
 }

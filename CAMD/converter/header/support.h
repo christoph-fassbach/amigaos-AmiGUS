@@ -269,4 +269,12 @@ STRPTR C_strcat(STRPTR target, STRPTR source, UWORD max);
  */
 STRPTR C_strcat_VD(LONG count, ...);
 
+/******************************************************************************
+ * Endianess helpers - public functions.
+ *****************************************************************************/
+
+UWORD Swap16( UWORD value );
+
+ULONG Swap32( ULONG value );
+
 #endif /* SUPPORT_H */

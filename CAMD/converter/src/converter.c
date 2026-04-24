@@ -497,16 +497,7 @@ VOID HandleListElement( ULONG index ) {
     return;
   }
   note = GetNoteAtIndex( sf2, index );
-  size = note->amisf_EndOffset - note->amisf_StartOffset;
-  sample = AllocMem( size, MEMF_ANY | MEMF_CLEAR );
-  LOG_D(( "V: Sample @ 0x%08lx, start %ld - end %ld = size %ld\n",
-          sample,
-          note->amisf_StartOffset, note->amisf_EndOffset, size ));
-  Seek( sf2->sf2_FileHandle, 
-        sf2->sf2_16bitSamplePosition + note->amisf_StartOffset,
-        OFFSET_BEGINNING );
-  Read( sf2->sf2_FileHandle, sample, size );
-
+  sample = GetSampleForNote( sf2, note );
   message = CreateAmigusPlaySampleMessage(
     SF_Converter_Base->sfc_MidiReplyPort,
     note,

@@ -82,20 +82,6 @@ struct SF2_Chunk {
  * SF2 reader - private helper functions.
  *****************************************************************************/
 
-static UWORD Swap16( UWORD value ) {
-
-  return ( UWORD )((( value & 0xFF00 ) >> 8 ) |
-                   (( value & 0x00FF ) << 8 ));
-}
-
-static ULONG Swap32( ULONG value ) {
-
-  return ((( value & 0xFF000000 ) >> 24 ) |
-          (( value & 0x00FF0000 ) >>  8 ) |
-          (( value & 0x0000FF00 ) <<  8 ) |
-          (( value & 0x000000FF ) << 24 ));
-}
-
 static LONG ReadULONG( BPTR fileHandle, ULONG * target ) {
 
   return FRead( fileHandle, target, sizeof( ULONG ), 1 );

@@ -103,5 +103,11 @@ VOID StartAmiGusWavetablePlayback( struct AmiSF_Note * note ) {
   WriteReg16( card, AMIGUS_WT_CHANNEL_SUSTAIN, note->amisf_Sustain );
   WriteReg16( card, AMIGUS_WT_CHANNEL_RELEASE, note->amisf_Release );
 
-  WriteReg16( card, AMIGUS_WT_CHANNEL_CONTROL, 0x8006 );
+  WriteReg16( card,
+              AMIGUS_WT_CHANNEL_CONTROL,
+              AMIGUS_WT_F_CONTROL_START
+              | AMIGUS_WT_F_CONTROL_INTERPOLATE
+              | ( note->amisf_NoteFlags 
+                & ( AMISF_NOTE_RESOLUTION_16BIT 
+                  | AMISF_NOTE_LOOPED_MASK )));
 }

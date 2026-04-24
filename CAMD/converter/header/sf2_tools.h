@@ -24,5 +24,6 @@
 #include "sf2.h"
 
 struct AmiSF_Note * GetNoteAtIndex( struct SF2 * sf2, const ULONG index );
+APTR GetSampleForNote( struct SF2 * sf2, struct AmiSF_Note * note );
 
 #endif /* SF2_TOOLS_H */
