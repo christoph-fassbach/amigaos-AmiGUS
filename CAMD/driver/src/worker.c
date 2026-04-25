@@ -126,34 +126,38 @@ VOID HandleMessage( struct Message * message ) {
       ULONG bufferEmpty;
       ULONG midiData;
 
-      LOG_INT(( "WORKER: Beginning main loop\n" ));
-      LOG_INT(( "WORKER: Beginning MIDI loop\n" ));
-      do {
+//      LOG_INT(( "WORKER: Beginning main loop\n" ));
+//      LOG_INT(( "WORKER: Beginning MIDI loop\n" ));
+      if ( workerSignal & signals ) {
+        do {
 
-        midiData = base->agb_TransmitFunction( base->agb_CAMD_userdata );
-        bufferEmpty = GET_REG( REG_D1 );
+          midiData = base->agb_TransmitFunction( base->agb_CAMD_userdata );
+          bufferEmpty = GET_REG( REG_D1 );
 
-        LOG_INT(( "WORKER: Received data=0x%02lx empty=0x%02lx\n",
-                  midiData, bufferEmpty ));
+          LOG_INT(( "WORKER: Received data=0x%02lx empty=0x%02lx\n",
+                    midiData, bufferEmpty ));
 
-// TODO: Translate MIDI information to AmiGUS actions and execute them!
-      } while ( !bufferEmpty );
-      LOG_INT(( "WORKER: Ending MIDI loop\n" ));
+          // TODO: Translate MIDI information to AmiGUS actions and execute them!
+        } while ( !bufferEmpty );
+//      LOG_INT(( "WORKER: Ending MIDI loop\n" ));
+      }
 
       if ( messageSignal & signals ) {
 
         struct Message * message;
         while ( message = GetMsg( base->agb_WorkerPort )) {
 
-          LOG_INT(( "WORKER: Beginning message loop\n" ));
+//          LOG_INT(( "WORKER: Beginning message loop\n" ));
           HandleMessage( message );
         }
-        LOG_INT(( "WORKER: Ending message loop\n" ));
+//        LOG_INT(( "WORKER: Ending message loop\n" ));
       }
       LOG_INT(( "WORKER: Going to sleep...\n" ));
 
       base->agb_WorkerReady = TRUE;
       signals = Wait( allSignals );
+
+//      LOG_INT(( "WORKER: Woke up, signals are 0x%08lx\n", signals ));
       /* 
        All signals break the wait,
        but "stop" and "CTRL-C" break the playback loop.
@@ -162,7 +166,6 @@ VOID HandleMessage( struct Message * message ) {
 
         break;
       }
-      //LOG_INT(( "WORKER: Woke up, signals are 0x%08lx\n", signals ));
     }
   } else {
     /* Well... */
