@@ -136,30 +136,32 @@ VOID HandleMessage( struct Message * message ) {
     // SetSignal(0, 1 << agb_WorkerStopSignal );
     while ( TRUE ) {
 
-//      LOG_INT(( "WORKER: Beginning main loop\n" ));
+      LOG_INT(( "WORKER: Beginning main loop\n" ));
       if ( workerSignal & signals ) {
 
-//      LOG_INT(( "WORKER: Beginning MIDI loop\n" ));
+        LOG_INT(( "WORKER: Beginning MIDI loop\n" ));
         while ( HandleMidi( ));
-//      LOG_INT(( "WORKER: Ending MIDI loop\n" ));
+        LOG_INT(( "WORKER: Ending MIDI loop\n" ));
       }
 
       if ( messageSignal & signals ) {
 
         struct Message * message;
+
+        LOG_INT(( "WORKER: Beginning message loop\n" ));
         while ( message = GetMsg( base->agb_WorkerPort )) {
 
-//          LOG_INT(( "WORKER: Beginning message loop\n" ));
           HandleMessage( message );
         }
-//        LOG_INT(( "WORKER: Ending message loop\n" ));
+        LOG_INT(( "WORKER: Ending message loop\n" ));
       }
       LOG_INT(( "WORKER: Going to sleep...\n" ));
 
       base->agb_WorkerReady = TRUE;
       signals = Wait( allSignals );
 
-//      LOG_INT(( "WORKER: Woke up, signals are 0x%08lx\n", signals ));
+      // Activating the log line below breaks the driver... no clue why
+      // LOG_INT(( "WORKER: Woke up, signals are 0x%08lx\n", signals ));
       /* 
        All signals break the wait,
        but "stop" and "CTRL-C" break the playback loop.
@@ -207,9 +209,9 @@ BOOL CreateWorkerProcess( VOID ) {
   }
 // TODO: Use CreateProc for 1.3
   AmiGUS_CAMD_Base->agb_WorkerProcess =
-      CreateNewProcTags( NP_Entry, (ULONG) &WorkerProcess,
-                         NP_Name, (ULONG) ( STR( LIB_FILE ) " CAMD" ),
-                         NP_Priority, (ULONG) 127,
+      CreateNewProcTags( NP_Entry, ( ULONG ) &WorkerProcess,
+                         NP_Name, ( ULONG ) ( STR( LIB_FILE ) " CAMD" ),
+                         NP_Priority, ( ULONG ) 127,
                          TAG_DONE, 0 
                        );
   if ( AmiGUS_CAMD_Base->agb_WorkerProcess ) {
