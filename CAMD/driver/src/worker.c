@@ -157,7 +157,7 @@ VOID HandleMessage( struct Message * message ) {
        */
       signals &= (( 1 << base->agb_WorkerWorkSignal )
                 | ( 1 << base->agb_WorkerPort->mp_SigBit ));
-      LOG_INT(( "WORKER: Woke up, signals are 0x%08lx\n", signals ));
+      //LOG_INT(( "WORKER: Woke up, signals are 0x%08lx\n", signals ));
     }
   } else {
     /* Well... */
