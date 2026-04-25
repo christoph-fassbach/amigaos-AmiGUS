@@ -90,7 +90,6 @@ VOID HandleMessage( struct Message * message ) {
 
 /*__entry for vbcc*/ SAVEDS VOID WorkerProcess( VOID ) {
 
-  ULONG signals = TRUE;
   struct AmiGUS_CAMD * base = AmiGUS_CAMD_Base;
 
   LOG_D(( "D: Worker for AmiGUS_CAMD_Base @ %08lx starting...\n",
@@ -110,6 +109,8 @@ VOID HandleMessage( struct Message * message ) {
   if ( ( -1 != base->agb_WorkerWorkSignal )
     && ( -1 != base->agb_WorkerStopSignal )
     && ( base->agb_WorkerPort )) {
+
+    ULONG signals = TRUE;
 
     /* Tell master worker is alive */
     Signal(( struct Task * ) base->agb_MainProcess, 1 << base->agb_MainSignal );
@@ -151,9 +152,8 @@ VOID HandleMessage( struct Message * message ) {
                       | ( 1 << base->agb_WorkerStopSignal )
                       | ( 1 << base->agb_WorkerPort->mp_SigBit ));
       /* 
-       All signals break the wait, 
-       but only "work" continues the playback loop, 
-       so the others are masked away.
+       All signals break the wait, but "work" and "port"
+       continue the playback loop, so the others are masked away.
        */
       signals &= (( 1 << base->agb_WorkerWorkSignal )
                 | ( 1 << base->agb_WorkerPort->mp_SigBit ));
