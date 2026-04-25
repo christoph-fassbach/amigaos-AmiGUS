@@ -110,12 +110,18 @@ VOID HandleMessage( struct Message * message ) {
     && ( -1 != base->agb_WorkerStopSignal )
     && ( base->agb_WorkerPort )) {
 
-    ULONG signals = TRUE;
+    const ULONG workerSignal = ( 1 << base->agb_WorkerWorkSignal );
+    const ULONG messageSignal = ( 1 << base->agb_WorkerPort->mp_SigBit );
+    const ULONG stopSignals = ( 1 << base->agb_WorkerStopSignal )
+                            | SIGBREAKF_CTRL_C;
+    const ULONG allSignals = workerSignal | messageSignal | stopSignals;
+
+    ULONG signals = workerSignal;
 
     /* Tell master worker is alive */
     Signal(( struct Task * ) base->agb_MainProcess, 1 << base->agb_MainSignal );
     // SetSignal(0, 1 << agb_WorkerStopSignal );
-    while ( signals ) {
+    while ( TRUE ) {
 
       ULONG bufferEmpty;
       ULONG midiData;
@@ -134,7 +140,7 @@ VOID HandleMessage( struct Message * message ) {
       } while ( !bufferEmpty );
       LOG_INT(( "WORKER: Ending MIDI loop\n" ));
 
-      if (( 1 << base->agb_WorkerPort->mp_SigBit ) & signals ) {
+      if ( messageSignal & signals ) {
 
         struct Message * message;
         while ( message = GetMsg( base->agb_WorkerPort )) {
@@ -147,16 +153,15 @@ VOID HandleMessage( struct Message * message ) {
       LOG_INT(( "WORKER: Going to sleep...\n" ));
 
       base->agb_WorkerReady = TRUE;
-      signals = Wait( SIGBREAKF_CTRL_C
-                      | ( 1 << base->agb_WorkerWorkSignal )
-                      | ( 1 << base->agb_WorkerStopSignal )
-                      | ( 1 << base->agb_WorkerPort->mp_SigBit ));
+      signals = Wait( allSignals );
       /* 
-       All signals break the wait, but "work" and "port"
-       continue the playback loop, so the others are masked away.
+       All signals break the wait,
+       but "stop" and "CTRL-C" break the playback loop.
        */
-      signals &= (( 1 << base->agb_WorkerWorkSignal )
-                | ( 1 << base->agb_WorkerPort->mp_SigBit ));
+      if ( stopSignals & signals ) {
+
+        break;
+      }
       //LOG_INT(( "WORKER: Woke up, signals are 0x%08lx\n", signals ));
     }
   } else {
