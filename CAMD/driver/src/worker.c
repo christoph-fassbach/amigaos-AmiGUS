@@ -99,7 +99,14 @@ VOID HandleMessage( struct Message * message ) {
   base->agb_WorkerWorkSignal = AllocSignal( -1 );
   base->agb_WorkerStopSignal = AllocSignal( -1 );
   base->agb_WorkerPort = CreatePort( "AmiGUS CAMD Port", 0 );
-  
+
+  LOG_D(( "D: Worker work signal is 0x%08lx\n",
+    1 << base->agb_WorkerWorkSignal ));
+  LOG_D(( "D: Worker stop signal is 0x%08lx\n",
+    1 << base->agb_WorkerStopSignal ));
+  LOG_D(( "D: Worker message signal is 0x%08lx\n",
+    1 << base->agb_WorkerPort->mp_SigBit ));
+
   if ( ( -1 != base->agb_WorkerWorkSignal )
     && ( -1 != base->agb_WorkerStopSignal )
     && ( base->agb_WorkerPort )) {
@@ -111,9 +118,11 @@ VOID HandleMessage( struct Message * message ) {
 
       ULONG bufferEmpty = FALSE;
       ULONG midiData;
+      LOG_INT(( "Worker: Beginning main loop\n" ));
       while ((( 1 << base->agb_WorkerWorkSignal ) & signals )
         && ( !( bufferEmpty ))) {
 
+        LOG_INT(( "Worker: Beginning MIDI loop\n" ));
         midiData = base->agb_TransmitFunction( base->agb_CAMD_userdata );
         bufferEmpty = GET_REG( REG_D1 );
 
@@ -122,13 +131,16 @@ VOID HandleMessage( struct Message * message ) {
 
 // TODO: Translate MIDI information to AmiGUS actions and execute them!
       }
+      LOG_INT(( "Worker: Ending MIDI loop\n" ));
       if (( 1 << base->agb_WorkerPort->mp_SigBit ) & signals ) {
 
         struct Message * message;
         while ( message = GetMsg( base->agb_WorkerPort )) {
 
+          LOG_INT(( "Worker: Beginning message loop\n" ));
           HandleMessage( message );
         }
+        LOG_INT(( "Worker: Ending message loop\n" ));
       }
       LOG_INT(( "WORKER: Going to sleep...\n" ));
 
@@ -137,11 +149,13 @@ VOID HandleMessage( struct Message * message ) {
                       | ( 1 << base->agb_WorkerWorkSignal )
                       | ( 1 << base->agb_WorkerStopSignal )
                       | ( 1 << base->agb_WorkerPort->mp_SigBit ));
+
       /* 
        All signals break the wait, but only "stop" stops 
        the playback loop, and needs to be masked out.
        */
        signals &= ~( 1 << base->agb_WorkerStopSignal );
+       LOG_INT(( "WORKER: Woke up, signals are 0x%08lx\n", signals ));
     }
   } else {
     /* Well... */
