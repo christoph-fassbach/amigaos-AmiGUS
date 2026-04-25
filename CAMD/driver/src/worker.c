@@ -209,11 +209,11 @@ BOOL CreateWorkerProcess( VOID ) {
   }
 // TODO: Use CreateProc for 1.3
   AmiGUS_CAMD_Base->agb_WorkerProcess =
-      CreateNewProcTags( NP_Entry, ( ULONG ) &WorkerProcess,
-                         NP_Name, ( ULONG ) ( STR( LIB_FILE ) " CAMD" ),
-                         NP_Priority, ( ULONG ) 127,
-                         TAG_DONE, 0 
-                       );
+    CreateNewProcTags( NP_Entry, ( ULONG ) &WorkerProcess,
+                       NP_Name, ( ULONG ) ( STR( LIB_FILE ) " CAMD" ),
+                       NP_Priority, ( ULONG ) 127,
+                       TAG_DONE, 0 );
+
   if ( AmiGUS_CAMD_Base->agb_WorkerProcess ) {
 
     AmiGUS_CAMD_Base->agb_WorkerProcess->pr_Task.tc_UserData = AmiGUS_CAMD_Base;
