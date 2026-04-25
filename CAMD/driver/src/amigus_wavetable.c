@@ -45,8 +45,8 @@ VOID InitAmiGus( VOID ) {
     WriteReg16( card, AMIGUS_WT_CHANNEL_VOLUME_RIGHT, 0x8000 );
   }
   // Set master volume
-  WriteReg16( card, AMIGUS_WT_MASTER_VOLUME_LEFT, 0xffff);
-  WriteReg16( card, AMIGUS_WT_MASTER_VOLUME_RIGHT, 0xffff);
+  WriteReg16( card, AMIGUS_WT_MASTER_VOLUME_LEFT, 0xffff );
+  WriteReg16( card, AMIGUS_WT_MASTER_VOLUME_RIGHT, 0xffff );
   LOG_V(( "V: Wavetable @ 0x%08lx init'ed\n", card ));
 }
 
