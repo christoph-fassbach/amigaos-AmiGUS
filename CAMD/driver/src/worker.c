@@ -108,22 +108,22 @@ VOID HandleMessage( struct Message * message ) {
     1 << base->agb_WorkerPort->mp_SigBit ));
 
   if ( ( -1 != base->agb_WorkerWorkSignal )
-    && ( -1 != base->agb_WorkerStopSignal )
-    && ( base->agb_WorkerPort )) {
+    && ( -1 != base->agb_WorkerStopSignal )) {
 
     /* Tell master worker is alive */
-    Signal( (struct Task *) base->agb_MainProcess, 1 << base->agb_MainSignal );
+    Signal(
+      (struct Task *) base->agb_MainProcess,
+      1 << base->agb_MainSignal
+    );
     // SetSignal(0, 1 << agb_WorkerStopSignal );
     while ( signals ) {
 
       ULONG bufferEmpty = FALSE;
       ULONG midiData;
-      LOG_INT(( "Worker: Beginning main loop\n" ));
-      while ((( 1 << base->agb_WorkerWorkSignal ) & signals )
-        && ( !( bufferEmpty ))) {
+      while ( !bufferEmpty ) {
 
-        LOG_INT(( "Worker: Beginning MIDI loop\n" ));
-        midiData = base->agb_TransmitFunction( base->agb_CAMD_userdata );
+        midiData = base->agb_TransmitFunction(
+          base->agb_CAMD_userdata );
         bufferEmpty = GET_REG( REG_D1 );
 
         LOG_INT(( "WORKER: Received data=0x%02lx empty=0x%02lx\n",
@@ -131,31 +131,20 @@ VOID HandleMessage( struct Message * message ) {
 
 // TODO: Translate MIDI information to AmiGUS actions and execute them!
       }
-      LOG_INT(( "Worker: Ending MIDI loop\n" ));
-      if (( 1 << base->agb_WorkerPort->mp_SigBit ) & signals ) {
-
-        struct Message * message;
-        while ( message = GetMsg( base->agb_WorkerPort )) {
-
-          LOG_INT(( "Worker: Beginning message loop\n" ));
-          HandleMessage( message );
-        }
-        LOG_INT(( "Worker: Ending message loop\n" ));
-      }
       LOG_INT(( "WORKER: Going to sleep...\n" ));
 
       base->agb_WorkerReady = TRUE;
-      signals = Wait( SIGBREAKF_CTRL_C
-                      | ( 1 << base->agb_WorkerWorkSignal )
-                      | ( 1 << base->agb_WorkerStopSignal )
-                      | ( 1 << base->agb_WorkerPort->mp_SigBit ));
-
+      signals = Wait(
+          SIGBREAKF_CTRL_C
+        | ( 1 << base->agb_WorkerWorkSignal )
+        | ( 1 << base->agb_WorkerStopSignal )
+      );
       /* 
-       All signals break the wait, but only "stop" stops 
-       the playback loop, and needs to be masked out.
+       All signals break the wait, 
+       but only "work" continues the playback loop, 
+       so the others are masked away.
        */
-       signals &= ~( 1 << base->agb_WorkerStopSignal );
-       LOG_INT(( "WORKER: Woke up, signals are 0x%08lx\n", signals ));
+       signals &= ( 1 << base->agb_WorkerWorkSignal );
     }
   } else {
     /* Well... */
