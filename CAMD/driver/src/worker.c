@@ -32,6 +32,15 @@
 #include "support.h"
 #include "worker.h"
 
+VOID HandleMidi( UBYTE data ) {
+
+  //struct AmiGUS_CAMD * base = AmiGUS_CAMD_Base;
+
+  LOG_INT(( "WORKER: Received data=0x%02lx\n", data ));
+
+  // TODO: Translate MIDI information to AmiGUS actions and execute them!
+}
+
 VOID HandleMessage( struct Message * message ) {
   
   LOG_INT(( "WORKER: Got message type %ld name %s\n",
@@ -123,21 +132,21 @@ VOID HandleMessage( struct Message * message ) {
     // SetSignal(0, 1 << agb_WorkerStopSignal );
     while ( TRUE ) {
 
-      ULONG bufferEmpty;
-      ULONG midiData;
-
 //      LOG_INT(( "WORKER: Beginning main loop\n" ));
-//      LOG_INT(( "WORKER: Beginning MIDI loop\n" ));
       if ( workerSignal & signals ) {
+
+        ULONG bufferEmpty;
+        ULONG midiData;
+
+//      LOG_INT(( "WORKER: Beginning MIDI loop\n" ));
         do {
 
           midiData = base->agb_TransmitFunction( base->agb_CAMD_userdata );
           bufferEmpty = GET_REG( REG_D1 );
 
-          LOG_INT(( "WORKER: Received data=0x%02lx empty=0x%02lx\n",
-                    midiData, bufferEmpty ));
+          HandleMidi(( UBYTE ) midiData );
+          LOG_INT(( "WORKER: Received empty=0x%02lx\n", bufferEmpty ));
 
-          // TODO: Translate MIDI information to AmiGUS actions and execute them!
         } while ( !bufferEmpty );
 //      LOG_INT(( "WORKER: Ending MIDI loop\n" ));
       }
