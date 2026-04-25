@@ -146,18 +146,18 @@ VOID HandleMessage( struct Message * message ) {
       LOG_INT(( "WORKER: Going to sleep...\n" ));
 
       base->agb_WorkerReady = TRUE;
-      signals = Wait(
-          SIGBREAKF_CTRL_C
-        | ( 1 << base->agb_WorkerWorkSignal )
-        | ( 1 << base->agb_WorkerStopSignal )
-        | ( 1 << base->agb_WorkerPort->mp_SigBit ));
+      signals = Wait( SIGBREAKF_CTRL_C
+                      | ( 1 << base->agb_WorkerWorkSignal )
+                      | ( 1 << base->agb_WorkerStopSignal )
+                      | ( 1 << base->agb_WorkerPort->mp_SigBit ));
       /* 
        All signals break the wait, 
        but only "work" continues the playback loop, 
        so the others are masked away.
        */
-       signals &= (( 1 << base->agb_WorkerWorkSignal )
-                 | ( 1 << base->agb_WorkerPort->mp_SigBit ));
+      signals &= (( 1 << base->agb_WorkerWorkSignal )
+                | ( 1 << base->agb_WorkerPort->mp_SigBit ));
+      LOG_INT(( "WORKER: Woke up, signals are 0x%08lx\n", signals ));
     }
   } else {
     /* Well... */
