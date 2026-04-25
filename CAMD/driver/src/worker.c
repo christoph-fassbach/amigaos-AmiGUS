@@ -116,12 +116,12 @@ VOID HandleMessage( struct Message * message ) {
     // SetSignal(0, 1 << agb_WorkerStopSignal );
     while ( signals ) {
 
-      ULONG bufferEmpty = FALSE;
+      ULONG bufferEmpty;
       ULONG midiData;
 
       LOG_INT(( "WORKER: Beginning main loop\n" ));
       LOG_INT(( "WORKER: Beginning MIDI loop\n" ));
-      while ( !bufferEmpty ) {
+      do {
 
         midiData = base->agb_TransmitFunction( base->agb_CAMD_userdata );
         bufferEmpty = GET_REG( REG_D1 );
@@ -130,7 +130,7 @@ VOID HandleMessage( struct Message * message ) {
                   midiData, bufferEmpty ));
 
 // TODO: Translate MIDI information to AmiGUS actions and execute them!
-      }
+      } while ( !bufferEmpty );
       LOG_INT(( "WORKER: Ending MIDI loop\n" ));
 
       if (( 1 << base->agb_WorkerPort->mp_SigBit ) & signals ) {
