@@ -38,6 +38,7 @@ ifeq ($(findstring /home,$(HOME)), /home)
   # machine <ip> login username password pass
   # Could do --user username:pass instead - but not cool in repo ;)
   INSTALL1      = curl --netrc --upload-file $(APP_FILE_DEST)       ftp://192.168.0.12/sda4/Expansion/AmiGUS/$(APP_NAME)
+  INSTALL1      = curl --netrc --upload-file $(APP_FILE_DEST)       ftp://192.168.0.100/cf3/Expansion/AmiGUS/$(APP_NAME)
   INSTALL1      = curl --netrc --upload-file $(APP_FILE_DEST)       ftp://192.168.0.4/cf0/Expansion/AmiGUS/$(APP_NAME)
   INSTALL0      = cp $(APP_FILE_DEST) ~/Documents/FS-UAE/Shared/CAMD/$(APP_NAME)
 else
