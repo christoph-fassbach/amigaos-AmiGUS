@@ -34,7 +34,8 @@ struct AmiSF_Note * CreateAmiSF_Note(
   struct SF2_Instrument * instrument,
   struct SF2_ArgValues * sampleArgValues,
   struct SF2_Sample * sample,
-  ULONG targetNote ) {
+  ULONG targetNote,
+  ULONG targetStartAddress ) {
 
   const LONG maxRate = 192000;
   const LONG maxValue = 0x40000000;
@@ -74,9 +75,13 @@ struct AmiSF_Note * CreateAmiSF_Note(
     | AMISF_NOTE_IN_FILE
     | AMISF_NOTE_NOT_IN_RAM
     | AMISF_NOTE_NOT_IN_CARD;
-  note->amisf_StartOffset = ( sample->sf2s_SampleStartOffset ) << 1; // 16bit
-  note->amisf_LoopOffset = ( sample->sf2s_LoopStartOffset ) << 1;    // 16bit
-  note->amisf_EndOffset = ( sample->sf2s_LoopEndOffset ) << 1;       // 16bit
+  note->amisf_StartOffset = targetStartAddress;                          // BYTE
+  note->amisf_LoopOffset = targetStartAddress                            // BYTE
+    + (( sample->sf2s_LoopStartOffset - sample->sf2s_SampleStartOffset ) // WORD
+    << 1 );                                                              // BYTE
+  note->amisf_EndOffset =  targetStartAddress                            // BYTE
+    + (( sample->sf2s_LoopEndOffset - sample->sf2s_SampleStartOffset )   // WORD
+    << 1 );                                                              // BYTE
   note->amisf_PlaybackRate = targetRegisterValue;
   LOG_V(( "V: a=%ld b=%ld c=%ld d=%ld e=%ld f=%ld "
           "g=%ld h=%ld i=%ld j=%ld k=%ld=0x%08lx\n",
@@ -133,7 +138,8 @@ struct AmiSF_Note * GetNoteAtIndex( struct SF2 * sf2, const ULONG index ) {
                                    instrument,
                                    sampleArgValues,
                                    sample,
-                                   sample->sf2s_SampleNote );
+                                   sample->sf2s_SampleNote,
+                                   0 );
         }
         ++current;
       }
