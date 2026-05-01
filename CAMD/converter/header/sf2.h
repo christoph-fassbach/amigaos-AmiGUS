@@ -107,7 +107,7 @@ enum SF2_Generator_Ids {
 // Used for the comparable part
 struct SF2_ArgValues {
 
-  UWORD sf2v_NextNumber;
+  LONG sf2v_NextNumber; // -1 means ignore me for ever!
   ULONG sf2v_LowNote;  // UBYTE - but need long for display.
   ULONG sf2v_HighNote; // UBYTE - but need long for display.
 };

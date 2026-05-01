@@ -299,6 +299,177 @@ BOOL FlattenInstrumentHierarchy( struct SF2 * sf2,
   return FALSE;
 }
 
+// # Instruments progress
+// BOOL True = abort
+BOOL DeDuplicateInstruments( struct SF2 * sf2,
+                             struct ProgressDialog * dialog,
+                             ULONG * currentProgress,
+                             ULONG maxProgress ) {
+
+  BOOL abort = FALSE;
+  ULONG count = 0;
+  struct SF2_Preset * preset;
+  FOR_LIST( &( sf2->sf2_Presets ),
+            preset,
+            struct SF2_Preset * ) {
+
+    struct SF2_Args * argsPouter;
+
+    FOR_LIST( &( preset->sf2p_Args ),
+              argsPouter,
+              struct SF2_Args * ) {
+
+      LONG nextOuter = argsPouter->sf2a_Values.sf2v_NextNumber;
+      ULONG lowOuter = argsPouter->sf2a_Values.sf2v_LowNote;
+      ULONG highOuter = argsPouter->sf2a_Values.sf2v_HighNote;
+
+      struct SF2_Args * argsPinner;
+
+      if ( 0 > nextOuter ) {
+
+        continue;
+      }
+
+      FOR_LIST( &( preset->sf2p_Args ),
+                argsPinner,
+                struct SF2_Args * ) {
+
+        LONG nextInner = argsPinner->sf2a_Values.sf2v_NextNumber;
+        ULONG lowInner = argsPinner->sf2a_Values.sf2v_LowNote;
+        ULONG highInner = argsPinner->sf2a_Values.sf2v_HighNote;
+
+        if ( 0 > nextInner ) {
+
+          continue;
+        }
+
+        if (( argsPinner != argsPouter )
+          &&( nextInner == nextOuter )
+          && ( lowInner == lowOuter )
+          && ( highInner == highOuter )) {
+
+          LONG bank = preset->sf2p_Bank;
+          LONG presetNumber = preset->sf2p_Common.sf2c_Number;
+
+          LOG_D(( "V: Removing duplicate instrument p:%ld %ld "
+                    "i:%ld >%ld <%ld\n",
+                    bank, presetNumber,
+                    nextOuter, lowOuter, highOuter ));
+
+          argsPinner->sf2a_Values.sf2v_NextNumber = -1;
+          ++count;
+        }
+      }
+    }
+    ++( *currentProgress );
+    abort |= HandleProgressDialogTick( dialog,
+                                       *currentProgress,
+                                       maxProgress );
+    if ( abort ) {
+  
+      return TRUE;
+    }
+  }
+  LOG_I(( "I: Removed %ld duplicate instruments, progress %ld/%ld\n",
+          count, *currentProgress, maxProgress ));
+  return FALSE;
+}
+
+// # Instruments progress
+// BOOL True = abort
+BOOL DeDuplicateSamples( struct SF2 * sf2,
+                         struct ProgressDialog * dialog,
+                         ULONG * currentProgress,
+                         ULONG maxProgress ) {
+
+  BOOL abort = FALSE;
+  ULONG count = 0;
+  struct SF2_Preset * preset;
+  FOR_LIST( &( sf2->sf2_Presets ),
+            preset,
+            struct SF2_Preset * ) {
+
+    struct SF2_Args * argsP;
+
+    FOR_LIST( &( preset->sf2p_Args ),
+              argsP,
+              struct SF2_Args * ) {
+
+      struct SF2_Args * argsIouter;
+      struct SF2_Instrument * instrument;
+
+      LONG nextI = argsP->sf2a_Values.sf2v_NextNumber;
+      if ( 0 > nextI ) {
+
+        continue;
+      }
+
+      instrument = sf2->sf2_InstrumentArray[ nextI ];
+
+      FOR_LIST( &( instrument->sf2i_Args ),
+                argsIouter,
+                struct SF2_Args * ) {
+
+        LONG nextOuter = argsIouter->sf2a_Values.sf2v_NextNumber;
+        ULONG lowOuter = argsIouter->sf2a_Values.sf2v_LowNote;
+        ULONG highOuter = argsIouter->sf2a_Values.sf2v_HighNote;
+        struct SF2_Args * argsIinner;
+
+        if ( 0 > nextOuter ) {
+
+          continue;
+        }
+
+        FOR_LIST( &( instrument->sf2i_Args ),
+                  argsIinner,
+                  struct SF2_Args * ) {
+          
+          LONG nextInner = argsIinner->sf2a_Values.sf2v_NextNumber;
+          ULONG lowInner = argsIinner->sf2a_Values.sf2v_LowNote;
+          ULONG highInner = argsIinner->sf2a_Values.sf2v_HighNote;
+
+          if ( 0 > nextInner ) {
+
+            continue;
+          }
+
+          if (( argsIinner != argsIouter )
+            && ( nextInner == nextOuter )
+            && ( lowInner == lowOuter )
+            && ( highInner == highOuter )) {
+
+            LONG bank = preset->sf2p_Bank;
+            LONG presetNumber = preset->sf2p_Common.sf2c_Number;
+            LONG instrumentMin = argsP->sf2a_Values.sf2v_LowNote;
+            LONG instrumentMax = argsP->sf2a_Values.sf2v_HighNote;
+            LONG instrumentNumber = instrument->sf2i_Common.sf2c_Number;
+
+            LOG_D(( "V: Removing duplicate sample for "
+                    "p:%ld %ld i:%ld >%ld <%ld s:%ld >%ld <%ld\n",
+                    bank, presetNumber,
+                    instrumentNumber, instrumentMin, instrumentMax,
+                    nextInner, lowInner, highInner ));
+
+            argsIinner->sf2a_Values.sf2v_NextNumber = -1;
+            ++count;
+          }
+        }
+      }
+    }
+    ++( *currentProgress );
+    abort |= HandleProgressDialogTick( dialog,
+                                       *currentProgress,
+                                       maxProgress );
+    if ( abort ) {
+  
+      return TRUE;
+    }
+  }
+  LOG_I(( "I: Removed %ld duplicate samples, progress %ld/%ld\n",
+          count, *currentProgress, maxProgress ));
+  return FALSE;
+}
+
 /******************************************************************************
  * SF2 optimizer - public functions.
  *****************************************************************************/
@@ -316,7 +487,10 @@ BOOL OptimizeSF2( struct SF2 * sf2,
     
   *maxProgress += (( pCount + iCount + sCount ) >> 2) // PrepareIndex
                  + pCount              // FlattenPresetHierarchy
-                 + iCount;             // FlattenInstrumentHierarchy
+                 + iCount              // FlattenInstrumentHierarchy
+                 + pCount              // DeDuplicateSamples
+                 + pCount              // DeDuplicateInstruments
+                 + 0;
 
   if ( !( abort )) {
 
@@ -339,5 +513,20 @@ BOOL OptimizeSF2( struct SF2 * sf2,
                                         currentProgress,
                                         *maxProgress );
   }
+  if ( !( abort )) {
+
+    abort = DeDuplicateInstruments( sf2,
+                                    dialog,
+                                    currentProgress,
+                                    *maxProgress );
+  }
+  if ( !( abort )) {
+
+    abort = DeDuplicateSamples( sf2,
+                                dialog,
+                                currentProgress,
+                                *maxProgress );
+  }
+
   return abort;
 }

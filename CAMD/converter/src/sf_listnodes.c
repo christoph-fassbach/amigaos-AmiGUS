@@ -474,16 +474,29 @@ BOOL CreateSf2ListLabels(
               argsP,
               struct SF2_Args * ) {
 
-      struct SF2_Instrument * instrument = 
-        sf2->sf2_InstrumentArray[ argsP->sf2a_Values.sf2v_NextNumber ];
       struct SF2_Args * argsI;
+      struct SF2_Instrument * instrument;
+
+      LONG nextI = argsP->sf2a_Values.sf2v_NextNumber;
+      if ( 0 > nextI ) {
+
+        continue;
+      }
+
+      instrument = sf2->sf2_InstrumentArray[ nextI ];
 
       FOR_LIST( &( instrument->sf2i_Args ),
                 argsI,
                 struct SF2_Args * ) {
 
-        struct SF2_Sample * sample =
-          sf2->sf2_SampleArray[ argsI->sf2a_Values.sf2v_NextNumber ];
+        struct SF2_Sample * sample;
+
+        LONG nextS = argsI->sf2a_Values.sf2v_NextNumber;
+        if ( 0 > nextS ) {
+
+          continue;
+        }
+        sample = sf2->sf2_SampleArray[ nextS ];
 
         AddSf2Label( labels,
                      preset,
@@ -503,7 +516,8 @@ BOOL CreateSf2ListLabels(
       return TRUE;
     }
   }
-  LOG_I(( "I: Created %ld labels, progress %ld/%ld\n", count, *currentProgress, maxProgress ));
+  LOG_I(( "I: Created %ld labels, progress %ld/%ld\n",
+          count, *currentProgress, maxProgress ));
   return FALSE;
 }
 
