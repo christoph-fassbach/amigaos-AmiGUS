@@ -38,6 +38,7 @@
 #include "errors.h"
 #include "progress_dialog.h"
 #include "sf_listnodes.h"
+#include "sf2_optimizer.h"
 #include "sf2_reader.h"
 #include "sf2_tools.h"
 #include "support.h"
@@ -486,6 +487,7 @@ VOID HandleListElement( ULONG index ) {
 
   struct SF_Converter * base = SF_Converter_Base;
   struct SF2 * sf2 = base->sfc_Sf2;
+  struct SF2_Sample * sf2Sample;
   struct PlaySampleMessage * message;
   struct AmiSF_Note * note;
   APTR sample;
@@ -496,8 +498,9 @@ VOID HandleListElement( ULONG index ) {
     LOG_I(( "I: List element %ld pushed, but no SoundFont loaded!\n", index ));
     return;
   }
-  note = GetNoteAtIndex( sf2, index );
-  sample = GetSampleForNote( sf2, note );
+  sf2Sample = GetSf2SampleAtIndex( sf2, index );
+  note = CreateAmiSF_Note( sf2Sample, sf2Sample->sf2s_SampleNote, 0 );
+  sample = GetAmiSF_SampleData( sf2, sf2Sample );
   message = CreateAmigusPlaySampleMessage(
     SF_Converter_Base->sfc_MidiReplyPort,
     note,

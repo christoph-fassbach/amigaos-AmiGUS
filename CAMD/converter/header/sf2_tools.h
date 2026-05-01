@@ -23,7 +23,12 @@
 
 #include "sf2.h"
 
-struct AmiSF_Note * GetNoteAtIndex( struct SF2 * sf2, const ULONG index );
-APTR GetSampleForNote( struct SF2 * sf2, struct AmiSF_Note * note );
+struct SF2_Sample * GetSf2SampleAtIndex( struct SF2 * sf2, const ULONG index );
+struct AmiSF_Note * CreateAmiSF_Note(
+  struct SF2_Sample * sample,
+  ULONG targetNote,
+  ULONG targetStartAddress );
+APTR GetSF2SampleData( struct SF2 * sf2, struct SF2_Sample * sample );
+APTR GetAmiSF_SampleData( struct SF2 * sf2, struct SF2_Sample * sample );
 
 #endif /* SF2_TOOLS_H */

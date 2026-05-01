@@ -28,11 +28,43 @@
 #include "debug.h"
 #include "support.h"
 
+struct SF2_Sample * GetSf2SampleAtIndex( struct SF2 * sf2, const ULONG index ) {
+
+  struct SF2_Preset * preset;
+  ULONG current = 0;
+
+  FOR_LIST( &( sf2->sf2_Presets ),
+            preset,
+            struct SF2_Preset * ) {
+
+    struct SF2_Args * argsP;
+
+    FOR_LIST( &( preset->sf2p_Args ),
+              argsP,
+              struct SF2_Args * ) {
+
+      struct SF2_Instrument * instrument = 
+        sf2->sf2_InstrumentArray[ argsP->sf2a_Values.sf2v_NextNumber ];
+      struct SF2_Args * argsI;
+
+      FOR_LIST( &( instrument->sf2i_Args ),
+                argsI,
+                struct SF2_Args * ) {
+
+        struct SF2_Sample * sample =
+          sf2->sf2_SampleArray[ argsI->sf2a_Values.sf2v_NextNumber ];
+        if ( index == current ) {
+
+          return sample;
+        }
+        ++current;
+      }
+    }
+  }
+  return NULL;
+}
+
 struct AmiSF_Note * CreateAmiSF_Note(
-  struct SF2_Preset * preset,
-  struct SF2_ArgValues * instrumentArgValues,
-  struct SF2_Instrument * instrument,
-  struct SF2_ArgValues * sampleArgValues,
   struct SF2_Sample * sample,
   ULONG targetNote,
   ULONG targetStartAddress ) {
@@ -104,52 +136,8 @@ struct AmiSF_Note * CreateAmiSF_Note(
   return note;
 }
 
-struct AmiSF_Note * GetNoteAtIndex( struct SF2 * sf2, const ULONG index ) {
-
-  struct SF2_Preset * preset;
-  ULONG current = 0;
-
-  FOR_LIST( &( sf2->sf2_Presets ),
-            preset,
-            struct SF2_Preset * ) {
-
-    struct SF2_Args * argsP;
-
-    FOR_LIST( &( preset->sf2p_Args ),
-              argsP,
-              struct SF2_Args * ) {
-
-      struct SF2_Instrument * instrument = 
-        sf2->sf2_InstrumentArray[ argsP->sf2a_Values.sf2v_NextNumber ];
-      struct SF2_ArgValues * instrumentArgValues = &( argsP->sf2a_Values );
-      struct SF2_Args * argsI;
-
-      FOR_LIST( &( instrument->sf2i_Args ),
-                argsI,
-                struct SF2_Args * ) {
-
-        struct SF2_Sample * sample =
-          sf2->sf2_SampleArray[ argsI->sf2a_Values.sf2v_NextNumber ];
-        struct SF2_ArgValues * sampleArgValues = &( argsI->sf2a_Values );
-        if ( index == current ) {
-
-          return CreateAmiSF_Note( preset,
-                                   instrumentArgValues,
-                                   instrument,
-                                   sampleArgValues,
-                                   sample,
-                                   sample->sf2s_SampleNote,
-                                   0 );
-        }
-        ++current;
-      }
-    }
-  }
-  return NULL;
-}
-
-APTR GetSampleForNote( struct SF2 * sf2, struct AmiSF_Note * note ) {
-
+APTR GetSF2SampleData( struct SF2 * sf2, struct SF2_Sample * sample ) {
+/*
   ULONG size = note->amisf_EndOffset - note->amisf_StartOffset;
   APTR samples = AllocMem( size, MEMF_ANY | MEMF_CLEAR );
   UWORD * sample = samples;
@@ -173,4 +161,25 @@ APTR GetSampleForNote( struct SF2 * sf2, struct AmiSF_Note * note ) {
   note->amisf_NoteFlags |= AMISF_NOTE_IN_RAM;
 
   return samples;
+  */
+ return NULL;
+}
+
+APTR GetAmiSF_SampleData( struct SF2 * sf2, struct SF2_Sample * sample ) {
+
+  /*
+  APTR sf2Data = GetSF2SampleData( sf2, sample );
+  ULONG size = sample->amisf_EndOffset - sample->amisf_StartOffset;
+
+  APTR monoData;
+  if ( !( 8 & sample->sf2s_SampleType )) {
+
+    return sf2Data;
+  }
+
+  monoData = AllocMem( size >> 1, MEMF_ANY | MEMF_CLEAR );
+
+*/
+return NULL;
+
 }
