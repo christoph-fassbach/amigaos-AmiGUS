@@ -22,6 +22,10 @@
 #include "sf2_optimizer.h"
 #include "support.h"
 
+/******************************************************************************
+ * SF2 optimizer - private functions for InsertSorted.
+ *****************************************************************************/
+
 LONG PresetNodeCompare( struct Node * a, struct Node * b ) {
 
   struct SF2_Preset * aa = ( struct SF2_Preset * ) a;
