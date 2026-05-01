@@ -48,6 +48,12 @@ LONG PresetArgsNodeCompare( struct Node * a, struct Node * b ) {
   return result;
 }
 
+/******************************************************************************
+ * SF2 optimizer - private functions offloading public work.
+ *****************************************************************************/
+
+// (# Presets + # Instruments + #Samples) >> 2 progress
+// BOOL True = abort
 BOOL PrepareIndex( struct SF2 * sf2,
                    struct ProgressDialog * dialog,
                    ULONG * currentProgress,
@@ -120,6 +126,8 @@ BOOL PrepareIndex( struct SF2 * sf2,
   return FALSE;
 }
 
+// # Presets progress
+// BOOL True = abort
 BOOL FlattenPresetHierarchy( struct SF2 * sf2,
                              struct ProgressDialog * dialog,
                              ULONG * currentProgress,
@@ -203,6 +211,8 @@ BOOL FlattenPresetHierarchy( struct SF2 * sf2,
   return FALSE;
 }
 
+// # Instruments progress
+// BOOL True = abort
 BOOL FlattenInstrumentHierarchy( struct SF2 * sf2,
                                  struct ProgressDialog * dialog,
                                  ULONG * currentProgress,
@@ -283,4 +293,47 @@ BOOL FlattenInstrumentHierarchy( struct SF2 * sf2,
     ++( *currentProgress );
   }
   return FALSE;
+}
+
+/******************************************************************************
+ * SF2 optimizer - public functions.
+ *****************************************************************************/
+
+BOOL OptimizeSF2( struct SF2 * sf2,
+                  struct ProgressDialog * dialog,
+                  ULONG * currentProgress,
+                  ULONG * maxProgress ) {
+
+  BOOL abort = FALSE;
+
+  ULONG pCount = sf2->sf2_PresetCount;
+  ULONG iCount = sf2->sf2_InstrumentCount;
+  ULONG sCount = sf2->sf2_SampleCount;
+    
+  *maxProgress += (( pCount + iCount + sCount ) >> 2) // PrepareIndex
+                 + pCount              // FlattenPresetHierarchy
+                 + iCount;             // FlattenInstrumentHierarchy
+
+  if ( !( abort )) {
+
+    abort = PrepareIndex( sf2,
+                          dialog,
+                          currentProgress,
+                          *maxProgress );
+  }
+  if ( !( abort )) {
+
+    abort = FlattenPresetHierarchy( sf2,
+                                    dialog,
+                                    currentProgress,
+                                    *maxProgress );
+  }
+  if ( !( abort )) {
+
+    abort = FlattenInstrumentHierarchy( sf2,
+                                        dialog,
+                                        currentProgress,
+                                        *maxProgress );
+  }
+  return abort;
 }

@@ -24,25 +24,9 @@
 #include "progress_dialog.h"
 #include "sf2.h"
 
-// (# Presets + # Instruments + #Samples) >> 2 progress
-// BOOL True = abort
-BOOL PrepareIndex( struct SF2 * sf2,
-                   struct ProgressDialog * dialog,
-                   ULONG * currentProgress,
-                   ULONG maxProgress );
-
-// # Presets progress
-// BOOL True = abort
-BOOL FlattenPresetHierarchy( struct SF2 * sf2,
-                             struct ProgressDialog * dialog,
-                             ULONG * currentProgress,
-                             ULONG maxProgress );
-
-// # Instruments progress
-// BOOL True = abort
-BOOL FlattenInstrumentHierarchy( struct SF2 * sf2,
-                                 struct ProgressDialog * dialog,
-                                 ULONG * currentProgress,
-                                 ULONG maxProgress );
+BOOL OptimizeSF2( struct SF2 * sf2,
+                  struct ProgressDialog * dialog,
+                  ULONG * currentProgress,
+                  ULONG * maxProgress );
 
 #endif /* SF2_OPTIMIZER_H */

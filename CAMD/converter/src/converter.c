@@ -165,9 +165,8 @@ STRPTR RequestFileName( struct Window * window, struct Gadget * gadget ) {
 
 ULONG Startup( VOID ) {
 
-struct LoadSoundFontMessage * message;
+  struct LoadSoundFontMessage * message;
 
-  LONG result;
   if ( !SF_Converter_Base ) {
 
     SF_Converter_Base = AllocMem( sizeof( struct SF_Converter ), MEMF_ANY | MEMF_CLEAR );
@@ -205,6 +204,8 @@ struct LoadSoundFontMessage * message;
   SendAmigusMessage(( struct Message *) message );
 
   LOG_I(( "I: " STR( APP_NAME ) " startup complete.\n" ));
+
+  return ENoError;
 }
 
 VOID Cleanup( VOID ) {
@@ -418,20 +419,8 @@ VOID HandleReadButton( VOID ) {
   }
   if ( !( abort )) {
 
-    ULONG pCount;
-    ULONG iCount;
-    ULONG sCount;
-
-    base->sfc_Sf2 = AllocSf2FromFile( base->sfc_SourceFileName );
-    pCount = base->sfc_Sf2->sf2_PresetCount;
-    iCount = base->sfc_Sf2->sf2_InstrumentCount;
-    sCount = base->sfc_Sf2->sf2_SampleCount;
-    
-    maxProgress = 
-      (( pCount + iCount + sCount ) >> 2) // PrepareIndex
-        + pCount                          // FlattenPresetHierarchy
-        + iCount                          // FlattenInstrumentHierarchy
-        + pCount;                         // CreateSf2ListLabels
+    base->sfc_Sf2 = AllocSf2FromFile( base->sfc_SourceFileName );    
+    maxProgress = base->sfc_Sf2->sf2_PresetCount; // CreateSf2ListLabels
     abort = HandleProgressDialogTick( base->sfc_ProgressDialog,
                                       5,
                                       maxProgress );
@@ -439,24 +428,10 @@ VOID HandleReadButton( VOID ) {
   }
   if ( !( abort )) {
 
-    abort = PrepareIndex( base->sfc_Sf2,
-                          base->sfc_ProgressDialog,
-                          &currentProgress,
-                          maxProgress );
-  }
-  if ( !( abort )) {
-
-    abort = FlattenPresetHierarchy( base->sfc_Sf2,
-                                    base->sfc_ProgressDialog,
-                                    &currentProgress,
-                                    maxProgress );
-  }
-  if ( !( abort )) {
-
-    abort = FlattenInstrumentHierarchy( base->sfc_Sf2,
-                                        base->sfc_ProgressDialog,
-                                        &currentProgress,
-                                        maxProgress );
+    abort = OptimizeSF2( base->sfc_Sf2,
+                         base->sfc_ProgressDialog,
+                         &currentProgress,
+                         &maxProgress );
   }
   if ( !( abort )) {
 
@@ -491,7 +466,6 @@ VOID HandleListElement( ULONG index ) {
   struct PlaySampleMessage * message;
   struct AmiSF_Note * note;
   APTR sample;
-  ULONG size;
 
   if ( !( sf2 )) {
 

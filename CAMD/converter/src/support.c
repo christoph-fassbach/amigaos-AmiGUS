@@ -275,7 +275,7 @@ LONG C_strlen( STRPTR string ) {
 
 LONG C_strcmp(STRPTR a, STRPTR b) {
 
-  LONG result = 0;
+  LONG result;
   while (
     !(result = (*a) - (*b)) &&
     (*a++) &&
