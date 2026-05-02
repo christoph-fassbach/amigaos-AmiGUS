@@ -277,4 +277,28 @@ UWORD Swap16( UWORD value );
 
 ULONG Swap32( ULONG value );
 
+/******************************************************************************
+ * MAX/MIN - public functions.
+ *****************************************************************************/
+
+/**
+ * Gets the largest of two input values.
+ *
+ * @param a Any value comparable by '<' binary operand.
+ * @param b Any value comparable by '<' binary operand.
+ *
+ * @return The larger of the input values.
+ */
+#define MAX( a, b ) (( a < b ) ? b : a )
+
+/**
+ * Gets the smallest of two input values.
+ *
+ * @param a Any value comparable by '>' binary operand.
+ * @param b Any value comparable by '>' binary operand.
+ *
+ * @return The smaller of the input values.
+ */
+#define MIN( a, b ) (( a > b ) ? b : a )
+
 #endif /* SUPPORT_H */

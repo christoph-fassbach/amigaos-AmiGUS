@@ -309,6 +309,57 @@ static const UBYTE * instrumentNames[] = {
   NULL
 };
 
+static const UBYTE * percussionNames[] = {
+  "Ac./Low Bass Drum",
+  "Elec./High Bass Drum",
+  "Side Stick",
+  "Acoustic Snare",
+  "Hand Clap",
+  "Elec. Snare/Rimshot",
+  "Low Floor Tom",
+  "Closed Hi-hat",
+  "High Floor Tom",
+  "Pedal Hi-hat",
+  "Low Tom",
+  "Open Hi-hat",
+  "Low-Mid Tom",
+  "High-Mid Tom",
+  "Crash Cymbal 1",
+  "High Tom",
+  "Ride Cymbal 1",
+  "Chinese Cymbal",
+  "Ride Bell",
+  "Tambourine",
+  "Splash Cymbal",
+  "Cowbell",
+  "Crash Cymbal 2",
+  "Vibraslap",
+  "Ride Cymbal 2",
+  "High Bongo",
+  "Low Bongo",
+  "Mute High Conga",
+  "Open High Conga",
+  "Low Conga",
+  "High Timbale",
+  "Low Timbale",
+  "High Agogo",
+  "Low Agogo",
+  "Cabasa",
+  "Maracas",
+  "Short Whistle",
+  "Long Whistle",
+  "Short Guiro",
+  "Long Guiro",
+  "Claves",
+  "High Woodblock",
+  "Low Woodblock",
+  "Mute Cuica",
+  "Open Cuica",
+  "Mute Triangle",
+  "Open Triangle",
+  NULL
+};
+
 struct Node * CreateListBrowserNode( const LONG * integer0,
                                      const LONG * integer1,
                                      CONST_STRPTR string0,
@@ -428,11 +479,36 @@ VOID AddSf2Label(
   LONG * sampleMax = &( sampleArgValues->sf2v_HighNote );
   LONG * sampleNumber = &( sample->sf2s_Number );
   CONST_STRPTR presetName = preset->sf2p_Common.sf2c_Name;
-  CONST_STRPTR gmName = instrumentNames[ *presetNumber ];
+  STRPTR gmName;
   CONST_STRPTR instrumentName = instrument->sf2i_Common.sf2c_Name;
   CONST_STRPTR sampleName = sample->sf2s_Name;
 
   struct Node * label;
+
+  if ( 128 != *bank ) {
+
+    gmName = ( STRPTR ) instrumentNames[ *presetNumber ];
+
+  } else {
+    
+    LONG max = MAX( *instrumentMin, *sampleMin );
+    LONG min = MIN( *instrumentMax, *sampleMax );
+
+    if ( max != min ) {
+
+      LOG_E(( "E: Percussion definition not identical, %ld %ld\n", min, max ));
+      gmName = "";
+
+    } else if (( 34 < max ) && ( 81 > max )) {
+
+      gmName = ( STRPTR ) percussionNames[ max - 35 ];
+
+    } else {
+
+      gmName = "";
+    }
+  }
+
   LOG_V(( "V: Creating label %ld %ld %s %s %ld %s %ld %s\n",
           *bank, *presetNumber, presetName, gmName,
           *instrumentNumber, instrumentName,
