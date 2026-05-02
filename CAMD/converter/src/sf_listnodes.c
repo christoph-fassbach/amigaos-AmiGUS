@@ -360,19 +360,51 @@ static const UBYTE * percussionNames[] = {
   NULL
 };
 
-struct Node * CreateListBrowserNode( const LONG * integer0,
-                                     const LONG * integer1,
-                                     CONST_STRPTR string0,
-                                     CONST_STRPTR string1,
-                                     const LONG * integer2,
-                                     const LONG * integer3,
-                                     const LONG * integer4,
-                                     CONST_STRPTR string2,
-                                     const LONG * integer5,
-                                     const LONG * integer6,
-                                     const LONG * integer7,
-                                     CONST_STRPTR string3,
-                                     CONST_STRPTR string4 ) {
+static CONST_STRPTR GetMidiName( LONG bank,
+                                 LONG preset,
+                                 LONG instrumentMin,
+                                 LONG instrumentMax,
+                                 LONG sampleMin,
+                                 LONG sampleMax ) {
+
+  if ( 128 != bank ) {
+
+    return instrumentNames[ preset ];
+
+  } else {
+    
+    LONG max = MAX( instrumentMin, sampleMin );
+    LONG min = MIN( instrumentMax, sampleMax );
+
+    if ( max != min ) {
+
+      LOG_E(( "E: Percussion definition not identical, %ld %ld\n", max, min ));
+      return "";
+
+    } else if (( 34 < max ) && ( 81 > max )) {
+
+      return percussionNames[ max - 35 ];
+
+    } else {
+
+      return "";
+    }
+  }
+}
+
+static struct Node * CreateListBrowserNode( const LONG * integer0,
+                                            const LONG * integer1,
+                                            CONST_STRPTR string0,
+                                            CONST_STRPTR string1,
+                                            const LONG * integer2,
+                                            const LONG * integer3,
+                                            const LONG * integer4,
+                                            CONST_STRPTR string2,
+                                            const LONG * integer5,
+                                            const LONG * integer6,
+                                            const LONG * integer7,
+                                            CONST_STRPTR string3,
+                                            CONST_STRPTR string4 ) {
 
   LONG columns = sizeof( instrumentColumns ) / sizeof( struct ColumnInfo );
   return AllocListBrowserNode( columns,
@@ -479,35 +511,16 @@ VOID AddSf2Label(
   LONG * sampleMax = &( sampleArgValues->sf2v_HighNote );
   LONG * sampleNumber = &( sample->sf2s_Number );
   CONST_STRPTR presetName = preset->sf2p_Common.sf2c_Name;
-  STRPTR gmName;
+  CONST_STRPTR gmName = GetMidiName( *bank,
+                                     *presetNumber,
+                                     *instrumentMin,
+                                     *instrumentMax,
+                                     *sampleMin,
+                                     *sampleMax );
   CONST_STRPTR instrumentName = instrument->sf2i_Common.sf2c_Name;
   CONST_STRPTR sampleName = sample->sf2s_Name;
 
   struct Node * label;
-
-  if ( 128 != *bank ) {
-
-    gmName = ( STRPTR ) instrumentNames[ *presetNumber ];
-
-  } else {
-    
-    LONG max = MAX( *instrumentMin, *sampleMin );
-    LONG min = MIN( *instrumentMax, *sampleMax );
-
-    if ( max != min ) {
-
-      LOG_E(( "E: Percussion definition not identical, %ld %ld\n", min, max ));
-      gmName = "";
-
-    } else if (( 34 < max ) && ( 81 > max )) {
-
-      gmName = ( STRPTR ) percussionNames[ max - 35 ];
-
-    } else {
-
-      gmName = "";
-    }
-  }
 
   LOG_V(( "V: Creating label %ld %ld %s %s %ld %s %ld %s\n",
           *bank, *presetNumber, presetName, gmName,
