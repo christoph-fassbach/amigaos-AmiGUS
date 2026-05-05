@@ -112,8 +112,7 @@ struct AmiSF_Note * CreateAmiSF_Note(
     + (( sample->sf2s_LoopStartOffset - sample->sf2s_SampleStartOffset ) // WORD
     << 1 );                                                              // BYTE
   note->amisf_EndOffset =  targetStartAddress                            // BYTE
-    + (( sample->sf2s_LoopEndOffset - sample->sf2s_SampleStartOffset )   // WORD
-    << 1 );                                                              // BYTE
+    + GetSF2SampleSize( sample );                                        // BYTE
   note->amisf_PlaybackRate = targetRegisterValue;
   LOG_V(( "V: a=%ld b=%ld c=%ld d=%ld e=%ld f=%ld "
           "g=%ld h=%ld i=%ld j=%ld k=%ld=0x%08lx\n",
@@ -136,33 +135,59 @@ struct AmiSF_Note * CreateAmiSF_Note(
   return note;
 }
 
-APTR GetSF2SampleData( struct SF2 * sf2, struct SF2_Sample * sample ) {
-/*
-  ULONG size = note->amisf_EndOffset - note->amisf_StartOffset;
-  APTR samples = AllocMem( size, MEMF_ANY | MEMF_CLEAR );
-  UWORD * sample = samples;
+LONG GetSF2SampleSize( struct SF2_Sample * sample ) {
 
-  LOG_D(( "V: Samples @ 0x%08lx, start %ld - end %ld = size %ld\n",
-          samples,
-          note->amisf_StartOffset, note->amisf_EndOffset, size ));
-  Seek( sf2->sf2_FileHandle, 
-        sf2->sf2_16bitSamplePosition + note->amisf_StartOffset,
-        OFFSET_BEGINNING );
-  Read( sf2->sf2_FileHandle, samples, size );
+  LONG size = -1;
 
-  // Now counting size in 16bit samples!
-  size >>= 1;
-  while ( size ) {
+  if (( sample->sf2s_SampleEndOffset >= sample->sf2s_LoopEndOffset )
+    && ( sample->sf2s_LoopEndOffset > sample->sf2s_LoopStartOffset )
+    && ( sample->sf2s_LoopStartOffset >= sample->sf2s_SampleStartOffset )) {
 
-    sample[ size ] = Swap16( sample[ size ]);
-    size--;
+    size = sample->sf2s_LoopEndOffset - sample->sf2s_SampleStartOffset;
+    size <<= 1;
+    size += 3;
+    size &= 0xFFffFFfc;
+
+  } else { 
+
+    LOG_E(( "E: Cannot make sense out of sample loop location\n" ));
   }
 
-  note->amisf_NoteFlags |= AMISF_NOTE_IN_RAM;
+  return size;
+}
+
+APTR GetSF2SampleData( struct SF2 * sf2, struct SF2_Sample * sample ) {
+
+  LONG sampleStart = sample->sf2s_SampleStartOffset << 1; // in BYTE
+  LONG loopEnd = sample->sf2s_LoopEndOffset << 1;         // in BYTE
+  LONG diskSize = loopEnd - sampleStart;
+  LONG memorySize = GetSF2SampleSize( sample );
+  LONG i;
+  UWORD * samples = AllocMem( memorySize, MEMF_ANY | MEMF_CLEAR );
+
+
+  LOG_D(( "V: Samples @ 0x%08lx, start %ld, memsize %ld, disksize %ld\n",
+          samples, sampleStart, memorySize, diskSize ));
+  Seek( sf2->sf2_FileHandle, 
+        sf2->sf2_16bitSamplePosition + sampleStart,
+        OFFSET_BEGINNING );
+  Read( sf2->sf2_FileHandle, samples, diskSize );
+
+  // Now counting size in 16bit samples!
+  for ( i = 0; ( i < diskSize >> 1 ); ++i ) {
+
+    samples[ i ] = Swap16( samples[ i ]);
+  }
+  if ( diskSize < memorySize ) {
+
+    samples[ i ] = samples[ i - 1 ];
+    LOG_I(( "I: Padding sample size %ld to %ld\n", diskSize, memorySize ));
+  }
+
+  LOG_D(( "D: 16 bytes of sample data: %04lx %04lx %04lx %04lx\n",
+          samples[ 0 ], samples[ 1 ], samples[ 2 ], samples[ 3 ] ));
 
   return samples;
-  */
- return NULL;
 }
 
 APTR GetAmiSF_SampleData( struct SF2 * sf2, struct SF2_Sample * sample ) {

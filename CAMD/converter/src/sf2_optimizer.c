@@ -351,7 +351,7 @@ BOOL DeDuplicateInstruments( struct SF2 * sf2,
           LONG bank = preset->sf2p_Bank;
           LONG presetNumber = preset->sf2p_Common.sf2c_Number;
 
-          LOG_D(( "V: Removing duplicate instrument p:%ld %ld "
+          LOG_V(( "V: Removing duplicate instrument p:%ld %ld "
                     "i:%ld >%ld <%ld\n",
                     bank, presetNumber,
                     nextOuter, lowOuter, highOuter ));
@@ -444,7 +444,7 @@ BOOL DeDuplicateSamples( struct SF2 * sf2,
             LONG instrumentMax = argsP->sf2a_Values.sf2v_HighNote;
             LONG instrumentNumber = instrument->sf2i_Common.sf2c_Number;
 
-            LOG_D(( "V: Removing duplicate sample for "
+            LOG_V(( "V: Removing duplicate sample for "
                     "p:%ld %ld i:%ld >%ld <%ld s:%ld >%ld <%ld\n",
                     bank, presetNumber,
                     instrumentNumber, instrumentMin, instrumentMax,

@@ -422,8 +422,21 @@ VOID HandleListElement( ULONG index ) {
     return;
   }
   sf2Sample = GetSf2SampleAtIndex( sf2, index );
+  LOG_D(( "V: Playing SF2 sample %s for index %ld, "
+          "overall start %ld = 0, end %ld, "
+          "loop start %ld, end %ld\n",
+          sf2Sample->sf2s_Name, index,
+          sf2Sample->sf2s_SampleStartOffset,
+          sf2Sample->sf2s_SampleEndOffset - sf2Sample->sf2s_SampleStartOffset,
+          sf2Sample->sf2s_LoopStartOffset - sf2Sample->sf2s_SampleStartOffset,
+          sf2Sample->sf2s_LoopEndOffset - sf2Sample->sf2s_SampleStartOffset ));
   note = CreateAmiSF_Note( sf2Sample, sf2Sample->sf2s_SampleNote, 0 );
-  sample = GetAmiSF_SampleData( sf2, sf2Sample );
+  LOG_D(( "V: Playing AmiSF start %ld loop %ld end %ld rate 0x%08lx\n",
+          note->amisf_StartOffset,
+          note->amisf_LoopOffset - note->amisf_StartOffset,
+          note->amisf_EndOffset - note->amisf_StartOffset,
+          note->amisf_PlaybackRate ));
+  sample = GetSF2SampleData( sf2, sf2Sample );
   message = CreateAmigusPlaySampleMessage(
     SF_Converter_Base->sfc_MidiReplyPort,
     note,

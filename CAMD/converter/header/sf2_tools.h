@@ -28,6 +28,7 @@ struct AmiSF_Note * CreateAmiSF_Note(
   struct SF2_Sample * sample,
   ULONG targetNote,
   ULONG targetStartAddress );
+LONG GetSF2SampleSize( struct SF2_Sample * sample );
 APTR GetSF2SampleData( struct SF2 * sf2, struct SF2_Sample * sample );
 APTR GetAmiSF_SampleData( struct SF2 * sf2, struct SF2_Sample * sample );
 
