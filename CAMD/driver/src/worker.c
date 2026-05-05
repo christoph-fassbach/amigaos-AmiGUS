@@ -56,11 +56,12 @@ VOID HandleMessage( struct Message * message ) {
 
       struct PlaySampleMessage * sampleMessage =
         ( struct PlaySampleMessage * ) message;
-      ULONG size = sampleMessage->note->amisf_EndOffset
+      ULONG size = sampleMessage->note->amisf_EndOffset    // bytes!
                  - sampleMessage->note->amisf_StartOffset;
-      LOG_D(( "D: Got sample @ 0x%08lx with rate 0x%08lx\n",
+      LOG_D(( "D: Got sample @ 0x%08lx with rate 0x%08lx and size %ld\n",
               sampleMessage->sample,
-              sampleMessage->note->amisf_PlaybackRate ));
+              sampleMessage->note->amisf_PlaybackRate,
+              size ));
       LoadAmiGusWavetableSample( sampleMessage->sample,
                                  sampleMessage->note->amisf_StartOffset,
                                  size );

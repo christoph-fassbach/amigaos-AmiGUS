@@ -63,12 +63,12 @@ VOID LoadAmiGusWavetableSample( ULONG * source, ULONG target, ULONG size ) {
             size ));
   }
   size >>= 2;
-  if ( 0xFF000001 & target ) {
+  if ( 0xFF000003 & target ) {
 
     LOG_E(( "E: Loading sample will go sideways... "
             "target is 0x%08lx needs to be UWORDs!\n",
             target ));
-    target &= 0x00FFFFFE;
+    target &= 0x00FFFFFC;
   }
 
   WriteReg32( card, AMIGUS_WT_ADDRESS_32BIT, target );
