@@ -28,6 +28,109 @@
 #include "debug.h"
 #include "support.h"
 
+LONG GetTargetSampleRate( LONG sourceNote, LONG sourceRate, LONG targetNote ) {
+
+  const LONG maxRate = 192000;      // TODO: move to AmiGUS HW constants?
+  const LONG maxValue = 0x40000000; // TODO: move to AmiGUS HW constants?
+  // targetRate = sourceRate * 2 ^ (( targetNote - sourceNote ) / 12 )
+  // targetRate = sourceRate * 2 ^ (             a              /  b )
+  // targetRate = sourceRate * d ^ (                  c              )
+  // targetRate = sourceRate * e
+  // targetRate = f          * e
+  // g          = f          * e
+  double a = IEEEDPFlt( targetNote - sourceNote );
+  double b = IEEEDPFlt( 12 );
+  double c = IEEEDPDiv( a, b );
+  double d = IEEEDPFlt( 2 );
+  double e = IEEEDPPow( c, d );
+  double f = IEEEDPFlt( sourceRate );
+  double g = IEEEDPMul( f, e );
+  // LONG targetRate = IEEEDPFix( g );
+  // targetRegisterValue = ( sampleRate / maxRate ) * maxValue
+  // targetRegisterValue = ( g          /       h ) * maxValue
+  // targetRegisterValue =              i           * maxValue
+  // targetRegisterValue =              i           * j
+  // k                   =              i           * j
+  double h = IEEEDPFlt( maxRate );
+  double i = IEEEDPDiv( g, h );
+  double j = IEEEDPFlt( maxValue );
+  double k = IEEEDPMul( i, j );
+  LONG targetRegisterValue = IEEEDPFix( k );
+
+  LOG_V(( "V: a=%ld b=%ld c=%ld d=%ld e=%ld f=%ld "
+          "g=%ld h=%ld i=%ld j=%ld k=%ld=0x%08lx\n",
+          IEEEDPFix( a ),
+          IEEEDPFix( b ),
+          IEEEDPFix( c ),
+          IEEEDPFix( d ),
+          IEEEDPFix( e ),
+          IEEEDPFix( f ),
+          IEEEDPFix( g ),
+          IEEEDPFix( h ),
+          IEEEDPFix( i ),
+          IEEEDPFix( j ),
+          targetRegisterValue,
+          targetRegisterValue ));
+  LOG_D(( "D: Converted note %ld + rate %ld -> "
+          "note %ld + rate %ld = register 0x%08lx\n",
+          sourceNote, sourceRate,
+          targetNote, IEEEDPFix( g ), targetRegisterValue ));
+
+  return targetRegisterValue;
+}
+
+struct AmiSF_Note * CreateAmiSF_NoteFULL(
+  struct SF2_Preset * preset,
+  struct SF2_Instrument * instrument,
+  struct SF2_Sample * sample,
+  ULONG targetNote,
+  ULONG targetStartAddress ) {
+
+  return NULL;
+}
+
+struct AmiSF_Note * CreateAmiSF_NoteAtIndex( struct SF2 * sf2, const ULONG index ) {
+
+  struct SF2_Preset * preset;
+  ULONG current = 0;
+
+  FOR_LIST( &( sf2->sf2_Presets ),
+            preset,
+            struct SF2_Preset * ) {
+
+    struct SF2_Args * argsP;
+
+    FOR_LIST( &( preset->sf2p_Args ),
+              argsP,
+              struct SF2_Args * ) {
+
+      struct SF2_Instrument * instrument = 
+        sf2->sf2_InstrumentArray[ argsP->sf2a_Values.sf2v_NextNumber ];
+      struct SF2_Args * argsI;
+
+      FOR_LIST( &( instrument->sf2i_Args ),
+                argsI,
+                struct SF2_Args * ) {
+
+        struct SF2_Sample * sample =
+          sf2->sf2_SampleArray[ argsI->sf2a_Values.sf2v_NextNumber ];
+        if ( index == current ) {
+
+          struct AmiSF_Note * note =
+            CreateAmiSF_NoteFULL( preset,
+                              instrument,
+                              sample,
+                              sample->sf2s_SampleNote,
+                              0 );
+          return note;
+        }
+        ++current;
+      }
+    }
+  }
+  return NULL;
+}
+
 struct SF2_Sample * GetSf2SampleAtIndex( struct SF2 * sf2, const ULONG index ) {
 
   struct SF2_Preset * preset;
@@ -69,35 +172,6 @@ struct AmiSF_Note * CreateAmiSF_Note(
   ULONG targetNote,
   ULONG targetStartAddress ) {
 
-  const LONG maxRate = 192000;
-  const LONG maxValue = 0x40000000;
-  LONG sourceNote = sample->sf2s_SampleNote;
-  LONG sourceRate = sample->sf2s_SampleRate;
-  // targetRate = sourceRate * 2 ^ (( targetNote - sourceNote ) / 12 )
-  // targetRate = sourceRate * 2 ^ (             a              /  b )
-  // targetRate = sourceRate * d ^ (                  c              )
-  // targetRate = sourceRate * e
-  // targetRate = f          * e
-  // g          = f          * e
-  double a = IEEEDPFlt( targetNote - sourceNote );
-  double b = IEEEDPFlt( 12 );
-  double c = IEEEDPDiv( a, b );
-  double d = IEEEDPFlt( 2 );
-  double e = IEEEDPPow( c, d );
-  double f = IEEEDPFlt( sourceRate );
-  double g = IEEEDPMul( f, e );
-  LONG targetRate = IEEEDPFix( g );
-  // targetRegisterValue = ( sampleRate / maxRate ) * maxValue
-  // targetRegisterValue = ( g          /       h ) * maxValue
-  // targetRegisterValue =              i           * maxValue
-  // targetRegisterValue =              i           * j
-  // k                   =              i           * j
-  double h = IEEEDPFlt( maxRate );
-  double i = IEEEDPDiv( g, h );
-  double j = IEEEDPFlt( maxValue );
-  double k = IEEEDPMul( i, j );
-  LONG targetRegisterValue = IEEEDPFix( k );
-
   struct AmiSF_Note * note = AllocMem( sizeof( struct AmiSF_Note ),
                                        MEMF_ANY | MEMF_CLEAR );
 
@@ -113,24 +187,9 @@ struct AmiSF_Note * CreateAmiSF_Note(
     << 1 );                                                              // BYTE
   note->amisf_EndOffset =  targetStartAddress                            // BYTE
     + GetSF2SampleSize( sample );                                        // BYTE
-  note->amisf_PlaybackRate = targetRegisterValue;
-  LOG_V(( "V: a=%ld b=%ld c=%ld d=%ld e=%ld f=%ld "
-          "g=%ld h=%ld i=%ld j=%ld k=%ld=0x%08lx\n",
-          IEEEDPFix( a ),
-          IEEEDPFix( b ),
-          IEEEDPFix( c ),
-          IEEEDPFix( d ),
-          IEEEDPFix( e ),
-          IEEEDPFix( f ),
-          IEEEDPFix( g ),
-          IEEEDPFix( h ),
-          IEEEDPFix( i ),
-          IEEEDPFix( j ),
-          IEEEDPFix( k ),
-          IEEEDPFix( k )));
-  LOG_D(( "D: Source: Note %ld, sample rate %ld\n", sourceNote, sourceRate ));
-  LOG_D(( "D: Target: Note %ld, sample rate %ld, register value 0x%08lx\n",
-          targetNote, targetRate, targetRegisterValue ));
+  note->amisf_PlaybackRate = GetTargetSampleRate( sample->sf2s_SampleNote,
+                                                  sample->sf2s_SampleRate,
+                                                  targetNote );
 
   return note;
 }
