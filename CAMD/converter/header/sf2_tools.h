@@ -23,20 +23,20 @@
 
 #include "sf2.h"
 
-struct AmiSF_Note * CreateAmiSF_NoteFULL(
+struct AmiSF_Note * CreateAmiSF_Note(
   struct SF2_Preset * preset,
   struct SF2_Instrument * instrument,
   struct SF2_Sample * sample,
   ULONG targetNote,
   ULONG targetStartAddress );
 
-struct AmiSF_Note * CreateAmiSF_NoteAtIndex( struct SF2 * sf2, const ULONG index );
+BOOL GetSf2InformationForIndex(
+  struct SF2_Preset ** preset,
+  struct SF2_Instrument ** instrument,
+  struct SF2_Sample ** sample,
+  struct SF2 * sf2,
+  const ULONG index );
 
-struct SF2_Sample * GetSf2SampleAtIndex( struct SF2 * sf2, const ULONG index );
-struct AmiSF_Note * CreateAmiSF_Note(
-  struct SF2_Sample * sample,
-  ULONG targetNote,
-  ULONG targetStartAddress );
 LONG GetSF2SampleSize( struct SF2_Sample * sample );
 APTR GetSF2SampleData( struct SF2 * sf2, struct SF2_Sample * sample );
 APTR GetAmiSF_SampleData( struct SF2 * sf2, struct SF2_Sample * sample );

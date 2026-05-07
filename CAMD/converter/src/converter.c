@@ -411,6 +411,8 @@ VOID HandleListElement( ULONG index ) {
 
   struct SF_Converter * base = SF_Converter_Base;
   struct SF2 * sf2 = base->sfc_Sf2;
+  struct SF2_Preset * sf2Preset;
+  struct SF2_Instrument * sf2Instrument;
   struct SF2_Sample * sf2Sample;
   struct PlaySampleMessage * message;
   struct AmiSF_Note * note;
@@ -421,7 +423,16 @@ VOID HandleListElement( ULONG index ) {
     LOG_I(( "I: List element %ld pushed, but no SoundFont loaded!\n", index ));
     return;
   }
-  sf2Sample = GetSf2SampleAtIndex( sf2, index );
+  if ( !( GetSf2InformationForIndex( &sf2Preset,
+                                     &sf2Instrument,
+                                     &sf2Sample,
+                                     sf2,
+                                     index ))) {
+
+    LOG_E(( "E: Could not get information for index %ld\n", index ));
+    return;
+  }
+
   LOG_D(( "V: Playing SF2 sample %s for index %ld, "
           "overall start %ld = 0, end %ld, "
           "loop start %ld, end %ld\n",
@@ -430,7 +441,11 @@ VOID HandleListElement( ULONG index ) {
           sf2Sample->sf2s_SampleEndOffset - sf2Sample->sf2s_SampleStartOffset,
           sf2Sample->sf2s_LoopStartOffset - sf2Sample->sf2s_SampleStartOffset,
           sf2Sample->sf2s_LoopEndOffset - sf2Sample->sf2s_SampleStartOffset ));
-  note = CreateAmiSF_Note( sf2Sample, sf2Sample->sf2s_SampleNote, 0 );
+  note = CreateAmiSF_Note( sf2Preset,
+                           sf2Instrument,
+                           sf2Sample,
+                           sf2Sample->sf2s_SampleNote,
+                           0 );
   LOG_D(( "V: Playing AmiSF start %ld loop %ld end %ld rate 0x%08lx\n",
           note->amisf_StartOffset,
           note->amisf_LoopOffset - note->amisf_StartOffset,
