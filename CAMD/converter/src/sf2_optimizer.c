@@ -132,6 +132,7 @@ BOOL PrepareIndex( struct SF2 * sf2,
 
 // # Presets progress
 // BOOL True = abort
+#define LOG_FPH LOG_V
 BOOL FlattenPresetHierarchy( struct SF2 * sf2,
                              struct ProgressDialog * dialog,
                              ULONG * currentProgress,
@@ -154,10 +155,14 @@ BOOL FlattenPresetHierarchy( struct SF2 * sf2,
       struct SF2_ArgValues ArgValues;
       ArgValues.sf2v_LowNote = 0;
       ArgValues.sf2v_HighNote = 127;
+      ArgValues.sf2v_Attack = -12000;
+      ArgValues.sf2v_Decay = -12000;
+      ArgValues.sf2v_Sustain = 0;
+      ArgValues.sf2v_Release = -12000;
 
-      LOG_V(( "V: Preset %ld-%ld\n",
-              preset->sf2p_Bank,
-              preset->sf2p_Common.sf2c_Number ));
+      LOG_FPH(( "V: Preset %ld-%ld\n",
+                preset->sf2p_Bank,
+                preset->sf2p_Common.sf2c_Number ));
       FOR_LIST( &( zoneP->sfz2_Generators ),
                 generatorP,
                 struct SF2_Generator * ) {
@@ -167,23 +172,58 @@ BOOL FlattenPresetHierarchy( struct SF2 * sf2,
 
             UBYTE low = ( 0x00FF & generatorP->sf2g_Amount );
             UBYTE high = (( 0xFF00 & generatorP->sf2g_Amount ) >> 8 );
-            LOG_V(( "V:   +-> Has KeyRange %ld-%ld\n", low, high ));
+            LOG_FPH(( "V:   +-> Has KeyRange %ld-%ld\n", low, high ));
             ArgValues.sf2v_LowNote = low;
             ArgValues.sf2v_HighNote = high;
             argValueFlags |= SF2_ARG_VALUE_FLAG_LOW_NOTE;
             argValueFlags |= SF2_ARG_VALUE_FLAG_HIGH_NOTE;
             break;
           }
+          case GEN_VELRANGE: {
+
+            UBYTE low = ( 0x00FF & generatorP->sf2g_Amount );
+            UBYTE high = (( 0xFF00 & generatorP->sf2g_Amount ) >> 8 );
+            LOG_FPH(( "V:   +-> Has VelRange %ld-%ld\n", low, high ));
+            break;
+          }
+          case GEN_VOLENVATTACK: {
+
+            WORD value = ( WORD ) generatorP->sf2g_Amount;
+            LOG_FPH(( "V:   +-> Has Attack %ld\n", value ));
+            ArgValues.sf2v_Attack = value;
+            break;
+          }
+          case GEN_VOLENVDECAY: {
+
+            WORD value = ( WORD ) generatorP->sf2g_Amount;
+            LOG_FPH(( "V:   +-> Has Decay %ld\n", value ));
+            ArgValues.sf2v_Decay = value;
+            break;
+          }
+          case GEN_VOLENVSUSTAIN: {
+
+            WORD value = ( WORD ) generatorP->sf2g_Amount;
+            LOG_FPH(( "V:   +-> Has Sustain %ld\n", value ));
+            ArgValues.sf2v_Sustain = value;
+            break;
+          }
+          case GEN_VOLENVRELEASE: {
+
+            WORD value = ( WORD ) generatorP->sf2g_Amount;
+            LOG_FPH(( "V:   +-> Has Release %ld\n", value ));
+            ArgValues.sf2v_Release = value;
+            break;
+          }
           case GEN_INSTRUMENT: {
 
             UWORD next = generatorP->sf2g_Amount;
-            LOG_V(( "V:   +-> Has Instrument %ld\n", next ));
+            LOG_FPH(( "V:   +-> Has Instrument %ld\n", next ));
             ArgValues.sf2v_NextNumber = next;
             argValueFlags |= SF2_ARG_VALUE_FLAG_NEXT_NUMBER;
             break;
           }
           default: {
-            LOG_V(( "V:   +-> Has id %ld and value %ld\n",
+            LOG_FPH(( "V:   +-> Has id %ld and value %ld\n",
                     generatorP->sf2g_Id,
                     generatorP->sf2g_Amount ));
             break;
@@ -217,6 +257,7 @@ BOOL FlattenPresetHierarchy( struct SF2 * sf2,
 
 // # Instruments progress
 // BOOL True = abort
+#define LOG_FIH LOG_D
 BOOL FlattenInstrumentHierarchy( struct SF2 * sf2,
                                  struct ProgressDialog * dialog,
                                  ULONG * currentProgress,
@@ -239,9 +280,14 @@ BOOL FlattenInstrumentHierarchy( struct SF2 * sf2,
       struct SF2_ArgValues ArgValues;
       ArgValues.sf2v_LowNote = 0;
       ArgValues.sf2v_HighNote = 127;
+      ArgValues.sf2v_Attack = -12000;
+      ArgValues.sf2v_Decay = -12000;
+      ArgValues.sf2v_Sustain = 0;
+      ArgValues.sf2v_Release = -12000;
 
-      LOG_V(( "V: Instrument %ld\n",
-              instrument->sf2i_Common.sf2c_Number ));
+      LOG_FIH(( "V: Instrument %ld - %s\n",
+                instrument->sf2i_Common.sf2c_Number,
+                instrument->sf2i_Common.sf2c_Name ));
       FOR_LIST( &( zoneI->sfz2_Generators ),
                 generatorI,
                 struct SF2_Generator * ) {
@@ -251,25 +297,59 @@ BOOL FlattenInstrumentHierarchy( struct SF2 * sf2,
 
             UBYTE low = ( 0x00FF & generatorI->sf2g_Amount );
             UBYTE high = (( 0xFF00 & generatorI->sf2g_Amount ) >> 8 );
-            LOG_V(( "V:   +-> Has KeyRange %ld-%ld\n", low, high ));
+            LOG_FIH(( "V:   +-> Has KeyRange %ld-%ld\n", low, high ));
             ArgValues.sf2v_LowNote = low;
             ArgValues.sf2v_HighNote = high;
             argValueFlags |= SF2_ARG_VALUE_FLAG_LOW_NOTE;
             argValueFlags |= SF2_ARG_VALUE_FLAG_HIGH_NOTE;
             break;
           }
+          case GEN_VELRANGE: {
+            UBYTE low = ( 0x00FF & generatorI->sf2g_Amount );
+            UBYTE high = (( 0xFF00 & generatorI->sf2g_Amount ) >> 8 );
+            LOG_FIH(( "V:   +-> Has VelRange %ld-%ld\n", low, high ));
+            break;
+          }
+          case GEN_VOLENVATTACK: {
+
+            WORD value = ( WORD ) generatorI->sf2g_Amount;
+            LOG_FIH(( "V:   +-> Has Attack %ld\n", value ));
+            ArgValues.sf2v_Attack = value;
+            break;
+          }
+          case GEN_VOLENVDECAY: {
+
+            WORD value = ( WORD ) generatorI->sf2g_Amount;
+            LOG_FIH(( "V:   +-> Has Decay %ld\n", value ));
+            ArgValues.sf2v_Decay = value;
+            break;
+          }
+          case GEN_VOLENVSUSTAIN: {
+
+            WORD value = ( WORD ) generatorI->sf2g_Amount;
+            LOG_FIH(( "V:   +-> Has Sustain %ld\n", value ));
+            ArgValues.sf2v_Sustain = value;
+            break;
+          }
+          case GEN_VOLENVRELEASE: {
+
+            WORD value = ( WORD ) generatorI->sf2g_Amount;
+            LOG_FIH(( "V:   +-> Has Release %ld\n", value ));
+            ArgValues.sf2v_Release = value;
+            break;
+          }
           case GEN_SAMPLEID: {
 
             UWORD next = generatorI->sf2g_Amount;
-            LOG_V(( "V:   +-> Has Sample %ld\n", next ));
+            LOG_FIH(( "V:   +-> Has Sample %ld\n", next ));
             ArgValues.sf2v_NextNumber = next;
             argValueFlags |= SF2_ARG_VALUE_FLAG_NEXT_NUMBER;
             break;
           }
           default: {
-            LOG_V(( "V:   +-> Has id %ld and value %ld\n",
-                    generatorI->sf2g_Id,
-                    generatorI->sf2g_Amount ));
+            LOG_FIH(( "V:   +-> Has id %ld and value %ld\n",
+                      generatorI->sf2g_Id,
+                      generatorI->sf2g_Amount ));
             break;
           }
         }

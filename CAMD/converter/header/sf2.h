@@ -110,7 +110,18 @@ struct SF2_ArgValues {
   LONG sf2v_NextNumber; // -1 means ignore me for ever!
   ULONG sf2v_LowNote;  // UBYTE - but need long for display.
   ULONG sf2v_HighNote; // UBYTE - but need long for display.
+  WORD sf2v_Attack;    // in 1200*ld(seconds)
+  WORD sf2v_Decay;     // in 1200*ld(seconds)
+  WORD sf2v_Sustain;   // in centibels - 1000 means full
+  WORD sf2v_Release;   // in 1200*ld(seconds)
 };
+/*
+ADSR calculation:
+- time in s = 2 ^( timecents / 1200 )
+- effective timecents = preset timecents + instrument timecents
+- local overwrites global overwrites default
+with  with 
+ */
 
 struct SF2_Args {
 
