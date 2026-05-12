@@ -83,32 +83,57 @@ struct AmiSF_Note * CreateAmiSF_Note(
   struct SF2_Preset * preset,
   struct SF2_Instrument * instrument,
   struct SF2_Sample * sample,
-  ULONG targetNote,
+  ULONG targetNote ) {
+
+  struct AmiSF_Note * result = AllocMem( sizeof( struct AmiSF_Note ),
+                                         MEMF_ANY | MEMF_CLEAR );
+
+  result->amisfn_PlaybackRate = GetTargetSampleRate( sample->sf2s_SampleNote,
+                                                     sample->sf2s_SampleRate,
+                                                     targetNote );
+/*
+  FOR_LIST( &( p->sf2p_Args ),
+               argsP,
+               struct SF2_Args * ) {
+
+    switch(  )
+    GEN_VOLENVATTACK,       // Volume envelope attack
+    GEN_VOLENVHOLD,         // Volume envelope hold
+    GEN_VOLENVDECAY,        // Volume envelope decay
+    GEN_VOLENVSUSTAIN,      // Volume envelope sustain
+    GEN_VOLENVRELEASE,      // Volume envelope release
+  }
+  LOG_D(( "V: Preset A: %lx D: %lx S: %lx R: %lx\n". 0, 0, 0, 0 ));
+  LOG_D(( "V: Instr. A: %lx D: %lx S: %lx R: %lx\n". 0, 0, 0, 0 ));
+*/
+
+  return result;
+}
+
+struct AmiSF_Sample * CreateAmiSF_Sample(
+  struct SF2_Preset * preset,
+  struct SF2_Instrument * instrument,
+  struct SF2_Sample * sample,
   ULONG targetStartAddress ) {
 
-  struct AmiSF_Note * note = AllocMem( sizeof( struct AmiSF_Note ),
-                                       MEMF_ANY | MEMF_CLEAR );
-
-  note->amisf_NoteFlags =
+  struct AmiSF_Sample * result = AllocMem( sizeof( struct AmiSF_Sample ),
+                                           MEMF_ANY | MEMF_CLEAR );
+  result->amisfs_Flags =
       AMISF_NOTE_RESOLUTION_16BIT // SF2 only knows 16 or 24bit
     | AMISF_NOTE_LOOPED_MASK
-    | AMISF_NOTE_IN_FILE
-    | AMISF_NOTE_NOT_IN_RAM
+    | AMISF_NOTE_NOT_IN_FILE
+    | AMISF_NOTE_IN_RAM
     | AMISF_NOTE_NOT_IN_CARD;
-  note->amisf_StartOffset = targetStartAddress;                          // BYTE
-  note->amisf_LoopOffset = targetStartAddress                            // BYTE
+  result->amisfs_StartOffset = targetStartAddress;                       // BYTE
+  result->amisfs_LoopOffset = targetStartAddress                         // BYTE
     + (( sample->sf2s_LoopStartOffset - sample->sf2s_SampleStartOffset ) // WORD
     << 1 );                                                              // BYTE
-  note->amisf_EndOffset =  targetStartAddress                            // BYTE
+  result->amisfs_EndOffset =  targetStartAddress                         // BYTE
     + GetSF2SampleSize( sample );                                        // BYTE
-  note->amisf_PlaybackRate = GetTargetSampleRate( sample->sf2s_SampleNote,
-                                                  sample->sf2s_SampleRate,
-                                                  targetNote );
 
-TODO: Collect ADSR here!
-
-  return note;
+  return result;
 }
+
 
 BOOL GetSf2InformationForIndex(
   struct SF2_Preset ** preset,

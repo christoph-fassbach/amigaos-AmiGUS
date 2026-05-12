@@ -28,7 +28,8 @@ LONG SendAmigusMessage( struct Message * message );
 struct PlaySampleMessage * CreateAmigusPlaySampleMessage(
   struct MsgPort * replyPort,
   struct AmiSF_Note * note,
-  APTR sample );
+  struct AmiSF_Sample * sample,
+  APTR data );
 
 struct PlayNoteMessage * CreateAmigusPlayNoteMessage(
   struct MsgPort * replyPort );

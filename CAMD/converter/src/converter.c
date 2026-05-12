@@ -416,7 +416,8 @@ VOID HandleListElement( ULONG index ) {
   struct SF2_Sample * sf2Sample;
   struct PlaySampleMessage * message;
   struct AmiSF_Note * note;
-  APTR sample;
+  struct AmiSF_Sample * sample;
+  APTR data;
 
   if ( !( sf2 )) {
 
@@ -444,18 +445,22 @@ VOID HandleListElement( ULONG index ) {
   note = CreateAmiSF_Note( sf2Preset,
                            sf2Instrument,
                            sf2Sample,
-                           sf2Sample->sf2s_SampleNote,
-                           0 );
+                           sf2Sample->sf2s_SampleNote );
+  sample = CreateAmiSF_Sample( sf2Preset,
+                               sf2Instrument,
+                               sf2Sample,
+                               0 );
   LOG_D(( "V: Playing AmiSF start %ld loop %ld end %ld rate 0x%08lx\n",
-          note->amisf_StartOffset,
-          note->amisf_LoopOffset - note->amisf_StartOffset,
-          note->amisf_EndOffset - note->amisf_StartOffset,
-          note->amisf_PlaybackRate ));
-  sample = GetSF2SampleData( sf2, sf2Sample );
+          sample->amisfs_StartOffset,
+          sample->amisfs_LoopOffset - sample->amisfs_StartOffset,
+          sample->amisfs_EndOffset - sample->amisfs_StartOffset,
+          note->amisfn_PlaybackRate ));
+  data = GetSF2SampleData( sf2, sf2Sample );
   message = CreateAmigusPlaySampleMessage(
     SF_Converter_Base->sfc_MidiReplyPort,
     note,
-    sample );
+    sample,
+    data );
   SendAmigusMessage(( struct Message * ) message );
   LOG_D(( "V: Got note at 0x%08lx\n", note ));
 }

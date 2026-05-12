@@ -151,7 +151,8 @@ LONG SendAmigusMessage( struct Message * message ) {
 struct PlaySampleMessage * CreateAmigusPlaySampleMessage(
   struct MsgPort * replyPort,
   struct AmiSF_Note * note,
-  APTR sample ) {
+  struct AmiSF_Sample * sample,
+  APTR data ) {
 
   struct PlaySampleMessage * message =
     CreateAmigusMessage( replyPort,
@@ -159,6 +160,7 @@ struct PlaySampleMessage * CreateAmigusPlaySampleMessage(
                          &( PlaySampleMessageName ));
   message->note = note;
   message->sample = sample;
+  message->data = data;
 
   return message;
 }
@@ -216,10 +218,11 @@ VOID DeleteAmigusMessage( APTR message ) {
 
       struct PlaySampleMessage * sampleMessage =
         ( struct PlaySampleMessage * ) message;
-      ULONG size = sampleMessage->note->amisf_EndOffset
-        - sampleMessage->note->amisf_StartOffset;
+      ULONG size = sampleMessage->sample->amisfs_EndOffset
+                 - sampleMessage->sample->amisfs_StartOffset;
       LOG_D(( "D: Deleting PlaySampleMessage 0x%08lx...\n", mess ));
-      FreeMem( sampleMessage->sample, size );
+      FreeMem( sampleMessage->data, size );
+      FreeMem( sampleMessage->sample, sizeof( struct AmiSF_Sample ));
       FreeMem( sampleMessage->note, sizeof( struct AmiSF_Note ));
       FreeMem( sampleMessage, sizeof( struct PlaySampleMessage ));
       break;

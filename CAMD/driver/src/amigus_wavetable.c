@@ -80,7 +80,8 @@ VOID LoadAmiGusWavetableSample( ULONG * source, ULONG target, ULONG size ) {
   LOG_D(( "D: Copied %ld LONGs to 0x%08lx\n", i, target ));
 }
 
-VOID StartAmiGusWavetablePlayback( struct AmiSF_Note * note ) {
+VOID StartAmiGusWavetablePlayback( struct AmiSF_Note * note,
+                                   struct AmiSF_Sample * sample ) {
 
   struct AmiGUS_CAMD * base = AmiGUS_CAMD_Base;
   APTR card = base->agb_AmiGUS->agus_WavetableBase;
@@ -89,25 +90,25 @@ VOID StartAmiGusWavetablePlayback( struct AmiSF_Note * note ) {
   WriteReg16( card, AMIGUS_WT_CHANNEL_CONTROL, 0x0000 );
 
   LOG_D(( "D: Playing from %lx to 0x%08lx\n", 
-          note->amisf_StartOffset, note->amisf_EndOffset ));
-  WriteReg32( card, AMIGUS_WT_CHANNEL_START_32BIT, note->amisf_StartOffset );
-  WriteReg32( card, AMIGUS_WT_CHANNEL_LOOP_32BIT, note->amisf_LoopOffset );
-  WriteReg32( card, AMIGUS_WT_CHANNEL_END_32BIT, note->amisf_EndOffset );
-  WriteReg32( card, AMIGUS_WT_CHANNEL_RATE_32BIT, note->amisf_PlaybackRate );
+          sample->amisfs_StartOffset, sample->amisfs_EndOffset ));
+  WriteReg32( card, AMIGUS_WT_CHANNEL_START_32BIT, sample->amisfs_StartOffset );
+  WriteReg32( card, AMIGUS_WT_CHANNEL_LOOP_32BIT, sample->amisfs_LoopOffset );
+  WriteReg32( card, AMIGUS_WT_CHANNEL_END_32BIT, sample->amisfs_EndOffset );
+  WriteReg32( card, AMIGUS_WT_CHANNEL_RATE_32BIT, note->amisfn_PlaybackRate );
 
   WriteReg16( card, AMIGUS_WT_CHANNEL_VOLUME_LEFT, 50000 );
   WriteReg16( card, AMIGUS_WT_CHANNEL_VOLUME_RIGHT, 50000 );
 
-  WriteReg16( card, AMIGUS_WT_CHANNEL_ATTACK, note->amisf_Attack );
-  WriteReg16( card, AMIGUS_WT_CHANNEL_DECAY, note->amisf_Decay );
-  WriteReg16( card, AMIGUS_WT_CHANNEL_SUSTAIN, note->amisf_Sustain );
-  WriteReg16( card, AMIGUS_WT_CHANNEL_RELEASE, note->amisf_Release );
+  WriteReg16( card, AMIGUS_WT_CHANNEL_ATTACK, note->amisfn_Attack );
+  WriteReg16( card, AMIGUS_WT_CHANNEL_DECAY, note->amisfn_Decay );
+  WriteReg16( card, AMIGUS_WT_CHANNEL_SUSTAIN, note->amisfn_Sustain );
+  WriteReg16( card, AMIGUS_WT_CHANNEL_RELEASE, note->amisfn_Release );
 
   WriteReg16( card,
               AMIGUS_WT_CHANNEL_CONTROL,
               AMIGUS_WT_F_CONTROL_START
               | AMIGUS_WT_F_CONTROL_INTERPOLATE
-              | ( note->amisf_NoteFlags 
+              | ( sample->amisfs_Flags 
                 & ( AMISF_NOTE_RESOLUTION_16BIT 
                   | AMISF_NOTE_LOOPED_MASK )));
 }

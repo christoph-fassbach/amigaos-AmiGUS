@@ -257,7 +257,7 @@ BOOL FlattenPresetHierarchy( struct SF2 * sf2,
 
 // # Instruments progress
 // BOOL True = abort
-#define LOG_FIH LOG_D
+#define LOG_FIH LOG_V
 BOOL FlattenInstrumentHierarchy( struct SF2 * sf2,
                                  struct ProgressDialog * dialog,
                                  ULONG * currentProgress,

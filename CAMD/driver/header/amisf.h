@@ -36,17 +36,28 @@
 
 struct AmiSF_Note {
 
-    UWORD amisf_NoteFlags;
-    UBYTE amisf_OtherBank;   // not so sure...
-    UBYTE amisf_OtherPreset; // not sure either...
-    ULONG amisf_StartOffset;
-    ULONG amisf_LoopOffset;
-    ULONG amisf_EndOffset;
-    ULONG amisf_PlaybackRate;    // Version 01: AmiGUS register format - Version 11: real sample rate
-    UWORD amisf_Attack;
-    UWORD amisf_Decay;
-    UWORD amisf_Sustain;
-    UWORD amisf_Release;
+  UBYTE amisfn_Note;
+  UBYTE amisfn_Velocity;
+  UWORD amisfn_SampleIndex;
+
+  ULONG amisfn_PlaybackRate;    // Version 01: AmiGUS register format - Version 11: real sample rate
+
+  UWORD amisfn_Volume;
+  UWORD amisfn_Attack;
+
+  UWORD amisfn_Decay;
+  UWORD amisfn_Sustain;
+
+  UWORD amisfn_Release;
+  UWORD amisfn_Padding0;
+};
+
+struct AmiSF_Sample {
+
+  ULONG amisfs_Flags;
+  ULONG amisfs_StartOffset;
+  ULONG amisfs_LoopOffset;
+  ULONG amisfs_EndOffset;
 };
 
 #define AMISF_NOTE_RESOLUTION_MASK       0x0001

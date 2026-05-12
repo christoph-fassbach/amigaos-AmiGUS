@@ -27,7 +27,12 @@ struct AmiSF_Note * CreateAmiSF_Note(
   struct SF2_Preset * preset,
   struct SF2_Instrument * instrument,
   struct SF2_Sample * sample,
-  ULONG targetNote,
+  ULONG targetNote );
+
+struct AmiSF_Sample * CreateAmiSF_Sample(
+  struct SF2_Preset * preset,
+  struct SF2_Instrument * instrument,
+  struct SF2_Sample * sample,
   ULONG targetStartAddress );
 
 BOOL GetSf2InformationForIndex(
