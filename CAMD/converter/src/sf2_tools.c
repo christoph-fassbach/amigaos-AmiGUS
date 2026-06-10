@@ -85,27 +85,42 @@ struct AmiSF_Note * CreateAmiSF_Note(
   struct SF2_Sample * sample,
   ULONG targetNote ) {
 
+  struct SF2_Args * argsP;
+  struct SF2_Args * argsI;
+  
+  WORD effectiveAttack;
+  WORD effectiveDecay;
+  WORD effectiveSustain;
+  WORD effectiveRelease;
+
   struct AmiSF_Note * result = AllocMem( sizeof( struct AmiSF_Note ),
                                          MEMF_ANY | MEMF_CLEAR );
 
   result->amisfn_PlaybackRate = GetTargetSampleRate( sample->sf2s_SampleNote,
                                                      sample->sf2s_SampleRate,
                                                      targetNote );
-/*
-  FOR_LIST( &( p->sf2p_Args ),
+
+  FOR_LIST( &( preset->sf2p_Args ),
                argsP,
                struct SF2_Args * ) {
 
-    switch(  )
-    GEN_VOLENVATTACK,       // Volume envelope attack
-    GEN_VOLENVHOLD,         // Volume envelope hold
-    GEN_VOLENVDECAY,        // Volume envelope decay
-    GEN_VOLENVSUSTAIN,      // Volume envelope sustain
-    GEN_VOLENVRELEASE,      // Volume envelope release
+    if (( argsP->sf2a_Values.sf2v_LowNote < targetNote )        // TODO: >= ? <= ?
+      && ( argsP->sf2a_Values.sf2v_HighNote > targetNote )) {
+
+      LOG_D(( "D: Found %ld < %ld < %ld with A:%ld D:%ld S:%ld R:%ld\n",
+        argsP->sf2a_Values.sf2v_LowNote,
+        targetNote,
+        argsP->sf2a_Values.sf2v_HighNote,
+        argsP->sf2a_Values.sf2v_Attack,
+        argsP->sf2a_Values.sf2v_Decay,
+        argsP->sf2a_Values.sf2v_Sustain,
+        argsP->sf2a_Values.sf2v_Release ));
+    }
   }
-  LOG_D(( "V: Preset A: %lx D: %lx S: %lx R: %lx\n". 0, 0, 0, 0 ));
-  LOG_D(( "V: Instr. A: %lx D: %lx S: %lx R: %lx\n". 0, 0, 0, 0 ));
-*/
+  // TODO: Where is local? where is global?
+  // TODO: Instrument?
+  LOG_D(( "V: Preset A: %lx D: %lx S: %lx R: %lx\n", 0, 0, 0, 0 ));
+  LOG_D(( "V: Instr. A: %lx D: %lx S: %lx R: %lx\n", 0, 0, 0, 0 ));
 
   return result;
 }
