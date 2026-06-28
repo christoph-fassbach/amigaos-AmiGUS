@@ -132,7 +132,7 @@ VOID debug_kprintf( STRPTR format, ... ) {
 VOID debug_fprintf( STRPTR format, ... ) {
 
   static BOOL errorShown = FALSE;
-  STRPTR logFilePath = "ram:CAMD-KEYS.log";
+  STRPTR logFilePath = "ram:CONVERTER.log";
   UBYTE buffer[512];
   UBYTE * printBuffer = buffer;
 
@@ -151,7 +151,7 @@ VOID debug_fprintf( STRPTR format, ... ) {
 #ifdef INCLUDE_VERSION
     if ( 36 <= (( struct Library *) DOSBase )->lib_Version ) {
 
-      LONG i = GetVar( "CAMD-KEYBOARD-LOG-FILEPATH",
+      LONG i = GetVar( "CONVERTER-LOG-FILEPATH",
                        buffer,
                        sizeof( buffer ),
                        0 );
@@ -217,11 +217,11 @@ VOID debug_mprintf( STRPTR format, ... ) {
     if ( 36 <= (( struct Library * ) DOSBase )->lib_Version) {
 
       UBYTE buffer[ 64 ];
-      LONG i = GetVar( "CAMD-KEYBOARD-LOG-ADDRESS", buffer, sizeof( buffer ), 0 );
+      LONG i = GetVar( "CONVERTER-LOG-ADDRESS", buffer, sizeof( buffer ), 0 );
       /*
-       * UAE:  setenv CAMD-KEYBOARD-LOG-ADDRESS 1207959552 -> 0x48000000
-       * 3/4k: setenv CAMD-KEYBOARD-LOG-ADDRESS 167772160  -> 0x0a000000
-       * 2k:   setenv CAMD-KEYBOARD-LOG-ADDRESS 4194304    -> 0x00400000
+       * UAE:  setenv CONVERTER-LOG-ADDRESS 1207959552 -> 0x48000000
+       * 3/4k: setenv CONVERTER-LOG-ADDRESS 167772160  -> 0x0a000000
+       * 2k:   setenv CONVERTER-LOG-ADDRESS 4194304    -> 0x00400000
        */
 
       if ( i > 0 ) {
@@ -229,7 +229,7 @@ VOID debug_mprintf( STRPTR format, ... ) {
         StrToLong( buffer, ( LONG * ) &where );
       }
 
-      i = GetVar( "CAMD-KEYBOARD-LOG-SIZE", buffer, sizeof( buffer ), 0 );
+      i = GetVar( "CONVERTER-LOG-SIZE", buffer, sizeof( buffer ), 0 );
       if ( i > 0 ) {
 
         StrToLong( buffer, &size );
@@ -237,8 +237,8 @@ VOID debug_mprintf( STRPTR format, ... ) {
     }
 #endif
 
-    debug_kprintf( "CAMD-KEYBOARD-LOG-ADDRESS %lx = %ld (requested)\n"
-                   "CAMD-KEYBOARD-LOG-SIZE %ld\n",
+    debug_kprintf( "CONVERTER-LOG-ADDRESS %lx = %ld (requested)\n"
+                   "CONVERTER-LOG-SIZE %ld\n",
                    ( LONG ) where,
                    ( LONG ) where,
                    size );
