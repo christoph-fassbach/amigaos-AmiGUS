@@ -58,9 +58,9 @@ VOID WriteMemoryLog( LONG startAddress, STRPTR filename ) {
 
   BPTR file;
   LONG endAddress = startAddress 
-    + sizeof( AMIGUS_MEM_LOG_BORDERS)
+    + sizeof( AMIGUS_MEM_LOG_BORDERS )
     + sizeof( " " STR( LIB_FILE ) " " )
-    + sizeof( AMIGUS_MEM_LOG_BORDERS)
+    + sizeof( AMIGUS_MEM_LOG_BORDERS )
     - 2;
 
   printf( "Found start memMarker at 0x%08lx\n", startAddress );
