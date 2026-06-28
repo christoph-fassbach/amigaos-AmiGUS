@@ -50,6 +50,7 @@ enum ErrorCodes
   ECreateMidi,
   EAddMidiLink,
   ENoAmigusFound,
+  ENoAmigusNoRetry,
   ENoAmigusRetry,
   EAllocateProgressDialog,
 

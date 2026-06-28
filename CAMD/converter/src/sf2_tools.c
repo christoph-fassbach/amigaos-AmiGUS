@@ -212,7 +212,12 @@ LONG GetSF2SampleSize( struct SF2_Sample * sample ) {
 
   } else { 
 
-    LOG_E(( "E: Cannot make sense out of sample loop location\n" ));
+    LOG_E(( "E: Cannot make sense out of sample loop location, "
+            "sample: start %ld end %ld, loop: start %ld end %ld\n",
+            sample->sf2s_SampleStartOffset,
+            sample->sf2s_SampleEndOffset,
+            sample->sf2s_LoopStartOffset,
+            sample->sf2s_LoopEndOffset ));
   }
 
   return size;
@@ -225,8 +230,21 @@ APTR GetSF2SampleData( struct SF2 * sf2, struct SF2_Sample * sample ) {
   LONG diskSize = loopEnd - sampleStart;
   LONG memorySize = GetSF2SampleSize( sample );
   LONG i;
-  UWORD * samples = AllocMem( memorySize, MEMF_ANY | MEMF_CLEAR );
+  UWORD * samples;
 
+  if (( sampleStart > loopEnd )
+    || ( 0 > sampleStart )
+    || ( 0 > loopEnd )
+    || ( 0 > diskSize )
+    || ( 0 > memorySize )) {
+
+    LOG_E(( "E: Implausible sample data, "
+            "start %ld, end %ld memsize %ld, disksize %ld\n",
+            sampleStart, loopEnd, memorySize, diskSize ));
+    return NULL;
+  }
+
+  samples = AllocMem( memorySize, MEMF_ANY | MEMF_CLEAR );
 
   LOG_D(( "V: Samples @ 0x%08lx, start %ld, memsize %ld, disksize %ld\n",
           samples, sampleStart, memorySize, diskSize ));

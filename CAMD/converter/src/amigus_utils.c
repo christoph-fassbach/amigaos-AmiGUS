@@ -99,7 +99,7 @@ LONG SendAmigusMessage( struct Message * message ) {
 
   CONST_STRPTR portName = "AmiGUS CAMD Port";
   struct MsgPort * port;
-
+LOG_D(("Debug for SendAmigusMessage 1\n"));
   Forbid();
   port = FindPort( portName );
   if ( !( port )) {
@@ -108,6 +108,7 @@ LONG SendAmigusMessage( struct Message * message ) {
     struct EasyStruct request;
 
     Permit();
+LOG_D(("Debug for SendAmigusMessage 2\n"));
     request.es_StructSize = sizeof( struct EasyStruct );
     request.es_Flags = 0;
     request.es_Title = "Error";
@@ -119,29 +120,33 @@ LONG SendAmigusMessage( struct Message * message ) {
 
     result = EasyRequest( SF_Converter_Base->sfc_MainWindow, &request, NULL );
     if ( !result ) {
-
+LOG_D(("Debug for SendAmigusMessage 3\n"));
       LOG_I(( "I: Not retrying...\n" ));
-      return ENoError;
+      DeleteAmigusMessage( message );
+      return ENoAmigusNoRetry;
     }
+LOG_D(("Debug for SendAmigusMessage 4\n"));
     result = OpenAmigusPort();
     if ( result ) {
-
+LOG_D(("Debug for SendAmigusMessage 5\n"));
       LOG_I(( "I: Failed opening AmiGUS port...\n" ));
+      DeleteAmigusMessage( message );
       DisplayError( result );
       return result;
     }
-
+LOG_D(("Debug for SendAmigusMessage 6\n"));
     Forbid();
     port = FindPort( portName );
   }
   if ( !( port )) {
-
+LOG_D(("Debug for SendAmigusMessage 7\n"));
     Permit();
     LOG_I(( "I: AmiGUS port not found...\n" ));
+    DeleteAmigusMessage( message );
     DisplayError( ENoAmigusRetry );
     return ENoAmigusRetry;
   }
-
+LOG_D(("Debug for SendAmigusMessage 8\n"));
   LOG_D(( "D: Found AmiGUS CAMD Port at 0x%08lx\n", port ));
   PutMsg( port, message );
   Permit();

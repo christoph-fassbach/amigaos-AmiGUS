@@ -442,6 +442,12 @@ VOID HandleListElement( ULONG index ) {
           sf2Sample->sf2s_SampleEndOffset - sf2Sample->sf2s_SampleStartOffset,
           sf2Sample->sf2s_LoopStartOffset - sf2Sample->sf2s_SampleStartOffset,
           sf2Sample->sf2s_LoopEndOffset - sf2Sample->sf2s_SampleStartOffset ));
+  data = GetSF2SampleData( sf2, sf2Sample );
+  if ( !data ) {
+
+    LOG_E(( "E: Failed playing note!\n" ));
+    return;
+  }
   note = CreateAmiSF_Note( sf2Preset,
                            sf2Instrument,
                            sf2Sample,
@@ -455,7 +461,6 @@ VOID HandleListElement( ULONG index ) {
           sample->amisfs_LoopOffset - sample->amisfs_StartOffset,
           sample->amisfs_EndOffset - sample->amisfs_StartOffset,
           note->amisfn_PlaybackRate ));
-  data = GetSF2SampleData( sf2, sf2Sample );
   message = CreateAmigusPlaySampleMessage(
     SF_Converter_Base->sfc_MidiReplyPort,
     note,
