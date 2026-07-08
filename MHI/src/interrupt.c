@@ -46,7 +46,7 @@ ASM( LONG ) HandleInterrupt( REG( a0, APTR data )) {
   const UWORD control = ReadReg16( card, AMIGUS_CODEC_INT_CONTROL );
   const UWORD status = enable & control;
 
-  /*
+//  /*
   // This is super-spammy - but tells you what is wrong if int is stalling!
   LOG_INT(( "INT: h 0x%08lx c 0x%08lx s 0x%04lx\n",
             handle, card, status ));
@@ -57,6 +57,10 @@ ASM( LONG ) HandleInterrupt( REG( a0, APTR data )) {
     if ( MHIF_PLAYING == handle->agch_Status ) {
 
       FillCodecBuffer( handle );
+
+    } else {
+
+      LOG_INT(( "INT: skip, paused\n" ));
     }
 
     /* Clear AmiGUS control flags here!!! */
@@ -150,10 +154,11 @@ VOID FillCodecBuffer( struct AmiGUS_MHI_Handle * handle ) {
       break;
     }
   }
-  LOG_INT(( "INT: Playback r %4ld t %4ld c %4ld cb 0x%08lx nb 0x%08lx\n",
+  LOG_INT(( "INT: Playback r %4ld t %4ld c %4ld cb 0x%08lx ci %4ld nb 0x%08lx\n",
             reminder,
             target,
             copied,
             current,
+            current->agmb_BufferIndex,
             current->agmb_Node.mln_Succ ));
 }
