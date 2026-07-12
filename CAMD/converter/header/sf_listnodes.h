@@ -29,11 +29,25 @@ const struct ColumnInfo * GetSoundFontColumnInfos( VOID );
 const ULONG GetSoundFontColumnsWidth( VOID );
 
 VOID CreateEmptyListLabels( struct List * labels );
+
+/**
+ * The order created here needs to be in sync with GetSf2InformationForIndex.
+ */
 BOOL CreateSf2ListLabels( struct List * labels,
                           struct SF2 * sf2,
                           struct ProgressDialog * dialog,
                           ULONG * currentProgress,
                           ULONG maxProgress );
+
+/**
+ * The order created here needs to be in sync with CreateSf2ListLabels.
+ */
+BOOL GetSf2InformationForIndex(
+  struct SF2_Preset ** preset,
+  struct SF2_Instrument ** instrument,
+  struct SF2_Sample ** sample,
+  struct SF2 * sf2,
+  const ULONG index );
 
 VOID FreeListLabels( struct List * list );
 

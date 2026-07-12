@@ -551,48 +551,55 @@ BOOL CreateSf2ListLabels(
   ULONG maxProgress ) {
 
   BOOL abort = FALSE;
+
+  struct SF2_Preset * tempPreset;
   ULONG count = 0;
-  struct SF2_Preset * preset;
+
   FOR_LIST( &( sf2->sf2_Presets ),
-            preset,
+            tempPreset,
             struct SF2_Preset * ) {
 
     struct SF2_Args * argsP;
 
-    FOR_LIST( &( preset->sf2p_Args ),
+    FOR_LIST( &( tempPreset->sf2p_Args ),
               argsP,
               struct SF2_Args * ) {
 
+      const LONG instrumentIndex = argsP->sf2a_Values.sf2v_NextNumber;
+
+      struct SF2_Instrument * tempInstrument;
       struct SF2_Args * argsI;
-      struct SF2_Instrument * instrument;
 
-      LONG nextI = argsP->sf2a_Values.sf2v_NextNumber;
-      if ( 0 > nextI ) {
+      if ( 0 > instrumentIndex ) {
 
+        // Skip over the de-duplicated instruments
         continue;
       }
 
-      instrument = sf2->sf2_InstrumentArray[ nextI ];
+      tempInstrument = sf2->sf2_InstrumentArray[ instrumentIndex ];
 
-      FOR_LIST( &( instrument->sf2i_Args ),
+      FOR_LIST( &( tempInstrument->sf2i_Args ),
                 argsI,
                 struct SF2_Args * ) {
 
-        struct SF2_Sample * sample;
+        const LONG sampleIndex = argsI->sf2a_Values.sf2v_NextNumber;
 
-        LONG nextS = argsI->sf2a_Values.sf2v_NextNumber;
-        if ( 0 > nextS ) {
+        struct SF2_Sample * tempSample;
 
+        if ( 0 > sampleIndex ) {
+
+          // Skip over the de-duplicated samples
           continue;
         }
-        sample = sf2->sf2_SampleArray[ nextS ];
+
+        tempSample = sf2->sf2_SampleArray[ sampleIndex ];
 
         AddSf2Label( labels,
-                     preset,
+                     tempPreset,
                      &( argsP->sf2a_Values ),
-                     instrument,
+                     tempInstrument,
                      &( argsI->sf2a_Values ),
-                     sample );
+                     tempSample );
         ++count;
       }
     }
@@ -607,6 +614,78 @@ BOOL CreateSf2ListLabels(
   }
   LOG_I(( "I: Created %ld labels, progress %ld/%ld\n",
           count, *currentProgress, maxProgress ));
+  return FALSE;
+}
+
+BOOL GetSf2InformationForIndex(
+  struct SF2_Preset ** preset,
+  struct SF2_Instrument ** instrument,
+  struct SF2_Sample ** sample,
+  struct SF2 * sf2,
+  const ULONG index ) {
+
+  struct SF2_Preset * tempPreset;
+  ULONG count = 0;
+
+  FOR_LIST( &( sf2->sf2_Presets ),
+            tempPreset,
+            struct SF2_Preset * ) {
+
+    struct SF2_Args * argsP;
+
+    FOR_LIST( &( tempPreset->sf2p_Args ),
+              argsP,
+              struct SF2_Args * ) {
+
+      const LONG instrumentIndex = argsP->sf2a_Values.sf2v_NextNumber;
+
+      struct SF2_Instrument * tempInstrument;
+      struct SF2_Args * argsI;
+
+      if ( 0 > instrumentIndex ) {
+
+        // Skip over the de-duplicated instruments
+        continue;
+      }
+
+      tempInstrument = sf2->sf2_InstrumentArray[ instrumentIndex ];
+
+      FOR_LIST( &( tempInstrument->sf2i_Args ),
+                argsI,
+                struct SF2_Args * ) {
+
+        const LONG sampleIndex = argsI->sf2a_Values.sf2v_NextNumber;
+
+        struct SF2_Sample * tempSample;
+
+        if ( 0 > sampleIndex ) {
+
+          // Skip over the de-duplicated samples
+          continue;
+        }
+
+        tempSample = sf2->sf2_SampleArray[ sampleIndex ];
+
+        if ( index == count ) {
+
+          LOG_D(( "V: Found bank %ld preset %ld instrument %ld sample %ld\n",
+            tempPreset->sf2p_Bank,
+            tempPreset->sf2p_Common.sf2c_Number,
+            argsP->sf2a_Values.sf2v_NextNumber,
+            argsI->sf2a_Values.sf2v_NextNumber ));
+
+          *preset = ( APTR ) tempPreset;
+          *instrument = ( APTR ) tempInstrument;
+          *sample = ( APTR ) tempSample;
+          return TRUE;
+        }
+        ++count;
+      }
+    }
+  }
+  *preset = NULL;
+  *instrument = NULL;
+  *sample = NULL;
   return FALSE;
 }
 

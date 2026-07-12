@@ -35,13 +35,6 @@ struct AmiSF_Sample * CreateAmiSF_Sample(
   struct SF2_Sample * sample,
   ULONG targetStartAddress );
 
-BOOL GetSf2InformationForIndex(
-  struct SF2_Preset ** preset,
-  struct SF2_Instrument ** instrument,
-  struct SF2_Sample ** sample,
-  struct SF2 * sf2,
-  const ULONG index );
-
 LONG GetSF2SampleSize( struct SF2_Sample * sample );
 APTR GetSF2SampleData( struct SF2 * sf2, struct SF2_Sample * sample );
 APTR GetAmiSF_SampleData( struct SF2 * sf2, struct SF2_Sample * sample );

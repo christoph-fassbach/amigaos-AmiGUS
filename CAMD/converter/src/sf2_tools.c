@@ -149,72 +149,6 @@ struct AmiSF_Sample * CreateAmiSF_Sample(
   return result;
 }
 
-
-BOOL GetSf2InformationForIndex(
-  struct SF2_Preset ** preset,
-  struct SF2_Instrument ** instrument,
-  struct SF2_Sample ** sample,
-  struct SF2 * sf2,
-  const ULONG index ) {
-
-  struct SF2_Preset * p;
-  ULONG current = 0;
-
-  FOR_LIST( &( sf2->sf2_Presets ),
-            p,
-            struct SF2_Preset * ) {
-
-    struct SF2_Args * argsP;
-
-    FOR_LIST( &( p->sf2p_Args ),
-              argsP,
-              struct SF2_Args * ) {
-
-      const LONG instrumentIndex = argsP->sf2a_Values.sf2v_NextNumber;
-      struct SF2_Instrument * i = sf2->sf2_InstrumentArray[ instrumentIndex ];
-      struct SF2_Args * argsI;
-
-      if ( 0 > instrumentIndex ) {
-
-        // Skip over the de-duplicated instruments
-        continue;
-      }
-
-      FOR_LIST( &( i->sf2i_Args ),
-                argsI,
-                struct SF2_Args * ) {
-
-        const LONG sampleIndex = argsI->sf2a_Values.sf2v_NextNumber;
-        struct SF2_Sample * s = sf2->sf2_SampleArray[ sampleIndex ];
-
-        if ( 0 > sampleIndex ) {
-
-          // Skip over the de-duplicated samples
-          continue;
-        }
-        if ( index == current ) {
-
-          LOG_D(( "V: Found bank %ld preset %ld instrument %ld sample %ld\n",
-            p->sf2p_Bank,
-            p->sf2p_Common.sf2c_Number,
-            argsP->sf2a_Values.sf2v_NextNumber,
-            argsI->sf2a_Values.sf2v_NextNumber ));
-
-          *preset = p;
-          *instrument = i;
-          *sample = s;
-          return TRUE;
-        }
-        ++current;
-      }
-    }
-  }
-  *preset = NULL;
-  *instrument = NULL;
-  *sample = NULL;
-  return FALSE;
-}
-
 LONG GetSF2SampleSize( struct SF2_Sample * sample ) {
 
   LONG size = -1;
@@ -302,7 +236,6 @@ APTR GetAmiSF_SampleData( struct SF2 * sf2, struct SF2_Sample * sample ) {
 
   monoData = AllocMem( size >> 1, MEMF_ANY | MEMF_CLEAR );
 
-*/
-return NULL;
-
+  */
+  return NULL;
 }
