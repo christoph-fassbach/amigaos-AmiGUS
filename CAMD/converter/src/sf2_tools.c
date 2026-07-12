@@ -170,17 +170,35 @@ BOOL GetSf2InformationForIndex(
               argsP,
               struct SF2_Args * ) {
 
-      struct SF2_Instrument * i = 
-        sf2->sf2_InstrumentArray[ argsP->sf2a_Values.sf2v_NextNumber ];
+      const LONG instrumentIndex = argsP->sf2a_Values.sf2v_NextNumber;
+      struct SF2_Instrument * i = sf2->sf2_InstrumentArray[ instrumentIndex ];
       struct SF2_Args * argsI;
+
+      if ( 0 > instrumentIndex ) {
+
+        // Skip over the de-duplicated instruments
+        continue;
+      }
 
       FOR_LIST( &( i->sf2i_Args ),
                 argsI,
                 struct SF2_Args * ) {
 
-        struct SF2_Sample * s =
-          sf2->sf2_SampleArray[ argsI->sf2a_Values.sf2v_NextNumber ];
+        const LONG sampleIndex = argsI->sf2a_Values.sf2v_NextNumber;
+        struct SF2_Sample * s = sf2->sf2_SampleArray[ sampleIndex ];
+
+        if ( 0 > sampleIndex ) {
+
+          // Skip over the de-duplicated samples
+          continue;
+        }
         if ( index == current ) {
+
+          LOG_D(( "V: Found bank %ld preset %ld instrument %ld sample %ld\n",
+            p->sf2p_Bank,
+            p->sf2p_Common.sf2c_Number,
+            argsP->sf2a_Values.sf2v_NextNumber,
+            argsI->sf2a_Values.sf2v_NextNumber ));
 
           *preset = p;
           *instrument = i;

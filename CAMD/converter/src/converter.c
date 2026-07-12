@@ -434,10 +434,16 @@ VOID HandleListElement( ULONG index ) {
     return;
   }
 
-  LOG_D(( "V: Playing SF2 sample %s for index %ld, "
+  LOG_D(( "V: Playing SF2 sample %s for list index %ld, "
+          "bank %ld preset %ld instrument %ld sample %ld "
           "overall start %ld = 0, end %ld, "
           "loop start %ld, end %ld\n",
-          sf2Sample->sf2s_Name, index,
+          sf2Sample->sf2s_Name,
+          index,
+          sf2Preset->sf2p_Bank,
+          sf2Preset->sf2p_Common.sf2c_Number,
+          sf2Instrument->sf2i_Common.sf2c_Number,
+          sf2Sample->sf2s_Number,
           sf2Sample->sf2s_SampleStartOffset,
           sf2Sample->sf2s_SampleEndOffset - sf2Sample->sf2s_SampleStartOffset,
           sf2Sample->sf2s_LoopStartOffset - sf2Sample->sf2s_SampleStartOffset,

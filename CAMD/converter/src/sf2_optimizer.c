@@ -399,13 +399,13 @@ BOOL DeDuplicateInstruments( struct SF2 * sf2,
               argsPouter,
               struct SF2_Args * ) {
 
-      LONG nextOuter = argsPouter->sf2a_Values.sf2v_NextNumber;
-      ULONG lowOuter = argsPouter->sf2a_Values.sf2v_LowNote;
-      ULONG highOuter = argsPouter->sf2a_Values.sf2v_HighNote;
+      LONG instrumentOuter = argsPouter->sf2a_Values.sf2v_NextNumber;
+      ULONG instrumentLowOuter = argsPouter->sf2a_Values.sf2v_LowNote;
+      ULONG instrumentHighOuter = argsPouter->sf2a_Values.sf2v_HighNote;
 
       struct SF2_Args * argsPinner;
 
-      if ( 0 > nextOuter ) {
+      if ( 0 > instrumentOuter ) {
 
         continue;
       }
@@ -414,19 +414,19 @@ BOOL DeDuplicateInstruments( struct SF2 * sf2,
                 argsPinner,
                 struct SF2_Args * ) {
 
-        LONG nextInner = argsPinner->sf2a_Values.sf2v_NextNumber;
-        ULONG lowInner = argsPinner->sf2a_Values.sf2v_LowNote;
-        ULONG highInner = argsPinner->sf2a_Values.sf2v_HighNote;
+        LONG instrumentInner = argsPinner->sf2a_Values.sf2v_NextNumber;
+        ULONG instrumentLowInner = argsPinner->sf2a_Values.sf2v_LowNote;
+        ULONG instrumentHighInner = argsPinner->sf2a_Values.sf2v_HighNote;
 
-        if ( 0 > nextInner ) {
+        if ( 0 > instrumentInner ) {
 
           continue;
         }
 
         if (( argsPinner != argsPouter )
-          &&( nextInner == nextOuter )
-          && ( lowInner == lowOuter )
-          && ( highInner == highOuter )) {
+          && ( instrumentInner == instrumentOuter )
+          && ( instrumentLowInner == instrumentLowOuter )
+          && ( instrumentHighInner == instrumentHighOuter )) {
 
           LONG bank = preset->sf2p_Bank;
           LONG presetNumber = preset->sf2p_Common.sf2c_Number;
@@ -434,8 +434,9 @@ BOOL DeDuplicateInstruments( struct SF2 * sf2,
           LOG_V(( "V: Removing duplicate instrument p:%ld %ld "
                     "i:%ld >%ld <%ld\n",
                     bank, presetNumber,
-                    nextOuter, lowOuter, highOuter ));
+                    instrumentInner, instrumentLowInner, instrumentHighInner ));
 
+          // Mark this part of the preset to point at no instrument anymore!
           argsPinner->sf2a_Values.sf2v_NextNumber = -1;
           ++count;
         }
@@ -513,6 +514,12 @@ BOOL DeDuplicateSamples( struct SF2 * sf2,
             continue;
           }
 
+          /*
+           * Instruments can be gone if
+           * - not same instance &
+           * - pointing to same sample &
+           * - same note range (low + high)
+           */
           if (( argsIinner != argsIouter )
             && ( nextInner == nextOuter )
             && ( lowInner == lowOuter )
@@ -608,5 +615,6 @@ BOOL OptimizeSF2( struct SF2 * sf2,
                                 *maxProgress );
   }
 
+//hier: entferne kombinationen, wo sample note range und instrument note range nicht zusammen passen!
   return abort;
 }
