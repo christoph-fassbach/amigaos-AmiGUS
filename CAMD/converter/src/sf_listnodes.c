@@ -552,6 +552,7 @@ BOOL CreateSf2ListLabels(
 
   BOOL abort = FALSE;
 
+  /* Begin iteration over all presets - instruments - samples */
   struct SF2_Preset * tempPreset;
   ULONG count = 0;
 
@@ -583,6 +584,10 @@ BOOL CreateSf2ListLabels(
                 struct SF2_Args * ) {
 
         const LONG sampleIndex = argsI->sf2a_Values.sf2v_NextNumber;
+        const LONG sampleMin = argsI->sf2a_Values.sf2v_LowNote;
+        const LONG sampleMax = argsI->sf2a_Values.sf2v_HighNote;
+        const LONG instrumentMin = argsP->sf2a_Values.sf2v_LowNote;
+        const LONG instrumentMax = argsP->sf2a_Values.sf2v_HighNote;
 
         struct SF2_Sample * tempSample;
 
@@ -592,7 +597,16 @@ BOOL CreateSf2ListLabels(
           continue;
         }
 
+        if (( sampleMin > instrumentMax )
+          || ( instrumentMin > sampleMax)) {
+
+          // Skip over unreachable samples
+          continue;
+        }
+
         tempSample = sf2->sf2_SampleArray[ sampleIndex ];
+
+        /* Iteration payload below */
 
         AddSf2Label( labels,
                      tempPreset,
@@ -600,6 +614,9 @@ BOOL CreateSf2ListLabels(
                      tempInstrument,
                      &( argsI->sf2a_Values ),
                      tempSample );
+
+        /* Complete iteration over all presets - instruments - samples */
+
         ++count;
       }
     }
@@ -624,6 +641,7 @@ BOOL GetSf2InformationForIndex(
   struct SF2 * sf2,
   const ULONG index ) {
 
+  /* Begin iteration over all presets - instruments - samples */
   struct SF2_Preset * tempPreset;
   ULONG count = 0;
 
@@ -655,6 +673,10 @@ BOOL GetSf2InformationForIndex(
                 struct SF2_Args * ) {
 
         const LONG sampleIndex = argsI->sf2a_Values.sf2v_NextNumber;
+        const LONG sampleMin = argsI->sf2a_Values.sf2v_LowNote;
+        const LONG sampleMax = argsI->sf2a_Values.sf2v_HighNote;
+        const LONG instrumentMin = argsP->sf2a_Values.sf2v_LowNote;
+        const LONG instrumentMax = argsP->sf2a_Values.sf2v_HighNote;
 
         struct SF2_Sample * tempSample;
 
@@ -664,7 +686,16 @@ BOOL GetSf2InformationForIndex(
           continue;
         }
 
+        if (( sampleMin > instrumentMax )
+          || ( instrumentMin > sampleMax )) {
+
+          // Skip over unreachable samples
+          continue;
+        }
+
         tempSample = sf2->sf2_SampleArray[ sampleIndex ];
+
+        /* Iteration payload below */
 
         if ( index == count ) {
 
@@ -679,6 +710,9 @@ BOOL GetSf2InformationForIndex(
           *sample = ( APTR ) tempSample;
           return TRUE;
         }
+
+        /* Complete iteration over all presets - instruments - samples */
+
         ++count;
       }
     }
