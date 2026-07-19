@@ -329,3 +329,28 @@ VOID CancelVS1063Playback( APTR amiGUS ) {
           ReadCodecSPI( amiGUS, VS1063_CODEC_SCI_HDAT0 ),
           ReadCodecSPI( amiGUS, VS1063_CODEC_SCI_HDAT1 )));
 }
+
+VOID PauseVS1063Playback( APTR amiGUS, BOOL pause ) {
+
+  UWORD oldPlayMode = ReadVS1063Mem( amiGUS,
+                                     VS1063_CODEC_ADDRESS_PLAY_MODE );
+  UWORD newPlayMode = ( pause )
+                      ? ( oldPlayMode | VS1063_CODEC_F_PL_MO_PAUSE )
+                      : ( oldPlayMode & ~VS1063_CODEC_F_PL_MO_PAUSE );
+  UWORD fifoDma = ( pause )
+                  ? ( AMIGUS_CODEC_FIFO_F_DMA_DISABLE )
+                  : ( AMIGUS_CODEC_FIFO_F_DMA_ENABLE );
+
+  LOG_V(( "V: Pause %ld DMA 0x%04lx PlayMode 0x%04lx old 0x%04lx new 0x%04lx\n",
+          pause,
+          fifoDma,
+          VS1063_CODEC_ADDRESS_PLAY_MODE,
+          oldPlayMode,
+          newPlayMode ));
+  WriteReg16( amiGUS,
+              AMIGUS_CODEC_FIFO_CONTROL,
+              fifoDma );
+  WriteVS1063Mem( amiGUS,
+                  VS1063_CODEC_ADDRESS_PLAY_MODE,
+                  newPlayMode );
+}

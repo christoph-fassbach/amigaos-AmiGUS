@@ -341,9 +341,24 @@ ASM( VOID ) SAVEDS MHIPlay(
   REG( a6, struct AmiGUS_MHI * base )
 ) {
 
+  UBYTE oldStatus = handle->agch_Status;
+
   LOG_D(( "D: MHIPlay start\n" ));
-  StartAmiGusCodecPlayback( handle );
   handle->agch_Status = MHIF_PLAYING;
+  if ( MHIF_PAUSED != oldStatus ) {
+
+    StartAmiGusCodecPlayback( handle );
+    
+  } else {
+
+    // No idea why the original MASPlayer MHI driver
+    // (kind of the reference implementation!)
+    // actually handles resume aka unpause in the pause method.
+    // AmigaAMP + HippoPlayer just call play again...
+
+    PauseVS1063Playback( handle->agch_CardBase, FALSE );
+  }
+
   LOG_D(( "D: MHIPlay done\n" ));
   return;
 }
@@ -366,15 +381,25 @@ ASM( VOID ) SAVEDS MHIPause(
   REG( a6, struct AmiGUS_MHI * base )
 ) {
 
+  APTR card = handle->agch_CardBase;
+
   LOG_D(( "D: MHIPause start\n" ));
 
   if ( handle->agch_Status == MHIF_PAUSED ) {
 
+    // No idea why the original MASPlayer MHI driver
+    // (kind of the reference implementation!)
+    // actually handles resume aka unpause in the pause method.
+    // AmigaAMP + HippoPlayer just call play again...
+    // Anyway... we do the same... won't hurt...
+
     handle->agch_Status = MHIF_PLAYING;
+    PauseVS1063Playback( card, FALSE );
 
   } else if( handle->agch_Status == MHIF_PLAYING ) {
 
     handle->agch_Status = MHIF_PAUSED;
+    PauseVS1063Playback( card, TRUE );
   }
   LOG_D(( "D: MHIPause done\n" ));
   return;
