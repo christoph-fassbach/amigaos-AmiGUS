@@ -71,15 +71,14 @@ VOID StartAmiGusCodecPlayback( struct AmiGUS_MHI_Handle * handle ) {
               | AMIGUS_CODEC_INT_F_FIFO_EMPTY
               | AMIGUS_CODEC_INT_F_FIFO_WATERMRK );
   FillCodecBuffer( handle );
-  WriteReg16( card,
-              AMIGUS_CODEC_FIFO_CONTROL,
-              AMIGUS_CODEC_FIFO_F_DMA_ENABLE );
+  PauseVS1063Playback( card, FALSE );
 }
 
 VOID StopAmiGusCodecPlayback( struct AmiGUS_MHI_Handle * handle ) {
 
   APTR card = handle->agch_CardBase;
 
+  PauseVS1063Playback( card, FALSE );
   // Deactivate interrupts
   WriteReg16( card,
               AMIGUS_CODEC_INT_ENABLE,
