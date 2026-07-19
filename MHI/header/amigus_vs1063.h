@@ -105,4 +105,13 @@ ULONG GetVS1063EndFill( APTR amiGUS );
  */
 VOID CancelVS1063Playback( APTR amiGUS );
 
+/**
+ * Pauses the codec's playback during a song.
+ *
+ * @param amiGUS         Pointer to the AmiGUS codec's register bank.
+ * @param pause          TRUE to pause playback,
+ *                       FALSE to resume it.
+ */
+VOID PauseVS1063Playback( APTR amiGUS, BOOL pause );
+
 #endif /* AMIGUS_VS1063_H */

@@ -257,6 +257,8 @@
 
 #define VS1063_CODEC_F_SC_MULT_5_0X     0xE000 // page 48
 
+#define VS1063_CODEC_F_PL_MO_PAUSE      0x02   // page 72
+
 #define VS1063_CODEC_F_PL_MO_EQ5_ENABLE 0x20   // page 77
 #define VS1063_CODEC_F_EQ5_UPD_STROBE   0x01   // page 77
 
