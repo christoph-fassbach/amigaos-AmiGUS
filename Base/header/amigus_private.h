@@ -91,21 +91,22 @@
  */
 struct AmiGUS_Base {
   /* Library base stuff */
-  struct BaseLibrary          agb_BaseLibrary;   // Instance of library.h
+  struct BaseLibrary          agb_BaseLibrary;    // Instance of library.h
 
-  struct ExecBase           * agb_SysBase;       // Exec, allocations etc.
-  struct DosLibrary         * agb_DOSBase;       // DOS, logs and so on
-  struct Library            * agb_ExpansionBase; // Finding devices
-  struct Library            * agb_CardResource;  // PCMCIA support
+  struct ExecBase           * agb_SysBase;        // Exec, allocations etc.
+  struct DosLibrary         * agb_DOSBase;        // DOS, logs and so on
+  struct Library            * agb_ExpansionBase;  // Finding devices
+  struct Library            * agb_CardResource;   // PCMCIA support
 
   /* AmiGUS specific member variables */
-  struct List                 agb_Cards;         // List of AmiGUS_Privates
-  struct Interrupt          * agb_Interrupt;     // Struct for Zorro2 interrupts
-  struct CardHandle         * agb_CardHandle;    // Struct for card.resource
-  ULONG                       agb_Flags;         // See list of flags above!
+  struct List                 agb_Cards;          // List of AmiGUS_Privates
+  struct Interrupt          * agb_Z2Interrupt;    // Struct for Z2 interrupts
+  struct CardHandle         * agb_CardHandle;     // Struct for card.resource
+  struct Interrupt          * agb_GayleInterrupt; // Struct for Gayle interrupts
+  ULONG                       agb_Flags;          // See list of flags above!
 
-  BPTR                        agb_LogFile;       // Debug log file handle
-  APTR                        agb_LogMem;        // Debug log memory blob
+  BPTR                        agb_LogFile;        // Debug log file handle
+  APTR                        agb_LogMem;         // Debug log memory blob
 };
 
 /**

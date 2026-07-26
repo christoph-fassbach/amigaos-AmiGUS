@@ -28,7 +28,8 @@
 enum AmiGUS_TypeIds {
 
   AmiGUS_Zorro2 = 0x7000,   // Original Zorro2 card, avoiding Zero collisions
-  AmiGUS_mini               // PCMCIA card
+  AmiGUS_mini,              // PCMCIA card, via card.resource,
+  AmiGUS_mini_direct,       // PCMCIA card, gayle direct for 1.3 support
 };
 
 /**

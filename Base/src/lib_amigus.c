@@ -20,6 +20,7 @@
 #include <proto/dos.h>
 #include <proto/exec.h>
 
+#include "amigus_gayle.h"
 #include "amigus_pcmcia.h"
 #include "amigus_private.h"
 #include "amigus_zorro2.h"
@@ -101,8 +102,9 @@ LONG CustomLibInit( LIBRARY_TYPE * base, struct ExecBase * sysBase ) {
 #endif
 
   NEW_LIST( &( base->agb_Cards ));
-  AmiGusPcmcia_AddAll( &( base->agb_Cards ));
-  AmiGusZorro2_AddAll( &( base->agb_Cards ));
+//  AmiGusPcmcia_AddAll( &( base->agb_Cards ));
+//  AmiGusZorro2_AddAll( &( base->agb_Cards ));
+  AmiGusGayle_AddAll( &( base->agb_Cards ));
 
   LOG_D(( "D: AmiGUS base ready @ 0x%08lx\n", base ));
   return ENoError;
@@ -116,8 +118,10 @@ VOID CustomLibClose( LIBRARY_TYPE * base ) {
 
   APTR card;
 
-  AmiGusPcmcia_RemoveAll( &( base->agb_Cards ));
-  AmiGusZorro2_RemoveAll( &( base->agb_Cards ));
+//  AmiGusPcmcia_RemoveAll( &( base->agb_Cards ));
+//  AmiGusZorro2_RemoveAll( &( base->agb_Cards ));
+  AmiGusGayle_RemoveAll( &( base->agb_Cards ));
+
   while ( card = RemTail( &( base->agb_Cards ))) {
 
     FreeMem( card, sizeof( struct AmiGUS_Private ));

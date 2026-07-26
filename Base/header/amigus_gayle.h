@@ -16,52 +16,45 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef AMIGUS_PCMCIA_H
-#define AMIGUS_PCMCIA_H
+#ifndef AMIGUS_GAYLE_H
+#define AMIGUS_GAYLE_H
 
 #include <amigus/amigus.h>
 #include <exec/lists.h>
 
 /**
- * Discovers all AmiGUS cards connected to card.resource owned PCMCIA ports,
- * but likely this will be maximum 1 and an AmiGUS mini. ;)
+ * Discovers all AmiGUS cards connected to a Gayle PCMCIA port and not
+ * reachable via card.resource, but likely this will be 
+ * - on kick below 2.0,
+ * - maximum 1 and an AmiGUS mini. ;)
  *
  * @param cards List of cards to add the discovered AmiGUS cards to.
  */
-VOID AmiGusPcmcia_AddAll( struct List * cards );
+VOID AmiGusGayle_AddAll( struct List * cards );
 
 /**
- * Removes and frees all AmiGUS cards connected to card.resource owned
- * PCMCIA ports.
+ * Removes and frees all AmiGUS cards connected to Zorro2 slots.
  *
  * @param cards List of cards to free.
  */
-VOID AmiGusPcmcia_RemoveAll( struct List * cards );
+VOID AmiGusGayle_RemoveAll( struct List * cards );
 
 /**
  * Installs the interrupt handling and further dispatching by amigus.library
- * for card.resource owned PCMCIA.
- *
- * Needed because the card.resource only allows to have 1 active interrupt
- * client but AmiGUS may be used by e.g. 
- * - AmigaAMP via MHI, 
- * - HippoPlayer Wavetable,
- * - and Quake 1 (clickBOOM) via AHI
- * simultanously.
- * You wondered why the amigus.library even exists? - Here you are, welcome.
+ * for Gayle PCMCIA without card.resource.
  *
  * @return AmiGUS_NoError if successful,
  *         error code from enum AmiGUS_Errors otherwise.
  */
-LONG AmiGusPcmcia_InstallInterrupt( VOID );
+LONG AmiGusGayle_InstallInterrupt( VOID );
 
 /**
  * Removes the interrupt handling and further dispatching by amigus.library
- * for PCMCIA.
+ * for Gayle PCMCIA without card.resource.
  *
  * @return AmiGUS_NoError if successful,
  *         error code from enum AmiGUS_Errors otherwise.
  */
-LONG AmiGusPcmcia_RemoveInterrupt( VOID );
+LONG AmiGusGayle_RemoveInterrupt( VOID );
 
-#endif /* AMIGUS_PCMCIA_H */
+#endif /* AMIGUS_GAYLE_H */

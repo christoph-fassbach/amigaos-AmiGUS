@@ -46,7 +46,9 @@ VOID AmiGusZorro2_AddAll( struct List * cards ) {
   struct ConfigDev * cd_Wavetable = NULL;
   struct ConfigDev * cd_Codec = NULL;
   LONG count = 0;
-  
+
+  base->agb_Z2Interrupt = NULL;
+
   for ( ; ; ) {
 
     struct AmiGUS_Private * cardPrivate;
@@ -142,18 +144,18 @@ VOID AmiGusZorro2_AddAll( struct List * cards ) {
   if ( count ) {
 
     LOG_D(( "D: Found %ld AmiGUS Zorro2 cards.\n", count ));
-    base->agb_Interrupt = AllocMem( sizeof( struct Interrupt ),
+    base->agb_Z2Interrupt = AllocMem( sizeof( struct Interrupt ),
                                     MEMF_ANY | MEMF_CLEAR );
-    base->agb_Interrupt->is_Node.ln_Pri = 100;
-    base->agb_Interrupt->is_Node.ln_Name = "AmiGUS_Base_INT";
-    base->agb_Interrupt->is_Data = ( APTR ) base;
-    base->agb_Interrupt->is_Code = ( VOID ( * )( )) HandleInterrupt;
+    base->agb_Z2Interrupt->is_Node.ln_Pri = 100;
+    base->agb_Z2Interrupt->is_Node.ln_Name = "AmiGUS_Base_INT";
+    base->agb_Z2Interrupt->is_Data = ( APTR ) base;
+    base->agb_Z2Interrupt->is_Code = ( VOID ( * )( )) HandleInterrupt;
     LOG_D(( "D: Zorro2 interrupt prepared.\n" ));
 
   } else {
 
     LOG_D(( "D: No AmiGUS Zorro2 cards found.\n" ));
-    base->agb_Interrupt = NULL;
+    base->agb_Z2Interrupt = NULL;
   }
 
   return;
@@ -174,10 +176,10 @@ VOID AmiGusZorro2_RemoveAll( struct List * cards ) {
       LOG_I(( "I: done, %s free'd!\n", AmiGUS_Zorro2_Name ));
     }
   }
-  if( base->agb_Interrupt ) {
+  if( base->agb_Z2Interrupt ) {
 
-    FreeMem( base->agb_Interrupt, sizeof( struct Interrupt ));
-    base->agb_Interrupt = NULL;
+    FreeMem( base->agb_Z2Interrupt, sizeof( struct Interrupt ));
+    base->agb_Z2Interrupt = NULL;
     LOG_D(( "D: Free'd Zorro2 card interrupt.\n" ));
   }
 }
@@ -192,7 +194,7 @@ LONG AmiGusZorro2_InstallInterrupt( VOID ) {
     return AmiGUS_InterruptInstallFailed;
   }
   AmiGUS_Base->agb_Flags |= AMIGUS_BASE_F_ZORRO2_INT_SET;
-  AddIntServer( INTB_PORTS, AmiGUS_Base->agb_Interrupt );
+  AddIntServer( INTB_PORTS, AmiGUS_Base->agb_Z2Interrupt );
 
   Enable();
   LOG_I(( "I: Zorro2 interrupt successfully installed.\n" ));
@@ -209,7 +211,7 @@ LONG AmiGusZorro2_RemoveInterrupt( VOID ) {
     return AmiGUS_InterruptRemoveFailed;
   }
   AmiGUS_Base->agb_Flags &= ~AMIGUS_BASE_F_ZORRO2_INT_SET;
-  RemIntServer( INTB_PORTS, AmiGUS_Base->agb_Interrupt );
+  RemIntServer( INTB_PORTS, AmiGUS_Base->agb_Z2Interrupt );
 
   Enable();
   LOG_I(( "I: Zorro2 interrupt successfully removed.\n" ));
