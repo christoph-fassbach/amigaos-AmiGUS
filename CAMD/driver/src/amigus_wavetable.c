@@ -96,8 +96,8 @@ VOID StartAmiGusWavetablePlayback( struct AmiSF_Note * note,
   WriteReg32( card, AMIGUS_WT_CHANNEL_END_32BIT, sample->amisfs_EndOffset );
   WriteReg32( card, AMIGUS_WT_CHANNEL_RATE_32BIT, note->amisfn_PlaybackRate );
 
-  WriteReg16( card, AMIGUS_WT_CHANNEL_VOLUME_LEFT, 50000 );
-  WriteReg16( card, AMIGUS_WT_CHANNEL_VOLUME_RIGHT, 50000 );
+  WriteReg16( card, AMIGUS_WT_CHANNEL_VOLUME_LEFT, 0x4000 );
+  WriteReg16( card, AMIGUS_WT_CHANNEL_VOLUME_RIGHT, 0x4000 );
 
   WriteReg16( card, AMIGUS_WT_CHANNEL_ATTACK, note->amisfn_Attack );
   WriteReg16( card, AMIGUS_WT_CHANNEL_DECAY, note->amisfn_Decay );
