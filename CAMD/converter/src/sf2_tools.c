@@ -104,21 +104,58 @@ struct AmiSF_Note * CreateAmiSF_Note(
                argsP,
                struct SF2_Args * ) {
 
-    if (( argsP->sf2a_Values.sf2v_LowNote < targetNote )        // TODO: >= ? <= ?
-      && ( argsP->sf2a_Values.sf2v_HighNote > targetNote )) {
+    const LONG instrumentMin = argsP->sf2a_Values.sf2v_LowNote;
+    const LONG instrumentMax = argsP->sf2a_Values.sf2v_HighNote;
+    const LONG instrumentIndex = argsP->sf2a_Values.sf2v_NextNumber;
 
-      LOG_D(( "D: Found %ld < %ld < %ld with A:%ld D:%ld S:%ld R:%ld\n",
-        argsP->sf2a_Values.sf2v_LowNote,
+    if (( instrumentMin <= targetNote )
+      && ( instrumentMax >= targetNote )
+      && ( 0 <= instrumentIndex )) {
+
+      //struct SF2_Instrument * tempInstrument= sf2->sf2_InstrumentArray[ instrumentIndex ];
+      
+
+      LOG_D(( "D: Found in P-%ld %ld < %ld < %ld with A:%ld D:%ld S:%ld R:%ld -> I: %ld\n",
+        preset->sf2p_Common.sf2c_Number,
+        instrumentMin,
         targetNote,
-        argsP->sf2a_Values.sf2v_HighNote,
+        instrumentMax,
         argsP->sf2a_Values.sf2v_Attack,
         argsP->sf2a_Values.sf2v_Decay,
         argsP->sf2a_Values.sf2v_Sustain,
-        argsP->sf2a_Values.sf2v_Release ));
+        argsP->sf2a_Values.sf2v_Release,
+        instrumentIndex ));
     }
   }
-  // TODO: Where is local? where is global?
-  // TODO: Instrument?
+
+  FOR_LIST( &( instrument->sf2i_Args ),
+            argsI,
+            struct SF2_Args * ) {
+
+    const LONG sampleIndex = argsI->sf2a_Values.sf2v_NextNumber;
+    const LONG sampleMin = argsI->sf2a_Values.sf2v_LowNote;
+    const LONG sampleMax = argsI->sf2a_Values.sf2v_HighNote;
+
+    if (( sampleMin <= targetNote )        // TODO: >= ? <= ?
+      && ( sampleMax >= targetNote )
+      && ( 0 <= sampleIndex )) {
+
+      LOG_D(( "D: Found in I-%ld %ld < %ld < %ld with A:%ld D:%ld S:%ld R:%ld -> S: %ld\n",
+        instrument->sf2i_Common.sf2c_Number,
+        sampleMin,
+        targetNote,
+        sampleMax,
+        argsI->sf2a_Values.sf2v_Attack,
+        argsI->sf2a_Values.sf2v_Decay,
+        argsI->sf2a_Values.sf2v_Sustain,
+        argsI->sf2a_Values.sf2v_Release,
+        sampleIndex ));
+    }
+  }
+  LOG_D(( "D: Found S-%ld\n", sample->sf2s_Number ));
+
+  // TODO: Where is local? where is global? find ADSR combination logic again
+
   LOG_D(( "V: Preset A: %lx D: %lx S: %lx R: %lx\n", 0, 0, 0, 0 ));
   LOG_D(( "V: Instr. A: %lx D: %lx S: %lx R: %lx\n", 0, 0, 0, 0 ));
 
