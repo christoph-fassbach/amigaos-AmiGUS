@@ -242,7 +242,13 @@ test: FOLDERS $(LIB_OBJS)
 
 ###############################################################################
 
-support: FOLDERS amigus_lib_check get_mem_log
+support: FOLDERS amigus_gayle_direct
+#amigus_lib_check get_mem_log
+
+amigus_gayle_direct:
+	$(CC) $(CFLAGS) support/$@.o support/$@.c
+	$(LD) $(LFLAGS) target/$@ $(LFLAGS1) $(LFLAGST1) support/$@.o $(LFLAGST2)
+	-curl --connect-timeout 2 --netrc --upload-file target/$@       ftp://192.168.0.12/ram/AmiGUS-Gayle-direct
 
 get_mem_log:
 	$(CC) $(CFLAGS) support/$@.o support/$@.c
