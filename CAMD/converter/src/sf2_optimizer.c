@@ -155,10 +155,10 @@ BOOL FlattenPresetHierarchy( struct SF2 * sf2,
       struct SF2_ArgValues ArgValues;
       ArgValues.sf2v_LowNote = 0;
       ArgValues.sf2v_HighNote = 127;
-      ArgValues.sf2v_Attack = -12000;
-      ArgValues.sf2v_Decay = -12000;
-      ArgValues.sf2v_Sustain = 0;
-      ArgValues.sf2v_Release = -12000;
+      ArgValues.sf2v_Attack = PRESET_DEFAULT_ATTACK_VALUE;
+      ArgValues.sf2v_Decay = PRESET_DEFAULT_DECAY_VALUE;
+      ArgValues.sf2v_Sustain = PRESET_DEFAULT_SUSTAIN_VALUE;
+      ArgValues.sf2v_Release = PRESET_DEFAULT_RELEASE_VALUE;
 
       LOG_FPH(( "V: Preset %ld-%ld\n",
                 preset->sf2p_Bank,
@@ -280,10 +280,10 @@ BOOL FlattenInstrumentHierarchy( struct SF2 * sf2,
       struct SF2_ArgValues ArgValues;
       ArgValues.sf2v_LowNote = 0;
       ArgValues.sf2v_HighNote = 127;
-      ArgValues.sf2v_Attack = -12000;
-      ArgValues.sf2v_Decay = -12000;
-      ArgValues.sf2v_Sustain = 0;
-      ArgValues.sf2v_Release = -12000;
+      ArgValues.sf2v_Attack = INSTRUMENT_DEFAULT_ATTACK_VALUE;
+      ArgValues.sf2v_Decay = INSTRUMENT_DEFAULT_DECAY_VALUE;
+      ArgValues.sf2v_Sustain = INSTRUMENT_DEFAULT_SUSTAIN_VALUE;
+      ArgValues.sf2v_Release = INSTRUMENT_DEFAULT_RELEASE_VALUE;
 
       LOG_FIH(( "V: Instrument %ld - %s\n",
                 instrument->sf2i_Common.sf2c_Number,

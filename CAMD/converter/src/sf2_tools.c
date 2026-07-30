@@ -79,19 +79,27 @@ LONG GetTargetSampleRate( LONG sourceNote, LONG sourceRate, LONG targetNote ) {
   return targetRegisterValue;
 }
 
+ULONG GetTargetADSR( LONG timecents ) {
+
+  return ( ULONG ) timecents;
+}
+
 struct AmiSF_Note * CreateAmiSF_Note(
   struct SF2_Preset * preset,
   struct SF2_Instrument * instrument,
   struct SF2_Sample * sample,
   ULONG targetNote ) {
 
+  // ADSR combination logic is in 
+  // "SoundFont Technical Specification Version 2.01 July 23, 1998"
+  // aka SFSpec21.pdf, p.57
+  LONG effectiveAttack  = INSTRUMENT_DEFAULT_ATTACK_VALUE;
+  LONG effectiveDecay   = INSTRUMENT_DEFAULT_DECAY_VALUE;
+  LONG effectiveSustain = INSTRUMENT_DEFAULT_SUSTAIN_VALUE;
+  LONG effectiveRelease = INSTRUMENT_DEFAULT_RELEASE_VALUE;
+
   struct SF2_Args * argsP;
   struct SF2_Args * argsI;
-  
-  WORD effectiveAttack;
-  WORD effectiveDecay;
-  WORD effectiveSustain;
-  WORD effectiveRelease;
 
   struct AmiSF_Note * result = AllocMem( sizeof( struct AmiSF_Note ),
                                          MEMF_ANY | MEMF_CLEAR );
@@ -100,33 +108,9 @@ struct AmiSF_Note * CreateAmiSF_Note(
                                                      sample->sf2s_SampleRate,
                                                      targetNote );
 
-  FOR_LIST( &( preset->sf2p_Args ),
-               argsP,
-               struct SF2_Args * ) {
 
-    const LONG instrumentMin = argsP->sf2a_Values.sf2v_LowNote;
-    const LONG instrumentMax = argsP->sf2a_Values.sf2v_HighNote;
-    const LONG instrumentIndex = argsP->sf2a_Values.sf2v_NextNumber;
 
-    if (( instrumentMin <= targetNote )
-      && ( instrumentMax >= targetNote )
-      && ( 0 <= instrumentIndex )) {
-
-      //struct SF2_Instrument * tempInstrument= sf2->sf2_InstrumentArray[ instrumentIndex ];
-      
-
-      LOG_D(( "D: Found in P-%ld %ld < %ld < %ld with A:%ld D:%ld S:%ld R:%ld -> I: %ld\n",
-        preset->sf2p_Common.sf2c_Number,
-        instrumentMin,
-        targetNote,
-        instrumentMax,
-        argsP->sf2a_Values.sf2v_Attack,
-        argsP->sf2a_Values.sf2v_Decay,
-        argsP->sf2a_Values.sf2v_Sustain,
-        argsP->sf2a_Values.sf2v_Release,
-        instrumentIndex ));
-    }
-  }
+  LOG_D(( "D: Found S-%ld\n", sample->sf2s_Number ));
 
   FOR_LIST( &( instrument->sf2i_Args ),
             argsI,
@@ -150,14 +134,75 @@ struct AmiSF_Note * CreateAmiSF_Note(
         argsI->sf2a_Values.sf2v_Sustain,
         argsI->sf2a_Values.sf2v_Release,
         sampleIndex ));
+
+      effectiveAttack = argsI->sf2a_Values.sf2v_Attack;
+      effectiveDecay = argsI->sf2a_Values.sf2v_Decay;
+      effectiveSustain = argsI->sf2a_Values.sf2v_Sustain;
+      effectiveRelease = argsI->sf2a_Values.sf2v_Release;
     }
   }
-  LOG_D(( "D: Found S-%ld\n", sample->sf2s_Number ));
 
-  // TODO: Where is local? where is global? find ADSR combination logic again
+  FOR_LIST( &( preset->sf2p_Args ),
+            argsP,
+            struct SF2_Args * ) {
 
-  LOG_D(( "V: Preset A: %lx D: %lx S: %lx R: %lx\n", 0, 0, 0, 0 ));
-  LOG_D(( "V: Instr. A: %lx D: %lx S: %lx R: %lx\n", 0, 0, 0, 0 ));
+    const LONG instrumentMin = argsP->sf2a_Values.sf2v_LowNote;
+    const LONG instrumentMax = argsP->sf2a_Values.sf2v_HighNote;
+    const LONG instrumentIndex = argsP->sf2a_Values.sf2v_NextNumber;
+
+    if (( instrumentMin <= targetNote )
+      && ( instrumentMax >= targetNote )
+      && ( 0 <= instrumentIndex )) {
+
+      //struct SF2_Instrument * tempInstrument= sf2->sf2_InstrumentArray[ instrumentIndex ];
+      
+
+      LOG_D(( "D: Found in P-%ld %ld < %ld < %ld with A:%ld D:%ld S:%ld R:%ld -> I: %ld\n",
+        preset->sf2p_Common.sf2c_Number,
+        instrumentMin,
+        targetNote,
+        instrumentMax,
+        argsP->sf2a_Values.sf2v_Attack,
+        argsP->sf2a_Values.sf2v_Decay,
+        argsP->sf2a_Values.sf2v_Sustain,
+        argsP->sf2a_Values.sf2v_Release,
+        instrumentIndex ));
+
+      if ( PRESET_DEFAULT_ATTACK_VALUE == argsP->sf2a_Values.sf2v_Attack ) {
+
+        effectiveAttack += argsP->sf2a_Values.sf2v_Attack;
+      }
+      if ( PRESET_DEFAULT_DECAY_VALUE == argsP->sf2a_Values.sf2v_Decay ) {
+
+        effectiveDecay += argsP->sf2a_Values.sf2v_Decay;
+      }
+      if ( PRESET_DEFAULT_SUSTAIN_VALUE == argsP->sf2a_Values.sf2v_Sustain ) {
+
+        effectiveSustain += argsP->sf2a_Values.sf2v_Sustain;
+      }
+      if ( PRESET_DEFAULT_RELEASE_VALUE == argsP->sf2a_Values.sf2v_Release ) {
+
+        effectiveRelease += argsP->sf2a_Values.sf2v_Release;
+      }
+    }
+  }
+
+  LOG_D(( "V: Effective A: %lx D: %lx S: %lx R: %lx\n",
+          effectiveAttack,
+          effectiveDecay,
+          effectiveSustain,
+          effectiveRelease ));
+
+  result->amisfn_Attack = GetTargetADSR( effectiveAttack );
+  result->amisfn_Decay = GetTargetADSR( effectiveDecay );
+  result->amisfn_Sustain = GetTargetADSR( effectiveSustain );
+  result->amisfn_Release = GetTargetADSR( effectiveRelease );
+
+  LOG_D(( "V: Final A: %lx D: %lx S: %lx R: %lx\n",
+          result->amisfn_Attack,
+          result->amisfn_Decay,
+          result->amisfn_Sustain,
+          result->amisfn_Release ));
 
   return result;
 }
