@@ -237,7 +237,19 @@ $(BDIR)%-$(APP_CPU)-$(APP_LOG).o: $(SDIR)%.asm $(HDIR)*
 
 ###############################################################################
 
-test: 
+test: test_sf2_tools
+
+test_sf2_tools: FOLDERS $(LIB_OBJS)
+	@echo " "
+	$(CC) $(CFLAGS) test/$@.o test/$@.c
+	$(LD) $(LFLAGS) test/$@ $(LFLAGS1) $(LFLAGST1) test/$@.o \
+            $(BDIR)sf2_tools-$(APP_CPU)-$(APP_LOG).o \
+            $(BDIR)support-$(APP_CPU)-$(APP_LOG).o \
+            $(BDIR)debug-$(APP_CPU)-$(APP_LOG).o \
+            $(LFLAGST2)
+	@echo " "
+	$(RUNNER) test/$@
+	-@$(RM) test/$@ test/$@.o $(RM_SUFFIX)
 
 ###############################################################################
 

@@ -79,9 +79,79 @@ LONG GetTargetSampleRate( LONG sourceNote, LONG sourceRate, LONG targetNote ) {
   return targetRegisterValue;
 }
 
-ULONG GetTargetADSR( LONG timecents ) {
+UWORD GetTargetADSR( LONG timecents ) {
 
-  return ( ULONG ) timecents;
+  // 1200 * ln(seconds)/ln(2) = timecents
+  // => seconds = e^( timecents * ( ln( 2 ) / 1200 ) )
+  //              | |     |       | |   | |    |   | |
+  //              | |     |       | |   a |    |   | |
+  //              | |     |       | +--b--+    c   | |
+  //              | |     e       +---------d------+ |
+  //              | +-----------f--------------------+
+  //              +-------------g--------------------+
+  double a = IEEEDPFlt( 2 );
+  double b = IEEEDPLog( a );
+  double c = IEEEDPFlt( 1200 );
+  double d = IEEEDPDiv( b, c );
+  double e = IEEEDPFlt( timecents );
+  double f = IEEEDPMul( e, d );
+  double g = IEEEDPExp( f );
+
+  // increment = ( maxULONG / ( seconds  * 192.000 ))
+  //             |     |      |    |          |  ||
+  //             |     |      |    g          h  ||
+  //             |     j      +----------i-------+|
+  //             +----------k---------------------+
+  double h = IEEEDPFlt( 192000 );
+  double i = IEEEDPMul( g, h );
+  double j = IEEEDPMul( IEEEDPFlt( 0x7fFFffFF ), a );
+  double k = IEEEDPDiv( j, i );
+
+  // exponent = floor( ( ln( increment ) / ln( 2 )))
+  //            |      | |       |     |   |   | |||
+  //            |      | |       k     |   |   a |||
+  //            |      | +------l------+   +--b--+||
+  //            |      +-----------------m--------+|
+  //            +-----------------n----------------+
+
+  double l = IEEEDPLog( k );
+  double m = IEEEDPDiv( l, b );
+  double n = IEEEDPFloor( m );
+  const LONG idealExponent = IEEEDPFix( n );
+  const LONG exponent = MIN( idealExponent, 0x0000000F );
+
+  // mantissa = ( increment / ( 2 ^ exponent ))
+  // mantissa = ( increment / ( e ^ ( exponent * ln( 2 ))))
+  //            |     |       |     |     |      |   | ||||
+  //            |     |       |     |     |      |   a ||||
+  //            |     |       |     |     o      +--b--+|||
+  //            |     |       |     +----------p--------+||
+  //            |     k       +---q----------------------+|
+  //            +-----------r-----------------------------+
+  double o = IEEEDPFlt( exponent );
+  double p = IEEEDPMul( o, b );
+  double q = IEEEDPExp( p );
+  double r = IEEEDPDiv( k, q );
+  const LONG idealMantissa = IEEEDPFix( r );
+  const LONG mantissa = MIN( idealMantissa, 0x00000FFF );
+  const UWORD adsr = ( exponent << 12 ) | mantissa;
+
+  LOG_D(( "D: %ld timecents => %lu ms => increment %lu"
+          " => %lu * 2 ^ %lu"
+          " => %lu * 2 ^ %lu"
+          " => %lu adsr => %lu increment => %lu ms\n",
+          timecents,
+          IEEEDPFix( IEEEDPMul( g, IEEEDPFlt( 1000 ))),
+          IEEEDPFix( IEEEDPDiv( k, a )) << 1,
+          IEEEDPFix( IEEEDPDiv( k, IEEEDPExp( IEEEDPMul( n, b )))),
+          idealExponent,
+          mantissa,
+          exponent,
+          adsr,
+          mantissa << exponent,
+          (((( ULONG ) 0xffFFffFF ) / 192 ) / mantissa ) >> exponent ));
+
+  return 0;//adsr;
 }
 
 struct AmiSF_Note * CreateAmiSF_Note(
