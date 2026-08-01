@@ -21,6 +21,8 @@
 
 #include <exec/types.h>
 
+#include "SDI_compiler.h"
+
 /*
  * defines are limited to 32 chars due to a SAS/C insufficiency !!!
  *
@@ -282,7 +284,10 @@
  *
  * @return 16bit word read from the AmiGUS card.
  */
-UWORD ReadReg16( APTR amiGUS, ULONG offset );
+INLINE UWORD ReadReg16( APTR amiGUS, ULONG offset ) {
+
+  return *(( UWORD * )(( ULONG ) amiGUS + offset ));
+}
 
 /**
  * Reads an unsigned 32bit long from the AmiGUS card's registers.
@@ -292,7 +297,10 @@ UWORD ReadReg16( APTR amiGUS, ULONG offset );
  *
  * @return 32bit long read from the AmiGUS card.
  */
-ULONG ReadReg32( APTR amiGUS, ULONG offset );
+INLINE ULONG ReadReg32( APTR amiGUS, ULONG offset ) {
+
+  return *(( ULONG * )(( ULONG ) amiGUS + offset ));
+}
 
 /**
  * Reads an unsigned 16bit word from the AmiGUS card's codec's SPI interface.
@@ -323,7 +331,10 @@ UWORD ReadVS1063Mem( APTR amiGUS, UWORD address );
  *
  * @return 16bit word read from the AmiGUS card.
  */
-VOID WriteReg16( APTR amiGUS, ULONG offset, UWORD value );
+INLINE VOID WriteReg16( APTR amiGUS, ULONG offset, UWORD value ) {
+
+  *(( UWORD * )(( ULONG ) amiGUS + offset )) = value;
+}
 
 /**
  * Writes an unsigned 32bit long to the AmiGUS card's registers.
@@ -334,7 +345,10 @@ VOID WriteReg16( APTR amiGUS, ULONG offset, UWORD value );
  *
  * @return 32bit word long from the AmiGUS card.
  */
-VOID WriteReg32( APTR amiGUS, ULONG offset, ULONG value );
+INLINE VOID WriteReg32( APTR amiGUS, ULONG offset, ULONG value ) {
+
+  *(( ULONG * )(( ULONG ) amiGUS + offset )) = value;
+}
 
 /**
  * Writes an unsigned 16bit word to the AmiGUS card's codec's SPI interface.
