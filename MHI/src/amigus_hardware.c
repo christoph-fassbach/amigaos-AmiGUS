@@ -90,6 +90,16 @@ INLINE VOID WriteSPI(
 // - or its includes -
 // in most compilers, e.g. SAS/C and vbcc.
 
+UWORD ReadReg16( APTR amiGUS, ULONG offset ) {
+
+  return ReadReg16Fast( amiGUS, offset );
+}
+
+ULONG ReadReg32( APTR amiGUS, ULONG offset ) {
+
+  return ReadReg32Fast( amiGUS, offset );
+}
+
 UWORD ReadCodecSPI( APTR amiGUS, UWORD SPIregister ) {
 
   return ReadSPI( amiGUS,

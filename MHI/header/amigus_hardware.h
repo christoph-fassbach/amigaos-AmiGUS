@@ -284,7 +284,7 @@
  *
  * @return 16bit word read from the AmiGUS card.
  */
-INLINE UWORD ReadReg16( APTR amiGUS, ULONG offset ) {
+INLINE UWORD ReadReg16Fast( APTR amiGUS, ULONG offset ) {
 
   return *(( UWORD * )(( ULONG ) amiGUS + offset ));
 }
@@ -297,10 +297,38 @@ INLINE UWORD ReadReg16( APTR amiGUS, ULONG offset ) {
  *
  * @return 32bit long read from the AmiGUS card.
  */
-INLINE ULONG ReadReg32( APTR amiGUS, ULONG offset ) {
+INLINE ULONG ReadReg32Fast( APTR amiGUS, ULONG offset ) {
 
   return *(( ULONG * )(( ULONG ) amiGUS + offset ));
 }
+
+/**
+ * Reads an unsigned 16bit long from the AmiGUS card's registers, too,
+ * but taking care to REALLY read the f*cking VOLATILE registers...
+ *
+ * And takes care for another round of compiler fuck-up - would be too easy
+ * if volatile would work, right? RIGHT? Yeah, RIGHT!
+ *
+ * @param amiGUS Pointer to the AmiGUS codec's register bank.
+ * @param offset Offset of the register to read.
+ *
+ * @return 16bit word read from the AmiGUS card.
+ */
+UWORD ReadReg16( APTR amiGUS, ULONG offset );
+
+/**
+ * Reads an unsigned 32bit long from the AmiGUS card's registers, too,
+ * but taking care to REALLY read the f'cking VOLATILE registers...
+ *
+ * And takes care for another round of compiler fuck-up - would be too easy
+ * if volatile would work, right? RIGHT? Yeah, RIGHT!
+ *
+ * @param amiGUS Pointer to the AmiGUS codec's register bank.
+ * @param offset Offset of the register to read.
+ *
+ * @return 32bit long read from the AmiGUS card.
+ */
+ULONG ReadReg32( APTR amiGUS, ULONG offset );
 
 /**
  * Reads an unsigned 16bit word from the AmiGUS card's codec's SPI interface.

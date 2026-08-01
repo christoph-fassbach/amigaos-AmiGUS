@@ -22,9 +22,19 @@
  * Low-Level hardware access functions - public function definitions.
  *****************************************************************************/
 
-// All went to header, as INLINE does not work outside own file
+// Lowest level went to header, as INLINE does not work outside own file
 // - or its includes -
 // in most compilers, e.g. SAS/C and vbcc.
+
+UWORD ReadReg16( APTR amiGUS, ULONG offset ) {
+
+  return ReadReg16Fast( amiGUS, offset );
+}
+
+ULONG ReadReg32( APTR amiGUS, ULONG offset ) {
+
+  return ReadReg32Fast( amiGUS, offset );
+}
 
 /******************************************************************************
  * Low-Level hardware feature lookup tables - public data definitions.
