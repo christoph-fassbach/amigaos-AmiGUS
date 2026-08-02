@@ -85,6 +85,8 @@ VOID StartAmiGusWavetablePlayback( struct AmiSF_Note * note,
 
   struct AmiGUS_CAMD * base = AmiGUS_CAMD_Base;
   APTR card = base->agb_AmiGUS->agus_WavetableBase;
+  const UWORD channelVolumeMax = 0x4001;
+  const UWORD sustainVolume = ( channelVolumeMax * note->amisfn_Sustain ) >> 16;
 
   // TODO: Obviously, channel allocation/scheduling missing!
   WriteReg16( card, AMIGUS_WT_CHANNEL_NUMBER, 0x0000 );
@@ -98,12 +100,12 @@ VOID StartAmiGusWavetablePlayback( struct AmiSF_Note * note,
   WriteReg32( card, AMIGUS_WT_CHANNEL_RATE_32BIT, note->amisfn_PlaybackRate );
 
   // TODO: Rework the below, obviously, state dependent!
-  WriteReg16( card, AMIGUS_WT_CHANNEL_VOLUME_LEFT, 0x4001 );
-  WriteReg16( card, AMIGUS_WT_CHANNEL_VOLUME_RIGHT, 0x4001 );
+  WriteReg16( card, AMIGUS_WT_CHANNEL_VOLUME_LEFT, channelVolumeMax );
+  WriteReg16( card, AMIGUS_WT_CHANNEL_VOLUME_RIGHT, channelVolumeMax );
 
   WriteReg16( card, AMIGUS_WT_CHANNEL_ATTACK, note->amisfn_Attack );
   WriteReg16( card, AMIGUS_WT_CHANNEL_DECAY, note->amisfn_Decay );
-  WriteReg16( card, AMIGUS_WT_CHANNEL_SUSTAIN, note->amisfn_Sustain );
+  WriteReg16( card, AMIGUS_WT_CHANNEL_SUSTAIN, sustainVolume );
   WriteReg16( card, AMIGUS_WT_CHANNEL_RELEASE, note->amisfn_Release );
 
   WriteReg16( card,
