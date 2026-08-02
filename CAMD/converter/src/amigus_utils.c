@@ -34,6 +34,7 @@
  *****************************************************************************/
 
 LONG PlaySampleMessageName     = PLAY_SAMPLE_MESSAGE_NAME;
+LONG StopSampleMessageName     = STOP_SAMPLE_MESSAGE_NAME;
 LONG PlayNoteMessageName       = PLAY_NOTE_MESSAGE_NAME;
 LONG PlayInstrumentMessageName = PLAY_INSTRUMENT_MESSAGE_NAME;
 LONG LoadSoundFontMessageName  = LOAD_SOUNDFONT_NESSAGE_NAME;
@@ -170,6 +171,20 @@ struct PlaySampleMessage * CreateAmigusPlaySampleMessage(
   return message;
 }
 
+struct StopSampleMessage * CreateAmigusStopSampleMessage(
+  struct MsgPort * replyPort,
+  APTR playMessage ) {
+
+  struct StopSampleMessage * message =
+    CreateAmigusMessage( replyPort,
+                         sizeof( struct StopSampleMessage ),
+                         &( StopSampleMessageName ));
+  // Only meant for finding WHAT to stop - never to be accessed!
+  message->playMessage = playMessage;
+
+  return message;
+}
+
 struct PlayNoteMessage * CreateAmigusPlayNoteMessage(
   struct MsgPort * replyPort ) {
 
@@ -230,6 +245,12 @@ VOID DeleteAmigusMessage( APTR message ) {
       FreeMem( sampleMessage->sample, sizeof( struct AmiSF_Sample ));
       FreeMem( sampleMessage->note, sizeof( struct AmiSF_Note ));
       FreeMem( sampleMessage, sizeof( struct PlaySampleMessage ));
+      break;
+    }
+    case STOP_SAMPLE_MESSAGE_NAME: {
+
+      LOG_D(( "D: Deleting StopSampleMessage 0x%08lx...\n", mess ));
+      FreeMem( message, sizeof( struct StopSampleMessage ));
       break;
     }
     case PLAY_NOTE_MESSAGE_NAME: {

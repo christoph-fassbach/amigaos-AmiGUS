@@ -392,6 +392,7 @@ struct AmiSF_Sample * CreateAmiSF_Sample(
   result->amisfs_Flags =
       AMISF_NOTE_RESOLUTION_16BIT // SF2 only knows 16 or 24bit
     | AMISF_NOTE_LOOPED_MASK
+    | AMISF_NOTE_ENVELOPE_MASK
     | AMISF_NOTE_NOT_IN_FILE
     | AMISF_NOTE_IN_RAM
     | AMISF_NOTE_NOT_IN_CARD;

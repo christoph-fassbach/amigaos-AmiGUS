@@ -315,6 +315,7 @@
 #define AMIGUS_WT_F_RESET_STROBE        0x0000
 
 #define AMIGUS_WT_F_CONTROL_INTERPOLATE 0x0004
+#define AMIGUS_WT_F_CONTROL_KEY_ON      0x4000
 #define AMIGUS_WT_F_CONTROL_START       0x8000
 
 /******************************************************************************

@@ -414,7 +414,7 @@ VOID HandleListElement( ULONG index ) {
   struct SF2_Preset * sf2Preset;
   struct SF2_Instrument * sf2Instrument;
   struct SF2_Sample * sf2Sample;
-  struct PlaySampleMessage * message;
+  struct Message * message;
   struct AmiSF_Note * note;
   struct AmiSF_Sample * sample;
   APTR data;
@@ -467,12 +467,17 @@ VOID HandleListElement( ULONG index ) {
           sample->amisfs_LoopOffset - sample->amisfs_StartOffset,
           sample->amisfs_EndOffset - sample->amisfs_StartOffset,
           note->amisfn_PlaybackRate ));
-  message = CreateAmigusPlaySampleMessage(
+  message = ( struct Message * ) CreateAmigusPlaySampleMessage(
     SF_Converter_Base->sfc_MidiReplyPort,
     note,
     sample,
     data );
-  SendAmigusMessage(( struct Message * ) message );
+  SendAmigusMessage( message );
+  Delay( 10 );
+  message = ( struct Message * ) CreateAmigusStopSampleMessage(
+    SF_Converter_Base->sfc_MidiReplyPort,
+    message );
+  SendAmigusMessage( message );
   LOG_D(( "V: Got note at 0x%08lx\n", note ));
 }
 

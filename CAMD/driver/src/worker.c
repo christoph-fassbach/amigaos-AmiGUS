@@ -71,6 +71,13 @@ VOID HandleMessage( struct Message * message ) {
       ReplyMsg( message );
       break;
     }
+    case STOP_SAMPLE_MESSAGE_NAME: {
+
+      StopAmiGusWavetablePlayback( 0 );
+      LOG_D(( "D: Replying StopSampleMessage 0x%08lx...\n", message ));
+      ReplyMsg( message );
+      break;
+    }
     case PLAY_NOTE_MESSAGE_NAME: {
 
       LOG_D(( "D: Replying PlayNoteMessage 0x%08lx...\n", message ));

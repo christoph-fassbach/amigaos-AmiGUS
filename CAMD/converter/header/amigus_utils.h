@@ -31,6 +31,10 @@ struct PlaySampleMessage * CreateAmigusPlaySampleMessage(
   struct AmiSF_Sample * sample,
   APTR data );
 
+struct StopSampleMessage * CreateAmigusStopSampleMessage(
+  struct MsgPort * replyPort,
+  APTR playMessage );
+
 struct PlayNoteMessage * CreateAmigusPlayNoteMessage(
   struct MsgPort * replyPort );
 

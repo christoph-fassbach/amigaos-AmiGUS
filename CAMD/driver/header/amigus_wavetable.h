@@ -37,4 +37,6 @@ VOID LoadAmiGusWavetableSample( ULONG * source, ULONG target, ULONG size );
 VOID StartAmiGusWavetablePlayback( struct AmiSF_Note * note,
                                    struct AmiSF_Sample * sample );
 
+VOID StopAmiGusWavetablePlayback( UWORD channel );
+
 #endif /* AMIGUS_WAVETABLE_H */

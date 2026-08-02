@@ -87,13 +87,20 @@ VOID StartAmiGusWavetablePlayback( struct AmiSF_Note * note,
   APTR card = base->agb_AmiGUS->agus_WavetableBase;
   const UWORD channelVolumeMax = 0x4001;
   const UWORD sustainVolume = ( channelVolumeMax * note->amisfn_Sustain ) >> 16;
+  const UWORD startFlags = AMIGUS_WT_F_CONTROL_START
+              | AMIGUS_WT_F_CONTROL_KEY_ON
+              | AMIGUS_WT_F_CONTROL_INTERPOLATE
+              | ( sample->amisfs_Flags 
+                & ( AMISF_NOTE_RESOLUTION_16BIT 
+                  | AMISF_NOTE_LOOPED_MASK
+                  | AMISF_NOTE_ENVELOPE_MASK ));
 
   // TODO: Obviously, channel allocation/scheduling missing!
   WriteReg16( card, AMIGUS_WT_CHANNEL_NUMBER, 0x0000 );
   WriteReg16( card, AMIGUS_WT_CHANNEL_CONTROL, 0x0000 );
 
-  LOG_D(( "D: Playing from %lx to 0x%08lx\n", 
-          sample->amisfs_StartOffset, sample->amisfs_EndOffset ));
+  LOG_D(( "D: Playing from 0x%08lx to 0x%08lx with flags 0x%04lx\n",
+          sample->amisfs_StartOffset, sample->amisfs_EndOffset, startFlags ));
   WriteReg32( card, AMIGUS_WT_CHANNEL_START_32BIT, sample->amisfs_StartOffset );
   WriteReg32( card, AMIGUS_WT_CHANNEL_LOOP_32BIT, sample->amisfs_LoopOffset );
   WriteReg32( card, AMIGUS_WT_CHANNEL_END_32BIT, sample->amisfs_EndOffset );
@@ -108,12 +115,19 @@ VOID StartAmiGusWavetablePlayback( struct AmiSF_Note * note,
   WriteReg16( card, AMIGUS_WT_CHANNEL_SUSTAIN, sustainVolume );
   WriteReg16( card, AMIGUS_WT_CHANNEL_RELEASE, note->amisfn_Release );
 
-  WriteReg16( card,
-              AMIGUS_WT_CHANNEL_CONTROL,
-              AMIGUS_WT_F_CONTROL_START
-              | AMIGUS_WT_F_CONTROL_INTERPOLATE
-              | ( sample->amisfs_Flags 
-                & ( AMISF_NOTE_RESOLUTION_16BIT 
-                  | AMISF_NOTE_LOOPED_MASK
-                  | AMISF_NOTE_ENVELOPE_MASK )));
+  WriteReg16( card, AMIGUS_WT_CHANNEL_CONTROL, startFlags );
+}
+
+VOID StopAmiGusWavetablePlayback( UWORD channel ) {
+
+  struct AmiGUS_CAMD * base = AmiGUS_CAMD_Base;
+  APTR card = base->agb_AmiGUS->agus_WavetableBase;
+  UWORD control;
+
+  WriteReg16( card, AMIGUS_WT_CHANNEL_NUMBER, channel );
+  control = ReadReg16( card, AMIGUS_WT_CHANNEL_CONTROL );
+  control &= ~AMIGUS_WT_F_CONTROL_KEY_ON;
+  WriteReg16( card, AMIGUS_WT_CHANNEL_CONTROL, control );
+
+  LOG_D(( "D: Stopping with flags 0x%04lx\n", control ));
 }
