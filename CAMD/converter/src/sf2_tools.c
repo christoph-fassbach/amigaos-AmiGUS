@@ -337,19 +337,19 @@ struct AmiSF_Note * CreateAmiSF_Note(
         argsP->sf2a_Values.sf2v_Release,
         instrumentIndex ));
 
-      if ( PRESET_DEFAULT_ATTACK_VALUE == argsP->sf2a_Values.sf2v_Attack ) {
+      if ( PRESET_DEFAULT_ATTACK_VALUE != argsP->sf2a_Values.sf2v_Attack ) {
 
         effectiveAttack += argsP->sf2a_Values.sf2v_Attack;
       }
-      if ( PRESET_DEFAULT_DECAY_VALUE == argsP->sf2a_Values.sf2v_Decay ) {
+      if ( PRESET_DEFAULT_DECAY_VALUE != argsP->sf2a_Values.sf2v_Decay ) {
 
         effectiveDecay += argsP->sf2a_Values.sf2v_Decay;
       }
-      if ( PRESET_DEFAULT_SUSTAIN_VALUE == argsP->sf2a_Values.sf2v_Sustain ) {
+      if ( PRESET_DEFAULT_SUSTAIN_VALUE != argsP->sf2a_Values.sf2v_Sustain ) {
 
         effectiveSustain += argsP->sf2a_Values.sf2v_Sustain;
       }
-      if ( PRESET_DEFAULT_RELEASE_VALUE == argsP->sf2a_Values.sf2v_Release ) {
+      if ( PRESET_DEFAULT_RELEASE_VALUE != argsP->sf2a_Values.sf2v_Release ) {
 
         effectiveRelease += argsP->sf2a_Values.sf2v_Release;
       }
@@ -357,6 +357,11 @@ struct AmiSF_Note * CreateAmiSF_Note(
   }
 
   LOG_D(( "V: Effective A: %lx D: %lx S: %lx R: %lx\n",
+          effectiveAttack,
+          effectiveDecay,
+          effectiveSustain,
+          effectiveRelease ));
+  LOG_D(( "V: Effective A: %ld D: %ld S: %ld R: %ld\n",
           effectiveAttack,
           effectiveDecay,
           effectiveSustain,
