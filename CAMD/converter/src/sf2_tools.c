@@ -79,7 +79,7 @@ LONG GetTargetSampleRate( LONG sourceNote, LONG sourceRate, LONG targetNote ) {
   return targetRegisterValue;
 }
 
-UWORD GetTargetADSR( LONG timecents ) {
+UWORD GetTargetADR( LONG timecents ) {
 
   // 1200 * ln(seconds)/ln(2) = timecents
   // => seconds = e^( timecents * ( ln( 2 ) / 1200 ) )
@@ -106,35 +106,75 @@ UWORD GetTargetADSR( LONG timecents ) {
   double i = IEEEDPMul( g, h );
   double j = IEEEDPMul( IEEEDPFlt( 0x7fFFffFF ), a );
   double k = IEEEDPDiv( j, i );
+  const LONG increment = IEEEDPFix( k );
 
-  // exponent = floor( ( ln( increment ) / ln( 2 )))
-  //            |      | |       |     |   |   | |||
-  //            |      | |       k     |   |   a |||
-  //            |      | +------l------+   +--b--+||
-  //            |      +-----------------m--------+|
-  //            +-----------------n----------------+
+  LONG idealExponent;
+  LONG exponent;
+  LONG idealMantissa;
+  LONG mantissa;
+  UWORD adsr;
 
-  double l = IEEEDPLog( k );
-  double m = IEEEDPDiv( l, b );
-  double n = IEEEDPFloor( m );
-  const LONG idealExponent = IEEEDPFix( n );
-  const LONG exponent = MIN( idealExponent, 0x0000000F );
+  if ( increment < ( 1 << 12 )) {
 
-  // mantissa = ( increment / ( 2 ^ exponent ))
-  // mantissa = ( increment / ( e ^ ( exponent * ln( 2 ))))
-  //            |     |       |     |     |      |   | ||||
-  //            |     |       |     |     |      |   a ||||
-  //            |     |       |     |     o      +--b--+|||
-  //            |     |       |     +----------p--------+||
-  //            |     k       +---q----------------------+|
-  //            +-----------r-----------------------------+
-  double o = IEEEDPFlt( exponent );
-  double p = IEEEDPMul( o, b );
-  double q = IEEEDPExp( p );
-  double r = IEEEDPDiv( k, q );
-  const LONG idealMantissa = IEEEDPFix( r );
-  const LONG mantissa = MIN( idealMantissa, 0x00000FFF );
-  const UWORD adsr = ( exponent << 12 ) | mantissa;
+    // Easy case: Mantissa does the job!
+
+    idealExponent = 0;
+    exponent = 0;
+    mantissa = increment;
+
+  } else {
+
+    double l;
+    double m;
+    double n;
+    double o;
+    double p;
+    double q;
+    double r;
+
+    // The complicated case: we want to use full Mantissa precision available,
+    // so we calculate the component and limit its length more than needed! :D
+
+    // exponent = floor( ( ln( increment ) / ln( 2 )))
+    //            |      | |       |     |   |   | |||
+    //            |      | |       k     |   |   a |||
+    //            |      | +------l------+   +--b--+||
+    //            |      +-----------------m--------+|
+    //            +-----------------n----------------+
+    l = IEEEDPLog( k );
+    m = IEEEDPDiv( l, b );
+    n = IEEEDPFloor( m );
+    idealExponent = IEEEDPFix( n );
+    // A maximum of idealExponent = 24 arrives here
+    // for -12000 <= timecents < 8000
+    exponent = idealExponent - 11;
+    // -11 nicely blends that into our value format range.
+    // Just to be sure...
+    exponent = MIN( exponent, 0x0000000F );
+
+    // Finally, we calculate the mantissa!
+    // mantissa = ( increment / ( 2 ^ exponent ))
+    // mantissa = ( increment / ( e ^ ( exponent * ln( 2 ))))
+    //            |     |       |     |     |      |   | ||||
+    //            |     |       |     |     |      |   a ||||
+    //            |     |       |     |     o      +--b--+|||
+    //            |     |       |     +----------p--------+||
+    //            |     k       +---q----------------------+|
+    //            +-----------r-----------------------------+
+    o = IEEEDPFlt( exponent );
+    p = IEEEDPMul( o, b );
+    q = IEEEDPExp( p );
+    r = IEEEDPDiv( k, q );
+    idealMantissa = IEEEDPFix( r );
+    mantissa = MIN( idealMantissa, 0x00000FFF );
+
+    if ( idealMantissa & 0xFFFFF000 ) {
+
+      LOG_W(( "W: ADSR miscalculation ahead!\n" ));
+    }
+  }
+
+  adsr = ( exponent << 12 ) | mantissa;
 
   LOG_D(( "D: %ld timecents => %lu ms => increment %lu"
           " => %lu * 2 ^ %lu"
@@ -142,8 +182,9 @@ UWORD GetTargetADSR( LONG timecents ) {
           " => %lu adsr => %lu increment => %lu ms\n",
           timecents,
           IEEEDPFix( IEEEDPMul( g, IEEEDPFlt( 1000 ))),
-          IEEEDPFix( IEEEDPDiv( k, a )) << 1,
-          IEEEDPFix( IEEEDPDiv( k, IEEEDPExp( IEEEDPMul( n, b )))),
+          increment,
+          IEEEDPFix( IEEEDPDiv( k, IEEEDPExp( 
+            IEEEDPMul( IEEEDPFlt( idealExponent ), b )))),
           idealExponent,
           mantissa,
           exponent,
@@ -151,7 +192,7 @@ UWORD GetTargetADSR( LONG timecents ) {
           mantissa << exponent,
           (((( ULONG ) 0xffFFffFF ) / 192 ) / mantissa ) >> exponent ));
 
-  return 0;//adsr;
+  return adsr;
 }
 
 struct AmiSF_Note * CreateAmiSF_Note(
@@ -263,10 +304,10 @@ struct AmiSF_Note * CreateAmiSF_Note(
           effectiveSustain,
           effectiveRelease ));
 
-  result->amisfn_Attack = GetTargetADSR( effectiveAttack );
-  result->amisfn_Decay = GetTargetADSR( effectiveDecay );
-  result->amisfn_Sustain = GetTargetADSR( effectiveSustain );
-  result->amisfn_Release = GetTargetADSR( effectiveRelease );
+  result->amisfn_Attack = GetTargetADR( effectiveAttack );
+  result->amisfn_Decay = GetTargetADR( effectiveDecay );
+  result->amisfn_Sustain = 17;//GetTargetADSR( effectiveSustain );
+  result->amisfn_Release = GetTargetADR( effectiveRelease );
 
   LOG_D(( "V: Final A: %lx D: %lx S: %lx R: %lx\n",
           result->amisfn_Attack,
