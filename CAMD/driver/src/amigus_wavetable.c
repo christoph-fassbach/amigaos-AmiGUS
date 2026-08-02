@@ -86,6 +86,7 @@ VOID StartAmiGusWavetablePlayback( struct AmiSF_Note * note,
   struct AmiGUS_CAMD * base = AmiGUS_CAMD_Base;
   APTR card = base->agb_AmiGUS->agus_WavetableBase;
 
+  // TODO: Obviously, channel allocation/scheduling missing!
   WriteReg16( card, AMIGUS_WT_CHANNEL_NUMBER, 0x0000 );
   WriteReg16( card, AMIGUS_WT_CHANNEL_CONTROL, 0x0000 );
 
@@ -96,8 +97,9 @@ VOID StartAmiGusWavetablePlayback( struct AmiSF_Note * note,
   WriteReg32( card, AMIGUS_WT_CHANNEL_END_32BIT, sample->amisfs_EndOffset );
   WriteReg32( card, AMIGUS_WT_CHANNEL_RATE_32BIT, note->amisfn_PlaybackRate );
 
-  WriteReg16( card, AMIGUS_WT_CHANNEL_VOLUME_LEFT, 0x4000 );
-  WriteReg16( card, AMIGUS_WT_CHANNEL_VOLUME_RIGHT, 0x4000 );
+  // TODO: Rework the below, obviously, state dependent!
+  WriteReg16( card, AMIGUS_WT_CHANNEL_VOLUME_LEFT, 0x4001 );
+  WriteReg16( card, AMIGUS_WT_CHANNEL_VOLUME_RIGHT, 0x4001 );
 
   WriteReg16( card, AMIGUS_WT_CHANNEL_ATTACK, note->amisfn_Attack );
   WriteReg16( card, AMIGUS_WT_CHANNEL_DECAY, note->amisfn_Decay );
@@ -110,5 +112,6 @@ VOID StartAmiGusWavetablePlayback( struct AmiSF_Note * note,
               | AMIGUS_WT_F_CONTROL_INTERPOLATE
               | ( sample->amisfs_Flags 
                 & ( AMISF_NOTE_RESOLUTION_16BIT 
-                  | AMISF_NOTE_LOOPED_MASK )));
+                  | AMISF_NOTE_LOOPED_MASK
+                  | AMISF_NOTE_ENVELOPE_MASK )));
 }
