@@ -170,7 +170,8 @@ UWORD GetTargetADR( LONG timecents ) {
 
     if ( idealMantissa & 0xFFFFF000 ) {
 
-      LOG_W(( "W: ADSR miscalculation ahead!\n" ));
+      LOG_W(( "W: ADR miscalculation ahead!\n" ));
+      return 0;
     }
   }
 
@@ -193,6 +194,63 @@ UWORD GetTargetADR( LONG timecents ) {
           (((( ULONG ) 0xffFFffFF ) / 192 ) / mantissa ) >> exponent ));
 
   return adsr;
+}
+
+UWORD GetTargetS( WORD centibels ) {
+
+  LONG factor;
+
+  if ( 0 == centibels ) {
+
+    // max factor is 65535 ( and not 65536 ),
+    // hence the default volume shall be
+    // ( 0x4001 * 0xFFff ) >> 16 = 0x4000
+    // =:D
+    factor = ( 1 << 16 ) - 1;
+
+  } else {
+    // SustainVolume = MaxVolume x ( Factor                       )
+    // SustainVolume = MaxVolume x ( 10 ^ ( -(  decibels /   20 )))
+    // SustainVolume = MaxVolume x ( 10 ^ ( -( centibels /  200 )))
+    // SustainVolume = MaxVolume x ( 10 ^ (    centibels / -200  ))
+    //                             |  |   |         |        |   ||
+    //                             |  |   |         a        b   ||
+    //                             |  d   +--------------c-------+|
+    //                             +----e-------------------------+
+    double a = IEEEDPFlt( centibels );
+    double b = IEEEDPFlt( -200 );
+    double c = IEEEDPDiv( a, b );
+    double d = IEEEDPFlt( 10 );
+    double e = IEEEDPPow( c, d );
+
+    // so...
+    // SustainVolume = MaxVolume x Factor
+    // but as we do not know the OriginalVolume, we are happily storing
+    // the factor here - and only the factor for multiplying it when the
+    // maximum volume is known in fact!
+    // But the factor is likely < 0 - so we store it shifted left by 16bits,
+    // like...
+    // SustainVolume = ( MaxVolume x ( Factor << 16 )) >> 16
+    //                               |    |   |   | |
+    //                               |    e   +-f-+ |
+    //                               +------g-------+
+    double f = IEEEDPFlt( 1 << 16 );
+    double g = IEEEDPMul( f, e );
+  
+    factor = IEEEDPFix( g );
+  }
+
+  if ( 0xFFff0000 & factor ) {
+
+    LOG_W(( "W: S miscalculation ahead!\n" ));
+    return 0;
+  }
+
+  LOG_D(( "D: %ld centibels => %ld factor\n", 
+          centibels,
+          factor ));
+
+  return ( UWORD ) factor;
 }
 
 struct AmiSF_Note * CreateAmiSF_Note(
@@ -306,7 +364,7 @@ struct AmiSF_Note * CreateAmiSF_Note(
 
   result->amisfn_Attack = GetTargetADR( effectiveAttack );
   result->amisfn_Decay = GetTargetADR( effectiveDecay );
-  result->amisfn_Sustain = 17;//GetTargetADSR( effectiveSustain );
+  result->amisfn_Sustain = GetTargetS( effectiveSustain );
   result->amisfn_Release = GetTargetADR( effectiveRelease );
 
   LOG_D(( "V: Final A: %lx D: %lx S: %lx R: %lx\n",
