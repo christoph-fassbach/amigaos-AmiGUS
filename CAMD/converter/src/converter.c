@@ -405,6 +405,12 @@ VOID HandleReadButton( VOID ) {
   CloseProgressDialog( base->sfc_ProgressDialog );
   FreeProgressDialog( base->sfc_ProgressDialog );
   base->sfc_ProgressDialog = NULL;
+
+  // TODO: Remove!
+  {
+    struct AmiSF * amisf = AllocAmiSFfromSF2( base->sfc_Sf2 );
+    FreeAmiSF( amisf );
+  }
 }
 
 VOID HandleListElement( ULONG index ) {
@@ -463,10 +469,10 @@ VOID HandleListElement( ULONG index ) {
                                sf2Sample,
                                0 );
   LOG_D(( "V: Playing AmiSF start %ld loop %ld end %ld rate 0x%08lx\n",
-          sample->amisfs_StartOffset,
-          sample->amisfs_LoopOffset - sample->amisfs_StartOffset,
-          sample->amisfs_EndOffset - sample->amisfs_StartOffset,
-          note->amisfn_PlaybackRate ));
+          sample->asfs_StartOffset,
+          sample->asfs_LoopOffset - sample->asfs_StartOffset,
+          sample->asfs_EndOffset - sample->asfs_StartOffset,
+          note->asfn_PlaybackRate ));
   message = ( struct Message * ) CreateAmigusPlaySampleMessage(
     SF_Converter_Base->sfc_MidiReplyPort,
     note,

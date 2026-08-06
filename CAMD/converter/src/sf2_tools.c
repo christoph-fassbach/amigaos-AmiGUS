@@ -273,10 +273,11 @@ struct AmiSF_Note * CreateAmiSF_Note(
   struct AmiSF_Note * result = AllocMem( sizeof( struct AmiSF_Note ),
                                          MEMF_ANY | MEMF_CLEAR );
 
-  result->amisfn_PlaybackRate = GetTargetSampleRate( sample->sf2s_SampleNote,
-                                                     sample->sf2s_SampleRate,
-                                                     targetNote );
-
+  /*result->asfn_PlaybackRate = GetTargetSampleRate( sample->sf2s_SampleNote,
+                                                   sample->sf2s_SampleRate,
+                                                   targetNote );
+TODO: this is now an array!
+                                                   */
 
 
   LOG_D(( "D: Found S-%ld\n", sample->sf2s_Number ));
@@ -367,16 +368,16 @@ struct AmiSF_Note * CreateAmiSF_Note(
           effectiveSustain,
           effectiveRelease ));
 
-  result->amisfn_Attack = GetTargetADR( effectiveAttack );
-  result->amisfn_Decay = GetTargetADR( effectiveDecay );
-  result->amisfn_Sustain = GetTargetS( effectiveSustain );
-  result->amisfn_Release = GetTargetADR( effectiveRelease );
+  result->asfn_Attack = GetTargetADR( effectiveAttack );
+  result->asfn_Decay = GetTargetADR( effectiveDecay );
+  result->asfn_Sustain = GetTargetS( effectiveSustain );
+  result->asfn_Release = GetTargetADR( effectiveRelease );
 
   LOG_D(( "V: Final A: %lx D: %lx S: %lx R: %lx\n",
-          result->amisfn_Attack,
-          result->amisfn_Decay,
-          result->amisfn_Sustain,
-          result->amisfn_Release ));
+          result->asfn_Attack,
+          result->asfn_Decay,
+          result->asfn_Sustain,
+          result->asfn_Release ));
 
   return result;
 }
@@ -389,18 +390,18 @@ struct AmiSF_Sample * CreateAmiSF_Sample(
 
   struct AmiSF_Sample * result = AllocMem( sizeof( struct AmiSF_Sample ),
                                            MEMF_ANY | MEMF_CLEAR );
-  result->amisfs_Flags =
+  result->asfs_Flags =
       AMISF_NOTE_RESOLUTION_16BIT // SF2 only knows 16 or 24bit
     | AMISF_NOTE_LOOPED_MASK
     | AMISF_NOTE_ENVELOPE_MASK
     | AMISF_NOTE_NOT_IN_FILE
     | AMISF_NOTE_IN_RAM
     | AMISF_NOTE_NOT_IN_CARD;
-  result->amisfs_StartOffset = targetStartAddress;                       // BYTE
-  result->amisfs_LoopOffset = targetStartAddress                         // BYTE
+  result->asfs_StartOffset = targetStartAddress;                       // BYTE
+  result->asfs_LoopOffset = targetStartAddress                         // BYTE
     + (( sample->sf2s_LoopStartOffset - sample->sf2s_SampleStartOffset ) // WORD
     << 1 );                                                              // BYTE
-  result->amisfs_EndOffset =  targetStartAddress                         // BYTE
+  result->asfs_EndOffset =  targetStartAddress                         // BYTE
     + GetSF2SampleSize( sample );                                        // BYTE
 
   return result;

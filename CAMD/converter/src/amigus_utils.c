@@ -238,8 +238,8 @@ VOID DeleteAmigusMessage( APTR message ) {
 
       struct PlaySampleMessage * sampleMessage =
         ( struct PlaySampleMessage * ) message;
-      ULONG size = sampleMessage->sample->amisfs_EndOffset
-                 - sampleMessage->sample->amisfs_StartOffset;
+      ULONG size = sampleMessage->sample->asfs_EndOffset
+                 - sampleMessage->sample->asfs_StartOffset;
       LOG_D(( "D: Deleting PlaySampleMessage 0x%08lx...\n", mess ));
       FreeMem( sampleMessage->data, size );
       FreeMem( sampleMessage->sample, sizeof( struct AmiSF_Sample ));

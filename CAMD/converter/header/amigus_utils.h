@@ -20,7 +20,8 @@
 #define AMIGUS_UTILS_H
 
 #include <amigus/amigus_ports.h>
-#include <amigus/amisf.h>
+//# //include <amigus/amisf.h>
+#include "amisf.h"
 
 ULONG OpenAmigusPort( VOID );
 LONG SendAmigusMessage( struct Message * message );
