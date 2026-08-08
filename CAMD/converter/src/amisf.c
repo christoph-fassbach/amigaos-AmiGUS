@@ -222,6 +222,7 @@ static VOID FillPresetNotes( struct SF2 * sf2,
         struct SF2_Sample * tempSample;
         struct AmiSF_Preset * asf_Preset;
         struct AmiSF_Note * asf_Note;
+        UWORD i;
 
         if ( 0 > sampleIndex ) {
 
@@ -269,10 +270,19 @@ static VOID FillPresetNotes( struct SF2 * sf2,
 
         // Update the current note
         asf_Note->asfn_MaxNote = MIN( instrumentMax, sampleMax );
-        asf_Note->asfn_RateCount = asf_Note->asfn_MaxNote - minNote + 1;
+        for ( i = 0; i < amisf->asf_SampleRateCount; ++i ) {
+        
+          if ( tempSample->sf2s_SampleRate ==  amisf->asf_SampleRate[ i ]) {
+          
+            asf_Note->asfn_BasePlaybackIndex =
+              amisf->asf_PlaybackRateOffset[ i ];
+            LOG_D(( "V: Resolved %ldHz to index %ld\n",
+                    tempSample->sf2s_SampleRate,
+                    asf_Note->asfn_BasePlaybackIndex ));
+            break;
+          }
+        }
 
-        LOG_D(( "V: Needs %lu PlaybackRates here, minNote %lu!\n",
-                asf_Note->asfn_RateCount, minNote ));
         // TODO: Create all that rates here!
 
         asf_Note->asfn_Volume = 0x4001;
@@ -283,7 +293,6 @@ static VOID FillPresetNotes( struct SF2 * sf2,
 
         asf_Note->asfn_SampleIndex = info->ci_SampleMapping[ sampleIndex ];
 
-        minNote += asf_Note->asfn_RateCount;
         /* Complete iteration over all presets - instruments - samples */
         LOG_D(( "V: bank %ld, preset %ld now has "
                 "%ld notes "
@@ -439,71 +448,6 @@ struct AmiSF * AllocAmiSFfromSF2( struct SF2 * sf2 ) {
   FillRates( info, amisf );
   FillPresetNotes( sf2, info, amisf );
 
-  /* Begin iteration over all presets - instruments - samples */
-  FOR_LIST( &( sf2->sf2_Presets ),
-            sf2Preset,
-            struct SF2_Preset * ) {
-
-    struct SF2_Args * argsP;
-
-    FOR_LIST( &( sf2Preset->sf2p_Args ),
-              argsP,
-              struct SF2_Args * ) {
-
-      const LONG instrumentIndex = argsP->sf2a_Values.sf2v_NextNumber;
-
-      struct SF2_Instrument * tempInstrument;
-      struct SF2_Args * argsI;
-
-      if ( 0 > instrumentIndex ) {
-
-        // Skip over the de-duplicated instruments
-        continue;
-      }
-
-      tempInstrument = sf2->sf2_InstrumentArray[ instrumentIndex ];
-
-      FOR_LIST( &( tempInstrument->sf2i_Args ),
-                argsI,
-                struct SF2_Args * ) {
-
-        const LONG sampleIndex = argsI->sf2a_Values.sf2v_NextNumber;
-        const LONG sampleMin = argsI->sf2a_Values.sf2v_LowNote;
-        const LONG sampleMax = argsI->sf2a_Values.sf2v_HighNote;
-        const LONG instrumentMin = argsP->sf2a_Values.sf2v_LowNote;
-        const LONG instrumentMax = argsP->sf2a_Values.sf2v_HighNote;
-
-        struct SF2_Sample * tempSample;
-        if ( 0 > sampleIndex ) {
-
-          // Skip over the de-duplicated samples
-          continue;
-        }
-
-        if (( sampleMin > instrumentMax )
-          || ( instrumentMin > sampleMax)) {
-
-          // Skip over unreachable samples
-          continue;
-        }
-
-        tempSample = sf2->sf2_SampleArray[ sampleIndex ];
-
-        /* Iteration payload below */
-/*
-        AddSf2Label( labels,
-                     tempPreset,
-                     &( argsP->sf2a_Values ),
-                     tempInstrument,
-                     &( argsI->sf2a_Values ),
-                     tempSample );
-*/
-        /* Complete iteration over all presets - instruments - samples */
-        LOG_D(( "Allocated size for AmiSF is %ld\n", allocatedSize ));
-        return NULL;
-      }
-    }
-  }
   FreeConversionInfo( info );
   LOG_D(( "Allocated size for AmiSF is %ld\n", allocatedSize ));
   return amisf;

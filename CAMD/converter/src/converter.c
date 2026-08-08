@@ -468,11 +468,12 @@ VOID HandleListElement( ULONG index ) {
                                sf2Instrument,
                                sf2Sample,
                                0 );
-  LOG_D(( "V: Playing AmiSF start %ld loop %ld end %ld rate 0x%08lx\n",
+  LOG_D(( "V: Playing AmiSF start %ld loop %ld end %ld idx %ld rate 0x%08lx\n",
           sample->asfs_StartOffset,
           sample->asfs_LoopOffset - sample->asfs_StartOffset,
           sample->asfs_EndOffset - sample->asfs_StartOffset,
-          note->asfn_PlaybackRate ));
+          note->asfn_BasePlaybackIndex,
+          0xdeadbeef ));
   message = ( struct Message * ) CreateAmigusPlaySampleMessage(
     SF_Converter_Base->sfc_MidiReplyPort,
     note,

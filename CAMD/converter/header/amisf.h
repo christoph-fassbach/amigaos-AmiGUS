@@ -60,9 +60,9 @@ struct AmiSF_Sample {
 struct AmiSF_Note {
   UWORD asfn_Volume;
   UBYTE asfn_MaxNote;
-  UBYTE asfn_RateCount;  
+  UBYTE asfn_BaseNote;
 
-  ULONG * asfn_PlaybackRate;    // Version 01: AmiGUS register format - Version 11: real sample rate
+  ULONG asfn_BasePlaybackIndex;    // Version 01: AmiGUS register format - Version 11: real sample rate
 
   UWORD asfn_Attack;
   UWORD asfn_Decay;
