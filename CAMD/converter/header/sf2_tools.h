@@ -24,6 +24,8 @@
 
 #include "sf2.h"
 
+LONG GetTargetSampleRate( LONG sourceNote, LONG sourceRate, LONG targetNote );
+
 struct AmiSF_Note * CreateAmiSF_Note(
   struct SF2_Preset * preset,
   struct SF2_Instrument * instrument,

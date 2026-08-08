@@ -23,7 +23,18 @@
 #include "amisf.h"
 #include "debug.h"
 #include "sf2.h"
+#include "sf2_tools.h"
 #include "support.h"
+
+struct ConversionPlaybackRates {
+
+  struct Node cpr_Node;
+
+  ULONG cpr_SampleRate;
+  UBYTE cpr_SampleNote;
+  UBYTE cpr_Padding0;
+  UWORD cpr_Padding1;
+};
 
 struct ConversionInfo {
 
@@ -32,15 +43,34 @@ struct ConversionInfo {
   UWORD ci_SampleMapping[ 65536 ];
   // 0 in mapping: empty
   // 1 in mapping: sf2 index mapped to that new index
+
+  UWORD ci_PlaybackRateCount;
+  struct List ci_PlaybackRatesNeeded;
 };
+
+static LONG CompareRates( struct Node * a, struct Node * b ) {
+
+  struct ConversionPlaybackRates * aa = ( struct ConversionPlaybackRates * ) a;
+  struct ConversionPlaybackRates * bb = ( struct ConversionPlaybackRates * ) b;
+  LONG rateDifference = aa->cpr_SampleRate - bb->cpr_SampleRate;
+
+  if ( rateDifference ) {
+
+    return rateDifference;
+  }
+
+  return aa->cpr_SampleNote - bb->cpr_SampleNote;
+}
 
 static struct ConversionInfo * CreateConversionInfo( struct SF2 * sf2 ) {
 
   UWORD count = 1;
   struct ConversionInfo * info = AllocMem( sizeof( struct ConversionInfo ),
                                            MEMF_ANY | MEMF_CLEAR );
-
   struct SF2_Preset * sf2Preset;
+
+  NEW_LIST( &( info->ci_PlaybackRatesNeeded ));
+
   /* Begin iteration over all presets - instruments - samples */
   FOR_LIST( &( sf2->sf2_Presets ),
             sf2Preset,
@@ -75,6 +105,7 @@ static struct ConversionInfo * CreateConversionInfo( struct SF2 * sf2 ) {
         const LONG instrumentMin = argsP->sf2a_Values.sf2v_LowNote;
         const LONG instrumentMax = argsP->sf2a_Values.sf2v_HighNote;
         struct SF2_Sample * tempSample;
+        struct ConversionPlaybackRates * rate;
 
         if ( 0 > sampleIndex ) {
 
@@ -102,6 +133,18 @@ static struct ConversionInfo * CreateConversionInfo( struct SF2 * sf2 ) {
           ++count;
         }
         ++info->ci_NoteCount;
+
+        rate = AllocMem(
+          sizeof( struct ConversionPlaybackRates ),
+          MEMF_ANY );
+        if ( rate ) {
+          rate->cpr_SampleRate = tempSample->sf2s_SampleRate;
+          rate->cpr_SampleNote = tempSample->sf2s_SampleNote;
+          InsertSorted( ( struct Node * ) rate,
+                        &( info->ci_PlaybackRatesNeeded ),
+                        &( CompareRates ));
+        }
+
         /* Complete iteration over all presets - instruments - samples */
       }
     }
@@ -117,10 +160,19 @@ static struct ConversionInfo * CreateConversionInfo( struct SF2 * sf2 ) {
 
 static VOID FreeConversionInfo( struct ConversionInfo * info ) {
 
-  if ( info ) {
+  struct Node * node;
 
-    FreeMem( info, sizeof( struct ConversionInfo ));
+  if ( !( info )) {
+
+    return;
   }
+
+  while ( node = RemHead( &( info->ci_PlaybackRatesNeeded ))) {
+
+    FreeMem( node, sizeof( struct ConversionPlaybackRates ));
+  }
+
+  FreeMem( info, sizeof( struct ConversionInfo ));
 }
 
 static VOID FillPresetNotes( struct SF2 * sf2,
@@ -201,7 +253,6 @@ static VOID FillPresetNotes( struct SF2 * sf2,
           struct AmiSF_Note * lastNote = &( amisf->asf_Note[ lastNoteIndex ]);
 
           LOG_D(( "V: last ended %lu\n", lastNote->asfn_MaxNote ));
-wenn hier nicht 127, dann 127 draus machen!
           nextNodeIndex += lastPresetPointer->asfp_NoteCount;
 
           lastBank = bank;
@@ -248,6 +299,126 @@ wenn hier nicht 127, dann 127 draus machen!
   }
 }
 
+static VOID FillRates( struct ConversionInfo * info, struct AmiSF * amisf ) {
+
+  LONG sampleRateCount = 0;
+  LONG playbackRateCount = 0;
+  LONG sampleRateCheck = 0;
+  LONG playbackRateCheck = 0;
+  struct ConversionPlaybackRates * rate;
+
+  // Walk all the playback rates collected,
+  // find the max and min notes for each rate and
+  // calculate how many sample rates we need for playback here.
+  FOR_LIST( &( info->ci_PlaybackRatesNeeded ),
+            rate,
+            struct ConversionPlaybackRates * ) {
+
+    struct ConversionPlaybackRates * end = rate;
+
+    const ULONG sampleRate = rate->cpr_SampleRate;
+    UBYTE minSampleNote = rate->cpr_SampleNote;
+    const UBYTE maxSampleNote = rate->cpr_SampleNote;
+
+    while ( sampleRate == end->cpr_SampleRate ) {
+
+      LOG_V(( "V: Checking for sample rate %ldHz, max note is %ld, current note is %ld\n",
+              sampleRate, maxSampleNote, end->cpr_SampleNote ));
+
+      minSampleNote = end->cpr_SampleNote;
+      end = ( struct ConversionPlaybackRates * ) end->cpr_Node.ln_Succ;
+    }
+    playbackRateCount += maxSampleNote + 128 - minSampleNote;
+    LOG_V(( "V: For sample rate %ldHz, "
+            "min note is %ld, max note is %ld, "
+            "so far needs %ld\n",
+            sampleRate,
+            minSampleNote, maxSampleNote,
+            playbackRateCount ));
+    
+    ++sampleRateCount;
+ 
+    // Skipping over the same rate - different notes we have handled already now.
+    rate = ( struct ConversionPlaybackRates * ) end->cpr_Node.ln_Pred;
+  }
+  LOG_D(( "D: Found %ld distinct sample rates and %ld playback rates\n",
+          sampleRateCount,
+          playbackRateCount ));
+
+  amisf->asf_SampleRateCount = sampleRateCount;
+  amisf->asf_SampleRate = AllocMem(
+    sampleRateCount * sizeof( ULONG ),
+    MEMF_ANY | MEMF_CLEAR );
+  amisf->asf_PlaybackRateOffset = AllocMem(
+    sampleRateCount * sizeof( ULONG ),
+    MEMF_ANY | MEMF_CLEAR );
+
+  amisf->asf_PlaybackRateCount = playbackRateCount;
+  amisf->asf_PlaybackRate = AllocMem(
+    playbackRateCount * sizeof( ULONG ),
+    MEMF_ANY | MEMF_CLEAR );
+
+  sampleRateCheck = sampleRateCount;
+  playbackRateCheck = playbackRateCount;
+  sampleRateCount = 0;
+  playbackRateCount = 0;
+
+  // 
+  FOR_LIST( &( info->ci_PlaybackRatesNeeded ),
+            rate,
+            struct ConversionPlaybackRates * ) {
+
+    struct ConversionPlaybackRates * end = rate;
+
+    const ULONG sampleRate = rate->cpr_SampleRate;
+    ULONG minSampleNote = rate->cpr_SampleNote;
+    const ULONG maxSampleNote = rate->cpr_SampleNote;
+    ULONG i;
+
+    while ( sampleRate == end->cpr_SampleRate ) {
+
+      minSampleNote = end->cpr_SampleNote;
+      end = ( struct ConversionPlaybackRates * ) end->cpr_Node.ln_Succ;
+    }
+
+    // Calculate all up until maxSampleNote
+    for ( i = 0; i < maxSampleNote ; ++i ) {
+
+      amisf->asf_PlaybackRate[ playbackRateCount + i ] =
+        GetTargetSampleRate( maxSampleNote, sampleRate, i );
+    }
+
+    // Remember the sample rate, and where it will be found
+    amisf->asf_SampleRate[ sampleRateCount ] =
+      rate->cpr_SampleRate;
+    amisf->asf_PlaybackRateOffset[ sampleRateCount ] =
+      i + playbackRateCount;
+    ++sampleRateCount;
+
+    // Calculate maxSampleNote and all up until 127
+    for ( i = maxSampleNote;
+          i < ( maxSampleNote + 128 - minSampleNote );
+          ++i ) {
+
+      amisf->asf_PlaybackRate[ playbackRateCount + i ] =
+        GetTargetSampleRate( minSampleNote,
+                             sampleRate,
+                             i - maxSampleNote + minSampleNote );
+    }
+    playbackRateCount += i;
+
+    // Skipping over the same rate - different notes we have handled already now.
+    rate = ( struct ConversionPlaybackRates * ) end->cpr_Node.ln_Pred;
+  }
+  LOG_D(( "D: Calc'd %ld distinct sample rates and %ld playback rates\n",
+          sampleRateCount,
+          playbackRateCount ));
+  LOG_I(( "I: Sample rate conversion %s.\n",
+          (( sampleRateCount == sampleRateCheck )
+            && ( playbackRateCount == playbackRateCount ))
+            ? "successful" : "failed" ));
+}
+
 struct AmiSF * AllocAmiSFfromSF2( struct SF2 * sf2 ) {
 
   ULONG allocatedSize = 0;
@@ -271,6 +442,7 @@ struct AmiSF * AllocAmiSFfromSF2( struct SF2 * sf2 ) {
     MEMF_ANY | MEMF_CLEAR );
   allocatedSize += sizeof( struct AmiSF_Note ) * amisf->asf_NoteCount;
 
+  FillRates( info, amisf );
   FillPresetNotes( sf2, info, amisf );
 
   /* Begin iteration over all presets - instruments - samples */

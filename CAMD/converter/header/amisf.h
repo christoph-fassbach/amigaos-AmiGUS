@@ -91,6 +91,13 @@ struct AmiSF {
   ULONG asf_SampleCount;
   struct AmiSF_Sample * asf_SampleMetadata;
 
+  ULONG asf_SampleRateCount;
+  ULONG * asf_SampleRate;
+  ULONG * asf_PlaybackRateOffset;
+
+  ULONG asf_PlaybackRateCount;
+  ULONG * asf_PlaybackRate;
+
   union {
     
     APTR asf_SampleData;
