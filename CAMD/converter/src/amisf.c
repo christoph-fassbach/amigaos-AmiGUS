@@ -173,13 +173,30 @@ static VOID FreeConversionInfo( struct ConversionInfo * info ) {
   FreeMem( info, sizeof( struct ConversionInfo ));
 }
 
+static ULONG GetPlaybackRateOffset( struct AmiSF * amisf, ULONG sampleRate ) {
+
+  ULONG i;
+  for ( i = 0; i < amisf->asf_SampleRateCount; ++i ) {
+        
+    if ( sampleRate ==  amisf->asf_SampleRate[ i ]) {
+          
+      ULONG result = amisf->asf_PlaybackRateOffset[ i ];
+      LOG_D(( "V: Resolved %ldHz to index %ld\n", sampleRate, result ));
+      return result;
+    }
+  }
+  LOG_E(( "E: No playback rate offset for sample rate &ldHz, crashing now.\n",
+          sampleRate ));
+  return 0xFF000000;
+}
+
 static VOID FillPresetNotes( struct SF2 * sf2,
                              struct ConversionInfo * info,
                              struct AmiSF * amisf ) {
 
-  UBYTE lastBank = 0;
-  UBYTE lastPreset = 0;
-  ULONG nextNodeIndex = 0;
+  UBYTE lastBank = 255;
+  UBYTE lastPreset = 255;
+  ULONG nextNoteIndex = 0;
   struct SF2_Preset * sf2Preset;
 
   /* Begin iteration over all presets - instruments - samples */
@@ -248,48 +265,38 @@ static VOID FillPresetNotes( struct SF2 * sf2,
         tempSample = sf2->sf2_SampleArray[ sampleIndex ];
 
         /* Iteration payload below */
-        // Update preset in case needed
+        // Fill the new preset with information as soon as we reach a new one
         if (( lastBank != bank ) || ( lastPreset != preset )) {
 
-          struct AmiSF_Preset * lastPresetPointer =
-            &( amisf->asf_Preset[ lastBank ][ lastPreset ]);
-          LONG lastNoteIndex =
-            lastPresetPointer->asfp_NoteStart 
-            + lastPresetPointer->asfp_NoteCount
-            - 1;
-          struct AmiSF_Note * lastNote = &( amisf->asf_Note[ lastNoteIndex ]);
-
-          LOG_D(( "V: last ended %lu\n", lastNote->asfn_MaxNote ));
-          nextNodeIndex += lastPresetPointer->asfp_NoteCount;
-
+          asf_Preset =  &( amisf->asf_Preset[ bank ][ preset ]);
+          asf_Preset->asfp_Bank = bank;
+          asf_Preset->asfp_Preset = preset;
+          asf_Preset->asfp_NoteStart = nextNoteIndex; // Absolute start index
+          // asf_Preset->asfp_NoteCount = 0; done by AllocMem( ... MEMF_CLEAR );
           lastBank = bank;
           lastPreset = preset;
         }
 
-        asf_Preset =  &( amisf->asf_Preset[ bank ][ preset ]);
-        asf_Preset->asfp_Bank = bank;
-        asf_Preset->asfp_Preset = preset;
-        asf_Preset->asfp_NoteStart = nextNodeIndex;
+        // Remember: all the notes are "pooled" in a single array addressed by
+        // only indices, hence here it is enough to just get the current note...
+        asf_Note = &( amisf->asf_Note[ nextNoteIndex ]);
+        // and advance the note index for getting the next the note next time.
+        ++nextNoteIndex;              // Counts the absolute note index.
+        ++asf_Preset->asfp_NoteCount; // Counts the preset relative note index.
 
-        // Remember the current note and advance to the next
-        asf_Note = &( amisf->asf_Note[ 
-          asf_Preset->asfp_NoteStart + asf_Preset->asfp_NoteCount ]);
-        ++asf_Preset->asfp_NoteCount;
-
-        // Update the current note
+        // Fill the current note
+        asf_Note->asfn_Volume = 0x4001;
         asf_Note->asfn_MaxNote = MIN( instrumentMax, sampleMax );
-        for ( i = 0; i < amisf->asf_SampleRateCount; ++i ) {
-        
-          if ( tempSample->sf2s_SampleRate ==  amisf->asf_SampleRate[ i ]) {
-          
-            asf_Note->asfn_BasePlaybackIndex =
-              amisf->asf_PlaybackRateOffset[ i ];
-            LOG_D(( "V: Resolved %ldHz to index %ld\n",
-                    tempSample->sf2s_SampleRate,
-                    asf_Note->asfn_BasePlaybackIndex ));
-            break;
-          }
-        }
+        asf_Note->asfn_BaseNote = tempSample->sf2s_SampleNote;
+        asf_Note->asfn_BasePlaybackIndex = GetPlaybackRateOffset(
+          amisf,
+          tempSample->sf2s_SampleRate );
+        asf_Note->asfn_Attack = GetTargetADR( effectiveAttack );
+        asf_Note->asfn_Decay = GetTargetADR( effectiveDecay );
+        asf_Note->asfn_Sustain = GetTargetS( effectiveSustain );
+        asf_Note->asfn_Release = GetTargetADR( effectiveRelease );
+        asf_Note->asfn_SampleIndex = info->ci_SampleMapping[ sampleIndex ];
+
 /* TODO: Wohin soll das ADSR zeugs?
         effectiveAttack = argsI->sf2a_Values.sf2v_Attack;
         effectiveDecay = argsI->sf2a_Values.sf2v_Decay;
@@ -322,14 +329,7 @@ static VOID FillPresetNotes( struct SF2 * sf2,
                 argsI->sf2a_Values.sf2v_Attack,
                 argsP->sf2a_Values.sf2v_Attack,
                 effectiveAttack ));
-
 */
-        asf_Note->asfn_Volume = 0x4001;
-        asf_Note->asfn_Attack = GetTargetADR( effectiveAttack );
-        asf_Note->asfn_Decay = GetTargetADR( effectiveDecay );
-        asf_Note->asfn_Sustain = GetTargetS( effectiveSustain );
-        asf_Note->asfn_Release = GetTargetADR( effectiveRelease );
-        asf_Note->asfn_SampleIndex = info->ci_SampleMapping[ sampleIndex ];
 
         /* Complete iteration over all presets - instruments - samples */
         LOG_D(( "V: bank %ld, preset %ld now has "
