@@ -187,6 +187,14 @@ static VOID FillPresetNotes( struct SF2 * sf2,
             sf2Preset,
             struct SF2_Preset * ) {
 
+    // ADSR combination logic is in 
+    // "SoundFont Technical Specification Version 2.01 July 23, 1998"
+    // aka SFSpec21.pdf, p.57
+    LONG effectiveAttack  = INSTRUMENT_DEFAULT_ATTACK_VALUE;
+    LONG effectiveDecay   = INSTRUMENT_DEFAULT_DECAY_VALUE;
+    LONG effectiveSustain = INSTRUMENT_DEFAULT_SUSTAIN_VALUE;
+    LONG effectiveRelease = INSTRUMENT_DEFAULT_RELEASE_VALUE;
+
     struct SF2_Args * argsP;
     const LONG bank = sf2Preset->sf2p_Bank;
     const LONG preset = sf2Preset->sf2p_Common.sf2c_Number;
@@ -282,15 +290,45 @@ static VOID FillPresetNotes( struct SF2 * sf2,
             break;
           }
         }
+/* TODO: Wohin soll das ADSR zeugs?
+        effectiveAttack = argsI->sf2a_Values.sf2v_Attack;
+        effectiveDecay = argsI->sf2a_Values.sf2v_Decay;
+        effectiveSustain = argsI->sf2a_Values.sf2v_Sustain;
+        effectiveRelease = argsI->sf2a_Values.sf2v_Release;
 
-        // TODO: Create all that rates here!
+        
+        if ( PRESET_DEFAULT_ATTACK_VALUE != argsP->sf2a_Values.sf2v_Attack ) {
 
+          effectiveAttack += argsP->sf2a_Values.sf2v_Attack;
+        }
+        if ( PRESET_DEFAULT_DECAY_VALUE != argsP->sf2a_Values.sf2v_Decay ) {
+
+          effectiveDecay += argsP->sf2a_Values.sf2v_Decay;
+        }
+        if ( PRESET_DEFAULT_SUSTAIN_VALUE != argsP->sf2a_Values.sf2v_Sustain ) {
+
+          effectiveSustain += argsP->sf2a_Values.sf2v_Sustain;
+        }
+        if ( PRESET_DEFAULT_RELEASE_VALUE != argsP->sf2a_Values.sf2v_Release ) {
+
+          effectiveRelease += argsP->sf2a_Values.sf2v_Release;
+        }
+        LOG_D(( "V: bank %ld preset %ld note %ld-%ld -> "
+                "%ld A in Inst., %ld A in Pres., %ld A eff.\n",
+                bank,
+                preset,
+                MAX( instrumentMin, sampleMin ), 
+                asf_Note->asfn_MaxNote,
+                argsI->sf2a_Values.sf2v_Attack,
+                argsP->sf2a_Values.sf2v_Attack,
+                effectiveAttack ));
+
+*/
         asf_Note->asfn_Volume = 0x4001;
-        asf_Note->asfn_Attack = 1;
-        asf_Note->asfn_Decay = 2;
-        asf_Note->asfn_Sustain = 3;
-        asf_Note->asfn_Release = 4;
-
+        asf_Note->asfn_Attack = GetTargetADR( effectiveAttack );
+        asf_Note->asfn_Decay = GetTargetADR( effectiveDecay );
+        asf_Note->asfn_Sustain = GetTargetS( effectiveSustain );
+        asf_Note->asfn_Release = GetTargetADR( effectiveRelease );
         asf_Note->asfn_SampleIndex = info->ci_SampleMapping[ sampleIndex ];
 
         /* Complete iteration over all presets - instruments - samples */
@@ -305,12 +343,8 @@ static VOID FillPresetNotes( struct SF2 * sf2,
   }
 }
 
-static VOID FillRates( struct ConversionInfo * info, struct AmiSF * amisf ) {
+static VOID FillRateCounts( struct ConversionInfo * info, struct AmiSF * amisf ) {
 
-  LONG sampleRateCount = 0;
-  LONG playbackRateCount = 0;
-  LONG sampleRateCheck = 0;
-  LONG playbackRateCheck = 0;
   struct ConversionRates * rate;
 
   // Walk all the playback rates collected,
@@ -334,39 +368,35 @@ static VOID FillRates( struct ConversionInfo * info, struct AmiSF * amisf ) {
       minSampleNote = end->cpr_SampleNote;
       end = ( struct ConversionRates * ) end->cpr_Node.ln_Succ;
     }
-    playbackRateCount += maxSampleNote + 128 - minSampleNote;
+    amisf->asf_PlaybackRateCount += maxSampleNote + 128 - minSampleNote;
     LOG_V(( "V: For sample rate %ldHz, "
             "min note is %ld, max note is %ld, "
             "so far needs %ld\n",
             sampleRate,
             minSampleNote, maxSampleNote,
-            playbackRateCount ));
+            amisf->asf_PlaybackRateCount ));
     
-    ++sampleRateCount;
+    ++amisf->asf_SampleRateCount;
  
     // Skipping over the same rate - different notes we have handled already now.
     rate = ( struct ConversionRates * ) end->cpr_Node.ln_Pred;
   }
   LOG_D(( "D: Found %ld distinct sample rates and %ld playback rates\n",
-          sampleRateCount,
-          playbackRateCount ));
+          amisf->asf_SampleRateCount,
+          amisf->asf_PlaybackRateCount ));
+}
 
-  amisf->asf_SampleRateCount = sampleRateCount;
-  amisf->asf_SampleRate = AllocMem( sampleRateCount * sizeof( ULONG ),
-                                    MEMF_ANY | MEMF_CLEAR );
-  amisf->asf_PlaybackRateOffset = AllocMem( sampleRateCount * sizeof( ULONG ),
-                                            MEMF_ANY | MEMF_CLEAR );
+static VOID FillRates( struct ConversionInfo * info, struct AmiSF * amisf ) {
 
-  amisf->asf_PlaybackRateCount = playbackRateCount;
-  amisf->asf_PlaybackRate = AllocMem( playbackRateCount * sizeof( ULONG ),
-                                      MEMF_ANY | MEMF_CLEAR );
+  LONG sampleRateCount = 0;
+  LONG playbackRateCount = 0;
 
-  sampleRateCheck = sampleRateCount;
-  playbackRateCheck = playbackRateCount;
-  sampleRateCount = 0;
-  playbackRateCount = 0;
+  struct ConversionRates * rate;
 
-  // 
+  // Walk all the playback rates collected again,
+  // calculate the first batch of playback rates,
+  // set the sample rate information,
+  // calculate the second batch of playback.
   FOR_LIST( &( info->ci_PlaybackRatesNeeded ),
             rate,
             struct ConversionRates * ) {
@@ -417,8 +447,8 @@ static VOID FillRates( struct ConversionInfo * info, struct AmiSF * amisf ) {
           sampleRateCount,
           playbackRateCount ));
   LOG_I(( "I: Sample rate conversion %s.\n",
-          (( sampleRateCount == sampleRateCheck )
-            && ( playbackRateCount == playbackRateCount ))
+          (( sampleRateCount == amisf->asf_SampleRateCount )
+            && ( playbackRateCount == amisf->asf_PlaybackRateCount ))
             ? "successful" : "failed" ));
 }
 
@@ -445,11 +475,27 @@ struct AmiSF * AllocAmiSFfromSF2( struct SF2 * sf2 ) {
     MEMF_ANY | MEMF_CLEAR );
   allocatedSize += sizeof( struct AmiSF_Note ) * amisf->asf_NoteCount;
 
+  FillRateCounts( info, amisf );
+
+  amisf->asf_SampleRate = AllocMem(
+    sizeof( ULONG ) * amisf->asf_SampleRateCount,
+    MEMF_ANY | MEMF_CLEAR );
+  amisf->asf_PlaybackRateOffset = AllocMem(
+    sizeof( ULONG ) * amisf->asf_SampleRateCount,
+    MEMF_ANY | MEMF_CLEAR );
+  allocatedSize += sizeof( ULONG ) * amisf->asf_SampleRateCount * 2;
+
+  amisf->asf_PlaybackRate = AllocMem(
+    sizeof( ULONG ) * amisf->asf_PlaybackRateCount,
+    MEMF_ANY | MEMF_CLEAR );
+  allocatedSize += sizeof( ULONG ) * amisf->asf_PlaybackRateCount;
+
   FillRates( info, amisf );
   FillPresetNotes( sf2, info, amisf );
+// FillSampleData TODO
 
   FreeConversionInfo( info );
-  LOG_D(( "Allocated size for AmiSF is %ld\n", allocatedSize ));
+  LOG_I(( "I: Allocated size for AmiSF is %ld\n", allocatedSize ));
   return amisf;
 }
 
@@ -460,11 +506,35 @@ VOID FreeAmiSF( struct AmiSF * amisf ) {
 
     return;
   }
+  if ( amisf->asf_SampleRate ) {
+
+    FreeMem( amisf->asf_SampleRate,
+             sizeof( ULONG ) * amisf->asf_SampleRateCount );
+    amisf->asf_SampleRate = NULL;
+  }
+  if ( amisf->asf_PlaybackRateOffset ) {
+
+    FreeMem( amisf->asf_PlaybackRateOffset,
+             sizeof( ULONG ) * amisf->asf_SampleRateCount );
+    amisf->asf_PlaybackRateOffset = NULL;
+  }
+  if ( amisf->asf_PlaybackRate ) {
+
+    FreeMem( amisf->asf_PlaybackRate,
+             sizeof( ULONG ) * amisf->asf_PlaybackRateCount );
+    amisf->asf_PlaybackRate = NULL;
+  }
   if ( amisf->asf_SampleMetadata ) {
 
     FreeMem( amisf->asf_SampleMetadata,
              sizeof( struct AmiSF_Sample ) * amisf->asf_SampleCount );
     amisf->asf_SampleMetadata = NULL;
+  }
+  if ( amisf->asf_Note ) {
+
+    FreeMem( amisf->asf_Note,
+             sizeof( struct AmiSF_Note ) * amisf->asf_NoteCount );
+    amisf->asf_Note = NULL;
   }
 
   FreeMem( amisf, sizeof( struct AmiSF ));

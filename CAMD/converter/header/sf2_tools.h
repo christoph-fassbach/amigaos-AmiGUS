@@ -25,6 +25,8 @@
 #include "sf2.h"
 
 LONG GetTargetSampleRate( LONG sourceNote, LONG sourceRate, LONG targetNote );
+UWORD GetTargetADR( LONG timecents );
+UWORD GetTargetS( WORD centibels );
 
 struct AmiSF_Note * CreateAmiSF_Note(
   struct SF2_Preset * preset,
