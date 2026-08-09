@@ -181,7 +181,7 @@ static ULONG GetPlaybackRateOffset( struct AmiSF * amisf, ULONG sampleRate ) {
     if ( sampleRate ==  amisf->asf_SampleRate[ i ]) {
           
       ULONG result = amisf->asf_PlaybackRateOffset[ i ];
-      LOG_D(( "V: Resolved %ldHz to index %ld\n", sampleRate, result ));
+      LOG_D(( "D: Resolved %ldHz to index %ld\n", sampleRate, result ));
       return result;
     }
   }
@@ -197,7 +197,21 @@ static VOID FillPresetNotes( struct SF2 * sf2,
   UBYTE lastBank = 255;
   UBYTE lastPreset = 255;
   ULONG nextNoteIndex = 0;
+
+  UWORD i;
+  UWORD j;
+
   struct SF2_Preset * sf2Preset;
+
+  // Mark all presets as invalid!
+  for ( i = 0; i < 129; ++i ) {
+    for ( j = 0; j < 129; ++j ) {
+
+      struct AmiSF_Preset * asf_Preset = &( amisf->asf_Preset[ i ][ j ]);
+      asf_Preset->asfp_Bank = 255;
+      asf_Preset->asfp_Preset = 255;
+    }
+  }
 
   /* Begin iteration over all presets - instruments - samples */
   FOR_LIST( &( sf2->sf2_Presets ),
@@ -332,7 +346,7 @@ static VOID FillPresetNotes( struct SF2 * sf2,
 */
 
         /* Complete iteration over all presets - instruments - samples */
-        LOG_D(( "V: bank %ld, preset %ld now has "
+        LOG_D(( "D: bank %ld, preset %ld now has "
                 "%ld notes "
                 "starting at %ld.\n",
                 bank, preset,
@@ -341,6 +355,10 @@ static VOID FillPresetNotes( struct SF2 * sf2,
       }
     }
   }
+
+  LOG_I(( "I: Preset and note conversion %s.\n",
+          ( nextNoteIndex == amisf->asf_NoteCount )
+            ? "successful" : "failed" ));
 }
 
 static VOID FillRateCounts( struct ConversionInfo * info, struct AmiSF * amisf ) {
@@ -495,7 +513,8 @@ struct AmiSF * AllocAmiSFfromSF2( struct SF2 * sf2 ) {
 // FillSampleData TODO
 
   FreeConversionInfo( info );
-  LOG_I(( "I: Allocated size for AmiSF is %ld\n", allocatedSize ));
+  LOG_I(( "I: Conversion successful, allocated size for AmiSF is %ld\n",
+          allocatedSize ));
   return amisf;
 }
 
