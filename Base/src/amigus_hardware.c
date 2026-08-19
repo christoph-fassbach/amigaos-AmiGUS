@@ -18,13 +18,12 @@
 
 #include "amigus_hardware.h"
 #include "debug.h"
-#include "SDI_compiler.h"
 
 /******************************************************************************
  * Low-Level hardware access functions - private functions.
  *****************************************************************************/
 
-INLINE UWORD ReadSPI(
+static UWORD ReadSPI(
   APTR card,
   UWORD SPIregister,
   UWORD blockedSPImask,
@@ -50,7 +49,7 @@ INLINE UWORD ReadSPI(
   return ReadReg16( card, offsetSPIread );
 }
 
-INLINE VOID WriteSPI(
+static VOID WriteSPI(
   APTR card,
   UWORD SPIregister,
   UWORD SPIvalue,
