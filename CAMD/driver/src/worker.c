@@ -110,7 +110,8 @@ VOID HandleMessage( struct Message * message ) {
   }
 }
 
-/*__entry for vbcc*/ SAVEDS VOID WorkerProcess( VOID ) {
+// TODO: Do we need __entry for vbcc here?
+__SAVE_DS__ VOID WorkerProcess( VOID ) {
 
   struct AmiGUS_CAMD * base = AmiGUS_CAMD_Base;
 

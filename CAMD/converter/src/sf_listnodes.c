@@ -26,7 +26,6 @@
 #include "converter.h"
 #include "debug.h"
 #include "support.h"
-#include "SDI_compiler.h"
 
 static const struct ColumnInfo instrumentColumns[] = {
 // chars * 8   + 8 margin left / right

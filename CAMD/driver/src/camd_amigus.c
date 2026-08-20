@@ -27,11 +27,11 @@
 
 #include "amigus_camd.h"
 #include "amigus_wavetable.h"
+#include "compiler_extras.h"
 #include "debug.h"
 #include "errors.h"
 #include "support.h"
 #include "worker.h"
-#include "SDI_compiler.h"
 
 // As declared in amigus_camd.h
 struct ExecBase          * SysBase           = NULL;
@@ -63,7 +63,9 @@ STRPTR _LibVersionString = "$VER: " LIBRARY_IDSTRING "\r\n";
  * @return TRUE if loaded everything loaded / openened / found successful,
  *         FALSE in case of error.
  */
-ASM( BOOL ) SAVEDS AmiGUS_Init( REG( a6, struct ExecBase * sysBase ));
+BOOL __ASM__ __SAVE_DS__ AmiGUS_Init(
+  __REG__( a6, struct ExecBase * sysBase )
+);
 
 /**
  * This is the de-allocation routine for the AmiGUS CAMD MIDI driver.
@@ -72,7 +74,7 @@ ASM( BOOL ) SAVEDS AmiGUS_Init( REG( a6, struct ExecBase * sysBase ));
  * so as a result it has to be called manually in case of an initialization
  * error.
  */
-ASM( VOID ) SAVEDS AmiGUS_Expunge( VOID );
+VOID __ASM__ __SAVE_DS__ AmiGUS_Expunge( VOID );
 
 /**
  * Opens a single AmiGUS MIDI driver port and
@@ -97,12 +99,13 @@ ASM( VOID ) SAVEDS AmiGUS_Expunge( VOID );
  * @return Static AmiGUS_MidiPortData as per below if successful,
  *         NULL otherwise.
  */
-ASM( APTR ) SAVEDS AmiGUS_OpenPort (
-  REG( a3, struct MidiDeviceData * data ),
-  REG( d0, LONG portnum ),
-  REG( a0, TransmitFunctionType transmitHandler ), /* Transmit function       */
-  REG( a1, ReceiveFunctionType receiveHandler ),   /* Receive function        */
-  REG( a2, APTR userdata ));
+APTR __ASM__ __SAVE_DS__ AmiGUS_OpenPort (
+  __REG__( a3, struct MidiDeviceData * data ),
+  __REG__( d0, LONG portnum ),
+  __REG__( a0, TransmitFunctionType transmitHandler ), /* Transmit function  */
+  __REG__( a1, ReceiveFunctionType receiveHandler ),   /* Receive function   */
+  __REG__( a2, APTR userdata )
+);
 
 /**
  * Closes a single AmiGUS MIDI driver port and
@@ -111,9 +114,10 @@ ASM( APTR ) SAVEDS AmiGUS_OpenPort (
  * @param data Pointer to the struct MidiDeviceData of the driver.
  * @param portnum Number of the port to close.
  */
-ASM( VOID ) SAVEDS AmiGUS_ClosePort (
-  REG( a3, struct MidiDeviceData * data ),
-  REG( d0, LONG portnum ));
+VOID __ASM__ __SAVE_DS__ AmiGUS_ClosePort (
+  __REG__( a3, struct MidiDeviceData * data ),
+  __REG__( d0, LONG portnum )
+);
 
 /**
  * Function to activate transmitter interrupt when idle.
@@ -125,22 +129,23 @@ ASM( VOID ) SAVEDS AmiGUS_ClosePort (
  * @param userdata userdata as passed to OpenPort().
  * TODO: maybe wrong!!! drivers.doc says a0, examples say A2. maybe something in a0 too?
  */
-ASM( VOID ) SAVEDS AmiGUS_ActivateXmit(
-  REG( d0, LONG portnum ),
-  REG( a2, APTR userdata ));
+VOID __ASM__ __SAVE_DS__ AmiGUS_ActivateXmit(
+  __REG__( d0, LONG portnum ),
+  __REG__( a2, APTR userdata )
+);
 
 /**
  * Special AmiGUS extension function to
  * force the CAMD driver to reload the settings and the SoundFont.
  */
-ASM( VOID ) SAVEDS AmiGUS_ReloadSoundFont(
+VOID __ASM__ __SAVE_DS__ AmiGUS_ReloadSoundFont(
   VOID );
 
 /**
  * Special AmiGUS extension function to
  * play a note set in the currently loaded SoundFont.
  */
-ASM( VOID ) SAVEDS AmiGUS_PlayNote(
+VOID __ASM__ __SAVE_DS__ AmiGUS_PlayNote(
   VOID );
 
 /**
@@ -148,7 +153,7 @@ ASM( VOID ) SAVEDS AmiGUS_PlayNote(
  * play a sound as provided completely in parameters to the function,
  * independently from all the SoundFont whatsoever.
  */
-ASM( VOID ) SAVEDS AmiGUS_PlaySound(
+VOID __ASM__ __SAVE_DS__ AmiGUS_PlaySound(
   VOID );
 
 /******************************************************************************
@@ -161,7 +166,9 @@ struct MidiPortData AmiGUS_MidiPortData = { AmiGUS_ActivateXmit };
  * CAMD MIDI driver's "public" function definitions.
  *****************************************************************************/
 
-ASM( BOOL ) SAVEDS AmiGUS_Init( REG( a6, struct ExecBase * sysBase )) {
+BOOL __ASM__ __SAVE_DS__ AmiGUS_Init(
+  __REG__( a6, struct ExecBase * sysBase )
+) {
 
   LONG error;
   struct AmiGUS_CAMD * base;
@@ -279,7 +286,7 @@ ASM( BOOL ) SAVEDS AmiGUS_Init( REG( a6, struct ExecBase * sysBase )) {
   return TRUE;
 }
 
-ASM( VOID ) SAVEDS AmiGUS_Expunge( VOID ) {
+VOID __ASM__ __SAVE_DS__ AmiGUS_Expunge( VOID ) {
 
   LOG_D(( "D: AmiGUS_CAMD_Base @ 0x%08lx leaving the building...\n",
           AmiGUS_CAMD_Base ));
@@ -319,12 +326,13 @@ ASM( VOID ) SAVEDS AmiGUS_Expunge( VOID ) {
   }
 }
 
-ASM( APTR ) SAVEDS AmiGUS_OpenPort (
-  REG( a3, struct MidiDeviceData * data ),
-  REG( d0, LONG portnum ),
-  REG( a0, TransmitFunctionType transmitHandler ), /* Transmit function       */
-  REG( a1, ReceiveFunctionType receiveHandler ),   /* Receive function        */
-  REG( a2, APTR userdata )) {
+APTR __ASM__ __SAVE_DS__ AmiGUS_OpenPort (
+  __REG__( a3, struct MidiDeviceData * data ),
+  __REG__( d0, LONG portnum ),
+  __REG__( a0, TransmitFunctionType transmitHandler ), /* Transmit function  */
+  __REG__( a1, ReceiveFunctionType receiveHandler ),   /* Receive function   */
+  __REG__( a2, APTR userdata )
+) {
 
   LOG_D(( "D: OpenPort called for "
           "data=0x%08lx port=%ld txh=0x%08lx rxh=0x%08lx user=0x%08lx\n",
@@ -372,9 +380,10 @@ ASM( APTR ) SAVEDS AmiGUS_OpenPort (
   return &AmiGUS_MidiPortData;
 }
 
-ASM( VOID ) SAVEDS AmiGUS_ClosePort (
-  REG( a3, struct MidiDeviceData * data ),
-  REG( d0, LONG portnum )) {
+VOID __ASM__ __SAVE_DS__ AmiGUS_ClosePort (
+  __REG__( a3, struct MidiDeviceData * data ),
+  __REG__( d0, LONG portnum )
+) {
 
   LOG_D(( "D: ClosePort called for data=0x%08lx port=%ld\n", data, portnum ));
 
@@ -385,9 +394,10 @@ ASM( VOID ) SAVEDS AmiGUS_ClosePort (
   FreeSignal( AmiGUS_CAMD_Base->agb_MainSignal );
 }
 
-ASM( VOID ) SAVEDS AmiGUS_ActivateXmit(
-  REG( d0, LONG portnum ),
-  REG( a2, APTR userdata )) {
+VOID __ASM__ __SAVE_DS__ AmiGUS_ActivateXmit(
+  __REG__( d0, LONG portnum ),
+  __REG__( a2, APTR userdata )
+) {
 
   LOG_D(( "D: ActivateXmit userdata=0x%08lx port=%ld\n", userdata, portnum ));
 
@@ -408,7 +418,7 @@ ASM( VOID ) SAVEDS AmiGUS_ActivateXmit(
  * Special AmiGUS extension function to
  * force the CAMD driver to reload the settings and the SoundFont.
  */
-ASM( VOID ) SAVEDS AmiGUS_ReloadSoundFont(
+VOID __ASM__ __SAVE_DS__ AmiGUS_ReloadSoundFont(
   VOID ) {
 
   //LOG_D(( "D: AmiGUS_ReloadSoundFont triggered\n" ));
@@ -418,13 +428,13 @@ ASM( VOID ) SAVEDS AmiGUS_ReloadSoundFont(
  * Special AmiGUS extension function to
  * play a note set in the currently loaded SoundFont.
  */
-ASM( VOID ) SAVEDS AmiGUS_PlayNote(
+VOID __ASM__ __SAVE_DS__ AmiGUS_PlayNote(
   VOID ) {
 
   LOG_D(( "D: AmiGUS_PlayNote triggered\n" ));
 }
 
-ASM( VOID ) SAVEDS AmiGUS_PlaySound(
+VOID __ASM__ __SAVE_DS__ AmiGUS_PlaySound(
   VOID ) {
 
   LOG_D(( "D: AmiGUS_PlaySound triggered\n" ));

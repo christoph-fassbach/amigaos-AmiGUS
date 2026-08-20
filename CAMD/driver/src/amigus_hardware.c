@@ -17,8 +17,8 @@
  */
 
 #include "amigus_hardware.h"
+#include "compiler_extras.h"
 #include "debug.h"
-#include "SDI_compiler.h"
 
 /******************************************************************************
  * Low-Level hardware access functions - private functions.
@@ -76,14 +76,18 @@ INLINE VOID WriteSPI(
  * Low-Level hardware access functions - public function definitions.
  *****************************************************************************/
 
-UWORD ReadReg16( APTR card, ULONG offset ) {
+// Lowest level went to header, as INLINE does not work outside own file
+// - or its includes -
+// in most compilers, e.g. SAS/C and vbcc.
 
-  return *(( UWORD * )(( ULONG ) card + offset ));
+UWORD ReadReg16( APTR amiGUS, ULONG offset ) {
+
+  return ReadReg16Fast( amiGUS, offset );
 }
 
-ULONG ReadReg32( APTR card, ULONG offset ) {
+ULONG ReadReg32( APTR amiGUS, ULONG offset ) {
 
-  return *(( ULONG * )(( ULONG ) card + offset ));
+  return ReadReg32Fast( amiGUS, offset );
 }
 
 UWORD ReadCodecSPI( APTR card, UWORD SPIregister ) {
@@ -101,16 +105,6 @@ UWORD ReadVS1063Mem( APTR amiGUS, UWORD address ) {
 
   WriteCodecSPI( amiGUS, VS1063_CODEC_SCI_WRAMADDR, address );
   return ReadCodecSPI( amiGUS, VS1063_CODEC_SCI_WRAM );
-}
-
-VOID WriteReg16( APTR card, ULONG offset, UWORD value ) {
-
-  *(( UWORD * )(( ULONG ) card + offset )) = value;
-}
-
-VOID WriteReg32( APTR card, ULONG offset, ULONG value ) {
-
-  *(( ULONG * )(( ULONG ) card + offset )) = value;
 }
 
 VOID WriteCodecSPI( APTR card, UWORD SPIregister, UWORD SPIvalue ) {

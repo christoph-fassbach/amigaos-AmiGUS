@@ -22,7 +22,7 @@
 #include <amigus/amigus.h>
 #include <dos/dos.h>
 
-#include "SDI_compiler.h"
+#include "compiler_extras.h"
 
 /******************************************************************************
  * Define the driver's properties here,
@@ -83,8 +83,8 @@
  *                If so, the driver shall not request further data and
  *                go sleep until CAMD is calling ActivateXMit().
  */
-typedef ULONG ( ASM( * ) TransmitFunctionType )(
-  REG( a2, APTR userdata ));
+typedef ULONG ( * __ASM__ TransmitFunctionType )(
+  __REG__( a2, APTR userdata ));
 
 /**
  * CAMD internal function,
@@ -100,9 +100,9 @@ typedef ULONG ( ASM( * ) TransmitFunctionType )(
  *              and data was lost.
  * @param userdata userdata as passed to OpenPort().
  */
-typedef VOID ( ASM( * ) ReceiveFunctionType )(
-  REG( d0, UWORD input ),
-  REG( a2, APTR userdata ));
+typedef VOID ( * __ASM__ ReceiveFunctionType )(
+  __REG__( d0, UWORD input ),
+  __REG__( a2, APTR userdata ));
 
 /******************************************************************************
  * Library base structure
