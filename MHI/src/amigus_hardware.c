@@ -20,8 +20,8 @@
 
 #include "amigus_hardware.h"
 #include "amigus_mhi.h"
+#include "compiler_extras.h"
 #include "debug.h"
-#include "SDI_compiler.h"
 
 /******************************************************************************
  * Low-Level hardware access functions - private functions.

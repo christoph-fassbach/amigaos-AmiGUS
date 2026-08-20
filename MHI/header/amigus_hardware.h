@@ -21,7 +21,7 @@
 
 #include <exec/types.h>
 
-#include "SDI_compiler.h"
+#include "compiler_extras.h"
 
 /*
  * defines are limited to 32 chars due to a SAS/C insufficiency !!!
