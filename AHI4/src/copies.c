@@ -18,13 +18,15 @@
 
 #include "amigus_ahi_sub.h"
 #include "amigus_hardware.h"
+#include "compiler_extras.h"
 #include "copies.h"
 
 /* Private definition of the copy functions used for PLAYBACK first. */
 
-ASM( LONG ) PlaybackCopy16to8(
-  REG( d0, ULONG *bufferBase ),
-  REG( a0, ULONG *bufferIndex )) {
+LONG __ASM__ PlaybackCopy16to8(
+  __REG__( d0, ULONG * bufferBase ),
+  __REG__( a0, ULONG * bufferIndex )
+) {
 
   ULONG addressInA = ((( ULONG ) bufferBase ) + ( ( *bufferIndex ) << 2 ));
   ULONG inA = *(( ULONG * ) addressInA);
@@ -41,9 +43,10 @@ ASM( LONG ) PlaybackCopy16to8(
   return 4;
 }
 
-ASM( LONG ) PlaybackCopy16to16(
-  REG( d0, ULONG *bufferBase ),
-  REG( a0, ULONG *bufferIndex )) {
+LONG __ASM__ PlaybackCopy16to16(
+  __REG__( d0, ULONG * bufferBase ),
+  __REG__( a0, ULONG * bufferIndex )
+) {
 
   ULONG addressIn = ((( ULONG ) bufferBase ) + ( ( *bufferIndex ) << 2 ));
   ULONG in = *(( ULONG * ) addressIn);
@@ -55,9 +58,10 @@ ASM( LONG ) PlaybackCopy16to16(
   return 4;
 }
 
-ASM( LONG ) PlaybackCopy32to8(
-  REG( d0, ULONG *bufferBase ),
-  REG( a0, ULONG *bufferIndex )) {
+LONG __ASM__ PlaybackCopy32to8(
+  __REG__( d0, ULONG * bufferBase ),
+  __REG__( a0, ULONG * bufferIndex )
+) {
 
   ULONG addressInA = ((( ULONG ) bufferBase ) + ( ( *bufferIndex ) << 2 ));
   ULONG inA = *(( ULONG * ) addressInA);
@@ -78,9 +82,10 @@ ASM( LONG ) PlaybackCopy32to8(
   return 4;
 }
 
-ASM( LONG ) PlaybackCopy32to16(
-  REG( d0, ULONG *bufferBase ),
-  REG( a0, ULONG *bufferIndex )) {
+LONG __ASM__ PlaybackCopy32to16(
+  __REG__( d0, ULONG * bufferBase ),
+  __REG__( a0, ULONG * bufferIndex )
+) {
 
   ULONG addressInA = ((( ULONG ) bufferBase ) + ( ( *bufferIndex ) << 2 ));
   ULONG inA = *(( ULONG * ) addressInA);
@@ -94,9 +99,10 @@ ASM( LONG ) PlaybackCopy32to16(
   return 4;
 }
 
-ASM( LONG ) PlaybackCopy32to24(
-  REG( d0, ULONG *bufferBase ),
-  REG( a0, ULONG *bufferIndex )) {
+LONG __ASM__ PlaybackCopy32to24(
+  __REG__( d0, ULONG * bufferBase ),
+  __REG__( a0, ULONG * bufferIndex )
+) {
 
   ULONG addressInA = ((( ULONG ) bufferBase ) + ( ( *bufferIndex ) << 2 ));
   ULONG inA = *(( ULONG * ) addressInA);
@@ -120,9 +126,10 @@ ASM( LONG ) PlaybackCopy32to24(
 
 /* Private definition of the copy functions used for RECORDING finally. */
 
-ASM( LONG ) RecordingCopy8Mto16S(
-  REG( d0, ULONG *bufferBase ),
-  REG( a0, ULONG *bufferIndex )) {
+LONG __ASM__ RecordingCopy8Mto16S(
+  __REG__( d0, ULONG * bufferBase ),
+  __REG__( a0, ULONG * bufferIndex )
+) {
 
   // AmiGUS 8Bit Mono => AHI 16Bit Stereo Non-HiFi
   ULONG in = ReadReg32Fast( AmiGUS_AHI_Base->agb_CardBase,
@@ -148,9 +155,10 @@ ASM( LONG ) RecordingCopy8Mto16S(
   return 4;
 }
 
-ASM( LONG ) RecordingCopy8Sto16S(
-  REG( d0, ULONG *bufferBase ),
-  REG( a0, ULONG *bufferIndex )) {
+LONG __ASM__ RecordingCopy8Sto16S(
+  __REG__( d0, ULONG * bufferBase ),
+  __REG__( a0, ULONG * bufferIndex )
+) {
 
   // AmiGUS 8Bit Stereo => AHI 16Bit Stereo Non-HiFi
   ULONG in = ReadReg32Fast( AmiGUS_AHI_Base->agb_CardBase,
@@ -168,9 +176,10 @@ ASM( LONG ) RecordingCopy8Sto16S(
   return 4;
 }
 
-ASM( LONG ) RecordingCopy16Mto16S(
-  REG( d0, ULONG *bufferBase ),
-  REG( a0, ULONG *bufferIndex )) {
+LONG __ASM__ RecordingCopy16Mto16S(
+  __REG__( d0, ULONG * bufferBase ),
+  __REG__( a0, ULONG * bufferIndex )
+) {
 
   // AmiGUS 16Bit Mono => AHI 16Bit Stereo Non-HiFi
   ULONG in = ReadReg32Fast( AmiGUS_AHI_Base->agb_CardBase,
@@ -188,9 +197,10 @@ ASM( LONG ) RecordingCopy16Mto16S(
   return 4;
 }
 
-ASM( LONG ) RecordingCopy16Sto16S(
-  REG( d0, ULONG *bufferBase ),
-  REG( a0, ULONG *bufferIndex )) {
+LONG __ASM__ RecordingCopy16Sto16S(
+  __REG__( d0, ULONG * bufferBase ),
+  __REG__( a0, ULONG * bufferIndex )
+) {
 
   // AmiGUS 16Bit Stereo => AHI 16Bit Stereo Non-HiFi
   ULONG in = ReadReg32Fast( AmiGUS_AHI_Base->agb_CardBase,
@@ -204,9 +214,10 @@ ASM( LONG ) RecordingCopy16Sto16S(
   return 4;
 }
 
-ASM( LONG ) RecordingCopy24Mto32S(
-  REG( d0, ULONG *bufferBase ),
-  REG( a0, ULONG *bufferIndex )) {
+LONG __ASM__ RecordingCopy24Mto32S(
+  __REG__( d0, ULONG * bufferBase ),
+  __REG__( a0, ULONG * bufferIndex )
+) {
 
   // TODO: Replace placeholder after test passing!
   static UBYTE i = 0;
@@ -238,9 +249,10 @@ ASM( LONG ) RecordingCopy24Mto32S(
   return 6;
 }
 
-ASM( LONG ) RecordingCopy24Sto32S(
-  REG( d0, ULONG *bufferBase ),
-  REG( a0, ULONG *bufferIndex )) {
+LONG __ASM__ RecordingCopy24Sto32S(
+  __REG__( d0, ULONG * bufferBase ),
+  __REG__( a0, ULONG * bufferIndex )
+) {
 
   // TODO: Replace placeholder after test passing!
   static UBYTE i = 0;
