@@ -16,8 +16,8 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef SDI_AMIGUS_PROTOS_H
-#define SDI_AMIGUS_PROTOS_H
+#ifndef AMIGUS_PROTOS_H
+#define AMIGUS_PROTOS_H
 
 // TO NEVER BE USED OUTSIDE THE LIBRARY CODE !!!
 
@@ -50,7 +50,8 @@ typedef struct AmiGUS * AmiGUS_PTR;
  */
 AmiGUS_PTR __ASM__ __SAVE_DS__ AmiGUS_FindCard(
   __REG__( a0, struct AmiGUS * card ),
-  __REG__( a6, struct AmiGUS_Base * base ));
+  __REG__( a6, struct AmiGUS_Base * base )
+);
 
 /**
  * Reserves an AmiGUS card, be it Zorro2 or PCMCIA.
@@ -81,7 +82,8 @@ ULONG __ASM__ __SAVE_DS__ AmiGUS_ReserveCard(
   __REG__( a0, struct AmiGUS * card ),
   __REG__( d0, LONG which ),
   __REG__( d1, APTR owner ),
-  __REG__( a6, struct AmiGUS_Base * base ));
+  __REG__( a6, struct AmiGUS_Base * base )
+);
 
 /**
  * Frees ("un-reserves") an AmiGUS card, be it Zorro2 or PCMCIA.
@@ -106,7 +108,8 @@ VOID __ASM__ __SAVE_DS__ AmiGUS_FreeCard(
   __REG__( a0, struct AmiGUS * card ),
   __REG__( d0, LONG which ),
   __REG__( d1, APTR owner ),
-  __REG__( a6, struct AmiGUS_Base * base ));
+  __REG__( a6, struct AmiGUS_Base * base )
+);
 
 /**
  * Installs an interrupt handler into amigus.library,
@@ -149,7 +152,8 @@ ULONG __ASM__ __SAVE_DS__ AmiGUS_InstallInterrupt(
   __REG__( d1, APTR owner ),
   __REG__( d2, AmiGUS_Interrupt handler ),
   __REG__( d3, APTR data ),
-  __REG__( a6, struct AmiGUS_Base * base ));
+  __REG__( a6, struct AmiGUS_Base * base )
+);
 
 /**
  * Removes an interrupt handler from amigus.library,
@@ -179,7 +183,8 @@ VOID __ASM__ __SAVE_DS__ AmiGUS_RemoveInterrupt(
   __REG__( a0, struct AmiGUS * card ),
   __REG__( d0, LONG which ),
   __REG__( d1, APTR owner ),
-  __REG__( a6, struct AmiGUS_Base * base ));
+  __REG__( a6, struct AmiGUS_Base * base )
+);
 
 /******************************************************************************
  * AmiGUS base library interrupt function written in SDI_compiler macros,
@@ -197,6 +202,7 @@ VOID __ASM__ __SAVE_DS__ AmiGUS_RemoveInterrupt(
  */
 // TODO: Does vbcc need __entry , too?
 LONG __ASM__ __SAVE_DS__ __INTERRUPT__ HandleInterrupt (
-  __REG__( a1, struct AmiGUS_Base * base ));
+  __REG__( a1, struct AmiGUS_Base * base )
+);
 
-#endif /* SDI_AMIGUS_PROTOS_H */
+#endif /* AMIGUS_PROTOS_H */
