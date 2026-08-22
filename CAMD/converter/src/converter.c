@@ -408,8 +408,22 @@ VOID HandleReadButton( VOID ) {
 
   // TODO: Remove!
   {
-    struct AmiSF * amisf = AllocAmiSFfromSF2( base->sfc_Sf2 );
-    FreeAmiSF( amisf );
+    base->sfc_ProgressDialog =
+      CreateProgressDialog( base->sfc_MainWindow,
+                            "Please wait...",
+                            "Converting SF2 to AmiSF ...",
+                            "Cancel" );
+    ShowProgressDialog( base->sfc_ProgressDialog );
+
+    base->sfc_AmiSF = AllocAmiSFfromSF2( base->sfc_Sf2,
+                                         base->sfc_ProgressDialog );
+
+    CloseProgressDialog( base->sfc_ProgressDialog );
+    FreeProgressDialog( base->sfc_ProgressDialog );
+    base->sfc_ProgressDialog = NULL;
+
+    FreeAmiSF( base->sfc_AmiSF );
+    base->sfc_AmiSF = NULL;
   }
 }
 

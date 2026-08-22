@@ -103,7 +103,10 @@ struct AmiSF {
   };
 };
 
-struct AmiSF * AllocAmiSFfromSF2( struct SF2 * sf2 );
+struct AmiSF * AllocAmiSFfromSF2(
+  struct SF2 * sf2,
+  struct ProgressDialog * dialog
+);
 VOID FreeAmiSF( struct AmiSF * amisf );
 
 #endif /* AMISF2_H */

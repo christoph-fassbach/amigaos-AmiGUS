@@ -22,6 +22,7 @@
 
 #include "amisf.h"
 #include "debug.h"
+#include "progress_dialog.h"
 #include "sf2.h"
 #include "sf2_tools.h"
 #include "support.h"
@@ -141,6 +142,7 @@ static struct ConversionInfo * CreateConversionInfo( struct SF2 * sf2 ) {
           InsertSorted( ( struct Node * ) rate,
                         &( info->ci_PlaybackRatesNeeded ),
                         &( CompareRates ));
+          ++info->ci_PlaybackRateCount;
         }
 
         /* Complete iteration over all presets - instruments - samples */
@@ -181,7 +183,7 @@ static ULONG GetPlaybackRateOffset( struct AmiSF * amisf, ULONG sampleRate ) {
     if ( sampleRate ==  amisf->asf_SampleRate[ i ]) {
           
       ULONG result = amisf->asf_PlaybackRateOffset[ i ];
-      LOG_D(( "D: Resolved %ldHz to index %ld\n", sampleRate, result ));
+      LOG_V(( "V: Resolved %ldHz to index %ld\n", sampleRate, result ));
       return result;
     }
   }
@@ -190,9 +192,14 @@ static ULONG GetPlaybackRateOffset( struct AmiSF * amisf, ULONG sampleRate ) {
   return 0xFF000000;
 }
 
-static VOID FillPresetNotes( struct SF2 * sf2,
-                             struct ConversionInfo * info,
-                             struct AmiSF * amisf ) {
+static VOID FillPresetNotes(
+  struct SF2 * sf2,
+  struct ConversionInfo * info,
+  struct AmiSF * amisf,
+  struct ProgressDialog * dialog,
+  ULONG * currentProgress,
+  ULONG * maxProgress
+) {
 
   UBYTE lastBank = 255;
   UBYTE lastPreset = 255;
@@ -259,7 +266,8 @@ static VOID FillPresetNotes( struct SF2 * sf2,
         const LONG instrumentMax = argsP->sf2a_Values.sf2v_HighNote;
 
         struct SF2_Sample * tempSample;
-        struct AmiSF_Preset * asf_Preset;
+        struct AmiSF_Preset * asf_Preset =
+          &( amisf->asf_Preset[ bank ][ preset ]);
         struct AmiSF_Note * asf_Note;
         UWORD i;
 
@@ -282,7 +290,6 @@ static VOID FillPresetNotes( struct SF2 * sf2,
         // Fill the new preset with information as soon as we reach a new one
         if (( lastBank != bank ) || ( lastPreset != preset )) {
 
-          asf_Preset =  &( amisf->asf_Preset[ bank ][ preset ]);
           asf_Preset->asfp_Bank = bank;
           asf_Preset->asfp_Preset = preset;
           asf_Preset->asfp_NoteStart = nextNoteIndex; // Absolute start index
@@ -346,12 +353,15 @@ static VOID FillPresetNotes( struct SF2 * sf2,
 */
 
         /* Complete iteration over all presets - instruments - samples */
-        LOG_D(( "D: bank %ld, preset %ld now has "
+        LOG_V(( "V: bank %ld, preset %ld now has "
                 "%ld notes "
                 "starting at %ld.\n",
                 bank, preset,
                 asf_Preset->asfp_NoteCount,
                 asf_Preset->asfp_NoteStart ));
+
+        *currentProgress += 1;
+        HandleProgressDialogTick( dialog, *currentProgress, *maxProgress );
       }
     }
   }
@@ -361,7 +371,13 @@ static VOID FillPresetNotes( struct SF2 * sf2,
             ? "successful" : "failed" ));
 }
 
-static VOID FillRateCounts( struct ConversionInfo * info, struct AmiSF * amisf ) {
+static VOID FillRateCounts(
+  struct ConversionInfo * info,
+  struct AmiSF * amisf,
+  struct ProgressDialog * dialog,
+  ULONG * currentProgress,
+  ULONG * maxProgress
+) {
 
   struct ConversionRates * rate;
 
@@ -398,13 +414,25 @@ static VOID FillRateCounts( struct ConversionInfo * info, struct AmiSF * amisf )
  
     // Skipping over the same rate - different notes we have handled already now.
     rate = ( struct ConversionRates * ) end->cpr_Node.ln_Pred;
+
+    *currentProgress += 1;
+    HandleProgressDialogTick( dialog, *currentProgress, *maxProgress );
   }
+  *maxProgress += 
+    ( amisf->asf_SampleRateCount << 1 ) - ( info->ci_PlaybackRateCount  << 1 );
+  HandleProgressDialogTick( dialog, *currentProgress, *maxProgress );
   LOG_D(( "D: Found %ld distinct sample rates and %ld playback rates\n",
           amisf->asf_SampleRateCount,
           amisf->asf_PlaybackRateCount ));
 }
 
-static VOID FillRates( struct ConversionInfo * info, struct AmiSF * amisf ) {
+static VOID FillRates(
+  struct ConversionInfo * info,
+  struct AmiSF * amisf,
+  struct ProgressDialog * dialog,
+  ULONG * currentProgress,
+  ULONG * maxProgress
+) {
 
   LONG sampleRateCount = 0;
   LONG playbackRateCount = 0;
@@ -460,7 +488,11 @@ static VOID FillRates( struct ConversionInfo * info, struct AmiSF * amisf ) {
 
     // Skipping over the same rate - different notes we have handled already now.
     rate = ( struct ConversionRates * ) end->cpr_Node.ln_Pred;
+
+    *currentProgress += 1;
+    HandleProgressDialogTick( dialog, *currentProgress, *maxProgress );
   }
+
   LOG_D(( "D: Calc'd %ld distinct sample rates and %ld playback rates\n",
           sampleRateCount,
           playbackRateCount ));
@@ -470,9 +502,14 @@ static VOID FillRates( struct ConversionInfo * info, struct AmiSF * amisf ) {
             ? "successful" : "failed" ));
 }
 
-static VOID FillSampleData( struct SF2 * sf2,
-                            struct ConversionInfo * info,
-                            struct AmiSF * amisf ) {
+static VOID FillSampleData(
+  struct SF2 * sf2,
+  struct ConversionInfo * info,
+  struct AmiSF * amisf,
+  struct ProgressDialog * dialog,
+  ULONG * currentProgress,
+  ULONG * maxProgress
+) {
 
   ULONG targetCount = 0;
   ULONG sourceIndex;
@@ -494,7 +531,7 @@ static VOID FillSampleData( struct SF2 * sf2,
       sourceSample = sf2->sf2_SampleArray[ sourceIndex ];
       targetSample = &( amisf->asf_SampleMetadata[ targetIndex ]);
 
-      LOG_D(( "D: Found mapping %s = %ld = %ld -> %ld\n",
+      LOG_V(( "V: Found mapping %s = %ld = %ld -> %ld\n",
               sourceSample->sf2s_Name,
               sourceSample->sf2s_Number,
               sourceIndex,
@@ -516,7 +553,7 @@ static VOID FillSampleData( struct SF2 * sf2,
       targetSample->asfs_EndOffset = targetOffset;
       ++targetOffset;
 
-      LOG_D(( "V: Sample mapped from s: 0x%08lx l: 0x%08lx e: 0x%08lx "
+      LOG_V(( "V: Sample mapped from s: 0x%08lx l: 0x%08lx e: 0x%08lx "
               "to s: 0x%08lx l: 0x%08lx e: 0x%08lx\n",
               sourceSample->sf2s_SampleStartOffset,
               sourceSample->sf2s_LoopStartOffset,
@@ -525,6 +562,9 @@ static VOID FillSampleData( struct SF2 * sf2,
               targetSample->asfs_LoopOffset,
               targetSample->asfs_EndOffset ));
       ++targetCount;
+
+      *currentProgress += 1;
+      HandleProgressDialogTick( dialog, *currentProgress, *maxProgress );
 
     } else {
       
@@ -538,15 +578,23 @@ static VOID FillSampleData( struct SF2 * sf2,
     ( amisf->asf_SampleCount == targetCount ) ? "OK." : "failed!" ));
 }
 
-struct AmiSF * AllocAmiSFfromSF2( struct SF2 * sf2 ) {
+struct AmiSF * AllocAmiSFfromSF2(
+  struct SF2 * sf2,
+  struct ProgressDialog * dialog
+) {
 
   ULONG allocatedSize = 0;
-  struct SF2_Preset * sf2Preset;
-
+  struct AmiSF * amisf;
   struct ConversionInfo * info = CreateConversionInfo( sf2 );
+  ULONG currentProgress = 100;
+  ULONG maxProgress = 100
+                      + info->ci_SampleCount
+                      + info->ci_NoteCount
+                      + ( info->ci_PlaybackRateCount << 1 );
 
-  struct AmiSF * amisf = AllocMem( sizeof( struct AmiSF ),
-                                   MEMF_ANY | MEMF_CLEAR );
+  HandleProgressDialogTick( dialog, currentProgress, maxProgress );
+
+  amisf = AllocMem( sizeof( struct AmiSF ), MEMF_ANY | MEMF_CLEAR );
   allocatedSize += sizeof( struct AmiSF );
 
   amisf->asf_SampleCount = info->ci_SampleCount;
@@ -561,7 +609,7 @@ struct AmiSF * AllocAmiSFfromSF2( struct SF2 * sf2 ) {
     MEMF_ANY | MEMF_CLEAR );
   allocatedSize += sizeof( struct AmiSF_Note ) * amisf->asf_NoteCount;
 
-  FillRateCounts( info, amisf );
+  FillRateCounts( info, amisf, dialog, &currentProgress, &maxProgress );
 
   amisf->asf_SampleRate = AllocMem(
     sizeof( ULONG ) * amisf->asf_SampleRateCount,
@@ -576,9 +624,9 @@ struct AmiSF * AllocAmiSFfromSF2( struct SF2 * sf2 ) {
     MEMF_ANY | MEMF_CLEAR );
   allocatedSize += sizeof( ULONG ) * amisf->asf_PlaybackRateCount;
 
-  FillRates( info, amisf );
-  FillPresetNotes( sf2, info, amisf );
-  FillSampleData( sf2, info, amisf );
+  FillRates( info, amisf, dialog, &currentProgress, &maxProgress );
+  FillPresetNotes( sf2, info, amisf, dialog, &currentProgress, &maxProgress );
+  FillSampleData( sf2, info, amisf, dialog, &currentProgress, &maxProgress );
 
   FreeConversionInfo( info );
   LOG_I(( "I: Conversion successful, allocated size for AmiSF is %ld\n",

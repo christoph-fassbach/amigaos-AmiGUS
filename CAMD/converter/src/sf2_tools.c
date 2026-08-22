@@ -71,7 +71,7 @@ LONG GetTargetSampleRate( LONG sourceNote, LONG sourceRate, LONG targetNote ) {
           IEEEDPFix( j ),
           targetRegisterValue,
           targetRegisterValue ));
-  LOG_D(( "D: Converted note %ld + rate %ld -> "
+  LOG_V(( "V: Converted note %ld + rate %ld -> "
           "note %ld + rate %ld = register 0x%08lx\n",
           sourceNote, sourceRate,
           targetNote, IEEEDPFix( g ), targetRegisterValue ));
@@ -177,7 +177,7 @@ UWORD GetTargetADR( LONG timecents ) {
 
   adsr = ( exponent << 12 ) | mantissa;
 
-  LOG_D(( "D: %ld timecents => %lu ms => increment %lu"
+  LOG_V(( "V: %ld timecents => %lu ms => increment %lu"
           " => %lu * 2 ^ %lu"
           " => %lu * 2 ^ %lu"
           " => %lu adsr => %lu increment => %lu ms\n",
@@ -246,7 +246,7 @@ UWORD GetTargetS( WORD centibels ) {
     return 0;
   }
 
-  LOG_D(( "D: %ld centibels => %ld factor\n", 
+  LOG_V(( "V: %ld centibels => %ld factor\n", 
           centibels,
           factor ));
 
