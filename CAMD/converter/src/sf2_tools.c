@@ -390,13 +390,14 @@ struct AmiSF_Sample * CreateAmiSF_Sample(
 
   struct AmiSF_Sample * result = AllocMem( sizeof( struct AmiSF_Sample ),
                                            MEMF_ANY | MEMF_CLEAR );
-  result->asfs_Flags =
-      AMISF_NOTE_RESOLUTION_16BIT // SF2 only knows 16 or 24bit
-    | AMISF_NOTE_LOOPED_MASK
-    | AMISF_NOTE_ENVELOPE_MASK
-    | AMISF_NOTE_NOT_IN_FILE
-    | AMISF_NOTE_IN_RAM
-    | AMISF_NOTE_NOT_IN_CARD;
+  result->asfs_PlaybackFlags =
+      AMISF_PLAY_RESOLUTION_16BIT // SF2 only knows 16 or 24bit
+    | AMISF_PLAY_LOOPED
+    | AMISF_PLAY_INTERPOLATION
+    | AMISF_PLAY_ENVELOPE_MODULATION
+    | AMISF_PLAY_ENVELOPE_KEY_ON
+    | AMISF_PLAY_SAMPLE_PLAYBACK_ON;
+  result->asfs_StatusFlags = AMISF_STATUS_LOCATION_SYS_RAM;
   result->asfs_StartOffset = targetStartAddress;                       // BYTE
   result->asfs_LoopOffset = targetStartAddress                         // BYTE
     + (( sample->sf2s_LoopStartOffset - sample->sf2s_SampleStartOffset ) // WORD

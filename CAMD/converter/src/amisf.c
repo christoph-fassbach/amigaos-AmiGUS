@@ -470,6 +470,67 @@ static VOID FillRates( struct ConversionInfo * info, struct AmiSF * amisf ) {
             ? "successful" : "failed" ));
 }
 
+static VOID FillSampleData( struct SF2 * sf2,
+                            struct ConversionInfo * info,
+                            struct AmiSF * amisf ) {
+
+  ULONG targetOffset = 0;
+  ULONG sourceIndex;
+
+  for ( sourceIndex = 0; sourceIndex < 65536; ++sourceIndex ) {
+
+    UWORD targetIndex = info->ci_SampleMapping[ sourceIndex ];
+
+    // Value 0 means not used!
+    if ( targetIndex ) {
+
+      struct SF2_Sample * sourceSample;
+      struct AmiSF_Sample * targetSample;
+
+      // Value 1 means using sample index 0, correcting here.
+      --targetIndex;
+
+      sourceSample = sf2->sf2_SampleArray[ sourceIndex ];
+      targetSample = &( amisf->asf_SampleMetadata[ targetIndex ]);
+
+      LOG_D(( "D: Found mapping %s = %ld = %ld -> %ld\n",
+              sourceSample->sf2s_Name,
+              sourceSample->sf2s_Number,
+              sourceIndex,
+              targetIndex ));
+      targetSample->asfs_PlaybackFlags = AMISF_PLAY_RESOLUTION_16BIT
+                                       | AMISF_PLAY_LOOPED
+                                       | AMISF_PLAY_INTERPOLATION
+                                       | AMISF_PLAY_ENVELOPE_MODULATION
+                                       | AMISF_PLAY_ENVELOPE_KEY_ON
+                                       | AMISF_PLAY_SAMPLE_PLAYBACK_ON;
+      targetSample->asfs_StatusFlags = AMISF_STATUS_LOCATION_OTHER_FILE;
+      targetSample->asfs_StartOffset = targetOffset;
+      targetSample->asfs_LoopOffset = targetOffset
+        + (( sourceSample->sf2s_LoopStartOffset
+          - sourceSample->sf2s_SampleStartOffset ) << 1 );
+      targetOffset +=
+        (( sourceSample->sf2s_LoopEndOffset 
+          - sourceSample->sf2s_SampleStartOffset ) << 1 ) - 1;
+      targetSample->asfs_EndOffset = targetOffset;
+      ++targetOffset;
+      LOG_D(( "V: Sample mapped from s: 0x%08lx l: 0x%08lx e: 0x%08lx "
+              "to s: 0x%08lx l: 0x%08lx e: 0x%08lx\n",
+              sourceSample->sf2s_SampleStartOffset,
+              sourceSample->sf2s_LoopStartOffset,
+              sourceSample->sf2s_LoopEndOffset,
+              targetSample->asfs_StartOffset,
+              targetSample->asfs_LoopOffset,
+              targetSample->asfs_EndOffset ));
+
+    } else {
+      
+      LOG_V(( "V: Found mapping %ld -> %ld (empty)\n",
+              sourceIndex, targetIndex ));
+    }
+  }
+}
+
 struct AmiSF * AllocAmiSFfromSF2( struct SF2 * sf2 ) {
 
   ULONG allocatedSize = 0;
@@ -510,7 +571,7 @@ struct AmiSF * AllocAmiSFfromSF2( struct SF2 * sf2 ) {
 
   FillRates( info, amisf );
   FillPresetNotes( sf2, info, amisf );
-// FillSampleData TODO
+  FillSampleData( sf2, info, amisf );
 
   FreeConversionInfo( info );
   LOG_I(( "I: Conversion successful, allocated size for AmiSF is %ld\n",

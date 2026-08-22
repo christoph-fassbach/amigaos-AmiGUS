@@ -21,40 +21,38 @@
 
 #include <exec/types.h>
 
-// TODO: Most need to be sample-local!
-#define AMISF_NOTE_RESOLUTION_MASK       0x0001
-#define AMISF_NOTE_RESOLUTION_8BIT       0x0000
-#define AMISF_NOTE_RESOLUTION_16BIT      0x0001
+#define AMISF_PLAY_RESOLUTION_16BIT      0x0001 // Not set => 8bit
+#define AMISF_PLAY_LOOPED                0x0002
+#define AMISF_PLAY_INTERPOLATION         0x0004
+//efine AMISF_PLAY_BIG_ENDIANESS         0x0008 // No, we do not do that here!
+// unused                                0x0010
+#define AMISF_PLAY_ENVELOPE_MODULATION   0x0020
+// unused                                0x0040
+// unused                                0x0080
+// unused                                0x0100
+// unused                                0x0200
+// unused                                0x0400
+// unused                                0x0800
+// unused                                0x1000
+// unused                                0x2000
+#define AMISF_PLAY_ENVELOPE_KEY_ON       0x4000
+#define AMISF_PLAY_SAMPLE_PLAYBACK_ON    0x8000
 
-#define AMISF_NOTE_LOOPED_MASK           0x0002
-#define AMISF_NOTE_INTERPOLATION_MASK    0x0004
-//efine AMISF_NOTE_ENDIANESS_MASK        0x0008 // No, we do not do that here!
-#define AMISF_NOTE_ENVELOPE_MASK         0x0020
-
-#define AMISF_NOTE_OTHER_NOTE_MASK       0x1000
-#define AMISF_NOTE_NOT_OTHER_NOTE_MASK   0x0000
-#define AMISF_NOTE_OTHER_NOTE_MASK       0x1000
-
-#define AMISF_NOTE_IN_FILE_MASK          0x2000
-#define AMISF_NOTE_NOT_IN_FILE           0x0000
-#define AMISF_NOTE_IN_FILE               0x2000
-
-#define AMISF_NOTE_IN_RAM_MASK           0x4000
-#define AMISF_NOTE_NOT_IN_RAM            0x0000
-#define AMISF_NOTE_IN_RAM                0x4000
-
-#define AMISF_NOTE_IN_CARD_MASK          0x8000
-#define AMISF_NOTE_NOT_IN_CARD           0x0000
-#define AMISF_NOTE_IN_CARD               0x8000
+#define AMISF_STATUS_LOCATION_MASK       0x000F
+#define AMISF_STATUS_LOCATION_OTHER_FILE 0x0001
+#define AMISF_STATUS_LOCATION_AMISF_FILE 0x0002
+#define AMISF_STATUS_LOCATION_SYS_RAM    0x0004
+#define AMISF_STATUS_LOCATION_CARD_RAM   0x0008
 
 struct SF2;
 
 struct AmiSF_Sample {
 
-  ULONG asfs_Flags;
+  UWORD asfs_PlaybackFlags;
+  UWORD asfs_StatusFlags;
   ULONG asfs_StartOffset; // relative to binary start in disk, RAM, AmiGUS
-  ULONG asfs_EndOffset;
   ULONG asfs_LoopOffset;
+  ULONG asfs_EndOffset;
 };
 
 struct AmiSF_Note {
