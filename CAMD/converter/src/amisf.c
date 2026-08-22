@@ -474,8 +474,9 @@ static VOID FillSampleData( struct SF2 * sf2,
                             struct ConversionInfo * info,
                             struct AmiSF * amisf ) {
 
-  ULONG targetOffset = 0;
+  ULONG targetCount = 0;
   ULONG sourceIndex;
+  ULONG targetOffset = 0;
 
   for ( sourceIndex = 0; sourceIndex < 65536; ++sourceIndex ) {
 
@@ -514,6 +515,7 @@ static VOID FillSampleData( struct SF2 * sf2,
           - sourceSample->sf2s_SampleStartOffset ) << 1 ) - 1;
       targetSample->asfs_EndOffset = targetOffset;
       ++targetOffset;
+
       LOG_D(( "V: Sample mapped from s: 0x%08lx l: 0x%08lx e: 0x%08lx "
               "to s: 0x%08lx l: 0x%08lx e: 0x%08lx\n",
               sourceSample->sf2s_SampleStartOffset,
@@ -522,6 +524,7 @@ static VOID FillSampleData( struct SF2 * sf2,
               targetSample->asfs_StartOffset,
               targetSample->asfs_LoopOffset,
               targetSample->asfs_EndOffset ));
+      ++targetCount;
 
     } else {
       
@@ -529,6 +532,10 @@ static VOID FillSampleData( struct SF2 * sf2,
               sourceIndex, targetIndex ));
     }
   }
+  LOG_I(( "I: Samples expected %ld, actual %ld, %s\n", 
+    amisf->asf_SampleCount,
+    targetCount,
+    ( amisf->asf_SampleCount == targetCount ) ? "OK." : "failed!" ));
 }
 
 struct AmiSF * AllocAmiSFfromSF2( struct SF2 * sf2 ) {
