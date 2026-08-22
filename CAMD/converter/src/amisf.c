@@ -192,7 +192,7 @@ static ULONG GetPlaybackRateOffset( struct AmiSF * amisf, ULONG sampleRate ) {
   return 0xFF000000;
 }
 
-static VOID FillPresetNotes(
+static BOOL FillPresetNotes(
   struct SF2 * sf2,
   struct ConversionInfo * info,
   struct AmiSF * amisf,
@@ -269,7 +269,7 @@ static VOID FillPresetNotes(
         struct AmiSF_Preset * asf_Preset =
           &( amisf->asf_Preset[ bank ][ preset ]);
         struct AmiSF_Note * asf_Note;
-        UWORD i;
+        BOOL abort;
 
         if ( 0 > sampleIndex ) {
 
@@ -361,7 +361,13 @@ static VOID FillPresetNotes(
                 asf_Preset->asfp_NoteStart ));
 
         *currentProgress += 1;
-        HandleProgressDialogTick( dialog, *currentProgress, *maxProgress );
+        abort = HandleProgressDialogTick( dialog,
+                                          *currentProgress,
+                                          *maxProgress );
+        if ( abort ) {
+
+          return TRUE;
+        }
       }
     }
   }
@@ -369,9 +375,10 @@ static VOID FillPresetNotes(
   LOG_I(( "I: Preset and note conversion %s.\n",
           ( nextNoteIndex == amisf->asf_NoteCount )
             ? "successful" : "failed" ));
+  return FALSE;
 }
 
-static VOID FillRateCounts(
+static BOOL FillRateCounts(
   struct ConversionInfo * info,
   struct AmiSF * amisf,
   struct ProgressDialog * dialog,
@@ -393,6 +400,7 @@ static VOID FillRateCounts(
     const ULONG sampleRate = rate->cpr_SampleRate;
     UBYTE minSampleNote = rate->cpr_SampleNote;
     const UBYTE maxSampleNote = rate->cpr_SampleNote;
+    BOOL abort;
 
     while ( sampleRate == end->cpr_SampleRate ) {
 
@@ -416,7 +424,11 @@ static VOID FillRateCounts(
     rate = ( struct ConversionRates * ) end->cpr_Node.ln_Pred;
 
     *currentProgress += 1;
-    HandleProgressDialogTick( dialog, *currentProgress, *maxProgress );
+    abort = HandleProgressDialogTick( dialog, *currentProgress, *maxProgress );
+    if ( abort ) {
+
+      return TRUE;
+    }
   }
   *maxProgress += 
     ( amisf->asf_SampleRateCount << 1 ) - ( info->ci_PlaybackRateCount  << 1 );
@@ -424,9 +436,10 @@ static VOID FillRateCounts(
   LOG_D(( "D: Found %ld distinct sample rates and %ld playback rates\n",
           amisf->asf_SampleRateCount,
           amisf->asf_PlaybackRateCount ));
+  return FALSE;
 }
 
-static VOID FillRates(
+static BOOL FillRates(
   struct ConversionInfo * info,
   struct AmiSF * amisf,
   struct ProgressDialog * dialog,
@@ -452,6 +465,7 @@ static VOID FillRates(
     const ULONG sampleRate = rate->cpr_SampleRate;
     ULONG minSampleNote = rate->cpr_SampleNote;
     const ULONG maxSampleNote = rate->cpr_SampleNote;
+    BOOL abort;
     ULONG i;
 
     while ( sampleRate == end->cpr_SampleRate ) {
@@ -490,7 +504,11 @@ static VOID FillRates(
     rate = ( struct ConversionRates * ) end->cpr_Node.ln_Pred;
 
     *currentProgress += 1;
-    HandleProgressDialogTick( dialog, *currentProgress, *maxProgress );
+    abort = HandleProgressDialogTick( dialog, *currentProgress, *maxProgress );
+    if ( abort ) {
+
+      return TRUE;
+    }
   }
 
   LOG_D(( "D: Calc'd %ld distinct sample rates and %ld playback rates\n",
@@ -500,9 +518,10 @@ static VOID FillRates(
           (( sampleRateCount == amisf->asf_SampleRateCount )
             && ( playbackRateCount == amisf->asf_PlaybackRateCount ))
             ? "successful" : "failed" ));
+  return FALSE;
 }
 
-static VOID FillSampleData(
+static BOOL FillSampleData(
   struct SF2 * sf2,
   struct ConversionInfo * info,
   struct AmiSF * amisf,
@@ -524,6 +543,7 @@ static VOID FillSampleData(
 
       struct SF2_Sample * sourceSample;
       struct AmiSF_Sample * targetSample;
+      BOOL abort;
 
       // Value 1 means using sample index 0, correcting here.
       --targetIndex;
@@ -564,8 +584,13 @@ static VOID FillSampleData(
       ++targetCount;
 
       *currentProgress += 1;
-      HandleProgressDialogTick( dialog, *currentProgress, *maxProgress );
+      abort = HandleProgressDialogTick( dialog,
+                                         *currentProgress,
+                                         *maxProgress );
+      if ( abort ) {
 
+        return TRUE;
+      }
     } else {
       
       LOG_V(( "V: Found mapping %ld -> %ld (empty)\n",
@@ -576,6 +601,7 @@ static VOID FillSampleData(
     amisf->asf_SampleCount,
     targetCount,
     ( amisf->asf_SampleCount == targetCount ) ? "OK." : "failed!" ));
+  return FALSE;
 }
 
 struct AmiSF * AllocAmiSFfromSF2(
@@ -584,7 +610,6 @@ struct AmiSF * AllocAmiSFfromSF2(
 ) {
 
   ULONG allocatedSize = 0;
-  struct AmiSF * amisf;
   struct ConversionInfo * info = CreateConversionInfo( sf2 );
   ULONG currentProgress = 100;
   ULONG maxProgress = 100
@@ -592,48 +617,89 @@ struct AmiSF * AllocAmiSFfromSF2(
                       + info->ci_NoteCount
                       + ( info->ci_PlaybackRateCount << 1 );
 
-  HandleProgressDialogTick( dialog, currentProgress, maxProgress );
+  BOOL abort = HandleProgressDialogTick( dialog, currentProgress, maxProgress );
+  struct AmiSF * amisf = AllocMem( sizeof( struct AmiSF ),
+                                   MEMF_ANY | MEMF_CLEAR );
+  if ( !amisf ) {
 
-  amisf = AllocMem( sizeof( struct AmiSF ), MEMF_ANY | MEMF_CLEAR );
-  allocatedSize += sizeof( struct AmiSF );
+    abort = TRUE;
+  }
+  if ( !abort ) {
 
-  amisf->asf_SampleCount = info->ci_SampleCount;
-  amisf->asf_SampleMetadata = AllocMem(
-    sizeof( struct AmiSF_Sample ) * amisf->asf_SampleCount,
-    MEMF_ANY | MEMF_CLEAR );
-  allocatedSize += sizeof( struct AmiSF_Sample ) * amisf->asf_SampleCount;
+    allocatedSize += sizeof( struct AmiSF );
 
-  amisf->asf_NoteCount = info->ci_NoteCount;
-  amisf->asf_Note = AllocMem(
-    sizeof( struct AmiSF_Note ) * amisf->asf_NoteCount,
-    MEMF_ANY | MEMF_CLEAR );
-  allocatedSize += sizeof( struct AmiSF_Note ) * amisf->asf_NoteCount;
+    amisf->asf_SampleCount = info->ci_SampleCount;
+    amisf->asf_SampleMetadata = AllocMem(
+      sizeof( struct AmiSF_Sample ) * amisf->asf_SampleCount,
+      MEMF_ANY | MEMF_CLEAR );
+    allocatedSize += sizeof( struct AmiSF_Sample ) * amisf->asf_SampleCount;
 
-  FillRateCounts( info, amisf, dialog, &currentProgress, &maxProgress );
+    amisf->asf_NoteCount = info->ci_NoteCount;
+    amisf->asf_Note = AllocMem(
+      sizeof( struct AmiSF_Note ) * amisf->asf_NoteCount,
+      MEMF_ANY | MEMF_CLEAR );
+    allocatedSize += sizeof( struct AmiSF_Note ) * amisf->asf_NoteCount;
 
-  amisf->asf_SampleRate = AllocMem(
-    sizeof( ULONG ) * amisf->asf_SampleRateCount,
-    MEMF_ANY | MEMF_CLEAR );
-  amisf->asf_PlaybackRateOffset = AllocMem(
-    sizeof( ULONG ) * amisf->asf_SampleRateCount,
-    MEMF_ANY | MEMF_CLEAR );
-  allocatedSize += sizeof( ULONG ) * amisf->asf_SampleRateCount * 2;
+    abort = FillRateCounts( info,
+                            amisf,
+                            dialog,
+                            &currentProgress,
+                            &maxProgress );
+  }
+  if ( !abort ) {
 
-  amisf->asf_PlaybackRate = AllocMem(
-    sizeof( ULONG ) * amisf->asf_PlaybackRateCount,
-    MEMF_ANY | MEMF_CLEAR );
-  allocatedSize += sizeof( ULONG ) * amisf->asf_PlaybackRateCount;
+    amisf->asf_SampleRate = AllocMem(
+      sizeof( ULONG ) * amisf->asf_SampleRateCount,
+      MEMF_ANY | MEMF_CLEAR );
+    amisf->asf_PlaybackRateOffset = AllocMem(
+      sizeof( ULONG ) * amisf->asf_SampleRateCount,
+      MEMF_ANY | MEMF_CLEAR );
+    allocatedSize += sizeof( ULONG ) * amisf->asf_SampleRateCount * 2;
 
-  FillRates( info, amisf, dialog, &currentProgress, &maxProgress );
-  FillPresetNotes( sf2, info, amisf, dialog, &currentProgress, &maxProgress );
-  FillSampleData( sf2, info, amisf, dialog, &currentProgress, &maxProgress );
+    amisf->asf_PlaybackRate = AllocMem(
+      sizeof( ULONG ) * amisf->asf_PlaybackRateCount,
+      MEMF_ANY | MEMF_CLEAR );
+    allocatedSize += sizeof( ULONG ) * amisf->asf_PlaybackRateCount;
+
+    abort = FillRates( info,
+                       amisf,
+                       dialog,
+                       &currentProgress,
+                       &maxProgress );
+  }
+
+  if ( !abort ) {
+
+    abort = FillPresetNotes( sf2,
+                             info,
+                             amisf,
+                             dialog,
+                             &currentProgress,
+                             &maxProgress );
+  }
+  if ( !abort ) {
+
+    abort = FillSampleData( sf2,
+                            info,
+                            amisf,
+                            dialog,
+                            &currentProgress,
+                            &maxProgress );
+  }
 
   FreeConversionInfo( info );
-  LOG_I(( "I: Conversion successful, allocated size for AmiSF is %ld\n",
-          allocatedSize ));
+  if ( abort ) {
+
+    FreeAmiSF( amisf );
+    amisf = NULL;
+
+  } else {
+
+    LOG_I(( "I: Conversion successful, allocated size for AmiSF is %ld\n",
+            allocatedSize ));
+  }
   return amisf;
 }
-
 
 VOID FreeAmiSF( struct AmiSF * amisf ) {
 
