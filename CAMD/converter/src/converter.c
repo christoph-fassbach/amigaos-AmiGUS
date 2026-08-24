@@ -336,25 +336,14 @@ VOID OpenWin( VOID ) { // TODO: enable error handling and return values
   return;
 }
 
-BOOL HandleSf2Read( VOID ) {
+BOOL HandleSf2Read( struct SF_Converter * base ) {
 
-  struct SF_Converter * base = SF_Converter_Base;
-  BOOL abort = FALSE;
+  BOOL abort = ( NULL != base->sfc_Sf2 );
   ULONG currentProgress = 0;
   ULONG maxProgress = 100;
-  
-  base->sfc_ProgressDialog =
-    CreateProgressDialog( base->sfc_MainWindow,
-                          "Please wait...",
-                          "Loading and parsing SoundFont ...",
-                          "Cancel" );
-  ShowProgressDialog( base->sfc_ProgressDialog );
-
-  LOG_D(( "D: Reading %s.\n", base->sfc_SourceFileName ));
 
   if ( !( abort )) {
 
-    FreeSf2( base->sfc_Sf2 );
     abort = HandleProgressDialogTick( base->sfc_ProgressDialog,
                                       1,
                                       maxProgress );
@@ -394,19 +383,30 @@ BOOL HandleSf2Read( VOID ) {
   if ( abort ) {
 
     LOG_D(( "D: Handling cancelled load.\n" ));
+  
     FreeListLabels( &( base->sfc_InstrumentLabels ));
     FreeSf2( base->sfc_Sf2 );
     base->sfc_Sf2 = NULL;
   }
-  SetGadgetAttrs( base->sfc_ListBrowser,
-                  base->sfc_MainWindow,
-                  NULL,
-                  LISTBROWSER_Labels, &( base->sfc_InstrumentLabels ),
-                  TAG_DONE );
 
-  CloseProgressDialog( base->sfc_ProgressDialog );
-  FreeProgressDialog( base->sfc_ProgressDialog );
-  base->sfc_ProgressDialog = NULL;
+  return abort;
+}
+
+BOOL HandleAmiSFRead( struct SF_Converter * base ) {
+
+  BOOL abort = ( NULL != base->sfc_AmiSF );
+  ULONG currentProgress = 0;
+  ULONG maxProgress = 100;
+
+  if ( !( abort )) {
+
+    abort = HandleProgressDialogTick( base->sfc_ProgressDialog,
+                                      1,
+                                      maxProgress );
+  }
+
+  //TODO!
+  LOG_D(( "D: Loading AmiSF ... \n" ));
 
   return abort;
 }
@@ -446,10 +446,99 @@ BOOL HandleAmiSfConversion( VOID ) {
   return TRUE;    // Aborted.
 }
 
+VOID UpdateWriteButtonStatus( VOID ) {
+
+  struct SF_Converter * base = SF_Converter_Base;
+  BOOL disabled = (( NULL == base->sfc_TargetFileName )
+                  || (( NULL == base->sfc_AmiSF )
+                    && ( NULL == base->sfc_Sf2 )));
+
+  SetGadgetAttrs( base->sfc_WriteButton,
+                  base->sfc_MainWindow,
+                  NULL,
+                  GA_Disabled, disabled,
+                  TAG_END );
+
+  LOG_D(( "%ld %ld %ld %ld %ld \n", disabled, 
+    (( NULL == base->sfc_AmiSF ) && ( NULL == base->sfc_Sf2 )), 
+                    ( NULL == base->sfc_TargetFileName ),
+                   ( NULL == base->sfc_AmiSF ),
+                   ( NULL == base->sfc_Sf2 ) ));
+}
+
+VOID HandleSourceFileButton( VOID ) {
+
+  struct SF_Converter * base = SF_Converter_Base;
+  BOOL disabled;
+
+  base->sfc_SourceFileName = 
+    RequestFileName( base->sfc_MainWindow,
+                      base->sfc_InputGetFile );
+  disabled = ( NULL == base->sfc_SourceFileName );
+  SetGadgetAttrs( base->sfc_ReadButton,
+                  base->sfc_MainWindow,
+                  NULL,
+                  GA_Disabled, disabled,
+                  TAG_END );
+}
+
 VOID HandleReadButton( VOID ) {
 
-  HandleSf2Read();
-  HandleAmiSfConversion();
+  struct SF_Converter * base = SF_Converter_Base;
+  BOOL abort = FALSE;
+
+  base->sfc_ProgressDialog =
+    CreateProgressDialog( base->sfc_MainWindow,
+                          "Please wait...",
+                          "Loading and parsing SoundFont ...",
+                          "Cancel" );
+  ShowProgressDialog( base->sfc_ProgressDialog );
+
+  LOG_D(( "D: Reading %s.\n", base->sfc_SourceFileName ));
+
+  FreeSf2( base->sfc_Sf2 );
+  base->sfc_Sf2 = NULL;
+  FreeAmiSF( base->sfc_AmiSF );
+  base->sfc_AmiSF = NULL;
+
+  // Will need to try both, SF2 and AmiSF, and see what works.
+  if ( !(abort )) {
+
+    abort = HandleSf2Read( base );
+  }
+  if (( !(abort )) && ( !( base->sfc_Sf2 ))) {
+
+    abort = HandleAmiSFRead( base );
+  }
+
+  SetGadgetAttrs( base->sfc_ListBrowser,
+                  base->sfc_MainWindow,
+                  NULL,
+                  LISTBROWSER_Labels, &( base->sfc_InstrumentLabels ),
+                  TAG_DONE );
+
+  CloseProgressDialog( base->sfc_ProgressDialog );
+  FreeProgressDialog( base->sfc_ProgressDialog );
+  base->sfc_ProgressDialog = NULL;
+
+  UpdateWriteButtonStatus();
+}
+
+VOID HandleTargetFileButton( VOID ) {
+
+  struct SF_Converter * base = SF_Converter_Base;
+  base->sfc_TargetFileName = 
+    RequestFileName( base->sfc_MainWindow,
+                     base->sfc_OutputGetFile );
+
+  UpdateWriteButtonStatus();
+}
+
+VOID HandleWriteButton( VOID ) {
+
+  struct SF_Converter * base = SF_Converter_Base;
+
+  LOG_D(( "D: Writing %s.\n", base->sfc_TargetFileName ));
 }
 
 VOID HandleListElement( ULONG index ) {
@@ -574,30 +663,12 @@ VOID HandleEvents( VOID ) {
           switch ( WMHI_GADGETMASK & windowMessage ) {
             case GadgetId_GetInputFile: {
 
-              BOOL disabled;
-              base->sfc_SourceFileName = 
-                RequestFileName( base->sfc_MainWindow,
-                                 base->sfc_InputGetFile );
-              disabled = ( NULL == base->sfc_SourceFileName );
-              SetGadgetAttrs( base->sfc_ReadButton,
-                              base->sfc_MainWindow,
-                              NULL,
-                              GA_Disabled, disabled,
-                              TAG_END );
+              HandleSourceFileButton();
               break;
             }
             case GadgetId_GetOutputFile: {
 
-              BOOL disabled;
-              base->sfc_TargetFileName = 
-                RequestFileName( base->sfc_MainWindow,
-                                 base->sfc_OutputGetFile );
-              disabled = ( NULL == base->sfc_TargetFileName );
-              SetGadgetAttrs( base->sfc_WriteButton,
-                              base->sfc_MainWindow,
-                              NULL,
-                              GA_Disabled, disabled,
-                              TAG_END );
+              HandleTargetFileButton();
               break;
             }
             case GadgetId_ReadButton: {
@@ -607,7 +678,7 @@ VOID HandleEvents( VOID ) {
             }
             case GadgetId_WriteButton: {
 
-              LOG_D(( "D: Writing %s.\n", base->sfc_TargetFileName ));
+              HandleWriteButton();
               break;
             }
             case GadgetId_Instruments: {
