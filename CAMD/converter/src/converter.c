@@ -336,7 +336,7 @@ VOID OpenWin( VOID ) { // TODO: enable error handling and return values
   return;
 }
 
-VOID HandleReadButton( VOID ) {
+BOOL HandleSf2Read( VOID ) {
 
   struct SF_Converter * base = SF_Converter_Base;
   BOOL abort = FALSE;
@@ -395,6 +395,8 @@ VOID HandleReadButton( VOID ) {
 
     LOG_D(( "D: Handling cancelled load.\n" ));
     FreeListLabels( &( base->sfc_InstrumentLabels ));
+    FreeSf2( base->sfc_Sf2 );
+    base->sfc_Sf2 = NULL;
   }
   SetGadgetAttrs( base->sfc_ListBrowser,
                   base->sfc_MainWindow,
@@ -406,25 +408,48 @@ VOID HandleReadButton( VOID ) {
   FreeProgressDialog( base->sfc_ProgressDialog );
   base->sfc_ProgressDialog = NULL;
 
-  // TODO: Remove!
-  {
-    base->sfc_ProgressDialog =
-      CreateProgressDialog( base->sfc_MainWindow,
-                            "Please wait...",
-                            "Converting SF2 to AmiSF ...",
-                            "Cancel" );
-    ShowProgressDialog( base->sfc_ProgressDialog );
+  return abort;
+}
 
-    base->sfc_AmiSF = AllocAmiSFfromSF2( base->sfc_Sf2,
-                                         base->sfc_ProgressDialog );
+BOOL HandleAmiSfConversion( VOID ) {
 
-    CloseProgressDialog( base->sfc_ProgressDialog );
-    FreeProgressDialog( base->sfc_ProgressDialog );
-    base->sfc_ProgressDialog = NULL;
+  struct SF_Converter * base = SF_Converter_Base;
 
-    FreeAmiSF( base->sfc_AmiSF );
-    base->sfc_AmiSF = NULL;
+  FreeAmiSF( base->sfc_AmiSF );
+  base->sfc_AmiSF = NULL;
+
+  if ( !( base->sfc_Sf2 )) {
+
+    LOG_W(( "W: SF2 not available, conversion aborted!\n" ));
+    return TRUE;
   }
+
+  base->sfc_ProgressDialog =
+    CreateProgressDialog( base->sfc_MainWindow,
+                          "Please wait...",
+                          "Converting SF2 to AmiSF ...",
+                          "Cancel" );
+  ShowProgressDialog( base->sfc_ProgressDialog );
+
+  base->sfc_AmiSF =
+    AllocAmiSFfromSF2( base->sfc_Sf2,
+                       base->sfc_ProgressDialog );
+
+  CloseProgressDialog( base->sfc_ProgressDialog );
+  FreeProgressDialog( base->sfc_ProgressDialog );
+  base->sfc_ProgressDialog = NULL;
+
+  if ( base->sfc_AmiSF ) {
+
+    return FALSE; // Not aborted, all good!
+  }
+  return TRUE;    // Aborted.
+}
+
+VOID HandleReadButton( VOID ) {
+
+  HandleSf2Read();
+  HandleAmiSfConversion();
 }
 
 VOID HandleListElement( ULONG index ) {
