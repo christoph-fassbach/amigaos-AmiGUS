@@ -284,6 +284,22 @@ LONG C_strcmp(STRPTR a, STRPTR b) {
   return (result > 0) - (result < 0);
 }
 
+BOOL C_endswith( STRPTR a, STRPTR b ) {
+
+  LONG aLen = C_strlen( a );
+  LONG bLen = C_strlen( b );
+  BOOL result;
+
+  if ( bLen > aLen ) {
+
+    return FALSE;
+  }
+  a = ( STRPTR )((( LONG ) a ) + aLen - bLen );
+  result = ( 0 == C_strcmp( a, b ));
+
+  return result;
+}
+
 void C_strncpy(STRPTR target, CONST_STRPTR source, UWORD max) {
 
   while (
@@ -309,6 +325,69 @@ STRPTR C_strcpy_VD(STRPTR string) {
   LONG length = C_strlen(string) + 1;
   STRPTR result = AllocVec(length, MEMF_ANY);
   C_strncpy(result, string, length);
+
+  return result;
+}
+
+STRPTR C_strcat(STRPTR target, STRPTR source, UWORD max) {
+
+  LONG length = C_strlen(target);
+  if (length < max) {
+
+    C_strncpy(target + length, source, max - length);
+  }
+  return target;
+}
+
+STRPTR C_strcatn( STRPTR target, UWORD max, LONG count, ... ) {
+
+  LONG i = 0;
+  LONG length = 0;
+  STRPTR * args = ( STRPTR * )( &count + 1 );
+
+  while (( length < max ) && ( i < count )) {
+
+    C_strncpy( target + length, args[ i ], max - length);
+    length += C_strlen( args[ i ]);
+    i++;
+  }
+  return target;
+}
+
+STRPTR C_strcat_VD(LONG count, ...) {
+
+  STRPTR result = NULL;
+  STRPTR current = NULL;
+  STRPTR *args = (STRPTR *)(&count + 1);
+  LONG length = 1; /* for empty string! */
+  LONG *lengths = AllocVec(count * sizeof(LONG), MEMF_ANY);
+  LONG i = 0;
+
+  for (i = 0; i < count; ++i) {
+
+    LONG l = C_strlen(args[i]);
+    LOG_V(( "V: %s has length %ld.", args[i], l ));
+    lengths[i] = l;
+    length += l;
+  }
+
+  LOG_V(( "V: Overall length %ld.", length ));
+  result = AllocVec(length, MEMF_ANY);
+  current = result;
+
+  for (i = 0; i < count; ++i) {
+
+    LONG l = lengths[i];
+
+    C_strncpy(current, args[i], length);
+    length -= l;
+    current += l;
+
+    LOG_V(( "V: Current result is %s, remaining length %ld.", result, length));
+  }
+
+  LOG_V(( "V: Final result is %s, remaining length %ld, expected 1.", result, length));
+  FreeVec(lengths);
 
   return result;
 }

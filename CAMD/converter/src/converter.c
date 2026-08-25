@@ -541,10 +541,42 @@ VOID HandleReadButton( VOID ) {
 
 VOID HandleTargetFileButton( VOID ) {
 
+  STRPTR suffix = ".AmiSF";
   struct SF_Converter * base = SF_Converter_Base;
   base->sfc_TargetFileName = 
     RequestFileName( base->sfc_MainWindow,
                      base->sfc_OutputGetFile );
+
+  if ( !( C_endswith( base->sfc_TargetFileName, suffix ))) {
+
+    LONG required = C_strlen( base->sfc_TargetFileName )
+                    + C_strlen( suffix )
+                    + 1;                      // trailing "\0"
+    STRPTR path = AllocMem( required, MEMF_CLEAR | MEMF_ANY );
+
+    LOG_V(( "V: Need %ld = %ld + %ld (+1) chars.\n",
+            required,
+            C_strlen( base->sfc_TargetFileName ),
+            C_strlen( suffix )));
+
+    C_strcatn( path, required, 2, base->sfc_TargetFileName, suffix );
+
+    SetGadgetAttrs( base->sfc_OutputGetFile,
+                    base->sfc_MainWindow,
+                    NULL,
+                    GETFILE_FullFile, path,
+                    TAG_END );
+
+    LOG_V(( "V: Corrected target to '%s' @0x%08lx.\n", path, path ));
+
+    FreeMem( path, required );
+
+    GetAttr( GETFILE_FullFile,
+             base->sfc_OutputGetFile,
+             ( ULONG * ) &( base->sfc_TargetFileName ));
+    LOG_V(( "V: Selected file %s @0x%08lx.\n",
+            base->sfc_TargetFileName, base->sfc_TargetFileName ));
+  }
 
   UpdateWriteButtonStatus();
 }

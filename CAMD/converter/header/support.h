@@ -21,6 +21,8 @@
 
 #include <exec/types.h>
 
+#include <libraries/dos.h>
+
 /******************************************************************************
  * List / MinList helper macros.
  *****************************************************************************/
@@ -215,6 +217,18 @@ LONG C_strlen(STRPTR string);
  */
 LONG C_strcmp(STRPTR a, STRPTR b);
 
+
+/**
+ * Like java's String::endswith.
+ * Returns TRUE if the first string ends with the second string.
+ *
+ * @param a
+ * @param b
+ *
+ * @return TRUE if a ends with b, FALSE otherwise.
+ */
+BOOL C_endswith( STRPTR a, STRPTR b );
+
 /**
  * Like string.h's strncpy, just without returning anything.
  * Copies up to n characters from the string pointed to, by src to dest.
@@ -256,7 +270,20 @@ STRPTR C_strcpy_VD(STRPTR string);
  *
  * @return Modified or unmodified target.
  */
-STRPTR C_strcat(STRPTR target, STRPTR source, UWORD max);
+STRPTR C_strcat( STRPTR target, STRPTR source, UWORD max );
+
+/**
+ * Returns all strings concatenated together.
+ * Transfers ownership of the resulting vector to the caller.
+ *
+ * @param target String to add to.
+ * @param max Permissable space in target.
+ * @param count Number of strings to concatenate.
+ * @param varargs Strings to concatenate.
+ *
+ * @return Newly allocated result string.
+ */
+STRPTR C_strcatn( STRPTR target, UWORD max, LONG count, ... );
 
 /**
  * Returns all strings concatenated together.
@@ -267,7 +294,7 @@ STRPTR C_strcat(STRPTR target, STRPTR source, UWORD max);
  *
  * @return Newly allocated result string.
  */
-STRPTR C_strcat_VD(LONG count, ...);
+STRPTR C_strcat_VD( LONG count, ... );
 
 /******************************************************************************
  * Endianess helpers - public functions.
