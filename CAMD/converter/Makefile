@@ -239,7 +239,7 @@ $(BDIR)%-$(APP_CPU)-$(APP_LOG).o: $(SDIR)%.asm $(HDIR)*
 
 test: test_sf2_tools test_support
 
-test_sf2_tools: FOLDERS $(LIB_OBJS)
+test_sf2_tools: FOLDERS $(APP_OBJS)
 	@echo " "
 	$(CC) $(CFLAGS) test/$@.o test/$@.c
 	$(LD) $(LFLAGS) test/$@ $(LFLAGS1) $(LFLAGST1) test/$@.o \
@@ -251,7 +251,7 @@ test_sf2_tools: FOLDERS $(LIB_OBJS)
 	$(RUNNER) test/$@
 	-@$(RM) test/$@ test/$@.o $(RM_SUFFIX)
 
-test_support: FOLDERS $(LIB_OBJS)
+test_support: FOLDERS $(APP_OBJS)
 	@echo " "
 	$(CC) $(CFLAGS) test/$@.o test/$@.c
 	$(LD) $(LFLAGS) test/$@ $(LFLAGS1) $(LFLAGST1) test/$@.o \

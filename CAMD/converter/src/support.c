@@ -339,7 +339,7 @@ STRPTR C_strcat(STRPTR target, STRPTR source, UWORD max) {
   return target;
 }
 
-STRPTR C_strcatn( STRPTR target, UWORD max, LONG count, ... ) {
+STRPTR C_strncat( STRPTR target, UWORD max, LONG count, ... ) {
 
   LONG i = 0;
   LONG length = 0;

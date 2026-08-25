@@ -283,7 +283,7 @@ STRPTR C_strcat( STRPTR target, STRPTR source, UWORD max );
  *
  * @return Newly allocated result string.
  */
-STRPTR C_strcatn( STRPTR target, UWORD max, LONG count, ... );
+STRPTR C_strncat( STRPTR target, UWORD max, LONG count, ... );
 
 /**
  * Returns all strings concatenated together.

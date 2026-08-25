@@ -559,7 +559,7 @@ VOID HandleTargetFileButton( VOID ) {
             C_strlen( base->sfc_TargetFileName ),
             C_strlen( suffix )));
 
-    C_strcatn( path, required, 2, base->sfc_TargetFileName, suffix );
+    C_strncat( path, required, 2, base->sfc_TargetFileName, suffix );
 
     SetGadgetAttrs( base->sfc_OutputGetFile,
                     base->sfc_MainWindow,
