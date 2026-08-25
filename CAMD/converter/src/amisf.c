@@ -18,162 +18,18 @@
 
 #include <limits.h>
 
+#include <proto/dos.h>
 #include <proto/exec.h>
 
 #include "amisf.h"
+#include "converter.h"
 #include "debug.h"
+#include "errors.h"
 #include "progress_dialog.h"
 #include "sf2.h"
+#include "sf2_conversion.h"
 #include "sf2_tools.h"
 #include "support.h"
-
-struct ConversionRates {
-
-  struct Node cpr_Node;
-
-  ULONG cpr_SampleRate;
-  UBYTE cpr_SampleNote;
-  UBYTE cpr_Padding0;
-  UWORD cpr_Padding1;
-};
-
-struct ConversionInfo {
-
-  ULONG ci_NoteCount;
-  ULONG ci_SampleCount;
-  UWORD ci_SampleMapping[ 65536 ];
-  // 0 in mapping: empty
-  // 1 in mapping: sf2 index mapped to that new index
-
-  UWORD ci_PlaybackRateCount;
-  struct List ci_PlaybackRatesNeeded;
-};
-
-static LONG CompareRates( struct Node * a, struct Node * b ) {
-
-  struct ConversionRates * aa = ( struct ConversionRates * ) a;
-  struct ConversionRates * bb = ( struct ConversionRates * ) b;
-  LONG rateDifference = aa->cpr_SampleRate - bb->cpr_SampleRate;
-
-  if ( rateDifference ) {
-
-    return rateDifference;
-  }
-
-  return aa->cpr_SampleNote - bb->cpr_SampleNote;
-}
-
-static struct ConversionInfo * CreateConversionInfo( struct SF2 * sf2 ) {
-
-  UWORD count = 1;
-  struct ConversionInfo * info = AllocMem( sizeof( struct ConversionInfo ),
-                                           MEMF_ANY | MEMF_CLEAR );
-  struct SF2_Preset * sf2Preset;
-
-  NEW_LIST( &( info->ci_PlaybackRatesNeeded ));
-
-  /* Begin iteration over all presets - instruments - samples */
-  FOR_LIST( &( sf2->sf2_Presets ),
-            sf2Preset,
-            struct SF2_Preset * ) {
-
-    struct SF2_Args * argsP;
-
-    FOR_LIST( &( sf2Preset->sf2p_Args ),
-              argsP,
-              struct SF2_Args * ) {
-
-      const LONG instrumentIndex = argsP->sf2a_Values.sf2v_NextNumber;
-
-      struct SF2_Instrument * tempInstrument;
-      struct SF2_Args * argsI;
-
-      if ( 0 > instrumentIndex ) {
-
-        // Skip over the de-duplicated instruments
-        continue;
-      }
-
-      tempInstrument = sf2->sf2_InstrumentArray[ instrumentIndex ];
-
-      FOR_LIST( &( tempInstrument->sf2i_Args ),
-                argsI,
-                struct SF2_Args * ) {
-
-        const LONG sampleIndex = argsI->sf2a_Values.sf2v_NextNumber;
-        const LONG sampleMin = argsI->sf2a_Values.sf2v_LowNote;
-        const LONG sampleMax = argsI->sf2a_Values.sf2v_HighNote;
-        const LONG instrumentMin = argsP->sf2a_Values.sf2v_LowNote;
-        const LONG instrumentMax = argsP->sf2a_Values.sf2v_HighNote;
-        struct SF2_Sample * tempSample;
-        struct ConversionRates * rate;
-
-        if ( 0 > sampleIndex ) {
-
-          // Skip over the de-duplicated samples
-          continue;
-        }
-
-        if (( sampleMin > instrumentMax )
-          || ( instrumentMin > sampleMax)) {
-
-          // Skip over unreachable samples
-          continue;
-        }
-
-        tempSample = sf2->sf2_SampleArray[ sampleIndex ];
-        /* Iteration payload below */
-        if ( tempSample->sf2s_Number != sampleIndex ) {
-
-          LOG_E(( "E: SampleIndex %ld != Sample's number %ld\n", 
-                  sampleIndex, tempSample->sf2s_Number ));
-
-        } else if ( !( info->ci_SampleMapping[ sampleIndex ] )) {
-
-          info->ci_SampleMapping[ sampleIndex ] = count;
-          ++count;
-        }
-        ++info->ci_NoteCount;
-
-        rate = AllocMem( sizeof( struct ConversionRates ), MEMF_ANY );
-        if ( rate ) {
-          rate->cpr_SampleRate = tempSample->sf2s_SampleRate;
-          rate->cpr_SampleNote = tempSample->sf2s_SampleNote;
-          InsertSorted( ( struct Node * ) rate,
-                        &( info->ci_PlaybackRatesNeeded ),
-                        &( CompareRates ));
-          ++info->ci_PlaybackRateCount;
-        }
-
-        /* Complete iteration over all presets - instruments - samples */
-      }
-    }
-  }
-  --count;
-  info->ci_SampleCount = count;
-  LOG_I(( "I: AmiSF will have %ld notes, "
-          "contain %ld of %ld samples in SF2.\n",
-          info->ci_NoteCount,
-          info->ci_SampleCount, sf2->sf2_SampleCount ));
-  return info;
-}
-
-static VOID FreeConversionInfo( struct ConversionInfo * info ) {
-
-  struct Node * node;
-
-  if ( !( info )) {
-
-    return;
-  }
-
-  while ( node = RemHead( &( info->ci_PlaybackRatesNeeded ))) {
-
-    FreeMem( node, sizeof( struct ConversionRates ));
-  }
-
-  FreeMem( info, sizeof( struct ConversionInfo ));
-}
 
 static ULONG GetPlaybackRateOffset( struct AmiSF * amisf, ULONG sampleRate ) {
 
@@ -606,11 +462,11 @@ static BOOL FillSampleData(
 
 struct AmiSF * AllocAmiSFfromSF2(
   struct SF2 * sf2,
+  struct ConversionInfo * info,
   struct ProgressDialog * dialog
 ) {
 
   ULONG allocatedSize = 0;
-  struct ConversionInfo * info = CreateConversionInfo( sf2 );
   ULONG currentProgress = 100;
   ULONG maxProgress = 100
                       + info->ci_SampleCount
@@ -687,7 +543,6 @@ struct AmiSF * AllocAmiSFfromSF2(
                             &maxProgress );
   }
 
-  FreeConversionInfo( info );
   if ( abort ) {
 
     FreeAmiSF( amisf );
@@ -699,6 +554,118 @@ struct AmiSF * AllocAmiSFfromSF2(
             allocatedSize ));
   }
   return amisf;
+}
+
+struct AmiSF * AllocAmiSFfromFile(
+  STRPTR filePath,
+  struct ProgressDialog * dialog
+) {
+
+  // TODO!!!
+  return NULL;
+}
+
+LONG WriteAmiSFtoFile(
+  struct AmiSF * amisf,
+  STRPTR filePath,
+  struct SF2 * sf2,
+  struct ConversionInfo * info,
+  struct ProgressDialog * dialog
+) {
+
+  ULONG i;
+  ULONG j;
+  LONG maxSampleSize = -1;
+  BPTR fileHandle;
+  
+  fileHandle = Open( filePath, MODE_NEWFILE );
+  if ( !( fileHandle )) {
+
+    return EOpenAmiSFwriteFailed;
+  }
+
+  /*
+  for ( bank = 0; bank < 129; ++bank ) {
+    for ( preset = 0; preset < 129; ++preset ) {
+
+      Write( fileHandle,
+             &( amisf->asf_Preset[ bank ][ preset ]),
+             sizeof( struct AmiSfPreset ));
+    }
+  }
+  */
+  Write( fileHandle,
+         "AmiSF\0\0\1",
+         8 );
+
+  Write( fileHandle,
+         &( amisf->asf_Preset ),
+         128 * 128 * sizeof( struct AmiSF_Preset ));
+  
+  Write( fileHandle,
+         &( amisf->asf_NoteCount ),
+         sizeof( ULONG ));
+  Write( fileHandle,
+          amisf->asf_Note,
+          amisf->asf_NoteCount * sizeof( struct AmiSF_Note ));
+
+  Write( fileHandle,
+         &( amisf->asf_SampleCount ),
+         sizeof( ULONG ));
+  Write( fileHandle,
+         amisf->asf_SampleMetadata,
+         amisf->asf_SampleCount * sizeof( struct AmiSF_Sample ));
+
+  Write( fileHandle,
+         &( amisf->asf_SampleRateCount ),
+         sizeof( ULONG ));
+  Write( fileHandle,
+         amisf->asf_SampleRate,
+         amisf->asf_SampleRateCount * sizeof( ULONG ));
+  Write( fileHandle,
+         amisf->asf_PlaybackRateOffset,
+         amisf->asf_SampleRateCount * sizeof( ULONG ));
+
+  Write( fileHandle,
+         &( amisf->asf_PlaybackRateCount ),
+         sizeof( ULONG ));
+  Write( fileHandle,
+         amisf->asf_PlaybackRate,
+         amisf->asf_PlaybackRateCount * sizeof( ULONG ));
+
+  Write( fileHandle,
+         &( amisf->asf_SampleDataSize ),
+         sizeof( ULONG ));
+
+  amisf->asf_SampleSourceOffset = Seek( fileHandle, OFFSET_CURRENT, 0 );
+
+  for ( i = 0; i < amisf->asf_SampleCount; ++i ) {
+
+    for (j = 0; j < 65535; ++j ) {
+
+      if (( info->ci_SampleMapping[ j ] )
+        && (( info->ci_SampleMapping[ j ] - 1 ) == i )) {
+
+        struct SF2_Sample * sf2Sample = sf2->sf2_SampleArray[ j ];
+        LONG sf2SampleSize = 
+          sf2Sample->sf2s_LoopEndOffset - sf2Sample->sf2s_SampleStartOffset;
+        sf2SampleSize <<= 1;
+
+        maxSampleSize = MAX( maxSampleSize, sf2SampleSize );
+
+        LOG_D(( "D: AmiSF sample %ld is mapped to SF2 sample %ld, "
+                "max size seen %ld.\n",
+                i, j, maxSampleSize ));
+
+
+        break;
+      }
+    }
+  }
+LOG_D(( "D: Written.\n" ));
+  Close( fileHandle );
+
+  return ENoError;
 }
 
 VOID FreeAmiSF( struct AmiSF * amisf ) {
@@ -739,4 +706,11 @@ VOID FreeAmiSF( struct AmiSF * amisf ) {
   }
 
   FreeMem( amisf, sizeof( struct AmiSF ));
+  LOG_D(( "D: Free'd AmiSF with %ld notes, %ld samples, %ld bytes sample data, "
+          "%ld sample rates, and %ld playback rates.\n",
+          amisf->asf_NoteCount,
+          amisf->asf_SampleCount,
+          -1,
+          amisf->asf_SampleRateCount,
+          amisf->asf_PlaybackRateCount ));
 }

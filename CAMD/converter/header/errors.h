@@ -91,6 +91,12 @@ enum ErrorCodes
   EDuplicatedSm24Chunk,
   EInvalidSampleSize,
 
+  /* AmiSF read errors  0x1100 - 0x11ff */
+  EOpenAmiSFreadFailed = 0x1100,
+
+  /* AmiSF write errors 0x1200 - 0x12ff */
+  EOpenAmiSFwriteFailed = 0x1200,
+
   /* Insert errors above. */
   EUnknownError,
   EAmountOfErrors

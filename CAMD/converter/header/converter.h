@@ -81,8 +81,9 @@ struct SF_Converter {
   STRPTR                        sfc_SourceFileName;
   STRPTR                        sfc_TargetFileName;
 
-  struct SF2                  * sfc_Sf2;
   struct AmiSF                * sfc_AmiSF;
+  struct ConversionInfo       * sfc_Sf2ConversionInfo;
+  struct SF2                  * sfc_Sf2;
 
   /* Debug output handling */
   BPTR                          sfc_LogFile;       // Debug log file handle

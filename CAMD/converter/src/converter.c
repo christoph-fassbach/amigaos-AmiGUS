@@ -38,6 +38,7 @@
 #include "errors.h"
 #include "progress_dialog.h"
 #include "sf_listnodes.h"
+#include "sf2_conversion.h"
 #include "sf2_optimizer.h"
 #include "sf2_reader.h"
 #include "sf2_tools.h"
@@ -162,6 +163,12 @@ VOID Cleanup( VOID ) {
   struct SF_Converter * base = SF_Converter_Base;
 
   FreeSf2( base->sfc_Sf2 );
+  base->sfc_Sf2 = NULL;
+  FreeConversionInfo( base->sfc_Sf2ConversionInfo );
+  base->sfc_Sf2ConversionInfo = NULL;
+  FreeAmiSF( base->sfc_AmiSF );
+  base->sfc_AmiSF = NULL;
+
   DeleteMsgPort( base->sfc_MidiReplyPort );
 
   CloseMidiInOutput( &( base->sfc_MidiLink ));
@@ -357,7 +364,7 @@ BOOL HandleSf2Read( struct SF_Converter * base ) {
   }
   if ( !( abort )) {
 
-    base->sfc_Sf2 = AllocSf2FromFile( base->sfc_SourceFileName );    
+    base->sfc_Sf2 = AllocSf2FromFile( base->sfc_SourceFileName );
     maxProgress = base->sfc_Sf2->sf2_PresetCount; // CreateSf2ListLabels
     abort = HandleProgressDialogTick( base->sfc_ProgressDialog,
                                       5,
@@ -382,7 +389,7 @@ BOOL HandleSf2Read( struct SF_Converter * base ) {
 
   if ( abort ) {
 
-    LOG_D(( "D: Handling cancelled load.\n" ));
+    LOG_D(( "D: Reading SF2 cancelled.\n" ));
   
     FreeListLabels( &( base->sfc_InstrumentLabels ));
     FreeSf2( base->sfc_Sf2 );
@@ -407,6 +414,9 @@ BOOL HandleAmiSFRead( struct SF_Converter * base ) {
 
   //TODO!
   LOG_D(( "D: Loading AmiSF ... \n" ));
+  base->sfc_AmiSF = AllocAmiSFfromFile(
+    base->sfc_SourceFileName,
+    base->sfc_ProgressDialog );
 
   return abort;
 }
@@ -431,8 +441,10 @@ BOOL HandleAmiSfConversion( VOID ) {
                           "Cancel" );
   ShowProgressDialog( base->sfc_ProgressDialog );
 
+  base->sfc_Sf2ConversionInfo = AllocConversionInfo( base->sfc_Sf2 );
   base->sfc_AmiSF =
     AllocAmiSFfromSF2( base->sfc_Sf2,
+                       base->sfc_Sf2ConversionInfo,
                        base->sfc_ProgressDialog );
 
   CloseProgressDialog( base->sfc_ProgressDialog );
@@ -459,11 +471,12 @@ VOID UpdateWriteButtonStatus( VOID ) {
                   GA_Disabled, disabled,
                   TAG_END );
 
-  LOG_D(( "%ld %ld %ld %ld %ld \n", disabled, 
-    (( NULL == base->sfc_AmiSF ) && ( NULL == base->sfc_Sf2 )), 
-                    ( NULL == base->sfc_TargetFileName ),
-                   ( NULL == base->sfc_AmiSF ),
-                   ( NULL == base->sfc_Sf2 ) ));
+  LOG_V(( "V: Write button status update %ld %ld %ld %ld %ld.\n",
+          disabled, 
+          (( NULL == base->sfc_AmiSF ) && ( NULL == base->sfc_Sf2 )), 
+          ( NULL == base->sfc_TargetFileName ),
+          ( NULL == base->sfc_AmiSF ),
+          ( NULL == base->sfc_Sf2 ) ));
 }
 
 VOID HandleSourceFileButton( VOID ) {
@@ -498,6 +511,8 @@ VOID HandleReadButton( VOID ) {
 
   FreeSf2( base->sfc_Sf2 );
   base->sfc_Sf2 = NULL;
+  FreeConversionInfo( base->sfc_Sf2ConversionInfo );
+  base->sfc_Sf2ConversionInfo = NULL;
   FreeAmiSF( base->sfc_AmiSF );
   base->sfc_AmiSF = NULL;
 
@@ -537,8 +552,37 @@ VOID HandleTargetFileButton( VOID ) {
 VOID HandleWriteButton( VOID ) {
 
   struct SF_Converter * base = SF_Converter_Base;
+  LONG result;
+
+  if ( !( base->sfc_AmiSF )) {
+    if ( base->sfc_Sf2 ) {
+      
+      BOOL abort = HandleAmiSfConversion();
+      if ( abort ) {
+
+        LOG_W(( "W: Cannot write with no AmiSF file in RAM available.\n" ));
+        return;
+      }
+    }
+  }
+
+  base->sfc_ProgressDialog =
+    CreateProgressDialog( base->sfc_MainWindow,
+                          "Please wait...",
+                          "Writing AmiSF ...",
+                          "Cancel" );
+  ShowProgressDialog( base->sfc_ProgressDialog );
 
   LOG_D(( "D: Writing %s.\n", base->sfc_TargetFileName ));
+  result = WriteAmiSFtoFile( base->sfc_AmiSF,
+                             base->sfc_TargetFileName,
+                             base->sfc_Sf2,
+                             base->sfc_Sf2ConversionInfo,
+                             base->sfc_ProgressDialog );
+
+  CloseProgressDialog( base->sfc_ProgressDialog );
+  FreeProgressDialog( base->sfc_ProgressDialog );
+  base->sfc_ProgressDialog = NULL;
 }
 
 VOID HandleListElement( ULONG index ) {

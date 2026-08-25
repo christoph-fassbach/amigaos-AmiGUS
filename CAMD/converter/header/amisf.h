@@ -20,6 +20,7 @@
 #define AMISF_H
 
 #include <exec/types.h>
+#include <libraries/dos.h>
 
 #define AMISF_PLAY_RESOLUTION_16BIT      0x0001 // Not set => 8bit
 #define AMISF_PLAY_LOOPED                0x0002
@@ -44,7 +45,9 @@
 #define AMISF_STATUS_LOCATION_SYS_RAM    0x0004
 #define AMISF_STATUS_LOCATION_CARD_RAM   0x0008
 
+struct ConversionInfo;
 struct SF2;
+struct ProgressDialog;
 
 struct AmiSF_Sample {
 
@@ -96,17 +99,32 @@ struct AmiSF {
   ULONG asf_PlaybackRateCount;
   ULONG * asf_PlaybackRate;
 
-  union {
-    
-    APTR asf_SampleData;
-    ULONG asf_SampleBaseOffset;
-  };
+  BPTR asf_SampleSourceFile;
+  ULONG asf_SampleSourceOffset;
+
+  ULONG asf_SampleDataSize;
+  APTR asf_SampleData;
 };
 
 struct AmiSF * AllocAmiSFfromSF2(
   struct SF2 * sf2,
+  struct ConversionInfo * info,
   struct ProgressDialog * dialog
 );
+
+struct AmiSF * AllocAmiSFfromFile(
+  STRPTR filePath,
+  struct ProgressDialog * dialog
+);
+
+LONG WriteAmiSFtoFile(
+  struct AmiSF * amisf,
+  STRPTR filePath,
+  struct SF2 * sf2,
+  struct ConversionInfo * info,
+  struct ProgressDialog * dialog
+);
+
 VOID FreeAmiSF( struct AmiSF * amisf );
 
 #endif /* AMISF2_H */
