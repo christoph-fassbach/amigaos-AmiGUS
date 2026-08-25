@@ -740,53 +740,63 @@ LONG WriteAmiSFtoFile(
     return EOpenAmiSFwriteError;
   }
 
-  amisf->asf_SampleSourceOffset = Seek( fileHandle, OFFSET_CURRENT, 0 ) + 4;
-  written = Write( fileHandle,
-                   &( amisf->asf_SampleSourceOffset ),
-                   sizeof( ULONG ));
-  if ( -1 == written ) {
+  if ( !( amisf->asf_SampleSourceFile )
+    && !( amisf->asf_SampleSourceOffset )
+    && ( sf2 ) 
+    && ( info )) {
 
-    Close( fileHandle );
-    return EOpenAmiSFwriteError;
-  }
+    // Obviously, we came from a converted SF2 file.
+    amisf->asf_SampleSourceOffset = Seek( fileHandle, OFFSET_CURRENT, 0 ) + 4;
+    written = Write( fileHandle,
+                     &( amisf->asf_SampleSourceOffset ),
+                     sizeof( ULONG ));
+    if ( -1 == written ) {
 
-  for ( i = 0; i < amisf->asf_SampleCount; ++i ) {
+      Close( fileHandle );
+      return EOpenAmiSFwriteError;
+    }
 
-    for (j = 0; j < 65535; ++j ) {
+    for ( i = 0; i < amisf->asf_SampleCount; ++i ) {
 
-      if (( info->ci_SampleMapping[ j ] )
-        && (( info->ci_SampleMapping[ j ] - 1 ) == i )) {
+      for (j = 0; j < 65535; ++j ) {
 
-        struct SF2_Sample * sf2Sample = sf2->sf2_SampleArray[ j ];
-        LONG sf2SampleSize = GetSF2SampleSize( sf2Sample );
-        APTR sf2SampleData = GetSF2SampleData( sf2, sf2Sample );
+        if (( info->ci_SampleMapping[ j ] )
+          && (( info->ci_SampleMapping[ j ] - 1 ) == i )) {
+
+          struct SF2_Sample * sf2Sample = sf2->sf2_SampleArray[ j ];
+          LONG sf2SampleSize = GetSF2SampleSize( sf2Sample );
+          APTR sf2SampleData = GetSF2SampleData( sf2, sf2Sample );
         
-        LOG_D(( "D: AmiSF sample %ld is mapped to SF2 sample %ld, "
-                "size %ld @ 0x%08lx.\n",
-                i, j, sf2SampleSize, sf2SampleData ));
+          LOG_D(( "D: AmiSF sample %ld is mapped to SF2 sample %ld, "
+                  "size %ld @ 0x%08lx.\n",
+                  i, j, sf2SampleSize, sf2SampleData ));
 
-        written = Write( fileHandle, sf2SampleData, sf2SampleSize );
-        if ( -1 == written ) {
+          written = Write( fileHandle, sf2SampleData, sf2SampleSize );
+          if ( -1 == written ) {
 
-          Close( fileHandle );
-          return EOpenAmiSFwriteError;
+            Close( fileHandle );
+            return EOpenAmiSFwriteError;
+          }
+
+          FreeMem( sf2SampleData, sf2SampleSize );
+
+          currentProgress += ( 1 << 4 );
+          abort = HandleProgressDialogTick( dialog,
+                                            currentProgress,
+                                            maxProgress );
+          if ( abort ) {
+
+            Close( fileHandle );
+            return EOpenAmiSFwriteAborted;
+          }
+
+          break;
         }
-
-        FreeMem( sf2SampleData, sf2SampleSize );
-
-        currentProgress += ( 1 << 4 );
-        abort = HandleProgressDialogTick( dialog,
-                                          currentProgress,
-                                          maxProgress );
-        if ( abort ) {
-
-          Close( fileHandle );
-          return EOpenAmiSFwriteAborted;
-        }
-
-        break;
       }
     }
+  } else {
+
+    // TODO: How would we write back a loaded AmiSF?
   }
 
   LOG_D(( "D: Written, progress %ld of %ld.\n", currentProgress, maxProgress ));
