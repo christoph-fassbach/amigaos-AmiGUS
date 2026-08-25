@@ -457,7 +457,7 @@ APTR GetSF2SampleData( struct SF2 * sf2, struct SF2_Sample * sample ) {
 
   samples = AllocMem( memorySize, MEMF_ANY | MEMF_CLEAR );
 
-  LOG_D(( "V: Samples @ 0x%08lx, start %ld, memsize %ld, disksize %ld\n",
+  LOG_V(( "V: Samples @ 0x%08lx, start %ld, memsize %ld, disksize %ld\n",
           samples, sampleStart, memorySize, diskSize ));
   Seek( sf2->sf2_FileHandle, 
         sf2->sf2_16bitSamplePosition + sampleStart,
@@ -475,7 +475,7 @@ APTR GetSF2SampleData( struct SF2 * sf2, struct SF2_Sample * sample ) {
     LOG_I(( "I: Padding sample size %ld to %ld\n", diskSize, memorySize ));
   }
 
-  LOG_D(( "D: 16 bytes of sample data: %04lx %04lx %04lx %04lx\n",
+  LOG_V(( "V: 16 bytes of sample data: %04lx %04lx %04lx %04lx\n",
           samples[ 0 ], samples[ 1 ], samples[ 2 ], samples[ 3 ] ));
 
   return samples;

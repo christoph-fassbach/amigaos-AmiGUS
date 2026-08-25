@@ -96,6 +96,8 @@ enum ErrorCodes
 
   /* AmiSF write errors 0x1200 - 0x12ff */
   EOpenAmiSFwriteFailed = 0x1200,
+  EOpenAmiSFwriteAborted,
+  EOpenAmiSFwriteError,
 
   /* Insert errors above. */
   EUnknownError,

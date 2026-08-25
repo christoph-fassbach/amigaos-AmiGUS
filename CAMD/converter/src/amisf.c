@@ -573,71 +573,182 @@ LONG WriteAmiSFtoFile(
   struct ProgressDialog * dialog
 ) {
 
+  LONG written;
   ULONG i;
   ULONG j;
-  LONG maxSampleSize = -1;
-  BPTR fileHandle;
-  
-  fileHandle = Open( filePath, MODE_NEWFILE );
+  ULONG currentProgress = 100;
+  ULONG maxProgress = 100
+                      + 128                      /* Banks */
+                      + amisf->asf_NoteCount
+                      + amisf->asf_SampleCount
+                      + amisf->asf_SampleRateCount
+                      + amisf->asf_PlaybackRateCount
+                      + (( amisf->asf_SampleCount ) << 4 );
+
+  BOOL abort = HandleProgressDialogTick( dialog, currentProgress, maxProgress );
+  BPTR fileHandle = Open( filePath, MODE_NEWFILE );
+
   if ( !( fileHandle )) {
 
     return EOpenAmiSFwriteFailed;
   }
+  if ( abort ) {
 
-  /*
-  for ( bank = 0; bank < 129; ++bank ) {
-    for ( preset = 0; preset < 129; ++preset ) {
-
-      Write( fileHandle,
-             &( amisf->asf_Preset[ bank ][ preset ]),
-             sizeof( struct AmiSfPreset ));
-    }
+    Close( fileHandle );
+    return EOpenAmiSFwriteAborted;
   }
-  */
-  Write( fileHandle,
-         "AmiSF\0\0\1",
-         8 );
 
-  Write( fileHandle,
-         &( amisf->asf_Preset ),
-         128 * 128 * sizeof( struct AmiSF_Preset ));
-  
-  Write( fileHandle,
-         &( amisf->asf_NoteCount ),
-         sizeof( ULONG ));
-  Write( fileHandle,
-          amisf->asf_Note,
-          amisf->asf_NoteCount * sizeof( struct AmiSF_Note ));
+  written = Write( fileHandle,
+                   "AmiSF\0\0\1",
+                   8 );
+  if ( -1 == written ) {
 
-  Write( fileHandle,
-         &( amisf->asf_SampleCount ),
-         sizeof( ULONG ));
-  Write( fileHandle,
-         amisf->asf_SampleMetadata,
-         amisf->asf_SampleCount * sizeof( struct AmiSF_Sample ));
+    Close( fileHandle );
+    return EOpenAmiSFwriteError;
+  }
+  written = Write( fileHandle,
+                   &( amisf->asf_Preset ),
+                   128 * 128 * sizeof( struct AmiSF_Preset ));
+  if ( -1 == written ) {
 
-  Write( fileHandle,
-         &( amisf->asf_SampleRateCount ),
-         sizeof( ULONG ));
-  Write( fileHandle,
-         amisf->asf_SampleRate,
-         amisf->asf_SampleRateCount * sizeof( ULONG ));
-  Write( fileHandle,
-         amisf->asf_PlaybackRateOffset,
-         amisf->asf_SampleRateCount * sizeof( ULONG ));
+    Close( fileHandle );
+    return EOpenAmiSFwriteError;
+  }
 
-  Write( fileHandle,
-         &( amisf->asf_PlaybackRateCount ),
-         sizeof( ULONG ));
-  Write( fileHandle,
-         amisf->asf_PlaybackRate,
-         amisf->asf_PlaybackRateCount * sizeof( ULONG ));
+  currentProgress += 128;
+  abort = HandleProgressDialogTick( dialog, currentProgress, maxProgress );
+  if ( abort ) {
 
-  Write( fileHandle,
-         &( amisf->asf_SampleDataSize ),
-         sizeof( ULONG ));
+    Close( fileHandle );
+    return EOpenAmiSFwriteAborted;
+  }
 
-  amisf->asf_SampleSourceOffset = Seek( fileHandle, OFFSET_CURRENT, 0 );
+  written = Write( fileHandle,
+                   &( amisf->asf_NoteCount ),
+                   sizeof( ULONG ));
+  if ( -1 == written ) {
+
+    Close( fileHandle );
+    return EOpenAmiSFwriteError;
+  }
+  written = Write( fileHandle,
+                    amisf->asf_Note,
+                    amisf->asf_NoteCount * sizeof( struct AmiSF_Note ));
+  if ( -1 == written ) {
+
+    Close( fileHandle );
+    return EOpenAmiSFwriteError;
+  }
+
+  currentProgress += amisf->asf_NoteCount;
+  abort = HandleProgressDialogTick( dialog, currentProgress, maxProgress );
+  if ( abort ) {
+
+    Close( fileHandle );
+    return EOpenAmiSFwriteAborted;
+  }
+
+  written = Write( fileHandle,
+                   &( amisf->asf_SampleCount ),
+                   sizeof( ULONG ));
+  if ( -1 == written ) {
+
+    Close( fileHandle );
+    return EOpenAmiSFwriteError;
+  }
+  written = Write( fileHandle,
+                   amisf->asf_SampleMetadata,
+                   amisf->asf_SampleCount * sizeof( struct AmiSF_Sample ));
+  if ( -1 == written ) {
+
+    Close( fileHandle );
+    return EOpenAmiSFwriteError;
+  }
+
+  currentProgress += amisf->asf_SampleCount;
+  abort = HandleProgressDialogTick( dialog, currentProgress, maxProgress );
+  if ( abort ) {
+
+    Close( fileHandle );
+    return EOpenAmiSFwriteAborted;
+  }
+
+  written = Write( fileHandle,
+                   &( amisf->asf_SampleRateCount ),
+                   sizeof( ULONG ));
+  if ( -1 == written ) {
+
+    Close( fileHandle );
+    return EOpenAmiSFwriteError;
+  }
+  written = Write( fileHandle,
+                   amisf->asf_SampleRate,
+                   amisf->asf_SampleRateCount * sizeof( ULONG ));
+  if ( -1 == written ) {
+
+    Close( fileHandle );
+    return EOpenAmiSFwriteError;
+  }
+  written = Write( fileHandle,
+                   amisf->asf_PlaybackRateOffset,
+                   amisf->asf_SampleRateCount * sizeof( ULONG ));
+  if ( -1 == written ) {
+
+    Close( fileHandle );
+    return EOpenAmiSFwriteError;
+  }
+
+  currentProgress += amisf->asf_SampleRateCount;
+  abort = HandleProgressDialogTick( dialog, currentProgress, maxProgress );
+  if ( abort ) {
+
+    Close( fileHandle );
+    return EOpenAmiSFwriteAborted;
+  }
+
+  written = Write( fileHandle,
+                   &( amisf->asf_PlaybackRateCount ),
+                   sizeof( ULONG ));
+  if ( -1 == written ) {
+
+    Close( fileHandle );
+    return EOpenAmiSFwriteError;
+  }
+  written = Write( fileHandle,
+                   amisf->asf_PlaybackRate,
+                   amisf->asf_PlaybackRateCount * sizeof( ULONG ));
+  if ( -1 == written ) {
+
+    Close( fileHandle );
+    return EOpenAmiSFwriteError;
+  }
+
+  currentProgress += amisf->asf_PlaybackRateCount;
+  abort = HandleProgressDialogTick( dialog, currentProgress, maxProgress );
+  if ( abort ) {
+
+    Close( fileHandle );
+    return EOpenAmiSFwriteAborted;
+  }
+
+  written = Write( fileHandle,
+                   &( amisf->asf_SampleDataSize ),
+                   sizeof( ULONG ));
+  if ( -1 == written ) {
+
+    Close( fileHandle );
+    return EOpenAmiSFwriteError;
+  }
+
+  amisf->asf_SampleSourceOffset = Seek( fileHandle, OFFSET_CURRENT, 0 ) + 4;
+  written = Write( fileHandle,
+                   &( amisf->asf_SampleSourceOffset ),
+                   sizeof( ULONG ));
+  if ( -1 == written ) {
+
+    Close( fileHandle );
+    return EOpenAmiSFwriteError;
+  }
 
   for ( i = 0; i < amisf->asf_SampleCount; ++i ) {
 
@@ -647,22 +758,38 @@ LONG WriteAmiSFtoFile(
         && (( info->ci_SampleMapping[ j ] - 1 ) == i )) {
 
         struct SF2_Sample * sf2Sample = sf2->sf2_SampleArray[ j ];
-        LONG sf2SampleSize = 
-          sf2Sample->sf2s_LoopEndOffset - sf2Sample->sf2s_SampleStartOffset;
-        sf2SampleSize <<= 1;
-
-        maxSampleSize = MAX( maxSampleSize, sf2SampleSize );
-
+        LONG sf2SampleSize = GetSF2SampleSize( sf2Sample );
+        APTR sf2SampleData = GetSF2SampleData( sf2, sf2Sample );
+        
         LOG_D(( "D: AmiSF sample %ld is mapped to SF2 sample %ld, "
-                "max size seen %ld.\n",
-                i, j, maxSampleSize ));
+                "size %ld @ 0x%08lx.\n",
+                i, j, sf2SampleSize, sf2SampleData ));
 
+        written = Write( fileHandle, sf2SampleData, sf2SampleSize );
+        if ( -1 == written ) {
+
+          Close( fileHandle );
+          return EOpenAmiSFwriteError;
+        }
+
+        FreeMem( sf2SampleData, sf2SampleSize );
+
+        currentProgress += ( 1 << 4 );
+        abort = HandleProgressDialogTick( dialog,
+                                          currentProgress,
+                                          maxProgress );
+        if ( abort ) {
+
+          Close( fileHandle );
+          return EOpenAmiSFwriteAborted;
+        }
 
         break;
       }
     }
   }
-LOG_D(( "D: Written.\n" ));
+
+  LOG_D(( "D: Written, progress %ld of %ld.\n", currentProgress, maxProgress ));
   Close( fileHandle );
 
   return ENoError;
