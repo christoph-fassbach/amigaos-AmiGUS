@@ -36,12 +36,12 @@ ifeq ($(findstring /home,$(HOME)), /home)
   # ~/.netrc format:
   # machine <ip> login username password pass
   # Could do --user username:pass instead - but not cool in repo ;)
-  INSTALL0       = curl --netrc --upload-file $(MODE_FILE_DEST) ftp://192.168.0.4/cf0/Devs/AudioModes/
-  INSTALL0       = curl --netrc --upload-file $(MODE_FILE_DEST) ftp://192.168.0.12/sda4/Devs/AudioModes/
-  INSTALL0       = curl --netrc --upload-file $(MODE_FILE_DEST) ftp://192.168.0.60/cf3/Devs/AudioModes/
-  INSTALL1       = curl --netrc --upload-file $(LIB_FILE_DEST)  ftp://192.168.0.4/cf0/Devs/AHI/$(LIB_NAME).audio
-  INSTALL1       = curl --netrc --upload-file $(LIB_FILE_DEST)  ftp://192.168.0.12/sda4/Devs/AHI/$(LIB_NAME).audio
-  INSTALL1       = curl --netrc --upload-file $(LIB_FILE_DEST)  ftp://192.168.0.60/cf3/Devs/AHI/$(LIB_NAME).audio
+  INSTALL0       = curl --connect-timeout 2 --netrc --upload-file $(MODE_FILE_DEST) ftp://192.168.0.4/cf0/Devs/AudioModes/
+  INSTALL0       = curl --connect-timeout 2 --netrc --upload-file $(MODE_FILE_DEST) ftp://192.168.0.12/sda4/Devs/AudioModes/
+  INSTALL0       = curl --connect-timeout 2 --netrc --upload-file $(MODE_FILE_DEST) ftp://192.168.0.60/cf3/Devs/AudioModes/
+  INSTALL1       = curl --connect-timeout 2 --netrc --upload-file $(LIB_FILE_DEST)  ftp://192.168.0.4/cf0/Devs/AHI/$(LIB_NAME).audio
+  INSTALL1       = curl --connect-timeout 2 --netrc --upload-file $(LIB_FILE_DEST)  ftp://192.168.0.12/sda4/Devs/AHI/$(LIB_NAME).audio
+  INSTALL1       = curl --connect-timeout 2 --netrc --upload-file $(LIB_FILE_DEST)  ftp://192.168.0.60/cf3/Devs/AHI/$(LIB_NAME).audio
   INSTALL2       =
 else
   AMIGAOS       = 1
@@ -259,6 +259,6 @@ get_mem_log:
 	$(CC) $(CFLAGS) support/$@.o support/$@.c
 	$(LD) $(LFLAGS) target/$@ $(LFLAGS1) $(LFLAGST1) support/$@.o $(LFLAGST2)
 	-cp target/$@ ~/Documents/FS-UAE/Shared/AHI/
-	-curl --netrc --upload-file target/$@       ftp://192.168.0.4/cf0/Expansion/AmiGUS/GetAhiMemLog
+	-curl --connect-timeout 2 --netrc --upload-file target/$@       ftp://192.168.0.4/cf0/Expansion/AmiGUS/GetAhiMemLog
 
 ###############################################################################
