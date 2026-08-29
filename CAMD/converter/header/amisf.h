@@ -45,6 +45,8 @@
 #define AMISF_STATUS_LOCATION_SYS_RAM    0x0004
 #define AMISF_STATUS_LOCATION_CARD_RAM   0x0008
 
+extern STRPTR AmiSF_Suffix;
+
 struct ConversionInfo;
 struct SF2;
 struct ProgressDialog;

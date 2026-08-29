@@ -31,6 +31,8 @@
 #include "sf2_tools.h"
 #include "support.h"
 
+STRPTR AmiSF_Suffix = ".AmiSF";
+
 static ULONG GetPlaybackRateOffset( struct AmiSF * amisf, ULONG sampleRate ) {
 
   ULONG i;

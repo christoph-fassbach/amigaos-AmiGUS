@@ -284,6 +284,17 @@ LONG C_strcmp(STRPTR a, STRPTR b) {
   return (result > 0) - (result < 0);
 }
 
+LONG C_strcmpi(STRPTR a, STRPTR b) {
+
+  LONG result;
+  while (
+    !(result = (((*a) - (*b)) & ( ~ ( 0x20 )))) &&
+    (*a++) &&
+    (*b++)
+  );
+  return (result > 0) - (result < 0);
+}
+
 BOOL C_endswith( STRPTR a, STRPTR b ) {
 
   LONG aLen = C_strlen( a );
@@ -296,6 +307,22 @@ BOOL C_endswith( STRPTR a, STRPTR b ) {
   }
   a = ( STRPTR )((( LONG ) a ) + aLen - bLen );
   result = ( 0 == C_strcmp( a, b ));
+
+  return result;
+}
+
+BOOL C_endswithi( STRPTR a, STRPTR b ) {
+
+  LONG aLen = C_strlen( a );
+  LONG bLen = C_strlen( b );
+  BOOL result;
+
+  if ( bLen > aLen ) {
+
+    return FALSE;
+  }
+  a = ( STRPTR )((( LONG ) a ) + aLen - bLen );
+  result = ( 0 == C_strcmpi( a, b ));
 
   return result;
 }

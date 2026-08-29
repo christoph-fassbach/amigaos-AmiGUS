@@ -515,17 +515,22 @@ VOID HandleReadButton( VOID ) {
   base->sfc_Sf2ConversionInfo = NULL;
   FreeAmiSF( base->sfc_AmiSF );
   base->sfc_AmiSF = NULL;
-
+LOG_D(( "1\n" ));
   // Will need to try both, SF2 and AmiSF, and see what works.
-  if ( !(abort )) {
-
+  if (( !( abort ))
+    && ( C_endswithi( base->sfc_SourceFileName, SF2_Suffix ))) {
+LOG_D(( "2\n" ));
     abort = HandleSf2Read( base );
   }
-  if (( !(abort )) && ( !( base->sfc_Sf2 ))) {
+LOG_D(( "3\n" ));
+  if (( !( abort ))
+    && ( !( base->sfc_Sf2 ))
+    && ( C_endswithi( base->sfc_SourceFileName, AmiSF_Suffix ))) {
 
+      LOG_D(( "4\n" ));
     abort = HandleAmiSFRead( base );
   }
-
+LOG_D(( "5\n" ));
   SetGadgetAttrs( base->sfc_ListBrowser,
                   base->sfc_MainWindow,
                   NULL,
@@ -541,16 +546,15 @@ VOID HandleReadButton( VOID ) {
 
 VOID HandleTargetFileButton( VOID ) {
 
-  STRPTR suffix = ".AmiSF";
   struct SF_Converter * base = SF_Converter_Base;
   base->sfc_TargetFileName = 
     RequestFileName( base->sfc_MainWindow,
                      base->sfc_OutputGetFile );
 
-  if ( !( C_endswith( base->sfc_TargetFileName, suffix ))) {
+  if ( !( C_endswithi( base->sfc_TargetFileName, AmiSF_Suffix ))) {
 
     LONG required = C_strlen( base->sfc_TargetFileName )
-                    + C_strlen( suffix )
+                    + C_strlen( AmiSF_Suffix )
                     + 1;                      // trailing "\0"
     STRPTR path = AllocMem( required, MEMF_CLEAR | MEMF_ANY );
 
@@ -559,7 +563,7 @@ VOID HandleTargetFileButton( VOID ) {
             C_strlen( base->sfc_TargetFileName ),
             C_strlen( suffix )));
 
-    C_strncat( path, required, 2, base->sfc_TargetFileName, suffix );
+    C_strncat( path, required, 2, base->sfc_TargetFileName, AmiSF_Suffix );
 
     SetGadgetAttrs( base->sfc_OutputGetFile,
                     base->sfc_MainWindow,

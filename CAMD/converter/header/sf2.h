@@ -114,6 +114,8 @@ enum SF2_Generator_Ids {
 #define INSTRUMENT_DEFAULT_SUSTAIN_VALUE 0
 #define INSTRUMENT_DEFAULT_RELEASE_VALUE -12000
 
+extern STRPTR SF2_Suffix;
+
 // Used for the comparable part
 struct SF2_ArgValues {
 

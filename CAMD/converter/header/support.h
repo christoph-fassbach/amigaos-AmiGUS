@@ -217,6 +217,18 @@ LONG C_strlen(STRPTR string);
  */
 LONG C_strcmp(STRPTR a, STRPTR b);
 
+/**
+ * Like string.h's strcmp.
+ * Returns the case-insensitive comparison result of the two strings.
+ *
+ * @param a
+ * @param b
+ *
+ * @return -1 if a < b,
+ *          0 if a = b,
+ *          1 if a > b.
+ */
+LONG C_strcmpi(STRPTR a, STRPTR b);
 
 /**
  * Like java's String::endswith.
@@ -228,6 +240,18 @@ LONG C_strcmp(STRPTR a, STRPTR b);
  * @return TRUE if a ends with b, FALSE otherwise.
  */
 BOOL C_endswith( STRPTR a, STRPTR b );
+
+/**
+ * Like java's String::endswith.
+ * Returns TRUE if the first string ends case-insensitive
+ * with the second string.
+ *
+ * @param a
+ * @param b
+ *
+ * @return TRUE if a ends with b, FALSE otherwise.
+ */
+BOOL C_endswithi( STRPTR a, STRPTR b );
 
 /**
  * Like string.h's strncpy, just without returning anything.
