@@ -947,7 +947,7 @@ LONG WriteAmiSFtoFile(
 
     for ( i = 0; i < amisf->asf_SampleCount; ++i ) {
 
-      for (j = 0; j < 65535; ++j ) {
+      for ( j = 0; j < 65535; ++j ) {
 
         if (( info->ci_SampleMapping[ j ] )
           && (( info->ci_SampleMapping[ j ] - 1 ) == i )) {
@@ -993,11 +993,16 @@ LONG WriteAmiSFtoFile(
       Close( fileHandle );
       return EAmiSFwriteError;
     }
+
   } else {
 
     APTR buffer = AllocMem( 4096, MEMF_ANY );
     ULONG copiedSize = 0;
 
+    Seek( amisf->asf_SampleSourceFile,
+          amisf->asf_SampleSourceOffset,
+          OFFSET_BEGINNING );
+    maxProgress = currentProgress + ( amisf->asf_SampleDataSize >> 12 );
     while ( copiedSize < amisf->asf_SampleDataSize ) {
 
       ULONG readSize = Read( amisf->asf_SampleSourceFile, buffer, 4096 );
@@ -1009,6 +1014,17 @@ LONG WriteAmiSFtoFile(
         return EAmiSFsampleWriteError;
       }
       copiedSize += writeSize;
+
+      ++currentProgress;
+      abort = HandleProgressDialogTick( dialog,
+                                            currentProgress,
+                                            maxProgress );
+      if ( abort ) {
+
+        Close( fileHandle );
+        FreeMem( buffer, 4096 );
+        return EAmiSFwriteAborted;
+      }
     }
     FreeMem( buffer, 4096 );
   }
