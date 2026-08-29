@@ -728,6 +728,62 @@ BOOL CreateAmiSfListLabels( struct List * labels,
                             ULONG * currentProgress,
                             ULONG maxProgress ) {
 
+  LONG bankIndex;
+  LONG presetIndex;
+
+  for ( bankIndex = 0; bankIndex <= 128; ++bankIndex ) {
+    for ( presetIndex = 0; presetIndex <= 128; ++presetIndex ) {
+
+      struct AmiSF_Preset * preset =
+        &( amisf->asf_Preset[ bankIndex ][ presetIndex ]);
+
+      if (( preset->asfp_Bank != 255 ) || ( preset->asfp_Preset != 255 )) {
+
+        UWORD noteCount = preset->asfp_NoteStart + preset->asfp_NoteCount;
+        LONG noteIndex = preset->asfp_NoteStart;
+        LONG minNote = 0;
+
+        for ( ; ( noteIndex < noteCount ); ++noteIndex ) {
+
+          struct AmiSF_Note * note = &( amisf->asf_Note[ noteIndex ]);
+          LONG maxNote = note->asfn_MaxNote;
+          CONST_STRPTR gmName = GetMidiName( bankIndex,
+                                             presetIndex,
+                                             minNote,
+                                             maxNote,
+                                             minNote,
+                                             maxNote );
+          LONG sampleNumber = note->asfn_SampleIndex - 1;
+// TODO: no stack vars allowed below, use one of:
+// - LBNA_NodeSize - http://amigadev.elowar.com/read/ADCD_2.1/Includes_and_Autodocs_3._guide/node0444.html 
+// - LBNA_UserData - http://amigadev.elowar.com/read/ADCD_2.1/Includes_and_Autodocs_3._guide/node044B.html
+          struct Node * label = CreateListBrowserNode( &bankIndex,
+                                                       &presetIndex,
+                                                       gmName,
+                                                       "-",
+                                                       &minNote,
+                                                       &maxNote,
+                                                       &noteIndex,
+                                                       "-",
+                                                       &minNote,
+                                                       &maxNote,
+                                                       &sampleNumber,
+                                                       "-",
+                                                       "" );
+
+          LOG_D(( "D: Found b:%ld p:%ld %s n:%ld-%ld -> %ld s:%ld\n",
+                   bankIndex, presetIndex,
+                   gmName,
+                   minNote, maxNote, noteIndex,
+                   sampleNumber ));
+          LOG_V(( "V: Inserting label\n" ));
+          AddTail( labels, label );
+
+          minNote = maxNote + 1;
+        }        
+      }
+    }
+  }
   return FALSE;
 }
 

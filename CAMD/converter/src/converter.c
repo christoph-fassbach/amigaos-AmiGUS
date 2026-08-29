@@ -411,14 +411,23 @@ BOOL HandleAmiSFRead( struct SF_Converter * base ) {
                                       1,
                                       maxProgress );
   }
+  if ( !( abort )) {
 
-  //TODO!
-  LOG_D(( "D: Loading AmiSF ... \n" ));
-  base->sfc_AmiSF = AllocAmiSFfromFile(
-    base->sfc_SourceFileName,
-    base->sfc_ProgressDialog );
+    FreeListLabels( &( base->sfc_InstrumentLabels ));
+    abort = HandleProgressDialogTick( base->sfc_ProgressDialog,
+                                      2,
+                                      maxProgress );
+  }
+  if ( !( abort )) {
 
-  if ( base->sfc_AmiSF ) {
+    LOG_D(( "D: Loading AmiSF ... \n" ));
+    base->sfc_AmiSF = AllocAmiSFfromFile(
+      base->sfc_SourceFileName,
+      base->sfc_ProgressDialog );
+    abort = ( NULL == base->sfc_AmiSF );
+  }
+
+  if ( !( abort )) {
 
     abort = CreateAmiSfListLabels( &( base->sfc_InstrumentLabels ),
                                    base->sfc_AmiSF,
@@ -537,22 +546,20 @@ VOID HandleReadButton( VOID ) {
   base->sfc_Sf2ConversionInfo = NULL;
   FreeAmiSF( base->sfc_AmiSF );
   base->sfc_AmiSF = NULL;
-LOG_D(( "1\n" ));
+
   // Will need to try both, SF2 and AmiSF, and see what works.
   if (( !( abort ))
     && ( C_endswithi( base->sfc_SourceFileName, SF2_Suffix ))) {
-LOG_D(( "2\n" ));
+
     abort = HandleSf2Read( base );
   }
-LOG_D(( "3\n" ));
   if (( !( abort ))
     && ( !( base->sfc_Sf2 ))
     && ( C_endswithi( base->sfc_SourceFileName, AmiSF_Suffix ))) {
 
-      LOG_D(( "4\n" ));
     abort = HandleAmiSFRead( base );
   }
-LOG_D(( "5\n" ));
+
   SetGadgetAttrs( base->sfc_ListBrowser,
                   base->sfc_MainWindow,
                   NULL,
