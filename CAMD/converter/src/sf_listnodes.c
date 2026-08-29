@@ -722,6 +722,15 @@ BOOL GetSf2InformationForIndex(
   return FALSE;
 }
 
+BOOL CreateAmiSfListLabels( struct List * labels,
+                            struct AmiSF * amisf,
+                            struct ProgressDialog * dialog,
+                            ULONG * currentProgress,
+                            ULONG maxProgress ) {
+
+  return FALSE;
+}
+
 VOID FreeListLabels( struct List * list ) {
 
   struct Node * label;

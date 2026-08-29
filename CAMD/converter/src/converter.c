@@ -418,6 +418,28 @@ BOOL HandleAmiSFRead( struct SF_Converter * base ) {
     base->sfc_SourceFileName,
     base->sfc_ProgressDialog );
 
+  if ( base->sfc_AmiSF ) {
+
+    abort = CreateAmiSfListLabels( &( base->sfc_InstrumentLabels ),
+                                   base->sfc_AmiSF,
+                                   base->sfc_ProgressDialog,
+                                   &currentProgress,
+                                   maxProgress );
+
+  } else {
+
+    abort = TRUE;
+  }
+
+  if ( abort ) {
+
+    LOG_D(( "D: Reading AmiSF cancelled.\n" ));
+  
+    FreeListLabels( &( base->sfc_InstrumentLabels ));
+    FreeAmiSF( base->sfc_AmiSF );
+    base->sfc_AmiSF = NULL;
+  }
+
   return abort;
 }
 

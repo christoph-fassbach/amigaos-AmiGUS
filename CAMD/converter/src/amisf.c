@@ -31,6 +31,8 @@
 #include "sf2_tools.h"
 #include "support.h"
 
+#define CHAR_TO_ULONG( a, b, c, d ) ((( a ) << 24 ) | (( b ) << 16 ) | (( c ) << 8 ) | ( d ))
+
 STRPTR AmiSF_Suffix = ".AmiSF";
 
 static ULONG GetPlaybackRateOffset( struct AmiSF * amisf, ULONG sampleRate ) {
@@ -563,8 +565,188 @@ struct AmiSF * AllocAmiSFfromFile(
   struct ProgressDialog * dialog
 ) {
 
-  // TODO!!!
-  return NULL;
+  LONG expected;
+  LONG actual;
+  UBYTE header[ 8 ];
+  struct AmiSF * amisf = AllocMem( sizeof( struct AmiSF ),
+                                   MEMF_ANY | MEMF_CLEAR );
+
+  amisf->asf_SampleSourceFile = Open( filePath, MODE_OLDFILE );
+  if ( !( amisf->asf_SampleSourceFile )) {
+
+    FreeAmiSF( amisf );
+    DisplayError( EOpenAmiSFreadFailed );
+    return NULL;
+  }
+
+
+  expected = 8 * sizeof( UBYTE );
+  actual = Read( amisf->asf_SampleSourceFile,
+                 header,
+                 expected );
+  if ( actual != expected ) {
+    // TODO: handle error
+  }
+
+  if (( CHAR_TO_ULONG( 'A', 'm', 'i', 'S' ) != ( *(( LONG * ) &( header[ 0 ]))))
+    || ( CHAR_TO_ULONG( 'F', 0, 0, 1 ) != ( *(( LONG * ) &( header[ 4 ]))))) {
+
+    //TODO: handle error
+    LOG_E(( "E: File handle shall now be at sample position %ld but is %ld!\n",
+            expected, amisf->asf_SampleSourceOffset ));
+    return NULL;
+  }
+
+  ///////////////////////////////////////////////////////////////////
+
+  expected = 128 * 128 * sizeof( struct AmiSF_Preset );
+  actual = Read( amisf->asf_SampleSourceFile,
+                 &( amisf->asf_Preset ),
+                 expected );
+  if ( actual != expected ) {
+    // TODO: handle error
+  }
+
+  ///////////////////////////////////////////////////////////////////
+
+  expected = 1 * sizeof( ULONG );
+  actual = Read( amisf->asf_SampleSourceFile,
+                 &( amisf->asf_NoteCount ),
+                 expected );
+  if ( actual != expected ) {
+    // TODO: handle error
+  }
+
+  expected = amisf->asf_NoteCount * sizeof( struct AmiSF_Note );
+  amisf->asf_Note = AllocMem( expected,
+                              MEMF_ANY | MEMF_CLEAR );
+  if ( !( amisf->asf_Note )) {
+    // TODO: handle error
+  }
+  actual = Read( amisf->asf_SampleSourceFile,
+                 amisf->asf_Note,
+                 expected );
+  if ( actual != expected ) {
+    // TODO: handle error
+  }
+
+  ///////////////////////////////////////////////////////////////////
+
+  expected = 1 * sizeof( ULONG );
+  actual = Read( amisf->asf_SampleSourceFile,
+                 &( amisf->asf_SampleCount ),
+                 expected );
+  if ( actual != expected ) {
+    // TODO: handle error
+  }
+
+  expected = amisf->asf_SampleCount * sizeof( struct AmiSF_Sample );
+  amisf->asf_SampleMetadata = AllocMem( expected,
+                                        MEMF_ANY | MEMF_CLEAR );
+  if ( !( amisf->asf_SampleMetadata )) {
+    // TODO: handle error
+  }
+  actual = Read( amisf->asf_SampleSourceFile,
+                 amisf->asf_SampleMetadata,
+                 expected );
+  if ( actual != expected ) {
+    // TODO: handle error
+  }
+
+  ///////////////////////////////////////////////////////////////////
+
+  expected = 1 * sizeof( ULONG );
+  actual = Read( amisf->asf_SampleSourceFile,
+                 &( amisf->asf_SampleRateCount ),
+                 expected );
+  if ( actual != expected ) {
+    // TODO: handle error
+  }
+
+  expected = amisf->asf_SampleRateCount * sizeof( ULONG );
+  amisf->asf_SampleRate = AllocMem( expected,
+                                    MEMF_ANY | MEMF_CLEAR );
+  if ( !( amisf->asf_SampleRate )) {
+    // TODO: handle error
+  }
+  actual = Read( amisf->asf_SampleSourceFile,
+                 amisf->asf_SampleRate,
+                 expected );
+  if ( actual != expected ) {
+    // TODO: handle error
+  }
+
+  amisf->asf_PlaybackRateOffset = AllocMem( expected,
+                                            MEMF_ANY | MEMF_CLEAR );
+  if ( !( amisf->asf_PlaybackRateOffset )) {
+    // TODO: handle error
+  }
+  actual = Read( amisf->asf_SampleSourceFile,
+                 amisf->asf_PlaybackRateOffset,
+                 expected );
+  if ( actual != expected ) {
+    // TODO: handle error
+  }
+
+  ///////////////////////////////////////////////////////////////////
+
+  expected = 1 * sizeof( ULONG );
+  actual = Read( amisf->asf_SampleSourceFile,
+                 &( amisf->asf_PlaybackRateCount ),
+                 expected );
+  if ( actual != expected ) {
+    // TODO: handle error
+  }
+
+  expected = amisf->asf_PlaybackRateCount * sizeof( ULONG );
+  amisf->asf_PlaybackRate = AllocMem( expected,
+                                    MEMF_ANY | MEMF_CLEAR );
+  if ( !( amisf->asf_PlaybackRate )) {
+    // TODO: handle error
+  }
+  actual = Read( amisf->asf_SampleSourceFile,
+                 amisf->asf_PlaybackRate,
+                 expected );
+  if ( actual != expected ) {
+    // TODO: handle error
+  }
+
+  ///////////////////////////////////////////////////////////////////
+
+  expected = 1 * sizeof( ULONG );
+
+  actual = Read( amisf->asf_SampleSourceFile,
+                 &( amisf->asf_SampleDataSize ),
+                 expected );
+  if ( actual != expected ) {
+    // TODO: handle error
+  }
+
+  actual = Read( amisf->asf_SampleSourceFile,
+                 &( amisf->asf_SampleSourceOffset ),
+                 expected );
+  if ( actual != expected ) {
+    // TODO: handle error
+  }
+
+  expected = Seek( amisf->asf_SampleSourceFile, OFFSET_CURRENT, 0 );
+  if ( amisf->asf_SampleSourceOffset != expected ) {
+    // TODO: handle error
+    LOG_E(( "E: File handle shall now be at sample position %ld but is %ld!\n",
+            expected, amisf->asf_SampleSourceOffset ));
+    return NULL;
+  }
+
+  LOG_I(( "I: Read AmiSF with %ld notes, %ld samples, "
+          "%ld sample and %ld playback rates, "
+          "and %lu bytes of sample data starting at 0x%08lx.\n",
+          amisf->asf_NoteCount,
+          amisf->asf_SampleCount,
+          amisf->asf_SampleRateCount,
+          amisf->asf_PlaybackRateCount,
+          amisf->asf_SampleDataSize,
+          amisf->asf_SampleSourceOffset ));
+  return amisf;
 }
 
 LONG WriteAmiSFtoFile(
@@ -592,12 +774,12 @@ LONG WriteAmiSFtoFile(
 
   if ( !( fileHandle )) {
 
-    return EOpenAmiSFwriteFailed;
+    return EAmiSFwriteOpenFailed;
   }
   if ( abort ) {
 
     Close( fileHandle );
-    return EOpenAmiSFwriteAborted;
+    return EAmiSFwriteAborted;
   }
 
   written = Write( fileHandle,
@@ -606,7 +788,7 @@ LONG WriteAmiSFtoFile(
   if ( -1 == written ) {
 
     Close( fileHandle );
-    return EOpenAmiSFwriteError;
+    return EAmiSFwriteError;
   }
   written = Write( fileHandle,
                    &( amisf->asf_Preset ),
@@ -614,7 +796,7 @@ LONG WriteAmiSFtoFile(
   if ( -1 == written ) {
 
     Close( fileHandle );
-    return EOpenAmiSFwriteError;
+    return EAmiSFwriteError;
   }
 
   currentProgress += 128;
@@ -622,7 +804,7 @@ LONG WriteAmiSFtoFile(
   if ( abort ) {
 
     Close( fileHandle );
-    return EOpenAmiSFwriteAborted;
+    return EAmiSFwriteAborted;
   }
 
   written = Write( fileHandle,
@@ -631,7 +813,7 @@ LONG WriteAmiSFtoFile(
   if ( -1 == written ) {
 
     Close( fileHandle );
-    return EOpenAmiSFwriteError;
+    return EAmiSFwriteError;
   }
   written = Write( fileHandle,
                     amisf->asf_Note,
@@ -639,7 +821,7 @@ LONG WriteAmiSFtoFile(
   if ( -1 == written ) {
 
     Close( fileHandle );
-    return EOpenAmiSFwriteError;
+    return EAmiSFwriteError;
   }
 
   currentProgress += amisf->asf_NoteCount;
@@ -647,7 +829,7 @@ LONG WriteAmiSFtoFile(
   if ( abort ) {
 
     Close( fileHandle );
-    return EOpenAmiSFwriteAborted;
+    return EAmiSFwriteAborted;
   }
 
   written = Write( fileHandle,
@@ -656,7 +838,7 @@ LONG WriteAmiSFtoFile(
   if ( -1 == written ) {
 
     Close( fileHandle );
-    return EOpenAmiSFwriteError;
+    return EAmiSFwriteError;
   }
   written = Write( fileHandle,
                    amisf->asf_SampleMetadata,
@@ -664,7 +846,7 @@ LONG WriteAmiSFtoFile(
   if ( -1 == written ) {
 
     Close( fileHandle );
-    return EOpenAmiSFwriteError;
+    return EAmiSFwriteError;
   }
 
   currentProgress += amisf->asf_SampleCount;
@@ -672,7 +854,7 @@ LONG WriteAmiSFtoFile(
   if ( abort ) {
 
     Close( fileHandle );
-    return EOpenAmiSFwriteAborted;
+    return EAmiSFwriteAborted;
   }
 
   written = Write( fileHandle,
@@ -681,7 +863,7 @@ LONG WriteAmiSFtoFile(
   if ( -1 == written ) {
 
     Close( fileHandle );
-    return EOpenAmiSFwriteError;
+    return EAmiSFwriteError;
   }
   written = Write( fileHandle,
                    amisf->asf_SampleRate,
@@ -689,7 +871,7 @@ LONG WriteAmiSFtoFile(
   if ( -1 == written ) {
 
     Close( fileHandle );
-    return EOpenAmiSFwriteError;
+    return EAmiSFwriteError;
   }
   written = Write( fileHandle,
                    amisf->asf_PlaybackRateOffset,
@@ -697,7 +879,7 @@ LONG WriteAmiSFtoFile(
   if ( -1 == written ) {
 
     Close( fileHandle );
-    return EOpenAmiSFwriteError;
+    return EAmiSFwriteError;
   }
 
   currentProgress += amisf->asf_SampleRateCount;
@@ -705,7 +887,7 @@ LONG WriteAmiSFtoFile(
   if ( abort ) {
 
     Close( fileHandle );
-    return EOpenAmiSFwriteAborted;
+    return EAmiSFwriteAborted;
   }
 
   written = Write( fileHandle,
@@ -714,7 +896,7 @@ LONG WriteAmiSFtoFile(
   if ( -1 == written ) {
 
     Close( fileHandle );
-    return EOpenAmiSFwriteError;
+    return EAmiSFwriteError;
   }
   written = Write( fileHandle,
                    amisf->asf_PlaybackRate,
@@ -722,7 +904,7 @@ LONG WriteAmiSFtoFile(
   if ( -1 == written ) {
 
     Close( fileHandle );
-    return EOpenAmiSFwriteError;
+    return EAmiSFwriteError;
   }
 
   currentProgress += amisf->asf_PlaybackRateCount;
@@ -730,7 +912,7 @@ LONG WriteAmiSFtoFile(
   if ( abort ) {
 
     Close( fileHandle );
-    return EOpenAmiSFwriteAborted;
+    return EAmiSFwriteAborted;
   }
 
   written = Write( fileHandle,
@@ -739,24 +921,29 @@ LONG WriteAmiSFtoFile(
   if ( -1 == written ) {
 
     Close( fileHandle );
-    return EOpenAmiSFwriteError;
+    return EAmiSFwriteError;
+  }
+
+  if ( 0 == amisf->asf_SampleSourceOffset ) {
+
+    amisf->asf_SampleSourceOffset = Seek( fileHandle, 0, OFFSET_CURRENT ) + 4;
+  }
+
+  written = Write( fileHandle,
+                    &( amisf->asf_SampleSourceOffset ),
+                    sizeof( ULONG ));
+  if ( -1 == written ) {
+
+    Close( fileHandle );
+    return EAmiSFwriteError;
   }
 
   if ( !( amisf->asf_SampleSourceFile )
-    && !( amisf->asf_SampleSourceOffset )
     && ( sf2 ) 
     && ( info )) {
 
     // Obviously, we came from a converted SF2 file.
-    amisf->asf_SampleSourceOffset = Seek( fileHandle, OFFSET_CURRENT, 0 ) + 4;
-    written = Write( fileHandle,
-                     &( amisf->asf_SampleSourceOffset ),
-                     sizeof( ULONG ));
-    if ( -1 == written ) {
-
-      Close( fileHandle );
-      return EOpenAmiSFwriteError;
-    }
+    amisf->asf_SampleDataSize = 0;
 
     for ( i = 0; i < amisf->asf_SampleCount; ++i ) {
 
@@ -777,11 +964,11 @@ LONG WriteAmiSFtoFile(
           if ( -1 == written ) {
 
             Close( fileHandle );
-            return EOpenAmiSFwriteError;
+            return EAmiSFwriteError;
           }
 
           FreeMem( sf2SampleData, sf2SampleSize );
-
+          amisf->asf_SampleDataSize += sf2SampleSize;
           currentProgress += ( 1 << 4 );
           abort = HandleProgressDialogTick( dialog,
                                             currentProgress,
@@ -789,18 +976,52 @@ LONG WriteAmiSFtoFile(
           if ( abort ) {
 
             Close( fileHandle );
-            return EOpenAmiSFwriteAborted;
+            return EAmiSFwriteAborted;
           }
 
           break;
         }
       }
     }
+
+    Seek( fileHandle, amisf->asf_SampleSourceOffset - 8, OFFSET_BEGINNING );
+    written = Write( fileHandle,
+                     &( amisf->asf_SampleDataSize ),
+                     sizeof( ULONG ));
+    if ( -1 == written ) {
+
+      Close( fileHandle );
+      return EAmiSFwriteError;
+    }
   } else {
 
-    // TODO: How would we write back a loaded AmiSF?
+    APTR buffer = AllocMem( 4096, MEMF_ANY );
+    ULONG copiedSize = 0;
+
+    while ( copiedSize < amisf->asf_SampleDataSize ) {
+
+      ULONG readSize = Read( amisf->asf_SampleSourceFile, buffer, 4096 );
+      ULONG writeSize = Write( fileHandle, buffer, readSize );
+      if (( 0 >= readSize )
+        || ( readSize != writeSize )) {
+
+        Close( fileHandle );
+        return EAmiSFsampleWriteError;
+      }
+      copiedSize += writeSize;
+    }
+    FreeMem( buffer, 4096 );
   }
 
+  LOG_I(( "I: Wrote AmiSF with %ld notes, %ld samples, "
+          "%ld sample and %ld playback rates, "
+          "and %lu bytes of sample data starting at 0x%08lx.\n",
+          amisf->asf_NoteCount,
+          amisf->asf_SampleCount,
+          amisf->asf_SampleRateCount,
+          amisf->asf_PlaybackRateCount,
+          amisf->asf_SampleDataSize,
+          amisf->asf_SampleSourceOffset ));
   LOG_D(( "D: Written, progress %ld of %ld.\n", currentProgress, maxProgress ));
   Close( fileHandle );
 
@@ -842,6 +1063,11 @@ VOID FreeAmiSF( struct AmiSF * amisf ) {
     FreeMem( amisf->asf_Note,
              sizeof( struct AmiSF_Note ) * amisf->asf_NoteCount );
     amisf->asf_Note = NULL;
+  }
+  if ( amisf->asf_SampleSourceFile ) {
+
+    Close( amisf->asf_SampleSourceFile );
+    amisf->asf_SampleSourceFile = NULL;
   }
 
   FreeMem( amisf, sizeof( struct AmiSF ));

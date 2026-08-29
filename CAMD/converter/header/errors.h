@@ -95,9 +95,10 @@ enum ErrorCodes
   EOpenAmiSFreadFailed = 0x1100,
 
   /* AmiSF write errors 0x1200 - 0x12ff */
-  EOpenAmiSFwriteFailed = 0x1200,
-  EOpenAmiSFwriteAborted,
-  EOpenAmiSFwriteError,
+  EAmiSFwriteOpenFailed = 0x1200,
+  EAmiSFwriteAborted,
+  EAmiSFwriteError,
+  EAmiSFsampleWriteError,
 
   /* Insert errors above. */
   EUnknownError,

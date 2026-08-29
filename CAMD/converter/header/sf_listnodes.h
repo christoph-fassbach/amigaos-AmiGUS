@@ -22,6 +22,7 @@
 #include <exec/lists.h>
 #include <gadgets/listbrowser.h>
 
+#include "amisf.h"
 #include "progress_dialog.h"
 #include "sf2.h"
 
@@ -48,6 +49,12 @@ BOOL GetSf2InformationForIndex(
   struct SF2_Sample ** sample,
   struct SF2 * sf2,
   const ULONG index );
+
+BOOL CreateAmiSfListLabels( struct List * labels,
+                            struct AmiSF * amisf,
+                            struct ProgressDialog * dialog,
+                            ULONG * currentProgress,
+                            ULONG maxProgress );
 
 VOID FreeListLabels( struct List * list );
 
