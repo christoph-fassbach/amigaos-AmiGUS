@@ -76,7 +76,7 @@ LIB_LOG        ?= NO_LOG
 LIB_NAME        = mhiamigus
 LIB_FILE        = $(LIB_NAME).library
 LIB_VERSION     = 1
-LIB_REVISION    = 13
+LIB_REVISION    = 14
 LIB_PREFIX      = _LIB_
 
 LIB_LIBS        =
