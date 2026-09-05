@@ -113,7 +113,7 @@ VOID FillCodecBuffer( struct AmiGUS_MHI_Handle * handle ) {
         UBYTE * extraData = ( UBYTE * ) address;
         UBYTE byteData = *extraData;
 
-        data |= byteData << shift;
+        data |= (( ULONG ) byteData ) << shift;
 
         ++address;
         --current->agmb_BufferExtraBytes;
