@@ -38,9 +38,9 @@
  * MHI interface - private functions.
  *****************************************************************************/
 
-VOID FlushAllBuffers( struct AmiGUS_MHI_Handle * clientHandle ) {
+VOID FlushAllBuffers( struct AmiGUS_MHI_Handle * handle ) {
 
-  struct List * buffers = ( struct List * )&clientHandle->agch_Buffers;
+  struct List * buffers = ( struct List * ) &( handle->agch_Buffers );
   struct Node * buffer;
 
   while ( buffer = RemHead( buffers )) {
@@ -52,7 +52,7 @@ VOID FlushAllBuffers( struct AmiGUS_MHI_Handle * clientHandle ) {
       (( struct AmiGUS_MHI_Buffer * ) buffer)->agmb_BufferIndex ));
     FreeMem( buffer, sizeof( struct AmiGUS_MHI_Buffer ) );
   }
-  clientHandle->agch_CurrentBuffer = NULL;
+  handle->agch_CurrentBuffer = NULL;
   LOG_D(( "D: All buffers flushed.\n" ));
 }
 
@@ -296,9 +296,16 @@ APTR __ASM__ __SAVE_DS__ MHIGetEmpty(
   FOR_LIST( buffers, mhiBuffer, struct AmiGUS_MHI_Buffer * ) {
 
     LOG_V(( "V: Checking for empty @ 0x%08lx\n", mhiBuffer ));
-    if (( mhiBuffer ) &&
-        (( struct AmiGUS_MHI_Buffer * ) buffers != mhiBuffer ) &&
-        ( mhiBuffer->agmb_BufferIndex >= mhiBuffer->agmb_BufferMax )) {
+    if (
+      // Not needed, as handled by FOR_LIST loop, required valid buffers:
+      // ( mhiBuffer ) &&
+      // Not needed, as handled by FOR_LIST loop, required valid buffers:
+      // (( struct AmiGUS_MHI_Buffer * ) buffers != mhiBuffer ) &&
+      // Only considers buffers completely used already:
+      ( mhiBuffer->agmb_BufferIndex >= mhiBuffer->agmb_BufferMax ) &&
+      // Prevents current buffer from being reused, because the next
+      // interrupt after Enable(); may stall otherwise:
+      ( mhiBuffer != handle->agch_CurrentBuffer )) {
 
       APTR result = ( APTR ) mhiBuffer->agmb_Buffer;
 
@@ -307,14 +314,12 @@ APTR __ASM__ __SAVE_DS__ MHIGetEmpty(
               mhiBuffer,
               mhiBuffer->agmb_BufferMax,
               mhiBuffer->agmb_BufferIndex ));
+
       Disable();
       Remove(( struct Node * ) mhiBuffer );
       Enable();
-      FreeMem( mhiBuffer, sizeof( struct AmiGUS_MHI_Buffer ));
-      if ( mhiBuffer == handle->agch_CurrentBuffer ) {
 
-        handle->agch_CurrentBuffer = NULL;
-      }
+      FreeMem( mhiBuffer, sizeof( struct AmiGUS_MHI_Buffer ));
 
       return result;
     }

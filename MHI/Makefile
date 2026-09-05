@@ -37,9 +37,9 @@ ifeq ($(findstring /home,$(HOME)), /home)
   # ~/.netrc format:
   # machine <ip> login username password pass
   # Could do --user username:pass instead - but not cool in repo ;)
-  INSTALL1      = curl --connect-timeout 2 --netrc --upload-file $(LIB_FILE_DEST)       ftp://192.168.0.4/cf0/Libs/MHI/$(LIB_NAME).library
   INSTALL1      = curl --connect-timeout 2 --netrc --upload-file $(LIB_FILE_DEST)       ftp://192.168.0.12/sda4/Libs/MHI/$(LIB_NAME).library
   INSTALL1      = curl --netrc --upload-file $(LIB_FILE_DEST)       ftp://192.168.0.60/cf3/Libs/MHI/$(LIB_NAME).library
+  INSTALL1      = curl --connect-timeout 2 --netrc --upload-file $(LIB_FILE_DEST)       ftp://192.168.0.4/cf0/Libs/MHI/$(LIB_NAME).library
   INSTALL0      = cp $(LIB_FILE_DEST) ~/Documents/FS-UAE/Shared/MHI/$(LIB_NAME).library
 else
   AMIGAOS       = 1
@@ -234,13 +234,30 @@ $(BDIR)%.o: $(SDIR)%.asm $(HDIR)*
 
 ###############################################################################
 
-test: test_cancel \
+test: test_mhi_all
+#test_cancel \
       test_dialog \
       test_equalizer \
       test_file \
       test_math \
       test_playback \
       test_sleep
+
+test_mhi_all: FOLDERS $(LIB_OBJS)
+	@echo " "
+	$(CC) $(CFLAGS) test/$@.o test/$@.c
+	$(LD) $(LFLAGS) test/$@ $(LFLAGS1) $(LFLAGST1) test/$@.o \
+            $(BDIR)mhi_all-$(LIB_CPU)-$(LIB_LOG).o \
+            $(BDIR)amigus_vs1063-$(LIB_CPU)-$(LIB_LOG).o \
+            $(BDIR)amigus_codec-$(LIB_CPU)-$(LIB_LOG).o \
+            $(BDIR)amigus_hardware-$(LIB_CPU)-$(LIB_LOG).o \
+            $(BDIR)interrupt-$(LIB_CPU)-$(LIB_LOG).o \
+            $(BDIR)debug-$(LIB_CPU)-$(LIB_LOG).o \
+            $(BDIR)support-$(LIB_CPU)-$(LIB_LOG).o \
+            $(LFLAGST2)
+	@echo " "
+	$(RUNNER) test/$@
+	-@$(RM) test/$@ test/$@.o $(RM_SUFFIX)
 
 test_cancel: FOLDERS $(LIB_OBJS)
 	@echo " "
