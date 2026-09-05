@@ -191,7 +191,6 @@ VOID __ASM__ __SAVE_DS__ MHIFreeDecoder(
 
   struct Task * task = handle->agch_Task;
   LONG signal = handle->agch_Signal;
-  ULONG error = ENoError;
 
   LOG_D(( "D: MHIFreeDecoder start for task 0x%08lx\n", task ));
   if ( !( task )) {
@@ -203,8 +202,9 @@ VOID __ASM__ __SAVE_DS__ MHIFreeDecoder(
     return;
   }
 
-  Forbid();
   if (( handle->agch_AmiGUS )) {
+
+    Forbid();
 
     handle->agch_Task = NULL;
     handle->agch_Signal = 0;
@@ -214,25 +214,20 @@ VOID __ASM__ __SAVE_DS__ MHIFreeDecoder(
 
     handle->agch_AmiGUS = NULL;
 
-    Remove(( struct Node * ) handle );
-    FreeMem( handle, sizeof( struct AmiGUS_MHI_Handle ));
-
-  } else {
-
-    error = EDriverNotInUse;
-  }
-  Permit();
-  if ( error ) {
-
-    DisplayError( error );
-
-  } else {
+    Permit();
 
     FlushAllBuffers( handle );
+    FreeMem( handle, sizeof( struct AmiGUS_MHI_Handle ));
 
     LOG_D(( "D: AmiGUS MHI free'd up task 0x%08lx and signal 0x%08lx.\n",
             task, signal ));
+
+  } else {
+
+    DisplayError( EDriverNotInUse );
+
   }
+
   LOG_D(( "D: MHIFreeDecoder done\n" ));
   return;
 }
