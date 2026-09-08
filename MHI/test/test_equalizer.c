@@ -23,7 +23,6 @@
 #include <exec/types.h>
 
 #include "amigus_mhi.h"
-#include "amigus_hardware.h"
 #include "amigus_vs1063.h"
 
 /******************************************************************************
@@ -33,6 +32,12 @@
 struct AmiGUS_MHI        * AmiGUS_MHI_Base   = NULL;
 
 WORD Equalizer[ 9 ];
+
+/* From amigus_hardware.h */
+
+#define AMIGUS_HARDWARE_H
+
+/* From amigus_hardware.c */
 
 const WORD AmiGUSDefaultEqualizer[ 9 ] = {
   0, /* +/- 0dB */   125, /* Hz */
@@ -92,6 +97,10 @@ VOID WriteVS1063Mem( APTR amiGUS, UWORD address, UWORD value ) {
 }
 
 VOID SleepCodecTicks( ULONG ticks ) {}
+
+/* From amigus_vs1063.c */
+
+#include "../src/amigus_vs1063.c"
 
 /******************************************************************************
  * Test functions:
