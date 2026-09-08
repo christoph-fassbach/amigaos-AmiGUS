@@ -234,8 +234,7 @@ $(BDIR)%.o: $(SDIR)%.asm $(HDIR)*
 
 ###############################################################################
 
-test: test_playback
-# test_mhi_all   \
+test: test_mhi_all   \
       test_cancel    \
       test_dialog    \
       test_equalizer \
@@ -314,7 +313,6 @@ test_playback: FOLDERS $(LIB_OBJS)
 	@echo " "
 	$(CC) $(CFLAGS) test/$@.o test/$@.c
 	$(LD) $(LFLAGS) test/$@ $(LFLAGS1) $(LFLAGST1) test/$@.o \
-            $(BDIR)interrupt-$(LIB_CPU)-$(LIB_LOG).o \
             $(BDIR)debug-$(LIB_CPU)-$(LIB_LOG).o \
             $(BDIR)support-$(LIB_CPU)-$(LIB_LOG).o \
             $(LFLAGST2)
