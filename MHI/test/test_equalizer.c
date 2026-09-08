@@ -37,6 +37,83 @@ WORD Equalizer[ 9 ];
 
 #define AMIGUS_HARDWARE_H
 
+/* All AmiGUS timers behave the same */
+
+#define AMIGUS_TIMER_CLOCK               24576000  /* Hz = 1/s = quarz clock */
+
+/* General time properties - Constants calculated out by C's preprocessor :) */
+
+#define MILLIS_PER_SECOND                1000
+#define MICROS_PER_SECOND                1000000
+
+#define	AMIGUS_CODEC_INT_CONTROL         0x00
+#define	AMIGUS_CODEC_FIFO_WRITE          0x0a
+#define	AMIGUS_CODEC_FIFO_USAGE          0x0e
+
+#define AMIGUS_CODEC_SPI_STATUS	         0x2a
+
+#define	AMIGUS_CODEC_FIFO_CONTROL        0x04
+
+#define AMIGUS_INT_F_CLEAR               0x0000
+
+/* AmiGUS Codec Interrupt Flags */
+#define AMIGUS_CODEC_INT_F_VS1063_DRQ    0x0010
+
+/* AmiGUS Codec FIFO Steering Flags */
+/* FIFO DMA */
+#define AMIGUS_CODEC_FIFO_F_DMA_ENABLE   0x8000
+#define AMIGUS_CODEC_FIFO_F_DMA_DISABLE  0x0000
+
+/* AmiGUS Codec SPI Steering Flags */
+#define AMIGUS_CODEC_SPI_F_DREQ          0x4000
+
+// VS1063 codec's SCIs - Serial Control Interface SPI ports, overview page 43
+#define VS1063_CODEC_SCI_MODE           0x0000 // page 44
+#define VS1063_CODEC_SCI_CLOCKF         0x0003 // page 48
+#define VS1063_CODEC_SCI_HDAT0          0x0008 // page 50
+#define VS1063_CODEC_SCI_HDAT1          0x0009 // page 50
+#define VS1063_CODEC_SCI_VOL            0x000B // page 53
+
+// VS1063 codec's addresses of memory mapped registers
+// all parameter memory 0x1E00-0x1E3F is mapped to 0xC0C0-0xC0FF - page 49
+#define VS1063_CODEC_ADDRESS_END_FILL   0xC0C6 // 0x1E06 p.70 + 57
+#define VS1063_CODEC_ADDRESS_PLAY_MODE  0xC0C9 // 0x1E09 p.77
+#define VS1063_CODEC_ADDRESS_EQ5_LEVEL1 0xC0D3 // 0x1E13 p.77 (-32 - +32)*0.5dB
+#define VS1063_CODEC_ADDRESS_EQ5_FREQ1  0xC0D4 // 0x1E14 p.77      20 -   150Hz
+#define VS1063_CODEC_ADDRESS_EQ5_LEVEL2 0xC0D5 // 0x1E15 p.77 (-32 - +32)*0.5dB
+#define VS1063_CODEC_ADDRESS_EQ5_FREQ2  0xC0D6 // 0x1E16 p.77 -    50 -  1000Hz
+#define VS1063_CODEC_ADDRESS_EQ5_LEVEL3 0xC0D7 // 0x1E17 p.77 (-32 - +32)*0.5dB
+#define VS1063_CODEC_ADDRESS_EQ5_FREQ3  0xC0D8 // 0x1E18 p.77 -  1000 - 15000Hz
+#define VS1063_CODEC_ADDRESS_EQ5_LEVEL4 0xC0D9 // 0x1E19 p.77 (-32 - +32)*0.5dB
+#define VS1063_CODEC_ADDRESS_EQ5_FREQ4  0xC0DA // 0x1E1A p.77 -  2000 - 15000Hz
+#define VS1063_CODEC_ADDRESS_EQ5_LEVEL5 0xC0DB // 0x1E1B p.77 (-32 - +32)*0.5dB
+#define VS1063_CODEC_ADDRESS_EQ5_UPDATE 0xC0DC // 0x1E1C p.77 strobe for update
+
+#define VS1063_CODEC_ADDRESS_GPIO_DDR   0xC017 // page 86
+#define VS1063_CODEC_ADDRESS_I2S_CONFIG 0xC040 // page 86
+
+// VS1063 codec's magic flag values according to datasheet
+#define VS1063_CODEC_F_SM_LAYER12       0x0002 // page 44
+#define VS1063_CODEC_F_SM_RESET         0x0004 // page 44
+#define VS1063_CODEC_F_SM_CANCEL        0x0008 // page 44
+#define VS1063_CODEC_F_SM_SDINEW        0x0800 // page 44
+#define VS1063_CODEC_F_SM_CLK_RANGE     0x4000 // page 44
+
+#define VS1063_CODEC_F_SC_MULT_5_0X     0xE000 // page 48
+
+#define VS1063_CODEC_F_PL_MO_EQ5_ENABLE 0x20   // page 77
+#define VS1063_CODEC_F_EQ5_UPD_STROBE   0x01   // page 77
+
+#define VS1063_CODEC_F_GPIO_DDR_192k    0xD0   // page 86
+
+#define VS1063_CODEC_F_I2S_CONFIG_RESET 0x00   // page 86
+#define VS1063_CODEC_F_I2S_CONFIG_192k  0x06   // page 86
+
+#define VS1063_CODEC_RESET_DELAY_MICROS 2      // page 56
+#define VS1063_CODEC_RESET_DELAY_TICKS  (( AMIGUS_TIMER_CLOCK \
+                                          * VS1063_CODEC_RESET_DELAY_MICROS ) \
+                                            / MICROS_PER_SECOND )
+
 /* From amigus_hardware.c */
 
 const WORD AmiGUSDefaultEqualizer[ 9 ] = {
@@ -72,6 +149,7 @@ const UBYTE AmiGUSVolumeMapping[ 104 ] = {
   99          , 99          , 99 // padding back to LONGs
 };
 
+ULONG ReadReg16( APTR card, ULONG offset ) { return 0; }
 ULONG ReadReg32( APTR card, ULONG offset ) { return 0; }
 UWORD ReadCodecSPI( APTR card, UWORD SPIregister ) { return 0; }
 UWORD ReadVS1063Mem( APTR amiGUS, UWORD address ) { return 0; }
@@ -96,7 +174,7 @@ VOID WriteVS1063Mem( APTR amiGUS, UWORD address, UWORD value ) {
   Equalizer[ index ] = value;
 }
 
-VOID SleepCodecTicks( ULONG ticks ) {}
+VOID SleepCodecTicks( APTR amiGUS, ULONG ticks ) {}
 
 /* From amigus_vs1063.c */
 

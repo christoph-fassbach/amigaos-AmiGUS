@@ -234,8 +234,7 @@ $(BDIR)%.o: $(SDIR)%.asm $(HDIR)*
 
 ###############################################################################
 
-test: test_equalizer
-# test_playback
+test: test_playback
 # test_mhi_all   \
       test_cancel    \
       test_dialog    \
