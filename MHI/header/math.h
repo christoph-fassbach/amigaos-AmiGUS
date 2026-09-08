@@ -19,7 +19,7 @@
 #ifndef MATH_H
 #define MATH_H
 
-#include "SDI_compiler.h"
+#include "compiler_extras.h"
 
 /******************************************************************************
  * Math functions required to make the code built
@@ -37,7 +37,7 @@
  *
  * @return Product a * b.
  */
-ASM( LONG ) SAVEDS _CXM33( REG( d0, WORD a ), REG( d1, WORD b ));
+LONG __ASM__ __SAVE_DS__ _CXM33( __REG__( d0, WORD a ), __REG__( d1, WORD b ));
 
 /**
  * Math glue function for SAS/C + VBCC, used e.g. in MHI EQ.
@@ -50,7 +50,7 @@ ASM( LONG ) SAVEDS _CXM33( REG( d0, WORD a ), REG( d1, WORD b ));
  *
  * @return Quotient a / b.
  */
-ASM( LONG ) _CXD33( REG( d0, LONG a ), REG( d1, LONG b ));
-ASM( LONG ) _divs( REG( d0, LONG a ), REG( d1, LONG b ));
+LONG __ASM__ _CXD33( __REG__( d0, LONG a ), __REG__( d1, LONG b ));
+LONG __ASM__ _divs( __REG__( d0, LONG a ), __REG__( d1, LONG b ));
 
 #endif /* MATH_H */
