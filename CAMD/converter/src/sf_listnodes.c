@@ -27,20 +27,39 @@
 #include "debug.h"
 #include "support.h"
 
+struct SfListNodeData {
+
+  LONG bank;
+  LONG preset;
+  LONG minNote;
+  LONG maxNote;
+  LONG noteIndex;
+  LONG attack;
+  LONG decay;
+  LONG sustain;
+  LONG release;
+  LONG sample;
+};
+
+
 static const struct ColumnInfo instrumentColumns[] = {
 // chars * 8   + 8 margin left / right
   { (  3 * 8 ) + 8, "B#", CIF_CENTER },
   { (  3 * 8 ) + 8, "P#", CIF_CENTER },
-  { ( 23 * 8 ) + 8, "GM Name", CIF_CENTER },
-  { ( 20 * 8 ) + 8, "Preset Name", CIF_CENTER },
+  { ( 23 * 8 ) + 8, "GM Name", CIF_CENTER | CIF_DRAGGABLE },
+  { ( 12 * 8 ) + 8, "Preset Name", CIF_CENTER | CIF_DRAGGABLE },
   { (  3 * 8 ) + 8, "IN>", CIF_CENTER },
   { (  3 * 8 ) + 8, "<IN", CIF_CENTER },
   { (  5 * 8 ) + 8, "I#", CIF_CENTER },
-  { ( 20 * 8 ) + 8, "Instrument Name", CIF_CENTER },
+  { ( 12 * 8 ) + 8, "Instrument Name", CIF_CENTER | CIF_DRAGGABLE },
+  { (  1 * 8 ) + 8, "Attack", CIF_CENTER | CIF_DRAGGABLE },
+  { (  1 * 8 ) + 8, "Decay", CIF_CENTER | CIF_DRAGGABLE },
+  { (  1 * 8 ) + 8, "Sustain", CIF_CENTER | CIF_DRAGGABLE },
+  { (  1 * 8 ) + 8, "Release", CIF_CENTER | CIF_DRAGGABLE },
   { (  3 * 8 ) + 8, "SN>", CIF_CENTER },
   { (  3 * 8 ) + 8, "<SN", CIF_CENTER },
   { (  5 * 8 ) + 8, "S#", CIF_CENTER },
-  { ( 20 * 8 ) + 8, "Sample Name", CIF_CENTER },
+  { ( 10 * 8 ) + 8, "Sample Name", CIF_CENTER | CIF_DRAGGABLE },
   { -1, (STRPTR)~0, -1 }
 };
 
@@ -391,6 +410,91 @@ static CONST_STRPTR GetMidiName( LONG bank,
   }
 }
 
+static struct Node * CreateAmiSfListBrowserNode( UWORD bank,
+                                                 UWORD preset,
+                                                 CONST_STRPTR name,
+                                                 UBYTE minNote,
+                                                 UBYTE maxNote,
+                                                 UWORD noteIndex,
+                                                 UWORD attack,
+                                                 UWORD decay,
+                                                 UWORD sustain,
+                                                 UWORD release,
+                                                 LONG sampleNumber ) {
+
+  LONG columns = sizeof( instrumentColumns ) / sizeof( struct ColumnInfo );
+  struct SfListNodeData * data = AllocMem( sizeof( struct SfListNodeData ),
+                                           MEMF_ANY );
+  CONST_STRPTR none = "-";
+  CONST_STRPTR empty = "";
+
+  data->bank = bank;
+  data->preset = preset;
+  data->minNote = minNote;
+  data->maxNote = maxNote;
+  data->noteIndex = noteIndex;
+  data->attack = attack;
+  data->decay = decay;
+  data->sustain = sustain;
+  data->release = release;
+  data->sample = sampleNumber;
+
+  return AllocListBrowserNode( columns,
+                               LBNA_UserData, data,
+                               LBNA_Column, 0,
+                                 LBNCA_Integer, &( data->bank ),
+                                 LBNCA_Justification, LCJ_RIGHT,
+                               LBNA_Column, 1,
+                                 LBNCA_Integer, &( data->preset ),
+                                 LBNCA_Justification, LCJ_RIGHT,
+                               LBNA_Column, 2,
+                                 LBNCA_CopyText, FALSE,
+                                 LBNCA_Text, name,
+                               LBNA_Column, 3,
+                                 LBNCA_CopyText, FALSE,
+                                 LBNCA_Text, none,
+                               LBNA_Column, 4,
+                                 LBNCA_Integer, &( data->minNote ),
+                                 LBNCA_Justification, LCJ_RIGHT,
+                               LBNA_Column, 5,
+                                 LBNCA_Integer, &( data->maxNote ),
+                                 LBNCA_Justification, LCJ_RIGHT,
+                               LBNA_Column, 6,
+                                 LBNCA_Integer, &( data->noteIndex ),
+                                 LBNCA_Justification, LCJ_RIGHT,
+                               LBNA_Column, 7,
+                                 LBNCA_CopyText, FALSE,
+                                 LBNCA_Text, none,
+                               LBNA_Column, 8,
+                                 LBNCA_Integer, &( data->attack ),
+                                 LBNCA_Justification, LCJ_RIGHT,
+                               LBNA_Column, 9,
+                                 LBNCA_Integer, &( data->decay ),
+                                 LBNCA_Justification, LCJ_RIGHT,
+                               LBNA_Column, 10,
+                                 LBNCA_Integer, &( data->sustain ),
+                                 LBNCA_Justification, LCJ_RIGHT,
+                               LBNA_Column, 11,
+                                 LBNCA_Integer, &( data->release ),
+                                 LBNCA_Justification, LCJ_RIGHT,
+                               LBNA_Column, 12,
+                                 LBNCA_Integer, &( data->minNote ),
+                                 LBNCA_Justification, LCJ_RIGHT,
+                               LBNA_Column, 13,
+                                 LBNCA_Integer, &( data->maxNote ),
+                                 LBNCA_Justification, LCJ_RIGHT,
+                               LBNA_Column, 14,
+                                 LBNCA_Integer, &( data->sample ),
+                                 LBNCA_Justification, LCJ_RIGHT,
+                               LBNA_Column, 15,
+                                 LBNCA_CopyText, FALSE,
+                                 LBNCA_Text, none,
+                               LBNA_Column, 16,
+                                 LBNCA_CopyText, FALSE,
+                                 LBNCA_Text, empty,
+                               TAG_DONE );
+}
+
 static struct Node * CreateListBrowserNode( const LONG * integer0,
                                             const LONG * integer1,
                                             CONST_STRPTR string0,
@@ -432,18 +536,30 @@ static struct Node * CreateListBrowserNode( const LONG * integer0,
                                  LBNCA_CopyText, FALSE,
                                  LBNCA_Text, string2,
                                LBNA_Column, 8,
-                                 LBNCA_Integer, integer5,
+                                 LBNCA_Integer, NULL, // Attack
                                  LBNCA_Justification, LCJ_RIGHT,
                                LBNA_Column, 9,
-                                 LBNCA_Integer, integer6,
+                                 LBNCA_Integer, NULL, // Decay
                                  LBNCA_Justification, LCJ_RIGHT,
                                LBNA_Column, 10,
-                                 LBNCA_Integer, integer7,
+                                 LBNCA_Integer, NULL, // Sustain
                                  LBNCA_Justification, LCJ_RIGHT,
                                LBNA_Column, 11,
+                                 LBNCA_Integer, NULL, // Release
+                                 LBNCA_Justification, LCJ_RIGHT,
+                               LBNA_Column, 12,
+                                 LBNCA_Integer, integer5,
+                                 LBNCA_Justification, LCJ_RIGHT,
+                               LBNA_Column, 13,
+                                 LBNCA_Integer, integer6,
+                                 LBNCA_Justification, LCJ_RIGHT,
+                               LBNA_Column, 14,
+                                 LBNCA_Integer, integer7,
+                                 LBNCA_Justification, LCJ_RIGHT,
+                               LBNA_Column, 15,
                                  LBNCA_CopyText, FALSE,
                                  LBNCA_Text, string3,
-                               LBNA_Column, 12,
+                               LBNA_Column, 16,
                                  LBNCA_CopyText, FALSE,
                                  LBNCA_Text, string4,
                                TAG_DONE );
@@ -754,22 +870,17 @@ BOOL CreateAmiSfListLabels( struct List * labels,
                                              minNote,
                                              maxNote );
           LONG sampleNumber = note->asfn_SampleIndex - 1;
-// TODO: no stack vars allowed below, use one of:
-// - LBNA_NodeSize - http://amigadev.elowar.com/read/ADCD_2.1/Includes_and_Autodocs_3._guide/node0444.html 
-// - LBNA_UserData - http://amigadev.elowar.com/read/ADCD_2.1/Includes_and_Autodocs_3._guide/node044B.html
-          struct Node * label = CreateListBrowserNode( &bankIndex,
-                                                       &presetIndex,
-                                                       gmName,
-                                                       "-",
-                                                       &minNote,
-                                                       &maxNote,
-                                                       &noteIndex,
-                                                       "-",
-                                                       &minNote,
-                                                       &maxNote,
-                                                       &sampleNumber,
-                                                       "-",
-                                                       "" );
+          struct Node * label = CreateAmiSfListBrowserNode( bankIndex,
+                                                            presetIndex,
+                                                            gmName,
+                                                            minNote,
+                                                            maxNote,
+                                                            noteIndex,
+                                                            note->asfn_Attack,
+                                                            note->asfn_Decay,
+                                                            note->asfn_Sustain,
+                                                            note->asfn_Release,
+                                                            sampleNumber );
 
           LOG_D(( "D: Found b:%ld p:%ld %s n:%ld-%ld -> %ld s:%ld\n",
                    bankIndex, presetIndex,
@@ -792,7 +903,15 @@ VOID FreeListLabels( struct List * list ) {
   struct Node * label;
   while ( label = RemHead( list )) {
 
+    struct SfListNodeData * data = NULL;
+    GetListBrowserNodeAttrs( label, LBNA_UserData, &data, TAG_DONE );
+    if ( data ) {
+
+      LOG_V(( "V: Deleting list node 0x%08lx's data 0x%08lx\n",
+              label, data ));
+      FreeMem( data, sizeof( struct SfListNodeData ));
+    }
     FreeListBrowserNode( label );
   }
-  LOG_D(( "V: List labels emptied.\n" ));
+  LOG_D(( "D: List labels emptied.\n" ));
 }
