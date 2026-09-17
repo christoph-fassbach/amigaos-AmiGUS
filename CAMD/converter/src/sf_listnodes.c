@@ -44,7 +44,7 @@ struct SfListNodeData {
 };
 
 
-static const struct ColumnInfo instrumentColumns[] = {
+static const struct ColumnInfo sf2Columns[] = {
 // chars * 8   + 8 margin left / right
   { (  3 * 8 ) + 8, "B#", CIF_CENTER },
   { (  3 * 8 ) + 8, "P#", CIF_CENTER },
@@ -54,14 +54,30 @@ static const struct ColumnInfo instrumentColumns[] = {
   { (  3 * 8 ) + 8, "<IN", CIF_CENTER },
   { (  5 * 8 ) + 8, "I#", CIF_CENTER },
   { ( 12 * 8 ) + 8, "Instrument Name", CIF_CENTER | CIF_DRAGGABLE },
-  { (  1 * 8 ) + 8, "Attack", CIF_CENTER | CIF_DRAGGABLE },
-  { (  1 * 8 ) + 8, "Decay", CIF_CENTER | CIF_DRAGGABLE },
-  { (  1 * 8 ) + 8, "Sustain", CIF_CENTER | CIF_DRAGGABLE },
-  { (  1 * 8 ) + 8, "Release", CIF_CENTER | CIF_DRAGGABLE },
+  { (  1 * 8 ) + 8, "Attack (ms)", CIF_CENTER | CIF_DRAGGABLE },
+  { (  1 * 8 ) + 8, "Decay (ms)", CIF_CENTER | CIF_DRAGGABLE },
+  { (  1 * 8 ) + 8, "Sustain (ms)", CIF_CENTER | CIF_DRAGGABLE },
+  { (  1 * 8 ) + 8, "Release (ms)", CIF_CENTER | CIF_DRAGGABLE },
   { (  3 * 8 ) + 8, "SN>", CIF_CENTER },
   { (  3 * 8 ) + 8, "<SN", CIF_CENTER },
   { (  5 * 8 ) + 8, "S#", CIF_CENTER },
   { ( 10 * 8 ) + 8, "Sample Name", CIF_CENTER | CIF_DRAGGABLE },
+  { -1, (STRPTR)~0, -1 }
+};
+
+static const struct ColumnInfo amiSfColumns[] = {
+// chars * 8   + 8 margin left / right
+  { (  3 * 8 ) + 8, "B#", CIF_CENTER },
+  { (  3 * 8 ) + 8, "P#", CIF_CENTER },
+  { ( 23 * 8 ) + 8, "GM Name", CIF_CENTER | CIF_DRAGGABLE },
+  { (  3 * 8 ) + 8, "N>", CIF_CENTER },
+  { (  3 * 8 ) + 8, "<N", CIF_CENTER },
+  { (  5 * 8 ) + 8, "N#", CIF_CENTER },
+  { (  1 * 8 ) + 8, "Attack (ms)", CIF_CENTER | CIF_DRAGGABLE },
+  { (  1 * 8 ) + 8, "Decay (ms)", CIF_CENTER | CIF_DRAGGABLE },
+  { (  1 * 8 ) + 8, "Sustain (ms)", CIF_CENTER | CIF_DRAGGABLE },
+  { (  1 * 8 ) + 8, "Release (ms)", CIF_CENTER | CIF_DRAGGABLE },
+  { (  5 * 8 ) + 8, "S#", CIF_CENTER },
   { -1, (STRPTR)~0, -1 }
 };
 
@@ -424,11 +440,9 @@ static struct Node * CreateAmiSfListBrowserNode( UWORD bank,
                                                  UWORD release,
                                                  LONG sampleNumber ) {
 
-  LONG columns = sizeof( instrumentColumns ) / sizeof( struct ColumnInfo );
+  LONG columns = ( sizeof( amiSfColumns ) / sizeof( struct ColumnInfo )) - 1;
   struct SfListNodeData * data = AllocMem( sizeof( struct SfListNodeData ),
                                            MEMF_ANY );
-  CONST_STRPTR none = "-";
-  CONST_STRPTR empty = "";
 
   data->bank = bank;
   data->preset = preset;
@@ -453,67 +467,48 @@ static struct Node * CreateAmiSfListBrowserNode( UWORD bank,
                                  LBNCA_CopyText, FALSE,
                                  LBNCA_Text, name,
                                LBNA_Column, 3,
-                                 LBNCA_CopyText, FALSE,
-                                 LBNCA_Text, none,
-                               LBNA_Column, 4,
                                  LBNCA_Integer, &( data->minNote ),
+                                 LBNCA_Justification, LCJ_RIGHT,
+                               LBNA_Column, 4,
+                                 LBNCA_Integer, &( data->maxNote ),
                                  LBNCA_Justification, LCJ_RIGHT,
                                LBNA_Column, 5,
-                                 LBNCA_Integer, &( data->maxNote ),
-                                 LBNCA_Justification, LCJ_RIGHT,
-                               LBNA_Column, 6,
                                  LBNCA_Integer, &( data->noteIndex ),
                                  LBNCA_Justification, LCJ_RIGHT,
-                               LBNA_Column, 7,
-                                 LBNCA_CopyText, FALSE,
-                                 LBNCA_Text, none,
-                               LBNA_Column, 8,
+                               LBNA_Column, 6,
                                  LBNCA_Integer, &( data->attack ),
                                  LBNCA_Justification, LCJ_RIGHT,
-                               LBNA_Column, 9,
+                               LBNA_Column, 7,
                                  LBNCA_Integer, &( data->decay ),
                                  LBNCA_Justification, LCJ_RIGHT,
-                               LBNA_Column, 10,
+                               LBNA_Column, 8,
                                  LBNCA_Integer, &( data->sustain ),
                                  LBNCA_Justification, LCJ_RIGHT,
-                               LBNA_Column, 11,
+                               LBNA_Column, 9,
                                  LBNCA_Integer, &( data->release ),
                                  LBNCA_Justification, LCJ_RIGHT,
-                               LBNA_Column, 12,
-                                 LBNCA_Integer, &( data->minNote ),
-                                 LBNCA_Justification, LCJ_RIGHT,
-                               LBNA_Column, 13,
-                                 LBNCA_Integer, &( data->maxNote ),
-                                 LBNCA_Justification, LCJ_RIGHT,
-                               LBNA_Column, 14,
+                               LBNA_Column, 10,
                                  LBNCA_Integer, &( data->sampleIndex ),
                                  LBNCA_Justification, LCJ_RIGHT,
-                               LBNA_Column, 15,
-                                 LBNCA_CopyText, FALSE,
-                                 LBNCA_Text, none,
-                               LBNA_Column, 16,
-                                 LBNCA_CopyText, FALSE,
-                                 LBNCA_Text, empty,
                                TAG_DONE );
 }
 
-static struct Node * CreateListBrowserNode( UWORD bank,
-                                            UWORD preset,
-                                            CONST_STRPTR generalMidiName,
-                                            CONST_STRPTR presetName,
-                                            UBYTE instrumentMinNote,
-                                            UBYTE instrumentMaxNote,
-                                            UWORD instrumentNumber,
-                                            CONST_STRPTR instrumentName,
-                                            UBYTE sampleMinNote,
-                                            UBYTE sampleMaxNote,
-                                            UWORD sampleNumber,
-                                            CONST_STRPTR sampleName ) {
+static struct Node * CreateSf2ListBrowserNode( UWORD bank,
+                                               UWORD preset,
+                                               CONST_STRPTR generalMidiName,
+                                               CONST_STRPTR presetName,
+                                               UBYTE instrumentMinNote,
+                                               UBYTE instrumentMaxNote,
+                                               UWORD instrumentNumber,
+                                               CONST_STRPTR instrumentName,
+                                               UBYTE sampleMinNote,
+                                               UBYTE sampleMaxNote,
+                                               UWORD sampleNumber,
+                                               CONST_STRPTR sampleName ) {
 
-  LONG columns = sizeof( instrumentColumns ) / sizeof( struct ColumnInfo );
+  LONG columns = ( sizeof( sf2Columns ) / sizeof( struct ColumnInfo )) - 1;
   struct SfListNodeData * data = AllocMem( sizeof( struct SfListNodeData ),
                                            MEMF_ANY );
-  CONST_STRPTR empty = "";
 
   data->bank = bank;
   data->preset = preset;
@@ -578,25 +573,41 @@ static struct Node * CreateListBrowserNode( UWORD bank,
                                LBNA_Column, 15,
                                  LBNCA_CopyText, FALSE,
                                  LBNCA_Text, sampleName,
-                               LBNA_Column, 16,
-                                 LBNCA_CopyText, FALSE,
-                                 LBNCA_Text, empty,
                                TAG_DONE );
 }
 
-const struct ColumnInfo * GetSoundFontColumnInfos( VOID ) {
+const struct ColumnInfo * GetAmiSfColumnInfos( VOID ) {
 
-  return instrumentColumns;
+  return amiSfColumns;
 }
 
-const ULONG GetSoundFontColumnsWidth( VOID ) {
+const ULONG GetAmiSfColumnsWidth( VOID ) {
 
   LONG i = 0;
   ULONG result = 0;
 
-  while( 0 < instrumentColumns[ i ].ci_Width ) {
+  while( 0 < amiSfColumns[ i ].ci_Width ) {
 
-    result += instrumentColumns[ i ].ci_Width;
+    result += amiSfColumns[ i ].ci_Width;
+    ++i;
+  }
+  LOG_V(( "V: Width over all columns is %ld\n", result ));
+  return result;
+}
+
+const struct ColumnInfo * GetSf2ColumnInfos( VOID ) {
+
+  return sf2Columns;
+}
+
+const ULONG GetSf2ColumnsWidth( VOID ) {
+
+  LONG i = 0;
+  ULONG result = 0;
+
+  while( 0 < sf2Columns[ i ].ci_Width ) {
+
+    result += sf2Columns[ i ].ci_Width;
     ++i;
   }
   LOG_V(( "V: Width over all columns is %ld\n", result ));
@@ -605,23 +616,49 @@ const ULONG GetSoundFontColumnsWidth( VOID ) {
 
 VOID CreateEmptyListLabels( struct List * labels ) {
 
+  LONG columns = ( sizeof( sf2Columns ) / sizeof( struct ColumnInfo )) - 1;
   LONG i = 0;
 
   while ( NULL != instrumentNames[ i ] ) {
 
-    struct Node * label =
-      CreateListBrowserNode( instrumentNumbers[ 0 ],
-                             instrumentNumbers[ i ],
-                             instrumentNames[ i ],
-                             "",
-                             0,
-                             0,
-                             0,
-                             "",
-                             0,
-                             0,
-                             0,
-                             "" );
+    struct Node * label = AllocListBrowserNode( columns,
+                               LBNA_Column, 0,
+                                 LBNCA_Integer, &( instrumentNumbers[ 0 ]),
+                               LBNA_Column, 1,
+                                 LBNCA_Integer, &( instrumentNumbers[ i ]),
+                               LBNA_Column, 2,
+                                 LBNCA_CopyText, FALSE,
+                                 LBNCA_Text, instrumentNames[ i ],
+                               LBNA_Column, 3,
+                                 LBNCA_CopyText, FALSE,
+                                 LBNCA_Text, NULL,
+                               LBNA_Column, 4,
+                                 LBNCA_Integer, NULL,
+                               LBNA_Column, 5,
+                                 LBNCA_Integer, NULL,
+                               LBNA_Column, 6,
+                                 LBNCA_Integer, NULL,
+                               LBNA_Column, 7,
+                                 LBNCA_CopyText, FALSE,
+                                 LBNCA_Text, NULL,
+                               LBNA_Column, 8,
+                                 LBNCA_Integer, NULL,
+                               LBNA_Column, 9,
+                                 LBNCA_Integer, NULL,
+                               LBNA_Column, 10,
+                                 LBNCA_Integer, NULL,
+                               LBNA_Column, 11,
+                                 LBNCA_Integer, NULL,
+                               LBNA_Column, 12,
+                                 LBNCA_Integer, NULL,
+                               LBNA_Column, 13,
+                                 LBNCA_Integer, NULL,
+                               LBNA_Column, 14,
+                                 LBNCA_Integer, NULL,
+                               LBNA_Column, 15,
+                                 LBNCA_CopyText, FALSE,
+                                 LBNCA_Text, NULL,
+                               TAG_DONE );
     i++;
     AddTail( labels, label );
   }
@@ -659,18 +696,18 @@ VOID AddSf2Label(
           bank, presetNumber, presetName, gmName,
           instrumentNumber, instrumentName,
           sampleNumber, sampleName ));
-  label = CreateListBrowserNode( bank,
-                                 presetNumber,
-                                 gmName,
-                                 presetName,
-                                 instrumentMin,
-                                 instrumentMax,
-                                 instrumentNumber,
-                                 instrumentName,
-                                 sampleMin,
-                                 sampleMax,
-                                 sampleNumber,
-                                 sampleName );
+  label = CreateSf2ListBrowserNode( bank,
+                                    presetNumber,
+                                    gmName,
+                                    presetName,
+                                    instrumentMin,
+                                    instrumentMax,
+                                    instrumentNumber,
+                                    instrumentName,
+                                    sampleMin,
+                                    sampleMax,
+                                    sampleNumber,
+                                    sampleName );
   LOG_V(( "V: Inserting label\n" ));
   AddTail( labels, label );
 }

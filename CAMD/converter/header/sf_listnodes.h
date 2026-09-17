@@ -26,8 +26,11 @@
 #include "progress_dialog.h"
 #include "sf2.h"
 
-const struct ColumnInfo * GetSoundFontColumnInfos( VOID );
-const ULONG GetSoundFontColumnsWidth( VOID );
+const struct ColumnInfo * GetAmiSfColumnInfos( VOID );
+const ULONG GetAmiSfColumnsWidth( VOID );
+
+const struct ColumnInfo * GetSf2ColumnInfos( VOID );
+const ULONG GetSf2ColumnsWidth( VOID );
 
 VOID CreateEmptyListLabels( struct List * labels );
 

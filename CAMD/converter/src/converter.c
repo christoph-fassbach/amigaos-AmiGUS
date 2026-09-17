@@ -220,14 +220,14 @@ VOID OpenWin( VOID ) { // TODO: enable error handling and return values
   base->sfc_ListBrowser =
     ListBrowserObject,
       LISTBROWSER_Labels, &( base->sfc_InstrumentLabels ),
-      LISTBROWSER_ColumnInfo, GetSoundFontColumnInfos(),
+      LISTBROWSER_ColumnInfo, GetSf2ColumnInfos(),
       LISTBROWSER_Selected, 0,
       LISTBROWSER_ColumnTitles, TRUE,
       LISTBROWSER_ShowSelected, TRUE,
       LISTBROWSER_Editable, FALSE,
       LISTBROWSER_Hierarchical, FALSE,
       LISTBROWSER_MultiSelect, FALSE,
-      LISTBROWSER_VirtualWidth, GetSoundFontColumnsWidth(),
+      LISTBROWSER_VirtualWidth, GetSf2ColumnsWidth(),
       LISTBROWSER_HorizontalProp, TRUE,
       GA_Text, "Instruments",
       GA_ID, GadgetId_Instruments,
@@ -387,6 +387,14 @@ BOOL HandleSf2Read( struct SF_Converter * base ) {
                                  maxProgress );
   }
 
+  SetGadgetAttrs( base->sfc_ListBrowser,
+                  base->sfc_MainWindow,
+                  NULL,
+                  LISTBROWSER_ColumnInfo, GetSf2ColumnInfos(),
+                  LISTBROWSER_VirtualWidth, GetSf2ColumnsWidth(),
+                  LISTBROWSER_Labels, &( base->sfc_InstrumentLabels ),
+                  TAG_DONE );
+
   if ( abort ) {
 
     LOG_D(( "D: Reading SF2 cancelled.\n" ));
@@ -439,6 +447,14 @@ BOOL HandleAmiSFRead( struct SF_Converter * base ) {
 
     abort = TRUE;
   }
+
+  SetGadgetAttrs( base->sfc_ListBrowser,
+                  base->sfc_MainWindow,
+                  NULL,
+                  LISTBROWSER_ColumnInfo, GetAmiSfColumnInfos(),
+                  LISTBROWSER_VirtualWidth, GetAmiSfColumnsWidth(),
+                  LISTBROWSER_Labels, &( base->sfc_InstrumentLabels ),
+                  TAG_DONE );
 
   if ( abort ) {
 
@@ -559,12 +575,6 @@ VOID HandleReadButton( VOID ) {
 
     abort = HandleAmiSFRead( base );
   }
-
-  SetGadgetAttrs( base->sfc_ListBrowser,
-                  base->sfc_MainWindow,
-                  NULL,
-                  LISTBROWSER_Labels, &( base->sfc_InstrumentLabels ),
-                  TAG_DONE );
 
   CloseProgressDialog( base->sfc_ProgressDialog );
   FreeProgressDialog( base->sfc_ProgressDialog );
