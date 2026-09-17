@@ -38,7 +38,9 @@ struct SfListNodeData {
   LONG decay;
   LONG sustain;
   LONG release;
-  LONG sample;
+  LONG minSample;
+  LONG maxSample;
+  LONG sampleIndex;
 };
 
 
@@ -437,7 +439,7 @@ static struct Node * CreateAmiSfListBrowserNode( UWORD bank,
   data->decay = decay;
   data->sustain = sustain;
   data->release = release;
-  data->sample = sampleNumber;
+  data->sampleIndex = sampleNumber;
 
   return AllocListBrowserNode( columns,
                                LBNA_UserData, data,
@@ -484,7 +486,7 @@ static struct Node * CreateAmiSfListBrowserNode( UWORD bank,
                                  LBNCA_Integer, &( data->maxNote ),
                                  LBNCA_Justification, LCJ_RIGHT,
                                LBNA_Column, 14,
-                                 LBNCA_Integer, &( data->sample ),
+                                 LBNCA_Integer, &( data->sampleIndex ),
                                  LBNCA_Justification, LCJ_RIGHT,
                                LBNA_Column, 15,
                                  LBNCA_CopyText, FALSE,
@@ -495,73 +497,90 @@ static struct Node * CreateAmiSfListBrowserNode( UWORD bank,
                                TAG_DONE );
 }
 
-static struct Node * CreateListBrowserNode( const LONG * integer0,
-                                            const LONG * integer1,
-                                            CONST_STRPTR string0,
-                                            CONST_STRPTR string1,
-                                            const LONG * integer2,
-                                            const LONG * integer3,
-                                            const LONG * integer4,
-                                            CONST_STRPTR string2,
-                                            const LONG * integer5,
-                                            const LONG * integer6,
-                                            const LONG * integer7,
-                                            CONST_STRPTR string3,
-                                            CONST_STRPTR string4 ) {
+static struct Node * CreateListBrowserNode( UWORD bank,
+                                            UWORD preset,
+                                            CONST_STRPTR generalMidiName,
+                                            CONST_STRPTR presetName,
+                                            UBYTE instrumentMinNote,
+                                            UBYTE instrumentMaxNote,
+                                            UWORD instrumentNumber,
+                                            CONST_STRPTR instrumentName,
+                                            UBYTE sampleMinNote,
+                                            UBYTE sampleMaxNote,
+                                            UWORD sampleNumber,
+                                            CONST_STRPTR sampleName ) {
 
   LONG columns = sizeof( instrumentColumns ) / sizeof( struct ColumnInfo );
+  struct SfListNodeData * data = AllocMem( sizeof( struct SfListNodeData ),
+                                           MEMF_ANY );
+  CONST_STRPTR empty = "";
+
+  data->bank = bank;
+  data->preset = preset;
+  data->minNote = instrumentMinNote;
+  data->maxNote = instrumentMaxNote;
+  data->noteIndex = instrumentNumber;
+  data->attack = -1;
+  data->decay = -1;
+  data->sustain = -1;
+  data->release = -1;
+  data->minSample = sampleMinNote;
+  data->maxSample = sampleMaxNote;
+  data->sampleIndex = sampleNumber;
+
   return AllocListBrowserNode( columns,
+                               LBNA_UserData, data,
                                LBNA_Column, 0,
-                                 LBNCA_Integer, integer0,
+                                 LBNCA_Integer, &( data->bank ),
                                  LBNCA_Justification, LCJ_RIGHT,
                                LBNA_Column, 1,
-                                 LBNCA_Integer, integer1,
+                                 LBNCA_Integer, &( data->preset ),
                                  LBNCA_Justification, LCJ_RIGHT,
                                LBNA_Column, 2,
                                  LBNCA_CopyText, FALSE,
-                                 LBNCA_Text, string0,
+                                 LBNCA_Text, generalMidiName,
                                LBNA_Column, 3,
                                  LBNCA_CopyText, FALSE,
-                                 LBNCA_Text, string1,
+                                 LBNCA_Text, presetName,
                                LBNA_Column, 4,
-                                 LBNCA_Integer, integer2,
+                                 LBNCA_Integer, &( data->minNote ),
                                  LBNCA_Justification, LCJ_RIGHT,
                                LBNA_Column, 5,
-                                 LBNCA_Integer, integer3,
+                                 LBNCA_Integer, &( data->maxNote ),
                                  LBNCA_Justification, LCJ_RIGHT,
                                LBNA_Column, 6,
-                                 LBNCA_Integer, integer4,
+                                 LBNCA_Integer, &( data->noteIndex ),
                                  LBNCA_Justification, LCJ_RIGHT,
                                LBNA_Column, 7,
                                  LBNCA_CopyText, FALSE,
-                                 LBNCA_Text, string2,
+                                 LBNCA_Text, instrumentName,
                                LBNA_Column, 8,
-                                 LBNCA_Integer, NULL, // Attack
+                                 LBNCA_Integer, &( data->attack ),
                                  LBNCA_Justification, LCJ_RIGHT,
                                LBNA_Column, 9,
-                                 LBNCA_Integer, NULL, // Decay
+                                 LBNCA_Integer, &( data->decay ),
                                  LBNCA_Justification, LCJ_RIGHT,
                                LBNA_Column, 10,
-                                 LBNCA_Integer, NULL, // Sustain
+                                 LBNCA_Integer, &( data->sustain ),
                                  LBNCA_Justification, LCJ_RIGHT,
                                LBNA_Column, 11,
-                                 LBNCA_Integer, NULL, // Release
+                                 LBNCA_Integer, &( data->release ),
                                  LBNCA_Justification, LCJ_RIGHT,
                                LBNA_Column, 12,
-                                 LBNCA_Integer, integer5,
+                                 LBNCA_Integer, &( data->minSample ),
                                  LBNCA_Justification, LCJ_RIGHT,
                                LBNA_Column, 13,
-                                 LBNCA_Integer, integer6,
+                                 LBNCA_Integer, &( data->maxSample ),
                                  LBNCA_Justification, LCJ_RIGHT,
                                LBNA_Column, 14,
-                                 LBNCA_Integer, integer7,
+                                 LBNCA_Integer, &( data->sampleIndex ),
                                  LBNCA_Justification, LCJ_RIGHT,
                                LBNA_Column, 15,
                                  LBNCA_CopyText, FALSE,
-                                 LBNCA_Text, string3,
+                                 LBNCA_Text, sampleName,
                                LBNA_Column, 16,
                                  LBNCA_CopyText, FALSE,
-                                 LBNCA_Text, string4,
+                                 LBNCA_Text, empty,
                                TAG_DONE );
 }
 
@@ -591,18 +610,17 @@ VOID CreateEmptyListLabels( struct List * labels ) {
   while ( NULL != instrumentNames[ i ] ) {
 
     struct Node * label =
-      CreateListBrowserNode( &( instrumentNumbers[ 0 ]),
-                             &( instrumentNumbers[ i ]),
+      CreateListBrowserNode( instrumentNumbers[ 0 ],
+                             instrumentNumbers[ i ],
                              instrumentNames[ i ],
                              "",
-                             NULL,
-                             NULL,
-                             NULL,
+                             0,
+                             0,
+                             0,
                              "",
-                             NULL,
-                             NULL,
-                             NULL,
-                             "",
+                             0,
+                             0,
+                             0,
                              "" );
     i++;
     AddTail( labels, label );
@@ -617,30 +635,30 @@ VOID AddSf2Label(
   struct SF2_ArgValues * sampleArgValues,
   struct SF2_Sample * sample ) {
 
-  LONG * bank = &( preset->sf2p_Bank );
-  LONG * presetNumber = &( preset->sf2p_Common.sf2c_Number );
-  LONG * instrumentMin = &( instrumentArgValues->sf2v_LowNote );
-  LONG * instrumentMax = &( instrumentArgValues->sf2v_HighNote );
-  LONG * instrumentNumber = &( instrument->sf2i_Common.sf2c_Number );
-  LONG * sampleMin = &( sampleArgValues->sf2v_LowNote );
-  LONG * sampleMax = &( sampleArgValues->sf2v_HighNote );
-  LONG * sampleNumber = &( sample->sf2s_Number );
+  UWORD bank = preset->sf2p_Bank;
+  UWORD presetNumber = preset->sf2p_Common.sf2c_Number;
+  UBYTE instrumentMin = instrumentArgValues->sf2v_LowNote;
+  UBYTE instrumentMax = instrumentArgValues->sf2v_HighNote;
+  UWORD instrumentNumber = instrument->sf2i_Common.sf2c_Number;
+  UBYTE sampleMin = sampleArgValues->sf2v_LowNote;
+  UBYTE sampleMax = sampleArgValues->sf2v_HighNote;
+  UWORD sampleNumber = sample->sf2s_Number;
   CONST_STRPTR presetName = preset->sf2p_Common.sf2c_Name;
-  CONST_STRPTR gmName = GetMidiName( *bank,
-                                     *presetNumber,
-                                     *instrumentMin,
-                                     *instrumentMax,
-                                     *sampleMin,
-                                     *sampleMax );
+  CONST_STRPTR gmName = GetMidiName( bank,
+                                     presetNumber,
+                                     instrumentMin,
+                                     instrumentMax,
+                                     sampleMin,
+                                     sampleMax );
   CONST_STRPTR instrumentName = instrument->sf2i_Common.sf2c_Name;
   CONST_STRPTR sampleName = sample->sf2s_Name;
 
   struct Node * label;
 
   LOG_V(( "V: Creating label %ld %ld %s %s %ld %s %ld %s\n",
-          *bank, *presetNumber, presetName, gmName,
-          *instrumentNumber, instrumentName,
-          *sampleNumber, sampleName ));
+          bank, presetNumber, presetName, gmName,
+          instrumentNumber, instrumentName,
+          sampleNumber, sampleName ));
   label = CreateListBrowserNode( bank,
                                  presetNumber,
                                  gmName,
@@ -652,8 +670,7 @@ VOID AddSf2Label(
                                  sampleMin,
                                  sampleMax,
                                  sampleNumber,
-                                 sampleName,
-                                 "" );
+                                 sampleName );
   LOG_V(( "V: Inserting label\n" ));
   AddTail( labels, label );
 }

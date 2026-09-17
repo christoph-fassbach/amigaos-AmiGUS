@@ -120,8 +120,8 @@ extern STRPTR SF2_Suffix;
 struct SF2_ArgValues {
 
   LONG sf2v_NextNumber; // -1 means ignore me for ever!
-  ULONG sf2v_LowNote;  // UBYTE - but need long for display.
-  ULONG sf2v_HighNote; // UBYTE - but need long for display.
+  UBYTE sf2v_LowNote;
+  UBYTE sf2v_HighNote;
   WORD sf2v_Attack;    // in 1200*ld(seconds)
   WORD sf2v_Decay;     // in 1200*ld(seconds)
   WORD sf2v_Sustain;   // in centibels - 1000 means full
@@ -169,7 +169,7 @@ struct SF2_Common {
 
   struct MinNode sf2c_Node;
   struct MinList sf2c_Zones;
-  LONG sf2c_Number; // UWORD - but need long for display.
+  UWORD sf2c_Number;
   UBYTE sf2c_Name[21];
   UBYTE sf2c_Type;
   UWORD sf2c_Padding;
@@ -179,7 +179,7 @@ struct SF2_Preset {
 
   // From File:
   struct SF2_Common sf2p_Common;
-  LONG sf2p_Bank; // UWORD - but need long for display.
+  UWORD sf2p_Bank;
 
   // From Flattening:
   struct MinList sf2p_Args;
@@ -202,7 +202,7 @@ struct SF2_Sample {
   ULONG sf2s_LoopStartOffset;   // in WORDs
   ULONG sf2s_LoopEndOffset;     // in WORDs
   ULONG sf2s_SampleRate;
-  LONG sf2s_Number; // UWORD - but need long for display.
+  UWORD sf2s_Number;
   UWORD sf2s_SampleType;
   UBYTE sf2s_SampleNote;
   UBYTE sf2s_Name[21];
