@@ -39,6 +39,7 @@
 
 struct PlaySampleMessage {
   struct Message pnm_Message;
+  struct AmiSF * amisf;
   struct AmiSF_Note * note;
   struct AmiSF_Sample * sample;
   APTR data;

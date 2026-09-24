@@ -80,40 +80,46 @@ VOID LoadAmiGusWavetableSample( ULONG * source, ULONG target, ULONG size ) {
   LOG_D(( "D: Copied %ld LONGs to 0x%08lx\n", i, target ));
 }
 
-VOID StartAmiGusWavetablePlayback( struct AmiSF_Note * note,
-                                   struct AmiSF_Sample * sample ) {
+VOID StartAmiGusWavetablePlayback( struct AmiSF * amisf,
+                                   struct AmiSF_Note * note,
+                                   struct AmiSF_Sample * sample,
+                                   UBYTE playbackNote ) {
 
   struct AmiGUS_CAMD * base = AmiGUS_CAMD_Base;
   APTR card = base->agb_AmiGUS->agus_WavetableBase;
   const UWORD channelVolumeMax = 0x4001;
-  const UWORD sustainVolume = ( channelVolumeMax * note->amisfn_Sustain ) >> 16;
+  const UWORD sustainVolume = ( channelVolumeMax * note->asfn_Sustain ) >> 16;
   const UWORD startFlags = AMIGUS_WT_F_CONTROL_START
               | AMIGUS_WT_F_CONTROL_KEY_ON
               | AMIGUS_WT_F_CONTROL_INTERPOLATE
-              | ( sample->amisfs_Flags 
-                & ( AMISF_NOTE_RESOLUTION_16BIT 
-                  | AMISF_NOTE_LOOPED_MASK
-                  | AMISF_NOTE_ENVELOPE_MASK ));
+              | ( sample->asfs_PlaybackFlags 
+                & ( AMISF_PLAY_RESOLUTION_16BIT 
+                  | AMISF_PLAY_LOOPED
+                  | AMISF_PLAY_ENVELOPE_MODULATION ));
+  const ULONG playbackRateIndex = note->asfn_BasePlaybackIndex
+                                  + playbackNote
+                                  - note->asfn_BaseNote;
+  const ULONG playbackRate = amisf->asf_PlaybackRate[ playbackRateIndex ];
 
   // TODO: Obviously, channel allocation/scheduling missing!
   WriteReg16( card, AMIGUS_WT_CHANNEL_NUMBER, 0x0000 );
   WriteReg16( card, AMIGUS_WT_CHANNEL_CONTROL, 0x0000 );
 
   LOG_D(( "D: Playing from 0x%08lx to 0x%08lx with flags 0x%04lx\n",
-          sample->amisfs_StartOffset, sample->amisfs_EndOffset, startFlags ));
-  WriteReg32( card, AMIGUS_WT_CHANNEL_START_32BIT, sample->amisfs_StartOffset );
-  WriteReg32( card, AMIGUS_WT_CHANNEL_LOOP_32BIT, sample->amisfs_LoopOffset );
-  WriteReg32( card, AMIGUS_WT_CHANNEL_END_32BIT, sample->amisfs_EndOffset );
-  WriteReg32( card, AMIGUS_WT_CHANNEL_RATE_32BIT, note->amisfn_PlaybackRate );
+          sample->asfs_StartOffset, sample->asfs_EndOffset, startFlags ));
+  WriteReg32( card, AMIGUS_WT_CHANNEL_START_32BIT, sample->asfs_StartOffset );
+  WriteReg32( card, AMIGUS_WT_CHANNEL_LOOP_32BIT, sample->asfs_LoopOffset );
+  WriteReg32( card, AMIGUS_WT_CHANNEL_END_32BIT, sample->asfs_EndOffset );
+  WriteReg32( card, AMIGUS_WT_CHANNEL_RATE_32BIT, playbackRate );
 
   // TODO: Rework the below, obviously, state dependent!
   WriteReg16( card, AMIGUS_WT_CHANNEL_VOLUME_LEFT, channelVolumeMax );
   WriteReg16( card, AMIGUS_WT_CHANNEL_VOLUME_RIGHT, channelVolumeMax );
 
-  WriteReg16( card, AMIGUS_WT_CHANNEL_ATTACK, note->amisfn_Attack );
-  WriteReg16( card, AMIGUS_WT_CHANNEL_DECAY, note->amisfn_Decay );
+  WriteReg16( card, AMIGUS_WT_CHANNEL_ATTACK, note->asfn_Attack );
+  WriteReg16( card, AMIGUS_WT_CHANNEL_DECAY, note->asfn_Decay );
   WriteReg16( card, AMIGUS_WT_CHANNEL_SUSTAIN, sustainVolume );
-  WriteReg16( card, AMIGUS_WT_CHANNEL_RELEASE, note->amisfn_Release );
+  WriteReg16( card, AMIGUS_WT_CHANNEL_RELEASE, note->asfn_Release );
 
   WriteReg16( card, AMIGUS_WT_CHANNEL_CONTROL, startFlags );
 }

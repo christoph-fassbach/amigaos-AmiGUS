@@ -20,14 +20,14 @@
 #define AMIGUS_UTILS_H
 
 #include <amigus/amigus_ports.h>
-//# //include <amigus/amisf.h>
-#include "amisf.h"
+#include "amisf_conversion.h"
 
 ULONG OpenAmigusPort( VOID );
 LONG SendAmigusMessage( struct Message * message );
 
 struct PlaySampleMessage * CreateAmigusPlaySampleMessage(
   struct MsgPort * replyPort,
+  struct AmiSF * amisf,
   struct AmiSF_Note * note,
   struct AmiSF_Sample * sample,
   APTR data );

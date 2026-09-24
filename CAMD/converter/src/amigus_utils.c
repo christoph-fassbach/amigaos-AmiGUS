@@ -156,6 +156,7 @@ LOG_D(("Debug for SendAmigusMessage 8\n"));
 
 struct PlaySampleMessage * CreateAmigusPlaySampleMessage(
   struct MsgPort * replyPort,
+  struct AmiSF * amisf,
   struct AmiSF_Note * note,
   struct AmiSF_Sample * sample,
   APTR data ) {
@@ -164,6 +165,7 @@ struct PlaySampleMessage * CreateAmigusPlaySampleMessage(
     CreateAmigusMessage( replyPort,
                          sizeof( struct PlaySampleMessage ),
                          &( PlaySampleMessageName ));
+  message->amisf = amisf;
   message->note = note;
   message->sample = sample;
   message->data = data;

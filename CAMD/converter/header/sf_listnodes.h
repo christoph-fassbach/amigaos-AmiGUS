@@ -22,7 +22,7 @@
 #include <exec/lists.h>
 #include <gadgets/listbrowser.h>
 
-#include "amisf.h"
+#include "amisf_conversion.h"
 #include "progress_dialog.h"
 #include "sf2.h"
 
@@ -58,6 +58,15 @@ BOOL CreateAmiSfListLabels( struct List * labels,
                             struct ProgressDialog * dialog,
                             ULONG * currentProgress,
                             ULONG maxProgress );
+
+/**
+ * The order created here needs to be in sync with CreateSf2ListLabels.
+ */
+BOOL GetAmiSfInformationForIndex( struct AmiSF_Preset ** preset,
+                                  struct AmiSF_Note ** note,
+                                  struct AmiSF_Sample ** sample,
+                                  struct AmiSF * amisf,
+                                  ULONG index );
 
 VOID FreeListLabels( struct List * list );
 

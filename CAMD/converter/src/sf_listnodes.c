@@ -952,6 +952,45 @@ BOOL CreateAmiSfListLabels( struct List * labels,
   return FALSE;
 }
 
+BOOL GetAmiSfInformationForIndex( struct AmiSF_Preset ** preset,
+                                  struct AmiSF_Note ** note,
+                                  struct AmiSF_Sample ** sample,
+                                  struct AmiSF * amisf,
+                                  ULONG index ) {
+
+  LONG bankIndex;
+  LONG presetIndex;
+  LONG noteIndex;
+  LONG noteCount;
+
+  for ( bankIndex = 0; bankIndex <= 128; ++bankIndex ) {
+    for ( presetIndex = 0; presetIndex <= 128; ++presetIndex ) {
+
+      ( *preset ) = &( amisf->asf_Preset[ bankIndex ][ presetIndex ]);
+      noteCount = ( *preset )->asfp_NoteCount;
+
+      for ( noteIndex = 0; noteIndex < noteCount; ++noteIndex ) {
+
+        if ( !index ) {
+
+          LONG effectiveNoteIndex;
+          LONG effectiveSampleIndex;
+
+          effectiveNoteIndex = ( *preset )->asfp_NoteStart + noteIndex;
+          ( *note ) = &( amisf->asf_Note[ effectiveNoteIndex ]);
+          effectiveSampleIndex = ( *note )->asfn_SampleIndex - 1;
+          ( *sample ) = &( amisf->asf_SampleMetadata[ effectiveSampleIndex ]);
+
+          return TRUE;
+        }
+
+        --index;
+      }
+    }
+  }
+  return FALSE;
+}
+
 VOID FreeListLabels( struct List * list ) {
 
   struct Node * label;

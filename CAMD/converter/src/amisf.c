@@ -21,7 +21,7 @@
 #include <proto/dos.h>
 #include <proto/exec.h>
 
-#include "amisf.h"
+#include "amisf_conversion.h"
 #include "converter.h"
 #include "debug.h"
 #include "errors.h"
@@ -1094,4 +1094,17 @@ VOID FreeAmiSF( struct AmiSF * amisf ) {
           -1,
           amisf->asf_SampleRateCount,
           amisf->asf_PlaybackRateCount ));
+}
+
+APTR GetAmiSfSampleData( struct AmiSF * amisf, struct AmiSF_Sample * sample ) {
+
+  ULONG size = sample->asfs_EndOffset - sample->asfs_StartOffset;
+  APTR result = AllocMem( size, MEMF_ANY );
+
+  Seek( amisf->asf_SampleSourceFile,
+        sample->asfs_StartOffset,
+        OFFSET_BEGINNING );
+  Read( amisf->asf_SampleSourceFile, result, size );
+
+  return result;
 }

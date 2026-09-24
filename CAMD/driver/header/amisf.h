@@ -31,85 +31,95 @@
 #define CHAR_TO_ULONG( a, b, c, d )      ((( a ) << 24 ) | (( b ) << 16 ) | (( c ) << 8 ) | ( d ))
 #define CHAR_TO_UWORD( a, b )            ((( a ) << 8 ) | ( b ))
 
-#define AMISF_IDENTIFIER_0               CHAR_TO_ULONG( 'A', 'm', 'i', 'S' )
-#define AMISF_IDENTIFIER_1               CHAR_TO_UWORD( 'F', 0 )
+#define AMISF_PLAY_RESOLUTION_16BIT      0x0001 // Not set => 8bit
+#define AMISF_PLAY_LOOPED                0x0002
+#define AMISF_PLAY_INTERPOLATION         0x0004
+//efine AMISF_PLAY_BIG_ENDIANESS         0x0008 // No, we do not do that here!
+// unused                                0x0010
+#define AMISF_PLAY_ENVELOPE_MODULATION   0x0020
+// unused                                0x0040
+// unused                                0x0080
+// unused                                0x0100
+// unused                                0x0200
+// unused                                0x0400
+// unused                                0x0800
+// unused                                0x1000
+// unused                                0x2000
+#define AMISF_PLAY_ENVELOPE_KEY_ON       0x4000
+#define AMISF_PLAY_SAMPLE_PLAYBACK_ON    0x8000
 
-struct AmiSF_Note {
+#define AMISF_STATUS_LOCATION_MASK       0x000F
+#define AMISF_STATUS_LOCATION_OTHER_FILE 0x0001
+#define AMISF_STATUS_LOCATION_AMISF_FILE 0x0002
+#define AMISF_STATUS_LOCATION_SYS_RAM    0x0004
+#define AMISF_STATUS_LOCATION_CARD_RAM   0x0008
 
-  UBYTE amisfn_Note;
-  UBYTE amisfn_Velocity;
-  UWORD amisfn_SampleIndex;
-
-  ULONG amisfn_PlaybackRate;    // Version 01: AmiGUS register format - Version 11: real sample rate
-
-  UWORD amisfn_Volume;
-  UWORD amisfn_Attack;
-
-  UWORD amisfn_Decay;
-  UWORD amisfn_Sustain;
-
-  UWORD amisfn_Release;
-  UWORD amisfn_Padding0;
-};
+struct ProgressDialog;
 
 struct AmiSF_Sample {
 
-  ULONG amisfs_Flags;
-  ULONG amisfs_StartOffset;
-  ULONG amisfs_LoopOffset;
-  ULONG amisfs_EndOffset;
+  UWORD asfs_PlaybackFlags;
+  UWORD asfs_StatusFlags;
+  ULONG asfs_StartOffset; // relative to binary start in disk, RAM, AmiGUS
+  ULONG asfs_LoopOffset;
+  ULONG asfs_EndOffset;
 };
 
-#define AMISF_NOTE_RESOLUTION_MASK       0x0001
-#define AMISF_NOTE_RESOLUTION_8BIT       0x0000
-#define AMISF_NOTE_RESOLUTION_16BIT      0x0001
+struct AmiSF_Note {
+  UWORD asfn_Volume;
+  UBYTE asfn_MaxNote;
+  UBYTE asfn_BaseNote;
 
-#define AMISF_NOTE_LOOPED_MASK           0x0002
-#define AMISF_NOTE_INTERPOLATION_MASK    0x0004
-//efine AMISF_NOTE_ENDIANESS_MASK        0x0008 // No, we do not do that here!
-#define AMISF_NOTE_ENVELOPE_MASK         0x0020
+  ULONG asfn_BasePlaybackIndex;    // Version 01: AmiGUS register format - Version 11: real sample rate
 
-#define AMISF_NOTE_OTHER_NOTE_MASK       0x1000
-#define AMISF_NOTE_NOT_OTHER_NOTE_MASK   0x0000
-#define AMISF_NOTE_OTHER_NOTE_MASK       0x1000
+  UWORD asfn_Attack;
+  UWORD asfn_Decay;
+  UWORD asfn_Sustain;
+  UWORD asfn_Release;
 
-#define AMISF_NOTE_IN_FILE_MASK          0x2000
-#define AMISF_NOTE_NOT_IN_FILE           0x0000
-#define AMISF_NOTE_IN_FILE               0x2000
-
-#define AMISF_NOTE_IN_RAM_MASK           0x4000
-#define AMISF_NOTE_NOT_IN_RAM            0x0000
-#define AMISF_NOTE_IN_RAM                0x4000
-
-#define AMISF_NOTE_IN_CARD_MASK          0x8000
-#define AMISF_NOTE_NOT_IN_CARD           0x0000
-#define AMISF_NOTE_IN_CARD               0x8000
-
-struct AmiSF_Bank {
-
-  struct AmiSF_Note amisf_Notes[ 128 ];
+  UWORD asfn_SampleIndex;
 };
 
-struct AmiSF_Data {
+struct AmiSF_Preset {
 
-  // size for allocation: sizeof( struct AmiSF_Data ) + ( amisf_MaxBank * ( sizeof( struct AmiSF_Note ) << 7 ))
+  UBYTE asfp_Bank;
+  UBYTE asfp_Preset;
+  UWORD asfp_NoteCount;
 
-  BPTR              amisf_FileHandle;
-  APTR              amisf_SampleBlob;
-  // Check only: AMISF_IDENTIFIER_0
-  // Check only: AMISF_IDENTIFIER_1
-  UBYTE             amisf_Version;   // Version 1 -> AmiGUS only
-  UBYTE             amisf_Revision;
-  UBYTE             amisf_MaxBank;
-  UBYTE             amisf_Padding;
-
-  ULONG             amisf_SampleOffset; // Offset from start of file!
-  ULONG             amisf_SampleSize;   // Offset from start of file!
-
-  struct AmiSF_Note amisf_Notes[ 1 ][ 128 ];
-  //                             |     |
-  //                             |     +---- Preset
-  //                             +---------- Bank
+  ULONG asfp_NoteStart;
 };
+
+struct AmiSF {
+
+  struct AmiSF_Preset asf_Preset[ 129 ][ 129 ];
+
+  ULONG asf_NoteCount;
+  struct AmiSF_Note * asf_Note;
+
+  ULONG asf_SampleCount;
+  struct AmiSF_Sample * asf_SampleMetadata;
+
+  ULONG asf_SampleRateCount;
+  ULONG * asf_SampleRate;
+  ULONG * asf_PlaybackRateOffset;
+
+  ULONG asf_PlaybackRateCount;
+  ULONG * asf_PlaybackRate;
+
+  BPTR asf_SampleSourceFile;
+  ULONG asf_SampleSourceOffset;
+
+  ULONG asf_SampleDataSize;
+  APTR asf_SampleData;
+};
+
+extern STRPTR AmiSF_Suffix;
+
+struct AmiSF * AllocAmiSFfromFile(
+  STRPTR filePath,
+  struct ProgressDialog * dialog
+);
+
+VOID FreeAmiSF( struct AmiSF * amisf );
 
 #endif /* AMISF_H */

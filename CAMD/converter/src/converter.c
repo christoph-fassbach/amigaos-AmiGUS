@@ -668,9 +668,13 @@ VOID HandleListElement( ULONG index ) {
   struct SF2_Instrument * sf2Instrument;
   struct SF2_Sample * sf2Sample;
   struct Message * message;
+  struct AmiSF_Preset * preset;
   struct AmiSF_Note * note;
   struct AmiSF_Sample * sample;
   APTR data;
+
+  /*
+  TODO: REPAIR ME!
 
   if ( !( sf2 )) {
 
@@ -715,14 +719,35 @@ VOID HandleListElement( ULONG index ) {
                                sf2Instrument,
                                sf2Sample,
                                0 );
-  LOG_D(( "V: Playing AmiSF start %ld loop %ld end %ld idx %ld rate 0x%08lx\n",
+  */
+  struct AmiSF * amisf = base->sfc_AmiSF;
+  if ( !( amisf )) {
+
+    LOG_I(( "I: List element %ld pushed, but no SoundFont loaded!\n", index ));
+    return;
+  }
+  if ( !( GetAmiSfInformationForIndex( &preset,
+                                       &note,
+                                       &sample,
+                                       amisf,
+                                       index ))) {
+
+    LOG_E(( "E: Could not get information for index %ld\n", index ));
+    return;
+  }
+  LOG_D(( "V: Playing AmiSF b:%ld p:%ld "
+          "maxn: %ld s:%ld "
+          "start %ld loop %ld end %ld\n",
+          preset->asfp_Bank, preset->asfp_Preset,
+          note->asfn_MaxNote, note->asfn_SampleIndex - 1,
           sample->asfs_StartOffset,
-          sample->asfs_LoopOffset - sample->asfs_StartOffset,
-          sample->asfs_EndOffset - sample->asfs_StartOffset,
-          note->asfn_BasePlaybackIndex,
-          0xdeadbeef ));
+          sample->asfs_LoopOffset,
+          sample->asfs_EndOffset ));
+
+  data = GetAmiSfSampleData( amisf, sample );
   message = ( struct Message * ) CreateAmigusPlaySampleMessage(
     SF_Converter_Base->sfc_MidiReplyPort,
+    amisf,
     note,
     sample,
     data );

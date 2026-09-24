@@ -19,8 +19,7 @@
 #ifndef SF2_TOOLS_H
 #define SF2_TOOLS_H
 
-//#// include <amigus/amisf.h>
-#include "amisf.h"
+#include "amisf_conversion.h"
 
 #include "sf2.h"
 
