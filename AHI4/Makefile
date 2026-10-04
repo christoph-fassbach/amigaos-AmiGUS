@@ -39,9 +39,11 @@ ifeq ($(findstring /home,$(HOME)), /home)
   INSTALL0       = curl --connect-timeout 2 --netrc --upload-file $(MODE_FILE_DEST) ftp://192.168.0.4/cf0/Devs/AudioModes/
   INSTALL0       = curl --connect-timeout 2 --netrc --upload-file $(MODE_FILE_DEST) ftp://192.168.0.12/sda4/Devs/AudioModes/
   INSTALL0       = curl --connect-timeout 2 --netrc --upload-file $(MODE_FILE_DEST) ftp://192.168.0.60/cf3/Devs/AudioModes/
+  INSTALL0       = curl --connect-timeout 2 --netrc --upload-file $(MODE_FILE_DEST) ftp://192.168.0.153/sdh0/Devs/AudioModes/
   INSTALL1       = curl --connect-timeout 2 --netrc --upload-file $(LIB_FILE_DEST)  ftp://192.168.0.4/cf0/Devs/AHI/$(LIB_NAME).audio
   INSTALL1       = curl --connect-timeout 2 --netrc --upload-file $(LIB_FILE_DEST)  ftp://192.168.0.12/sda4/Devs/AHI/$(LIB_NAME).audio
   INSTALL1       = curl --connect-timeout 2 --netrc --upload-file $(LIB_FILE_DEST)  ftp://192.168.0.60/cf3/Devs/AHI/$(LIB_NAME).audio
+  INSTALL1       = curl --connect-timeout 2 --netrc --upload-file $(LIB_FILE_DEST)  ftp://192.168.0.153/sdh0/Devs/AHI/$(LIB_NAME).audio
   INSTALL2       =
 else
   AMIGAOS       = 1
@@ -78,7 +80,7 @@ LIB_LOG        ?= NO_LOG
 LIB_NAME        = AmiGUS
 LIB_FILE        = $(LIB_NAME).audio
 LIB_VERSION     = 4
-LIB_REVISION    = 23
+LIB_REVISION    = 24
 LIB_PREFIX      = _LIB_
 
 LIB_LIBS        =
