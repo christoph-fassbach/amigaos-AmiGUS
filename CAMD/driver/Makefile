@@ -40,6 +40,7 @@ ifeq ($(findstring /home,$(HOME)), /home)
   INSTALL1      = curl --netrc --upload-file $(LIB_FILE_DEST)       ftp://192.168.0.100/cf3/Devs/MIDI/$(LIB_NAME)
   INSTALL1      = curl --netrc --upload-file $(LIB_FILE_DEST)       ftp://192.168.0.12/sda4/Devs/MIDI/$(LIB_NAME)
   INSTALL1      = curl --netrc --upload-file $(LIB_FILE_DEST)       ftp://192.168.0.4/cf0/Devs/MIDI/$(LIB_NAME)
+  INSTALL1      = curl --netrc --upload-file $(LIB_FILE_DEST)       ftp://192.168.0.120/sda0/Devs/MIDI/$(LIB_NAME)
   INSTALL0      = cp $(LIB_FILE_DEST) ~/Documents/FS-UAE/Shared/CAMD/$(LIB_NAME)
 else
   AMIGAOS       = 1
