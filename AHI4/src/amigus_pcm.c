@@ -16,7 +16,7 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <proto/expansion.h>
+#include <proto/dos.h>
 
 #include "amigus_ahi_modes.h"
 #include "amigus_ahi_sub.h"
@@ -27,15 +27,41 @@
 
 VOID StartAmiGusPcmPlayback( VOID ) {
 
-  ULONG i;
+  LONG i;
 #ifdef MEM_LOG
-  ULONG prefillSize = 1200; /* in LONGs */
+  LONG prefillSize = 1200; /* in LONGs */
 #else
-  ULONG prefillSize = 12; /* in LONGs */
+  LONG prefillSize = 12; /* in LONGs */
 #endif
+  STRPTR environmentVariableKey = "AmiGUS-AHI-PREFILL-SIZE";
+  UBYTE buffer[ 4 ];
   UWORD modeOffset = AmiGUS_AHI_Base->agb_AhiModeOffset;
   APTR amiGUS = AmiGUS_AHI_Base->agb_CardBase;
+
   LOG_D(("D: Init & start AmiGUS PCM playback @ 0x%08lx\n", amiGUS));
+
+  i = GetVar( environmentVariableKey, buffer, sizeof( buffer ), 0 );
+  if ( 0 < i ) {
+
+    LONG j = StrToLong( buffer, ( LONG * ) &prefillSize );
+    WORD temp = ( WORD ) prefillSize;
+
+    LOG_W(( "W: %s tries setting PCM prefill size to %ld LONGs.\n",
+            environmentVariableKey, temp )); 
+
+    // Yes, in integer math, this DOES something! So do not dare touching it!
+    temp /= 12; // Prefill size ALWAYS is a multiple of sample size, so...
+    temp *= 12; // 6=2*3 (24bit Stereo) or 4=2*2 (16bit Stereo) and so on
+
+    if (( 0 > j )
+      || ( AMIGUS_PCM_PLAY_FIFO_LONGS < temp )
+      || ( 0 > temp )) {
+
+      temp = AMIGUS_PCM_PLAY_FIFO_LONGS;
+    }
+    prefillSize = temp;
+  }
+  LOG_I(( "I: Effective PCM prefill size is %ld LONGs.\n", prefillSize ));
 
   WriteReg16( amiGUS,
               AMIGUS_PCM_PLAY_SAMPLE_RATE,
