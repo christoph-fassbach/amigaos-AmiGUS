@@ -138,6 +138,7 @@ VOID FreeConversionInfo( struct ConversionInfo * info ) {
 
   if ( !( info )) {
 
+    LOG_D(( "D: Cannot free ConversionInfo at NULL.\n" ));
     return;
   }
 
