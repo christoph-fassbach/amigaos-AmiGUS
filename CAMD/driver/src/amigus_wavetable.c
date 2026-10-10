@@ -95,10 +95,7 @@ VOID StartAmiGusWavetablePlayback( struct AmiSF * amisf,
   const UWORD startFlags = AMIGUS_WT_F_CONTROL_START
               | AMIGUS_WT_F_CONTROL_KEY_ON
               | AMIGUS_WT_F_CONTROL_INTERPOLATE
-              | ( sample->asfs_PlaybackFlags 
-                & ( AMISF_PLAY_RESOLUTION_16BIT 
-                  | AMISF_PLAY_LOOPED
-                  | AMISF_PLAY_ENVELOPE_MODULATION ));
+              | sample->asfs_PlaybackFlags;
   const ULONG playbackRateIndex = note->asfn_BasePlaybackIndex
                                   + playbackNote
                                   - note->asfn_BaseNote;

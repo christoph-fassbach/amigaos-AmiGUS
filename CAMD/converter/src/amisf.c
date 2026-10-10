@@ -426,8 +426,8 @@ static BOOL FillSampleData(
         targetSample->asfs_PlaybackFlags = AMISF_PLAY_RESOLUTION_16BIT
                                          | AMISF_PLAY_LOOPED
                                          | AMISF_PLAY_INTERPOLATION
-                                    //     | AMISF_PLAY_ENVELOPE_MODULATION
-                                    //     | AMISF_PLAY_ENVELOPE_KEY_ON
+                                         | AMISF_PLAY_ENVELOPE_MODULATION
+                                         | AMISF_PLAY_ENVELOPE_KEY_ON
                                          | AMISF_PLAY_SAMPLE_PLAYBACK_ON;
         targetSample->asfs_StatusFlags = AMISF_STATUS_LOCATION_OTHER_FILE;
 
