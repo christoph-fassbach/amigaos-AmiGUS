@@ -721,20 +721,29 @@ VOID HandleListElement( ULONG index ) {
                                0 );
   */
   struct AmiSF * amisf = base->sfc_AmiSF;
+  struct AmiSF_Note * noteInPlace;
+  struct AmiSF_Sample * sampleInPlace;
   if ( !( amisf )) {
 
     LOG_I(( "I: List element %ld pushed, but no SoundFont loaded!\n", index ));
     return;
   }
   if ( !( GetAmiSfInformationForIndex( &preset,
-                                       &note,
-                                       &sample,
+                                       &noteInPlace,
+                                       &sampleInPlace,
                                        amisf,
                                        index ))) {
 
     LOG_E(( "E: Could not get information for index %ld\n", index ));
     return;
   }
+
+  data = GetAmiSfSampleData( amisf, sampleInPlace );
+  note = AllocMem( sizeof( struct AmiSF_Note ), MEMF_ANY );
+  sample = AllocMem( sizeof( struct AmiSF_Sample ), MEMF_ANY );
+  CopyMem( noteInPlace, note, sizeof( struct AmiSF_Note ));
+  CopyMem( sampleInPlace, sample, sizeof( struct AmiSF_Sample ));
+
   LOG_D(( "V: Playing AmiSF b:%ld p:%ld "
           "maxn: %ld s:%ld "
           "start %ld loop %ld end %ld\n",
@@ -744,7 +753,6 @@ VOID HandleListElement( ULONG index ) {
           sample->asfs_LoopOffset,
           sample->asfs_EndOffset ));
 
-  data = GetAmiSfSampleData( amisf, sample );
   message = ( struct Message * ) CreateAmigusPlaySampleMessage(
     SF_Converter_Base->sfc_MidiReplyPort,
     amisf,
