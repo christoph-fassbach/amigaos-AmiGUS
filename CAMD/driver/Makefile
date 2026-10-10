@@ -254,14 +254,16 @@ get_mem_log:
 	$(CC) $(CFLAGS) support/$@.o support/$@.c
 	$(LD) $(LFLAGS) target/$@ $(LFLAGS1) $(LFLAGST1) support/$@.o $(LFLAGST2)
 	-cp target/$@ ~/Documents/FS-UAE/Shared/CAMD/GetCamdMemLog
-	-curl --netrc --upload-file target/$@       ftp://192.168.0.4/cf0/Expansion/AmiGUS/GetCamdMemLog
-	-curl --netrc --upload-file target/$@       ftp://192.168.0.12/sda4/Expansion/AmiGUS/GetCamdMemLog
+	-curl --netrc --upload-file target/$@       ftp://192.168.0.4/cf0/Expansion/AmiGUS/debug/
+	-curl --netrc --upload-file target/$@       ftp://192.168.0.12/sda4/Expansion/AmiGUS/debug/
+	-curl --netrc --upload-file target/$@       ftp://192.168.0.120/sda0/Expansion/AmiGUS/debug/
 
 camd_lib_check:
 	$(CC) $(CFLAGS) support/$@.o support/$@.c
 	$(LD) $(LFLAGS) target/$@ $(LFLAGS1) $(LFLAGST1) support/$@.o $(LFLAGST2)
 	-cp target/$@ ~/Documents/FS-UAE/Shared/CAMD/
-	-curl --netrc --upload-file target/$@       ftp://192.168.0.4/cf0/Expansion/AmiGUS/
-	-curl --netrc --upload-file target/$@       ftp://192.168.0.12/sda4/Expansion/AmiGUS/
+	-curl --netrc --upload-file target/$@       ftp://192.168.0.4/cf0/Expansion/AmiGUS/debug/
+	-curl --netrc --upload-file target/$@       ftp://192.168.0.12/sda4/Expansion/AmiGUS/debug/
+	-curl --netrc --upload-file target/$@       ftp://192.168.0.120/sda0/Expansion/AmiGUS/debug/
 
 ###############################################################################
