@@ -435,7 +435,6 @@ static BOOL FillSampleData(
         targetSample->asfs_LoopOffset = targetOffset + preLoopLength;
         targetOffset += sampleLength;
         targetSample->asfs_EndOffset = targetOffset;
-        ++targetOffset;
 
         LOG_V(( "V: Sample mapped from s: 0x%08lx l: 0x%08lx e: 0x%08lx "
                 "to s: 0x%08lx l: 0x%08lx e: 0x%08lx\n",
