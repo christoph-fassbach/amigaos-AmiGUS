@@ -39,7 +39,7 @@ static LONG CompareRates( struct Node * a, struct Node * b ) {
 
 struct ConversionInfo * AllocConversionInfo( struct SF2 * sf2 ) {
 
-  UWORD count = 1;
+  UWORD count = 0;
   struct ConversionInfo * info = AllocMem( sizeof( struct ConversionInfo ),
                                            MEMF_ANY | MEMF_CLEAR );
   struct SF2_Preset * sf2Preset;
@@ -102,9 +102,10 @@ struct ConversionInfo * AllocConversionInfo( struct SF2 * sf2 ) {
           LOG_E(( "E: SampleIndex %ld != Sample's number %ld\n", 
                   sampleIndex, tempSample->sf2s_Number ));
 
-        } else if ( !( info->ci_SampleMapping[ sampleIndex ] )) {
+        } else if ( !( info->ci_Sf2ToAmiSfSample[ sampleIndex ] )) {
 
-          info->ci_SampleMapping[ sampleIndex ] = count;
+          info->ci_Sf2ToAmiSfSample[ sampleIndex ] = count + 1;
+          info->ci_AmiSfToSf2Sample[ count ] = sampleIndex + 1;
           ++count;
         }
         ++info->ci_NoteCount;
@@ -123,7 +124,7 @@ struct ConversionInfo * AllocConversionInfo( struct SF2 * sf2 ) {
       }
     }
   }
-  --count;
+
   info->ci_SampleCount = count;
   LOG_I(( "I: AmiSF will have %ld notes, "
           "contain %ld of %ld samples in SF2.\n",

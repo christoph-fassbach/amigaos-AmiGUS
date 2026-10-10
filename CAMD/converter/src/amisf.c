@@ -176,7 +176,7 @@ static BOOL FillPresetNotes(
         asf_Note->asfn_Decay = GetTargetADR( effectiveDecay );
         asf_Note->asfn_Sustain = GetTargetS( effectiveSustain );
         asf_Note->asfn_Release = GetTargetADR( effectiveRelease );
-        asf_Note->asfn_SampleIndex = info->ci_SampleMapping[ sampleIndex ];
+        asf_Note->asfn_SampleIndex = info->ci_Sf2ToAmiSfSample[ sampleIndex ];
 
 /* TODO: Wohin soll das ADSR zeugs?
         effectiveAttack = argsI->sf2a_Values.sf2v_Attack;
@@ -390,75 +390,79 @@ static BOOL FillSampleData(
   ULONG * maxProgress
 ) {
 
-  UWORD i;
-  UWORD j;
+  struct SF2_Sample * sourceSample;
+  struct AmiSF_Sample * targetSample;
+  UWORD sourceIndex;
+  UWORD targetIndex;
   ULONG targetCount = 0;
   ULONG targetOffset = 0;
 
-  for ( i = 0; i < amisf->asf_SampleCount; ++i ) {
+  for ( targetIndex = 0; 
+        targetIndex < amisf->asf_SampleCount;
+        ++targetIndex ) {
 
-    for ( j = 0; j < 65535; ++j ) {
+    sourceIndex = info->ci_AmiSfToSf2Sample[ targetIndex ];
 
-      if (( info->ci_SampleMapping[ j ] )
-        && (( info->ci_SampleMapping[ j ] - 1 ) == i )) {
+    if ( sourceIndex ) {
 
-        BOOL abort;
-
-        struct SF2_Sample * sourceSample =
-          sf2->sf2_SampleArray[ j ];
-        struct AmiSF_Sample * targetSample =
-          &( amisf->asf_SampleMetadata[ i ]);
-
-        ULONG preLoopLength = ( sourceSample->sf2s_LoopStartOffset
-          - sourceSample->sf2s_SampleStartOffset ) << 1;
-        ULONG sampleLength = ( sourceSample->sf2s_LoopEndOffset 
-          - sourceSample->sf2s_SampleStartOffset ) << 1;
+      BOOL abort;
+      ULONG preLoopLength;
+      ULONG sampleLength;
       
-        // sampleLength needs to be multiple of 4
-        sampleLength += 3;
-        sampleLength &= 0xFFFFFFFC;
+      --sourceIndex; // As 1 from array is 0 in as index as 0 is none
 
-        LOG_V(( "V: Found mapping %s = %ld = %ld -> %ld\n",
-                sourceSample->sf2s_Name,
-                sourceSample->sf2s_Number,
-                j,
-                i ));
-        targetSample->asfs_PlaybackFlags = AMISF_PLAY_RESOLUTION_16BIT
-                                         | AMISF_PLAY_LOOPED
-                                         | AMISF_PLAY_INTERPOLATION
-                                         | AMISF_PLAY_ENVELOPE_MODULATION
-                                         | AMISF_PLAY_ENVELOPE_KEY_ON
-                                         | AMISF_PLAY_SAMPLE_PLAYBACK_ON;
-        targetSample->asfs_StatusFlags = AMISF_STATUS_LOCATION_OTHER_FILE;
+      sourceSample = sf2->sf2_SampleArray[ sourceIndex ];
+      targetSample = &( amisf->asf_SampleMetadata[ targetIndex ]);
 
-        targetSample->asfs_StartOffset = targetOffset;
-        targetSample->asfs_LoopOffset = targetOffset + preLoopLength;
-        targetOffset += sampleLength;
-        targetSample->asfs_EndOffset = targetOffset;
-
-        LOG_V(( "V: Sample mapped from s: 0x%08lx l: 0x%08lx e: 0x%08lx "
-                "to s: 0x%08lx l: 0x%08lx e: 0x%08lx\n",
-                sourceSample->sf2s_SampleStartOffset,
-                sourceSample->sf2s_LoopStartOffset,
-                sourceSample->sf2s_LoopEndOffset,
-                targetSample->asfs_StartOffset,
-                targetSample->asfs_LoopOffset,
-                targetSample->asfs_EndOffset ));
-        ++targetCount;
-
-        *currentProgress += 1;
-        abort = HandleProgressDialogTick( dialog,
-                                          *currentProgress,
-                                          *maxProgress );
-        if ( abort ) {
-
-          return TRUE;
-        }
-      } else {
+      preLoopLength = ( sourceSample->sf2s_LoopStartOffset
+        - sourceSample->sf2s_SampleStartOffset ) << 1;
+      sampleLength = ( sourceSample->sf2s_LoopEndOffset
+        - sourceSample->sf2s_SampleStartOffset ) << 1;
       
-        LOG_V(( "V: Found mapping %ld -> %ld (empty)\n",
-                sourceIndex, targetIndex ));
+      // sampleLength needs to be multiple of 4
+      sampleLength += 3;
+      sampleLength &= 0xFFFFFFFC;
+
+      LOG_V(( "V: Found mapping %s = %ld = %ld -> %ld\n",
+              sourceSample->sf2s_Name,
+              sourceSample->sf2s_Number,
+              j,
+              i ));
+      targetSample->asfs_PlaybackFlags = AMISF_PLAY_RESOLUTION_16BIT
+                                       | AMISF_PLAY_LOOPED
+                                       | AMISF_PLAY_INTERPOLATION
+                                       | AMISF_PLAY_ENVELOPE_MODULATION
+                                       | AMISF_PLAY_ENVELOPE_KEY_ON
+                                       | AMISF_PLAY_SAMPLE_PLAYBACK_ON;
+      targetSample->asfs_StatusFlags = AMISF_STATUS_LOCATION_OTHER_FILE;
+
+      targetSample->asfs_StartOffset = targetOffset;
+      targetSample->asfs_LoopOffset = targetOffset + preLoopLength;
+      targetOffset += sampleLength;
+      targetSample->asfs_EndOffset = targetOffset;
+
+      LOG_V(( "V: Sample mapped from s: 0x%08lx l: 0x%08lx e: 0x%08lx "
+              "to s: 0x%08lx l: 0x%08lx e: 0x%08lx\n",
+              sourceSample->sf2s_SampleStartOffset,
+              sourceSample->sf2s_LoopStartOffset,
+              sourceSample->sf2s_LoopEndOffset,
+              targetSample->asfs_StartOffset,
+              targetSample->asfs_LoopOffset,
+              targetSample->asfs_EndOffset ));
+      ++targetCount;
+
+      *currentProgress += 1;
+      abort = HandleProgressDialogTick( dialog,
+                                        *currentProgress,
+                                        *maxProgress );
+      if ( abort ) {
+
+        return TRUE;
       }
+    } else {
+      
+      LOG_V(( "V: Found mapping %ld -> %ld (empty)\n",
+              sourceIndex, targetIndex ));
     }
   }
   LOG_I(( "I: Samples expected %ld, actual %ld, %s\n", 
@@ -947,46 +951,51 @@ LONG WriteAmiSFtoFile(
     && ( sf2 ) 
     && ( info )) {
 
+    UWORD targetIndex;
+    UWORD sourceIndex;
+
     // Obviously, we came from a converted SF2 file.
     amisf->asf_SampleDataSize = 0;
 
-    for ( i = 0; i < amisf->asf_SampleCount; ++i ) {
+    for ( targetIndex = 0; 
+          targetIndex < amisf->asf_SampleCount;
+          ++targetIndex ) {
 
-      for ( j = 0; j < 65535; ++j ) {
+      sourceIndex = info->ci_AmiSfToSf2Sample[ targetIndex ];
 
-        if (( info->ci_SampleMapping[ j ] )
-          && (( info->ci_SampleMapping[ j ] - 1 ) == i )) {
+      if ( sourceIndex ) {
 
-          struct SF2_Sample * sf2Sample = sf2->sf2_SampleArray[ j ];
-          LONG sf2SampleSize = GetSF2SampleSize( sf2Sample );
-          APTR sf2SampleData = GetSF2SampleData( sf2,
-                                                 sf2Sample,
-                                                 sf2SampleSize );
+        struct SF2_Sample * sf2Sample;
+        LONG sf2SampleSize;
+        APTR sf2SampleData;
+
+        --sourceIndex; // As 1 from array is 0 in as index as 0 is none
+
+        sf2Sample = sf2->sf2_SampleArray[ sourceIndex ];
+        sf2SampleSize = GetSF2SampleSize( sf2Sample );
+        sf2SampleData = GetSF2SampleData( sf2, sf2Sample, sf2SampleSize );
         
-          LOG_D(( "D: AmiSF sample %ld is mapped to SF2 sample %ld, "
-                  "size %ld @ 0x%08lx.\n",
-                  i, j, sf2SampleSize, sf2SampleData ));
+        LOG_D(( "D: AmiSF sample %ld is mapped to SF2 sample %ld, "
+                "size %ld @ 0x%08lx.\n",
+                targetIndex, sourceIndex, sf2SampleSize, sf2SampleData ));
 
-          written = Write( fileHandle, sf2SampleData, sf2SampleSize );
-          if ( -1 == written ) {
+        written = Write( fileHandle, sf2SampleData, sf2SampleSize );
+        if ( -1 == written ) {
 
-            Close( fileHandle );
-            return EAmiSFwriteError;
-          }
+          Close( fileHandle );
+          return EAmiSFwriteError;
+        }
 
-          FreeMem( sf2SampleData, sf2SampleSize );
-          amisf->asf_SampleDataSize += sf2SampleSize;
-          currentProgress += ( 1 << 4 );
-          abort = HandleProgressDialogTick( dialog,
-                                            currentProgress,
-                                            maxProgress );
-          if ( abort ) {
+        FreeMem( sf2SampleData, sf2SampleSize );
+        amisf->asf_SampleDataSize += sf2SampleSize;
+        currentProgress += ( 1 << 4 );
+        abort = HandleProgressDialogTick( dialog,
+                                          currentProgress,
+                                          maxProgress );
+        if ( abort ) {
 
-            Close( fileHandle );
-            return EAmiSFwriteAborted;
-          }
-
-          break;
+          Close( fileHandle );
+          return EAmiSFwriteAborted;
         }
       }
     }

@@ -40,10 +40,12 @@ struct ConversionInfo {
 
   ULONG ci_NoteCount;
   ULONG ci_SampleCount;
-  UWORD ci_SampleMapping[ 65536 ];
+  UWORD ci_Sf2ToAmiSfSample[ 65536 ];
   // translates SF2 sample as (index) to (AmiSF sample index + 1)
   // =0 in mapping: empty
   // >1 in mapping: sf2 index mapped to that new index
+  UWORD ci_AmiSfToSf2Sample[ 65536 ];
+  // vice versa
 
   UWORD ci_PlaybackRateCount;
   struct List ci_PlaybackRatesNeeded;
