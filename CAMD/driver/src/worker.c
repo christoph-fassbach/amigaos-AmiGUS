@@ -58,7 +58,7 @@ VOID HandleMessage( struct Message * message ) {
         ( struct PlaySampleMessage * ) message;
       ULONG size = sampleMessage->sample->asfs_EndOffset    // bytes!
                  - sampleMessage->sample->asfs_StartOffset;
-      LOG_D(( "D: Got sample @ 0x%08lx and size %ld\n",
+      LOG_D(( "D: Got sample @ 0x%08lx and size %ld BYTEs\n",
               sampleMessage->data,
               size ));
 

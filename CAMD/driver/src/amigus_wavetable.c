@@ -59,16 +59,16 @@ VOID LoadAmiGusWavetableSample( ULONG * source, ULONG target, ULONG size ) {
   if ( 0x00000003 & size ) {
 
     LOG_E(( "E: Loading sample will go sideways... "
-            "size is %ld needs to be ULONGs!\n",
+            "size is %ld BYTEs, needs to be ULONGs!\n",
             size ));
   }
   size >>= 2;
-  if ( 0xFF000003 & target ) {
+  if ( 0xFF000001 & target ) {
 
     LOG_E(( "E: Loading sample will go sideways... "
-            "target is 0x%08lx needs to be UWORDs!\n",
+            "target is 0x%08lx, needs to be UWORDs!\n",
             target ));
-    target &= 0x00FFFFFC;
+    target &= 0x00FFFFFE;
   }
 
   WriteReg32( card, AMIGUS_WT_ADDRESS_32BIT, target );
@@ -76,6 +76,9 @@ VOID LoadAmiGusWavetableSample( ULONG * source, ULONG target, ULONG size ) {
 
     ULONG data = source[ i ];
     WriteReg32( card, AMIGUS_WT_DATA_32BIT, data );
+    if (( 10 > i ) || ( size - 10 < i )) {
+      LOG_D(( "D: %ld = 0x%08lx\n", i, data ));
+    }
   }
   LOG_D(( "D: Copied %ld LONGs to 0x%08lx\n", i, target ));
 }
@@ -105,8 +108,17 @@ VOID StartAmiGusWavetablePlayback( struct AmiSF * amisf,
   WriteReg16( card, AMIGUS_WT_CHANNEL_NUMBER, 0x0000 );
   WriteReg16( card, AMIGUS_WT_CHANNEL_CONTROL, 0x0000 );
 
-  LOG_D(( "D: Playing from 0x%08lx to 0x%08lx with flags 0x%04lx\n",
-          sample->asfs_StartOffset, sample->asfs_EndOffset, startFlags ));
+  LOG_D(( "D: Playback start: 0x%08lx - 0x%08lx, loop 0x%08lx, rate 0x%08lx, "
+          "ADSR 0x%04lx %04lx %04lx %04lx, flags 0x%04lx\n",
+          sample->asfs_StartOffset,
+          sample->asfs_EndOffset,
+          sample->asfs_LoopOffset,
+          playbackRate,
+          note->asfn_Attack,
+          note->asfn_Decay,
+          sustainVolume,
+          note->asfn_Release,
+          startFlags ));
   WriteReg32( card, AMIGUS_WT_CHANNEL_START_32BIT, sample->asfs_StartOffset );
   WriteReg32( card, AMIGUS_WT_CHANNEL_LOOP_32BIT, sample->asfs_LoopOffset );
   WriteReg32( card, AMIGUS_WT_CHANNEL_END_32BIT, sample->asfs_EndOffset );
