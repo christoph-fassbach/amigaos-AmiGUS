@@ -350,6 +350,7 @@ BOOL CreateWorkerProcess( VOID ) {
     DisplayError( EWorkerProcessCreationFailed );
     return TRUE;
   }
+  return FALSE;
 }
 
 VOID DestroyWorkerProcess(VOID) {
