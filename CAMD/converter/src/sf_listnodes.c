@@ -73,10 +73,10 @@ static const struct ColumnInfo amiSfColumns[] = {
   { (  3 * 8 ) + 8, "N>", CIF_CENTER },
   { (  3 * 8 ) + 8, "<N", CIF_CENTER },
   { (  5 * 8 ) + 8, "N#", CIF_CENTER },
-  { (  1 * 8 ) + 8, "Attack (ms)", CIF_CENTER | CIF_DRAGGABLE },
-  { (  1 * 8 ) + 8, "Decay (ms)", CIF_CENTER | CIF_DRAGGABLE },
-  { (  1 * 8 ) + 8, "Sustain (ms)", CIF_CENTER | CIF_DRAGGABLE },
-  { (  1 * 8 ) + 8, "Release (ms)", CIF_CENTER | CIF_DRAGGABLE },
+  { (  6 * 8 ) + 8, "Attack (ms)", CIF_CENTER | CIF_DRAGGABLE },
+  { (  6 * 8 ) + 8, "Decay (ms)", CIF_CENTER | CIF_DRAGGABLE },
+  { (  6 * 8 ) + 8, "Sustain (ms)", CIF_CENTER | CIF_DRAGGABLE },
+  { (  6 * 8 ) + 8, "Release (ms)", CIF_CENTER | CIF_DRAGGABLE },
   { (  5 * 8 ) + 8, "S#", CIF_CENTER },
   { -1, (STRPTR)~0, -1 }
 };
