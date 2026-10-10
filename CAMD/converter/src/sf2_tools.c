@@ -434,12 +434,13 @@ LONG GetSF2SampleSize( struct SF2_Sample * sample ) {
   return size;
 }
 
-APTR GetSF2SampleData( struct SF2 * sf2, struct SF2_Sample * sample ) {
+APTR GetSF2SampleData( struct SF2 * sf2,
+                       struct SF2_Sample * sample,
+                       LONG memorySize ) {
 
   LONG sampleStart = sample->sf2s_SampleStartOffset << 1; // in BYTE
   LONG loopEnd = sample->sf2s_LoopEndOffset << 1;         // in BYTE
   LONG diskSize = loopEnd - sampleStart;
-  LONG memorySize = GetSF2SampleSize( sample );
   LONG i;
   UWORD * samples;
 
@@ -479,22 +480,4 @@ APTR GetSF2SampleData( struct SF2 * sf2, struct SF2_Sample * sample ) {
           samples[ 0 ], samples[ 1 ], samples[ 2 ], samples[ 3 ] ));
 
   return samples;
-}
-
-APTR GetAmiSF_SampleData( struct SF2 * sf2, struct SF2_Sample * sample ) {
-
-  /*
-  APTR sf2Data = GetSF2SampleData( sf2, sample );
-  ULONG size = sample->amisf_EndOffset - sample->amisf_StartOffset;
-
-  APTR monoData;
-  if ( !( 8 & sample->sf2s_SampleType )) {
-
-    return sf2Data;
-  }
-
-  monoData = AllocMem( size >> 1, MEMF_ANY | MEMF_CLEAR );
-
-  */
-  return NULL;
 }

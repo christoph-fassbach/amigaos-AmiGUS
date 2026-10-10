@@ -40,7 +40,8 @@ struct AmiSF_Sample * CreateAmiSF_Sample(
   ULONG targetStartAddress );
 
 LONG GetSF2SampleSize( struct SF2_Sample * sample );
-APTR GetSF2SampleData( struct SF2 * sf2, struct SF2_Sample * sample );
-APTR GetAmiSF_SampleData( struct SF2 * sf2, struct SF2_Sample * sample );
+APTR GetSF2SampleData( struct SF2 * sf2,
+                       struct SF2_Sample * sample,
+                       LONG memorySize );
 
 #endif /* SF2_TOOLS_H */
