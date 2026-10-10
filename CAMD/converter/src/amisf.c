@@ -390,71 +390,76 @@ static BOOL FillSampleData(
   ULONG * maxProgress
 ) {
 
+  UWORD i;
+  UWORD j;
   ULONG targetCount = 0;
-  ULONG sourceIndex;
   ULONG targetOffset = 0;
 
-  for ( sourceIndex = 0; sourceIndex < 65536; ++sourceIndex ) {
+  for ( i = 0; i < amisf->asf_SampleCount; ++i ) {
 
-    UWORD targetIndex = info->ci_SampleMapping[ sourceIndex ];
+    for ( j = 0; j < 65535; ++j ) {
 
-    // Value 0 means not used!
-    if ( targetIndex ) {
+      if (( info->ci_SampleMapping[ j ] )
+        && (( info->ci_SampleMapping[ j ] - 1 ) == i )) {
 
-      struct SF2_Sample * sourceSample;
-      struct AmiSF_Sample * targetSample;
-      BOOL abort;
+        BOOL abort;
 
-      // Value 1 means using sample index 0, correcting here.
-      --targetIndex;
+        struct SF2_Sample * sourceSample =
+          sf2->sf2_SampleArray[ j ];
+        struct AmiSF_Sample * targetSample =
+          &( amisf->asf_SampleMetadata[ i ]);
 
-      sourceSample = sf2->sf2_SampleArray[ sourceIndex ];
-      targetSample = &( amisf->asf_SampleMetadata[ targetIndex ]);
-
-      LOG_V(( "V: Found mapping %s = %ld = %ld -> %ld\n",
-              sourceSample->sf2s_Name,
-              sourceSample->sf2s_Number,
-              sourceIndex,
-              targetIndex ));
-      targetSample->asfs_PlaybackFlags = AMISF_PLAY_RESOLUTION_16BIT
-                                       | AMISF_PLAY_LOOPED
-                                       | AMISF_PLAY_INTERPOLATION
-                                       | AMISF_PLAY_ENVELOPE_MODULATION
-                                       | AMISF_PLAY_ENVELOPE_KEY_ON
-                                       | AMISF_PLAY_SAMPLE_PLAYBACK_ON;
-      targetSample->asfs_StatusFlags = AMISF_STATUS_LOCATION_OTHER_FILE;
-      targetSample->asfs_StartOffset = targetOffset;
-      targetSample->asfs_LoopOffset = targetOffset
-        + (( sourceSample->sf2s_LoopStartOffset
-          - sourceSample->sf2s_SampleStartOffset ) << 1 );
-      targetOffset +=
-        (( sourceSample->sf2s_LoopEndOffset 
-          - sourceSample->sf2s_SampleStartOffset ) << 1 ) - 1;
-      targetSample->asfs_EndOffset = targetOffset;
-      ++targetOffset;
-
-      LOG_V(( "V: Sample mapped from s: 0x%08lx l: 0x%08lx e: 0x%08lx "
-              "to s: 0x%08lx l: 0x%08lx e: 0x%08lx\n",
-              sourceSample->sf2s_SampleStartOffset,
-              sourceSample->sf2s_LoopStartOffset,
-              sourceSample->sf2s_LoopEndOffset,
-              targetSample->asfs_StartOffset,
-              targetSample->asfs_LoopOffset,
-              targetSample->asfs_EndOffset ));
-      ++targetCount;
-
-      *currentProgress += 1;
-      abort = HandleProgressDialogTick( dialog,
-                                         *currentProgress,
-                                         *maxProgress );
-      if ( abort ) {
-
-        return TRUE;
-      }
-    } else {
+        ULONG preLoopLength = ( sourceSample->sf2s_LoopStartOffset
+          - sourceSample->sf2s_SampleStartOffset ) << 1;
+        ULONG sampleLength = ( sourceSample->sf2s_LoopEndOffset 
+          - sourceSample->sf2s_SampleStartOffset ) << 1;
       
-      LOG_V(( "V: Found mapping %ld -> %ld (empty)\n",
-              sourceIndex, targetIndex ));
+        // sampleLength needs to be multiple of 4
+        sampleLength += 3;
+        sampleLength &= 0xFFFFFFFC;
+
+        LOG_V(( "V: Found mapping %s = %ld = %ld -> %ld\n",
+                sourceSample->sf2s_Name,
+                sourceSample->sf2s_Number,
+                j,
+                i ));
+        targetSample->asfs_PlaybackFlags = AMISF_PLAY_RESOLUTION_16BIT
+                                         | AMISF_PLAY_LOOPED
+                                         | AMISF_PLAY_INTERPOLATION
+                                    //     | AMISF_PLAY_ENVELOPE_MODULATION
+                                    //     | AMISF_PLAY_ENVELOPE_KEY_ON
+                                         | AMISF_PLAY_SAMPLE_PLAYBACK_ON;
+        targetSample->asfs_StatusFlags = AMISF_STATUS_LOCATION_OTHER_FILE;
+
+        targetSample->asfs_StartOffset = targetOffset;
+        targetSample->asfs_LoopOffset = targetOffset + preLoopLength;
+        targetOffset += sampleLength;
+        targetSample->asfs_EndOffset = targetOffset;
+        ++targetOffset;
+
+        LOG_V(( "V: Sample mapped from s: 0x%08lx l: 0x%08lx e: 0x%08lx "
+                "to s: 0x%08lx l: 0x%08lx e: 0x%08lx\n",
+                sourceSample->sf2s_SampleStartOffset,
+                sourceSample->sf2s_LoopStartOffset,
+                sourceSample->sf2s_LoopEndOffset,
+                targetSample->asfs_StartOffset,
+                targetSample->asfs_LoopOffset,
+                targetSample->asfs_EndOffset ));
+        ++targetCount;
+
+        *currentProgress += 1;
+        abort = HandleProgressDialogTick( dialog,
+                                          *currentProgress,
+                                          *maxProgress );
+        if ( abort ) {
+
+          return TRUE;
+        }
+      } else {
+      
+        LOG_V(( "V: Found mapping %ld -> %ld (empty)\n",
+                sourceIndex, targetIndex ));
+      }
     }
   }
   LOG_I(( "I: Samples expected %ld, actual %ld, %s\n", 
@@ -937,6 +942,7 @@ LONG WriteAmiSFtoFile(
     Close( fileHandle );
     return EAmiSFwriteError;
   }
+  LOG_D(( "D: AmiSF sample offset is %08lx\n", amisf->asf_SampleSourceOffset ));
 
   if ( !( amisf->asf_SampleSourceFile )
     && ( sf2 ) 
@@ -954,7 +960,9 @@ LONG WriteAmiSFtoFile(
 
           struct SF2_Sample * sf2Sample = sf2->sf2_SampleArray[ j ];
           LONG sf2SampleSize = GetSF2SampleSize( sf2Sample );
-          APTR sf2SampleData = GetSF2SampleData( sf2, sf2Sample );
+          APTR sf2SampleData = GetSF2SampleData( sf2,
+                                                 sf2Sample,
+                                                 sf2SampleSize );
         
           LOG_D(( "D: AmiSF sample %ld is mapped to SF2 sample %ld, "
                   "size %ld @ 0x%08lx.\n",
@@ -1102,7 +1110,7 @@ APTR GetAmiSfSampleData( struct AmiSF * amisf, struct AmiSF_Sample * sample ) {
   APTR result = AllocMem( size, MEMF_ANY );
 
   Seek( amisf->asf_SampleSourceFile,
-        sample->asfs_StartOffset,
+        amisf->asf_SampleSourceOffset + sample->asfs_StartOffset,
         OFFSET_BEGINNING );
   Read( amisf->asf_SampleSourceFile, result, size );
 
