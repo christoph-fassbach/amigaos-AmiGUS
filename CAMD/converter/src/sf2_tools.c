@@ -198,25 +198,36 @@ UWORD GetTargetADR( LONG timecents ) {
 
 UWORD GetTargetS( WORD centibels ) {
 
+  // Sustain logic is in 
+  // "SoundFont Technical Specification Version 2.01 July 23, 1998"
+  // aka SFSpec21.pdf, p.44
+
+  // Factor is meant to be used like:
+  // Sustain Volume = ((( Original Volume ) * ( Factor )) >> 16 )
+  // Original Volume is not known here, so we only calculate factor!
   LONG factor;
 
+  if ( 0 > centibels ) {
+
+    centibels = 0;
+  }
   if ( 0 == centibels ) {
 
-    // max factor is 65535 ( and not 65536 ),
+    // Max factor is 65535 ( and not 65536 ),
     // hence the default volume shall be
     // ( 0x4001 * 0xFFff ) >> 16 = 0x4000
     // =:D
     factor = ( 1 << 16 ) - 1;
 
   } else {
-    // SustainVolume = MaxVolume x ( Factor                       )
-    // SustainVolume = MaxVolume x ( 10 ^ ( -(  decibels /   20 )))
-    // SustainVolume = MaxVolume x ( 10 ^ ( -( centibels /  200 )))
-    // SustainVolume = MaxVolume x ( 10 ^ (    centibels / -200  ))
-    //                             |  |   |         |        |   ||
-    //                             |  |   |         a        b   ||
-    //                             |  d   +--------------c-------+|
-    //                             +----e-------------------------+
+
+    // Factor = ( 10 ^ ( -(  decibels /   20 )))
+    // Factor = ( 10 ^ ( -( centibels /  200 )))
+    // Factor = ( 10 ^ (    centibels / -200  ))
+    //          |  |   |         |        |   ||
+    //          |  |   |         a        b   ||
+    //          |  d   +--------------c-------+|
+    //          +----e-------------------------+
     double a = IEEEDPFlt( centibels );
     double b = IEEEDPFlt( -200 );
     double c = IEEEDPDiv( a, b );
@@ -228,12 +239,14 @@ UWORD GetTargetS( WORD centibels ) {
     // but as we do not know the OriginalVolume, we are happily storing
     // the factor here - and only the factor for multiplying it when the
     // maximum volume is known in fact!
-    // But the factor is likely < 0 - so we store it shifted left by 16bits,
+    // But as the factor is likely < 1 - so we store it shifted left by 16bits,
     // like...
-    // SustainVolume = ( MaxVolume x ( Factor << 16 )) >> 16
-    //                               |    |   |   | |
-    //                               |    e   +-f-+ |
-    //                               +------g-------+
+    // FactorShifted = ( Factor << 16 )
+    //                 |    |   |   | |
+    //                 |    e   +-f-+ |
+    //                 +------g-------+
+    // To be applied like 
+    // SustainVolume = ( MaxVolume x FactorShifted ) >> 16
     double f = IEEEDPFlt( 1 << 16 );
     double g = IEEEDPMul( f, e );
   
@@ -246,7 +259,7 @@ UWORD GetTargetS( WORD centibels ) {
     return 0;
   }
 
-  LOG_V(( "V: %ld centibels => %ld factor\n", 
+  LOG_D(( "V: %ld centibels => %ld factor\n", 
           centibels,
           factor ));
 
@@ -489,6 +502,9 @@ VOID GetSf2ADSRs( struct SF2_Args * presetArgs,
                   WORD * sustain,
                   WORD * release ) {
 
+  // ADSR combination logic is in 
+  // "SoundFont Technical Specification Version 2.01 July 23, 1998"
+  // aka SFSpec21.pdf, p.57
   const WORD attackModifier = presetArgs->sf2a_Values.sf2v_Attack;
   const WORD decayModifier = presetArgs->sf2a_Values.sf2v_Decay;
   const WORD sustainModifier = presetArgs->sf2a_Values.sf2v_Sustain;

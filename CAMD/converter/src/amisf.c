@@ -20,6 +20,8 @@
 
 #include <proto/dos.h>
 #include <proto/exec.h>
+#include <proto/mathieeedoubbas.h>
+#include <proto/mathieeedoubtrans.h>
 
 #include "amisf_conversion.h"
 #include "converter.h"
@@ -85,14 +87,6 @@ static BOOL FillPresetNotes(
             sf2Preset,
             struct SF2_Preset * ) {
 
-    // ADSR combination logic is in 
-    // "SoundFont Technical Specification Version 2.01 July 23, 1998"
-    // aka SFSpec21.pdf, p.57
-    LONG effectiveAttack  = INSTRUMENT_DEFAULT_ATTACK_VALUE;
-    LONG effectiveDecay   = INSTRUMENT_DEFAULT_DECAY_VALUE;
-    LONG effectiveSustain = INSTRUMENT_DEFAULT_SUSTAIN_VALUE;
-    LONG effectiveRelease = INSTRUMENT_DEFAULT_RELEASE_VALUE;
-
     struct SF2_Args * argsP;
     const LONG bank = sf2Preset->sf2p_Bank;
     const LONG preset = sf2Preset->sf2p_Common.sf2c_Number;
@@ -124,6 +118,10 @@ static BOOL FillPresetNotes(
         const LONG sampleMax = argsI->sf2a_Values.sf2v_HighNote;
         const LONG instrumentMin = argsP->sf2a_Values.sf2v_LowNote;
         const LONG instrumentMax = argsP->sf2a_Values.sf2v_HighNote;
+        WORD attack;
+        WORD decay;
+        WORD sustain;
+        WORD release;
 
         struct SF2_Sample * tempSample;
         struct AmiSF_Preset * asf_Preset =
@@ -166,51 +164,19 @@ static BOOL FillPresetNotes(
         ++asf_Preset->asfp_NoteCount; // Counts the preset relative note index.
 
         // Fill the current note
+        GetSf2ADSRs( argsP, argsI, &attack, &decay, &sustain, &release );
+
         asf_Note->asfn_Volume = 0x4001;
         asf_Note->asfn_MaxNote = MIN( instrumentMax, sampleMax );
         asf_Note->asfn_BaseNote = tempSample->sf2s_SampleNote;
         asf_Note->asfn_BasePlaybackIndex = GetPlaybackRateOffset(
           amisf,
           tempSample->sf2s_SampleRate );
-        asf_Note->asfn_Attack = GetTargetADR( effectiveAttack );
-        asf_Note->asfn_Decay = GetTargetADR( effectiveDecay );
-        asf_Note->asfn_Sustain = GetTargetS( effectiveSustain );
-        asf_Note->asfn_Release = GetTargetADR( effectiveRelease );
+        asf_Note->asfn_Attack = GetTargetADR( attack );
+        asf_Note->asfn_Decay = GetTargetADR( decay );
+        asf_Note->asfn_Sustain = GetTargetS( sustain );
+        asf_Note->asfn_Release = GetTargetADR( release );
         asf_Note->asfn_SampleIndex = info->ci_Sf2ToAmiSfSample[ sampleIndex ];
-
-/* TODO: Wohin soll das ADSR zeugs?
-        effectiveAttack = argsI->sf2a_Values.sf2v_Attack;
-        effectiveDecay = argsI->sf2a_Values.sf2v_Decay;
-        effectiveSustain = argsI->sf2a_Values.sf2v_Sustain;
-        effectiveRelease = argsI->sf2a_Values.sf2v_Release;
-
-        
-        if ( PRESET_DEFAULT_ATTACK_VALUE != argsP->sf2a_Values.sf2v_Attack ) {
-
-          effectiveAttack += argsP->sf2a_Values.sf2v_Attack;
-        }
-        if ( PRESET_DEFAULT_DECAY_VALUE != argsP->sf2a_Values.sf2v_Decay ) {
-
-          effectiveDecay += argsP->sf2a_Values.sf2v_Decay;
-        }
-        if ( PRESET_DEFAULT_SUSTAIN_VALUE != argsP->sf2a_Values.sf2v_Sustain ) {
-
-          effectiveSustain += argsP->sf2a_Values.sf2v_Sustain;
-        }
-        if ( PRESET_DEFAULT_RELEASE_VALUE != argsP->sf2a_Values.sf2v_Release ) {
-
-          effectiveRelease += argsP->sf2a_Values.sf2v_Release;
-        }
-        LOG_D(( "V: bank %ld preset %ld note %ld-%ld -> "
-                "%ld A in Inst., %ld A in Pres., %ld A eff.\n",
-                bank,
-                preset,
-                MAX( instrumentMin, sampleMin ), 
-                asf_Note->asfn_MaxNote,
-                argsI->sf2a_Values.sf2v_Attack,
-                argsP->sf2a_Values.sf2v_Attack,
-                effectiveAttack ));
-*/
 
         /* Complete iteration over all presets - instruments - samples */
         LOG_V(( "V: bank %ld, preset %ld now has "
@@ -1123,4 +1089,75 @@ APTR GetAmiSfSampleData( struct AmiSF * amisf, struct AmiSF_Sample * sample ) {
   Read( amisf->asf_SampleSourceFile, result, size );
 
   return result;
+}
+
+LONG GetMillisFromPeriods( UWORD periods ) {
+
+  UWORD mantissa = periods & 0x0FFF;
+  UWORD exponent = ( periods & 0xF000 ) >> 12;
+
+  // increment = ( mantissa * ( 2 ^ exponent ))
+  //             |     |      | |      |     ||
+  //             |     |      | a      b     ||
+  //             |     d      +----c---------+|
+  //             +----------e-----------------+
+  double a = IEEEDPFlt( 2 );
+  double b = IEEEDPFlt( exponent );
+  double c = IEEEDPPow( b, a );
+  double d = IEEEDPFlt( mantissa );
+  double e = IEEEDPMul( d, c );
+
+  // increment = ( maxULONG / ( seconds  * 192.000 ))
+  // seconds * increment = maxULONG / 192.000
+  // seconds = ( maxULONG / ( 192.000 * increment ))
+  //           |     |      |    |          |  ||
+  //           |     |      |    f          e  ||
+  //           |     h      +----------g-------+|
+  //           +----------i---------------------+
+  double f = IEEEDPFlt( 192000 );
+  double g = IEEEDPMul( f, e );
+  double h = IEEEDPMul( IEEEDPFlt( 0x7fFFffFF ), a );
+  double i = IEEEDPDiv( h, g );
+
+  // seconds -> millis
+  double j = IEEEDPFlt( 1000 );
+  double k = IEEEDPMul( j, i );
+
+  LONG millis = IEEEDPFix( k );
+
+  return millis;
+}
+
+LONG GetCentibelsFromFactorShift16( UWORD factorShift16 ) {
+
+  // Usage like:
+  // SustainVolume = ( OriginalVolume x FactorShifted ) >> 16
+  // FactorShifted = ( Factor << 16 )
+  // Factor = ( FactorShifted >> 16 )
+  //          |       |       |   | |
+  //          |       a       +-b-+ |
+  //          +-----------c---------+
+  double a = IEEEDPFlt( factorShift16 );
+  double b = IEEEDPFlt( 1 << 16 );
+  double c = IEEEDPDiv( a, b );
+
+  // Factor = ( 10 ^ (    centibels / -200  ))
+  // log10( Factor ) = ( centibels / -200 )
+  // log10( Factor ) * ( -200 ) = centibels
+  // centibels = ( -200 * log10( Factor ))
+  //             |   |    |         |   ||
+  //             |   |    |         c   ||
+  //             |   e    +----d--------+|
+  //             +---------e-------------+
+  double d = IEEEDPLog10( c );
+  double e = IEEEDPFlt( -200 );
+  double f = IEEEDPMul( e, d );
+
+  LONG centibels = IEEEDPFix( f );
+
+  if ( centibels > 1000 ) {
+
+    centibels = 1000;
+  }
+  return centibels;
 }

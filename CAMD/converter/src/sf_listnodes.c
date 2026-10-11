@@ -58,11 +58,20 @@ static struct Node * CreateAmiSfListBrowserNode( UWORD bank,
                                            MEMF_ANY );
 
   data->noteIndex = noteIndex;
-  data->attack = attack;
-  data->decay = decay;
-  data->sustain = sustain;
-  data->release = release;
+  data->attack = GetMillisFromPeriods( attack );
+  data->decay = GetMillisFromPeriods( decay );
+  data->sustain = GetCentibelsFromFactorShift16( sustain );
+  data->release = GetMillisFromPeriods( release );
   data->sampleIndex = sampleNumber;
+
+  LOG_V(( "V: Creating label b:%ld p:%ld >n:%ld <=n:%ld n#:%ld "
+          "a:%ld->%ld d:%ld->%ld "
+          "s:%ld->%ld r:%ld->%ld "
+          "s#:%ld\n",
+          bank, preset, minNote, maxNote, noteIndex,
+          attack, data->attack, decay, data->decay,
+          sustain, data->sustain, release, data->release,
+          sampleNumber ));
 
   return AllocListBrowserNode( columns,
                                LBNA_UserData, data,
@@ -132,7 +141,7 @@ static struct Node * CreateSf2ListBrowserNode( UWORD bank,
   data->maxSample = sampleMaxNote;
   data->sampleIndex = sampleNumber;
 
-  LOG_D(( "V: Creating label b:%ld p:%ld >n:%ld <=n:%ld n#:%ld "
+  LOG_V(( "V: Creating label b:%ld p:%ld >n:%ld <=n:%ld n#:%ld "
           "a:%ld->%ld d:%ld-%ld "
           "s:%ld r:%ld->%ld "
           ">s:%ld <=s:%ld s#:%ld\n",
