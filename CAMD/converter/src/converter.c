@@ -836,7 +836,22 @@ VOID HandleEvents( VOID ) {
             }
             case GadgetId_Instruments: {
 
-              HandleListElement( windowMessageCode );
+              ULONG event = 0;
+              struct Gadget * gadget = base->sfc_ListBrowser;
+              GetAttr( LISTBROWSER_RelEvent, gadget, &( event ));
+              switch ( event ) {
+                case LBRE_NORMAL: {
+
+                  HandleListElement( windowMessageCode );
+                  break;
+                }
+                // e.g. LBRE_COLUMNADJUST
+                default: {
+
+                  LOG_D(( "D: ListEvent 0x%08lx ignored.\n", event ));
+                  break;
+                }
+              }
               break;
             }
             default: {
