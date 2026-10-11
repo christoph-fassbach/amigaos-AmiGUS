@@ -37,6 +37,7 @@
 #include "debug.h"
 #include "errors.h"
 #include "progress_dialog.h"
+#include "sf_listnode_data.h"
 #include "sf_listnodes.h"
 #include "sf2_conversion.h"
 #include "sf2_optimizer.h"

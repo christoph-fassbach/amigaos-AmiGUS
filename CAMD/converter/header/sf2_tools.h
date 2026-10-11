@@ -39,15 +39,15 @@ struct AmiSF_Sample * CreateAmiSF_Sample(
   struct SF2_Sample * sample,
   ULONG targetStartAddress );
 
-LONG GetSF2SampleSize( struct SF2_Sample * sample );
-APTR GetSF2SampleData( struct SF2 * sf2,
+LONG GetSf2SampleSize( struct SF2_Sample * sample );
+APTR GetSf2SampleData( struct SF2 * sf2,
                        struct SF2_Sample * sample,
                        LONG memorySize );
-VOID GetSF2ADSRs( struct SF2_Args * presetArgs,
+VOID GetSf2ADSRs( struct SF2_Args * presetArgs,
                   struct SF2_Args * instrumentArgs,
-                  WORD * attack,
-                  WORD * decay,
+                  WORD * attack,    // in timecents
+                  WORD * decay,     // in timecents
                   WORD * sustain,
-                  WORD * release );
+                  WORD * release ); // in timecents
 LONG GetMillisFromTimecents( WORD timecents );
 #endif /* SF2_TOOLS_H */

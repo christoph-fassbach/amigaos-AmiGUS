@@ -33,8 +33,7 @@ BOOL CreateAmiSfListLabels( struct List * labels,
                             struct ProgressDialog * dialog,
                             ULONG * currentProgress,
                             ULONG maxProgress );
-const struct ColumnInfo * GetAmiSfColumnInfos( VOID );
-const ULONG GetAmiSfColumnsWidth( VOID );
+
 /**
  * The order created here needs to be in sync with CreateSf2ListLabels.
  */
@@ -52,8 +51,7 @@ BOOL CreateSf2ListLabels( struct List * labels,
                           struct ProgressDialog * dialog,
                           ULONG * currentProgress,
                           ULONG maxProgress );
-const struct ColumnInfo * GetSf2ColumnInfos( VOID );
-const ULONG GetSf2ColumnsWidth( VOID );
+
 /**
  * The order created here needs to be in sync with CreateSf2ListLabels.
  */

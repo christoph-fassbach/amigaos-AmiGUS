@@ -972,8 +972,8 @@ LONG WriteAmiSFtoFile(
         --sourceIndex; // As 1 from array is 0 in as index as 0 is none
 
         sf2Sample = sf2->sf2_SampleArray[ sourceIndex ];
-        sf2SampleSize = GetSF2SampleSize( sf2Sample );
-        sf2SampleData = GetSF2SampleData( sf2, sf2Sample, sf2SampleSize );
+        sf2SampleSize = GetSf2SampleSize( sf2Sample );
+        sf2SampleData = GetSf2SampleData( sf2, sf2Sample, sf2SampleSize );
         
         LOG_D(( "D: AmiSF sample %ld is mapped to SF2 sample %ld, "
                 "size %ld @ 0x%08lx.\n",

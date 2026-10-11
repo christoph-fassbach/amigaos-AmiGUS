@@ -25,15 +25,12 @@
 
 #include "converter.h"
 #include "debug.h"
+#include "sf_listnode_data.h"
 #include "sf2_tools.h"
 #include "support.h"
 
 struct SfListNodeData {
 
-  LONG bank;
-  LONG preset;
-  LONG minNote;
-  LONG maxNote;
   LONG noteIndex;
   LONG attack;
   LONG decay;
@@ -43,390 +40,6 @@ struct SfListNodeData {
   LONG maxSample;
   LONG sampleIndex;
 };
-
-static const struct ColumnInfo sf2Columns[] = {
-// chars * 8   + 8 margin left / right
-  { (  3 * 8 ) + 8, "B#", CIF_CENTER },
-  { (  3 * 8 ) + 8, "P#", CIF_CENTER },
-  { ( 23 * 8 ) + 8, "GM Name", CIF_CENTER | CIF_DRAGGABLE },
-  { ( 20 * 8 ) + 8, "Preset Name", CIF_CENTER | CIF_DRAGGABLE },
-  { (  3 * 8 ) + 8, "IN>", CIF_CENTER },
-  { (  3 * 8 ) + 8, "<IN", CIF_CENTER },
-  { (  5 * 8 ) + 8, "I#", CIF_CENTER },
-  { ( 20 * 8 ) + 8, "Instrument Name", CIF_CENTER | CIF_DRAGGABLE },
-  { (  6 * 8 ) + 8, "ms Attack", CIF_CENTER | CIF_DRAGGABLE },
-  { (  6 * 8 ) + 8, "ms Decay", CIF_CENTER | CIF_DRAGGABLE },
-  { (  6 * 8 ) + 8, "cB Sustain", CIF_CENTER | CIF_DRAGGABLE },
-  { (  6 * 8 ) + 8, "ms Release", CIF_CENTER | CIF_DRAGGABLE },
-  { (  3 * 8 ) + 8, "SN>", CIF_CENTER },
-  { (  3 * 8 ) + 8, "<SN", CIF_CENTER },
-  { (  5 * 8 ) + 8, "S#", CIF_CENTER },
-  { ( 20 * 8 ) + 8, "Sample Name", CIF_CENTER | CIF_DRAGGABLE },
-  { -1, (STRPTR)~0, -1 }
-};
-
-static const struct ColumnInfo amiSfColumns[] = {
-// chars * 8   + 8 margin left / right
-  { (  3 * 8 ) + 8, "B#", CIF_CENTER },
-  { (  3 * 8 ) + 8, "P#", CIF_CENTER },
-  { ( 23 * 8 ) + 8, "GM Name", CIF_CENTER | CIF_DRAGGABLE },
-  { (  3 * 8 ) + 8, "N>", CIF_CENTER },
-  { (  3 * 8 ) + 8, "<N", CIF_CENTER },
-  { (  5 * 8 ) + 8, "N#", CIF_CENTER },
-  { (  6 * 8 ) + 8, "ms Attack", CIF_CENTER | CIF_DRAGGABLE },
-  { (  6 * 8 ) + 8, "ms Decay", CIF_CENTER | CIF_DRAGGABLE },
-  { (  6 * 8 ) + 8, "cb Sustain", CIF_CENTER | CIF_DRAGGABLE },
-  { (  6 * 8 ) + 8, "ms Release", CIF_CENTER | CIF_DRAGGABLE },
-  { (  5 * 8 ) + 8, "S#", CIF_CENTER },
-  { -1, (STRPTR)~0, -1 }
-};
-
-static const LONG instrumentNumbers[] = {
-    0,
-    1,
-    2,
-    3,
-    4,
-    5,
-    6,
-    7,
-    8,
-    9,
-   10,
-   11,
-   12,
-   13,
-   14,
-   15,
-   16,
-   17,
-   18,
-   19,
-   20,
-   21,
-   22,
-   23,
-   24,
-   25,
-   26,
-   27,
-   28,
-   29,
-   30,
-   31,
-   32,
-   33,
-   34,
-   35,
-   36,
-   37,
-   38,
-   39,
-   40,
-   41,
-   42,
-   43,
-   44,
-   45,
-   46,
-   47,
-   48,
-   49,
-   50,
-   51,
-   52,
-   53,
-   54,
-   55,
-   56,
-   57,
-   58,
-   59,
-   60,
-   61,
-   62,
-   63,
-   64,
-   65,
-   66,
-   67,
-   68,
-   69,
-   70,
-   71,
-   72,
-   73,
-   74,
-   75,
-   76,
-   77,
-   78,
-   79,
-   80,
-   81,
-   82,
-   83,
-   84,
-   85,
-   86,
-   87,
-   88,
-   89,
-   90,
-   91,
-   92,
-   93,
-   94,
-   95,
-   96,
-   97,
-   98,
-   99,
-  100,
-  101,
-  102,
-  103,
-  104,
-  105,
-  106,
-  107,
-  108,
-  109,
-  110,
-  111,
-  112,
-  113,
-  114,
-  115,
-  116,
-  117,
-  118,
-  119,
-  120,
-  121,
-  122,
-  123,
-  124,
-  125,
-  126,
-  127,
-  -1
-};
-
-static const UBYTE * instrumentNames[] = {
-  "Acoustic Grand Piano",
-  "Bright Acoustic Piano",
-  "Electric Grand Piano",
-  "Honky-tonk Piano",
-  "Electric Piano 1",
-  "Electric Piano 2",
-  "Harpsichord",
-  "Clavinet",
-  "Celesta",
-  "Glockenspiel",
-  "Music Box",
-  "Vibraphone",
-  "Marimba",
-  "Xylophone",
-  "Tubular Bells",
-  "Dulcimer",
-  "Drawbar Organ",
-  "Percussive Organ",
-  "Rock Organ",
-  "Church Organ",
-  "Reed Organ",
-  "Accordion",
-  "Harmonica",
-  "Bandoneon",
-  "Acoustic Guitar (nylon)",
-  "Acoustic Guitar (steel)",
-  "Electric Guitar (jazz)",
-  "Electric Guitar",
-  "Electric Guitar (muted)",
-  "Overdriven Guitar",
-  "Distortion Guitar",
-  "Guitar Harmonics",
-  "Acoustic Bass",
-  "Electric Bass (finger)",
-  "Electric Bass (picked)",
-  "Fretless Bass",
-  "Slap Bass 1",
-  "Slap Bass 2",
-  "Synth Bass 1",
-  "Synth Bass 2",
-  "Violin",
-  "Viola",
-  "Cello",
-  "Contrabass",
-  "Tremolo Strings",
-  "Pizzicato Strings",
-  "Orchestral Harp",
-  "Timpani",
-  "String Ensemble 1",
-  "String Ensemble 2",
-  "Synth Strings 1",
-  "Synth Strings 2",
-  "Choir Aahs",
-  "Voice Oohs",
-  "Synth Voice",
-  "Orchestra Hit",
-  "Trumpet",
-  "Trombone",
-  "Tuba",
-  "Muted Trumpet",
-  "French Horn",
-  "Brass Section",
-  "Synth Brass 1",
-  "Synth Brass 2",
-  "Soprano Sax",
-  "Alto Sax",
-  "Tenor Sax",
-  "Baritone Sax",
-  "Oboe",
-  "English Horn",
-  "Bassoon",
-  "Clarinet",
-  "Piccolo",
-  "Flute",
-  "Recorder",
-  "Pan Flute",
-  "Blown bottle",
-  "Shakuhachi",
-  "Whistle",
-  "Ocarina",
-  "Lead 1",
-  "Lead 2",
-  "Lead 3",
-  "Lead 4",
-  "Lead 5",
-  "Lead 6",
-  "Lead 7",
-  "Lead 8",
-  "Pad 1",
-  "Pad 2",
-  "Pad 3",
-  "Pad 4",
-  "Pad 5",
-  "Pad 6",
-  "Pad 7",
-  "Pad 8",
-  "FX 1",
-  "FX 2",
-  "FX 3",
-  "FX 4",
-  "FX 5",
-  "FX 6",
-  "FX 7",
-  "FX 8",
-  "Sitar",
-  "Banjo",
-  "Shamisen",
-  "Koto",
-  "Kalimba",
-  "Bag pipe",
-  "Fiddle",
-  "Shanai",
-  "Tinkle Bell",
-  "Cowbell",
-  "Steel Drums",
-  "Woodblock",
-  "Taiko Drum",
-  "Melodic Tom",
-  "Synth Drum",
-  "Reverse Cymbal",
-  "Guitar Fret Noise",
-  "Breath Noise",
-  "Seashore",
-  "Bird Tweet",
-  "Telephone Ring",
-  "Helicopter",
-  "Applause",
-  "Gunshot",
-  NULL
-};
-
-static const UBYTE * percussionNames[] = {
-  "Ac./Low Bass Drum",
-  "Elec./High Bass Drum",
-  "Side Stick",
-  "Acoustic Snare",
-  "Hand Clap",
-  "Elec. Snare/Rimshot",
-  "Low Floor Tom",
-  "Closed Hi-hat",
-  "High Floor Tom",
-  "Pedal Hi-hat",
-  "Low Tom",
-  "Open Hi-hat",
-  "Low-Mid Tom",
-  "High-Mid Tom",
-  "Crash Cymbal 1",
-  "High Tom",
-  "Ride Cymbal 1",
-  "Chinese Cymbal",
-  "Ride Bell",
-  "Tambourine",
-  "Splash Cymbal",
-  "Cowbell",
-  "Crash Cymbal 2",
-  "Vibraslap",
-  "Ride Cymbal 2",
-  "High Bongo",
-  "Low Bongo",
-  "Mute High Conga",
-  "Open High Conga",
-  "Low Conga",
-  "High Timbale",
-  "Low Timbale",
-  "High Agogo",
-  "Low Agogo",
-  "Cabasa",
-  "Maracas",
-  "Short Whistle",
-  "Long Whistle",
-  "Short Guiro",
-  "Long Guiro",
-  "Claves",
-  "High Woodblock",
-  "Low Woodblock",
-  "Mute Cuica",
-  "Open Cuica",
-  "Mute Triangle",
-  "Open Triangle",
-  NULL
-};
-
-static CONST_STRPTR GetMidiName( LONG bank,
-                                 LONG preset,
-                                 LONG instrumentMin,
-                                 LONG instrumentMax,
-                                 LONG sampleMin,
-                                 LONG sampleMax ) {
-
-  if ( 128 != bank ) {
-
-    return instrumentNames[ preset ];
-
-  } else {
-    
-    LONG max = MAX( instrumentMin, sampleMin );
-    LONG min = MIN( instrumentMax, sampleMax );
-
-    if ( max != min ) {
-
-      LOG_E(( "E: Percussion definition not identical, %ld %ld\n", max, min ));
-      return "";
-
-    } else if (( 34 < max ) && ( 81 > max )) {
-
-      return percussionNames[ max - 35 ];
-
-    } else {
-
-      return "";
-    }
-  }
-}
 
 static struct Node * CreateAmiSfListBrowserNode( UWORD bank,
                                                  UWORD preset,
@@ -440,14 +53,10 @@ static struct Node * CreateAmiSfListBrowserNode( UWORD bank,
                                                  UWORD release,
                                                  LONG sampleNumber ) {
 
-  LONG columns = ( sizeof( amiSfColumns ) / sizeof( struct ColumnInfo )) - 1;
+  LONG columns = GetAmiSfColumnCount();
   struct SfListNodeData * data = AllocMem( sizeof( struct SfListNodeData ),
                                            MEMF_ANY );
 
-  data->bank = bank;
-  data->preset = preset;
-  data->minNote = minNote;
-  data->maxNote = maxNote;
   data->noteIndex = noteIndex;
   data->attack = attack;
   data->decay = decay;
@@ -458,19 +67,19 @@ static struct Node * CreateAmiSfListBrowserNode( UWORD bank,
   return AllocListBrowserNode( columns,
                                LBNA_UserData, data,
                                LBNA_Column, 0,
-                                 LBNCA_Integer, &( data->bank ),
+                                 LBNCA_Integer, GetListNumber( bank ),
                                  LBNCA_Justification, LCJ_RIGHT,
                                LBNA_Column, 1,
-                                 LBNCA_Integer, &( data->preset ),
+                                 LBNCA_Integer, GetListNumber( preset ),
                                  LBNCA_Justification, LCJ_RIGHT,
                                LBNA_Column, 2,
                                  LBNCA_CopyText, FALSE,
                                  LBNCA_Text, name,
                                LBNA_Column, 3,
-                                 LBNCA_Integer, &( data->minNote ),
+                                 LBNCA_Integer, GetListNumber( minNote ),
                                  LBNCA_Justification, LCJ_RIGHT,
                                LBNA_Column, 4,
-                                 LBNCA_Integer, &( data->maxNote ),
+                                 LBNCA_Integer, GetListNumber( maxNote ),
                                  LBNCA_Justification, LCJ_RIGHT,
                                LBNA_Column, 5,
                                  LBNCA_Integer, &( data->noteIndex ),
@@ -510,14 +119,10 @@ static struct Node * CreateSf2ListBrowserNode( UWORD bank,
                                                UWORD sampleNumber,
                                                CONST_STRPTR sampleName ) {
 
-  LONG columns = ( sizeof( sf2Columns ) / sizeof( struct ColumnInfo )) - 1;
+  LONG columns = GetSf2ColumnCount();
   struct SfListNodeData * data = AllocMem( sizeof( struct SfListNodeData ),
                                            MEMF_ANY );
 
-  data->bank = bank;
-  data->preset = preset;
-  data->minNote = instrumentMinNote;
-  data->maxNote = instrumentMaxNote;
   data->noteIndex = instrumentNumber;
   data->attack = GetMillisFromTimecents( attack );
   data->decay = GetMillisFromTimecents( decay );
@@ -539,10 +144,10 @@ static struct Node * CreateSf2ListBrowserNode( UWORD bank,
   return AllocListBrowserNode( columns,
                                LBNA_UserData, data,
                                LBNA_Column, 0,
-                                 LBNCA_Integer, &( data->bank ),
+                                 LBNCA_Integer, GetListNumber( bank ),
                                  LBNCA_Justification, LCJ_RIGHT,
                                LBNA_Column, 1,
-                                 LBNCA_Integer, &( data->preset ),
+                                 LBNCA_Integer, GetListNumber( preset ),
                                  LBNCA_Justification, LCJ_RIGHT,
                                LBNA_Column, 2,
                                  LBNCA_CopyText, FALSE,
@@ -551,10 +156,10 @@ static struct Node * CreateSf2ListBrowserNode( UWORD bank,
                                  LBNCA_CopyText, FALSE,
                                  LBNCA_Text, presetName,
                                LBNA_Column, 4,
-                                 LBNCA_Integer, &( data->minNote ),
+                                 LBNCA_Integer, GetListNumber( instrumentMinNote ),
                                  LBNCA_Justification, LCJ_RIGHT,
                                LBNA_Column, 5,
-                                 LBNCA_Integer, &( data->maxNote ),
+                                 LBNCA_Integer, GetListNumber( instrumentMaxNote ),
                                  LBNCA_Justification, LCJ_RIGHT,
                                LBNA_Column, 6,
                                  LBNCA_Integer, &( data->noteIndex ),
@@ -591,19 +196,23 @@ static struct Node * CreateSf2ListBrowserNode( UWORD bank,
 
 VOID CreateEmptyListLabels( struct List * labels ) {
 
-  LONG columns = ( sizeof( sf2Columns ) / sizeof( struct ColumnInfo )) - 1;
-  LONG i = 0;
+  LONG columns = GetSf2ColumnCount();
+  WORD i;
 
-  while ( NULL != instrumentNames[ i ] ) {
+  for ( i = 0; 128 > i; ++i ) {
+
+    CONST_STRPTR instrumentName = GetMidiName( 0, i, 0, 0, 0, 0 );
+    const LONG * bankNumber = GetListNumber( 0 );
+    const LONG * presetNumber = GetListNumber( i );
 
     struct Node * label = AllocListBrowserNode( columns,
                                LBNA_Column, 0,
-                                 LBNCA_Integer, &( instrumentNumbers[ 0 ]),
+                                 LBNCA_Integer, bankNumber,
                                LBNA_Column, 1,
-                                 LBNCA_Integer, &( instrumentNumbers[ i ]),
+                                 LBNCA_Integer, presetNumber,
                                LBNA_Column, 2,
                                  LBNCA_CopyText, FALSE,
-                                 LBNCA_Text, instrumentNames[ i ],
+                                 LBNCA_Text, instrumentName,
                                LBNA_Column, 3,
                                  LBNCA_CopyText, FALSE,
                                  LBNCA_Text, NULL,
@@ -634,7 +243,54 @@ VOID CreateEmptyListLabels( struct List * labels ) {
                                  LBNCA_CopyText, FALSE,
                                  LBNCA_Text, NULL,
                                TAG_DONE );
-    i++;
+    AddTail( labels, label );
+  }
+  for ( i = 0; 47 > i; ++i ) {
+
+    const LONG j = i + 35;
+    CONST_STRPTR percussionName = GetMidiName( 128, 0, j, j, j, j );
+    const LONG * bankNumber = GetListNumber( 128 );
+    const LONG * presetNumber = GetListNumber( 0 );
+    const LONG * sampleNumber = GetListNumber( j );
+
+    struct Node * label = AllocListBrowserNode( columns,
+                               LBNA_Column, 0,
+                                 LBNCA_Integer, bankNumber,
+                               LBNA_Column, 1,
+                                 LBNCA_Integer, presetNumber,
+                               LBNA_Column, 2,
+                                 LBNCA_CopyText, FALSE,
+                                 LBNCA_Text, percussionName,
+                               LBNA_Column, 3,
+                                 LBNCA_CopyText, FALSE,
+                                 LBNCA_Text, NULL,
+                               LBNA_Column, 4,
+                                 LBNCA_Integer, sampleNumber,
+                               LBNA_Column, 5,
+                                 LBNCA_Integer, sampleNumber,
+                               LBNA_Column, 6,
+                                 LBNCA_Integer, NULL,
+                               LBNA_Column, 7,
+                                 LBNCA_CopyText, FALSE,
+                                 LBNCA_Text, NULL,
+                               LBNA_Column, 8,
+                                 LBNCA_Integer, NULL,
+                               LBNA_Column, 9,
+                                 LBNCA_Integer, NULL,
+                               LBNA_Column, 10,
+                                 LBNCA_Integer, NULL,
+                               LBNA_Column, 11,
+                                 LBNCA_Integer, NULL,
+                               LBNA_Column, 12,
+                                 LBNCA_Integer, sampleNumber,
+                               LBNA_Column, 13,
+                                 LBNCA_Integer, sampleNumber,
+                               LBNA_Column, 14,
+                                 LBNCA_Integer, NULL,
+                               LBNA_Column, 15,
+                                 LBNCA_CopyText, FALSE,
+                                 LBNCA_Text, NULL,
+                               TAG_DONE );
     AddTail( labels, label );
   }
 }
@@ -697,25 +353,6 @@ BOOL CreateAmiSfListLabels( struct List * labels,
     }
   }
   return FALSE;
-}
-
-const struct ColumnInfo * GetAmiSfColumnInfos( VOID ) {
-
-  return amiSfColumns;
-}
-
-const ULONG GetAmiSfColumnsWidth( VOID ) {
-
-  LONG i = 0;
-  ULONG result = 0;
-
-  while( 0 < amiSfColumns[ i ].ci_Width ) {
-
-    result += amiSfColumns[ i ].ci_Width;
-    ++i;
-  }
-  LOG_V(( "V: Width over all columns is %ld\n", result ));
-  return result;
 }
 
 BOOL GetAmiSfInformationForIndex( struct AmiSF_Preset ** preset,
@@ -837,7 +474,7 @@ BOOL CreateSf2ListLabels(
 
           struct Node * label;
 
-          GetSF2ADSRs( argsP, argsI, &attack, &decay, &sustain, &release );
+          GetSf2ADSRs( argsP, argsI, &attack, &decay, &sustain, &release );
 
           label = CreateSf2ListBrowserNode( bank,
                                             presetNumber,
@@ -874,25 +511,6 @@ BOOL CreateSf2ListLabels(
   LOG_I(( "I: Created %ld labels, progress %ld/%ld\n",
           count, *currentProgress, maxProgress ));
   return FALSE;
-}
-
-const struct ColumnInfo * GetSf2ColumnInfos( VOID ) {
-
-  return sf2Columns;
-}
-
-const ULONG GetSf2ColumnsWidth( VOID ) {
-
-  LONG i = 0;
-  ULONG result = 0;
-
-  while( 0 < sf2Columns[ i ].ci_Width ) {
-
-    result += sf2Columns[ i ].ci_Width;
-    ++i;
-  }
-  LOG_V(( "V: Width over all columns is %ld\n", result ));
-  return result;
 }
 
 BOOL GetSf2InformationForIndex(

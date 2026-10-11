@@ -403,12 +403,12 @@ struct AmiSF_Sample * CreateAmiSF_Sample(
     + (( sample->sf2s_LoopStartOffset - sample->sf2s_SampleStartOffset ) // WORD
     << 1 );                                                              // BYTE
   result->asfs_EndOffset =  targetStartAddress                         // BYTE
-    + GetSF2SampleSize( sample );                                        // BYTE
+    + GetSf2SampleSize( sample );                                        // BYTE
 
   return result;
 }
 
-LONG GetSF2SampleSize( struct SF2_Sample * sample ) {
+LONG GetSf2SampleSize( struct SF2_Sample * sample ) {
 
   LONG size = -1;
 
@@ -434,7 +434,7 @@ LONG GetSF2SampleSize( struct SF2_Sample * sample ) {
   return size;
 }
 
-APTR GetSF2SampleData( struct SF2 * sf2,
+APTR GetSf2SampleData( struct SF2 * sf2,
                        struct SF2_Sample * sample,
                        LONG memorySize ) {
 
@@ -482,7 +482,7 @@ APTR GetSF2SampleData( struct SF2 * sf2,
   return samples;
 }
 
-VOID GetSF2ADSRs( struct SF2_Args * presetArgs,
+VOID GetSf2ADSRs( struct SF2_Args * presetArgs,
                   struct SF2_Args * instrumentArgs,
                   WORD * attack,
                   WORD * decay,
