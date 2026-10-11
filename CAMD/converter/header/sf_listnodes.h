@@ -26,13 +26,23 @@
 #include "progress_dialog.h"
 #include "sf2.h"
 
+VOID CreateEmptyListLabels( struct List * labels );
+
+BOOL CreateAmiSfListLabels( struct List * labels,
+                            struct AmiSF * amisf,
+                            struct ProgressDialog * dialog,
+                            ULONG * currentProgress,
+                            ULONG maxProgress );
 const struct ColumnInfo * GetAmiSfColumnInfos( VOID );
 const ULONG GetAmiSfColumnsWidth( VOID );
-
-const struct ColumnInfo * GetSf2ColumnInfos( VOID );
-const ULONG GetSf2ColumnsWidth( VOID );
-
-VOID CreateEmptyListLabels( struct List * labels );
+/**
+ * The order created here needs to be in sync with CreateSf2ListLabels.
+ */
+BOOL GetAmiSfInformationForIndex( struct AmiSF_Preset ** preset,
+                                  struct AmiSF_Note ** note,
+                                  struct AmiSF_Sample ** sample,
+                                  struct AmiSF * amisf,
+                                  ULONG index );
 
 /**
  * The order created here needs to be in sync with GetSf2InformationForIndex.
@@ -42,7 +52,8 @@ BOOL CreateSf2ListLabels( struct List * labels,
                           struct ProgressDialog * dialog,
                           ULONG * currentProgress,
                           ULONG maxProgress );
-
+const struct ColumnInfo * GetSf2ColumnInfos( VOID );
+const ULONG GetSf2ColumnsWidth( VOID );
 /**
  * The order created here needs to be in sync with CreateSf2ListLabels.
  */
@@ -52,21 +63,6 @@ BOOL GetSf2InformationForIndex(
   struct SF2_Sample ** sample,
   struct SF2 * sf2,
   const ULONG index );
-
-BOOL CreateAmiSfListLabels( struct List * labels,
-                            struct AmiSF * amisf,
-                            struct ProgressDialog * dialog,
-                            ULONG * currentProgress,
-                            ULONG maxProgress );
-
-/**
- * The order created here needs to be in sync with CreateSf2ListLabels.
- */
-BOOL GetAmiSfInformationForIndex( struct AmiSF_Preset ** preset,
-                                  struct AmiSF_Note ** note,
-                                  struct AmiSF_Sample ** sample,
-                                  struct AmiSF * amisf,
-                                  ULONG index );
 
 VOID FreeListLabels( struct List * list );
 

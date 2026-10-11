@@ -576,44 +576,6 @@ static struct Node * CreateSf2ListBrowserNode( UWORD bank,
                                TAG_DONE );
 }
 
-const struct ColumnInfo * GetAmiSfColumnInfos( VOID ) {
-
-  return amiSfColumns;
-}
-
-const ULONG GetAmiSfColumnsWidth( VOID ) {
-
-  LONG i = 0;
-  ULONG result = 0;
-
-  while( 0 < amiSfColumns[ i ].ci_Width ) {
-
-    result += amiSfColumns[ i ].ci_Width;
-    ++i;
-  }
-  LOG_V(( "V: Width over all columns is %ld\n", result ));
-  return result;
-}
-
-const struct ColumnInfo * GetSf2ColumnInfos( VOID ) {
-
-  return sf2Columns;
-}
-
-const ULONG GetSf2ColumnsWidth( VOID ) {
-
-  LONG i = 0;
-  ULONG result = 0;
-
-  while( 0 < sf2Columns[ i ].ci_Width ) {
-
-    result += sf2Columns[ i ].ci_Width;
-    ++i;
-  }
-  LOG_V(( "V: Width over all columns is %ld\n", result ));
-  return result;
-}
-
 VOID CreateEmptyListLabels( struct List * labels ) {
 
   LONG columns = ( sizeof( sf2Columns ) / sizeof( struct ColumnInfo )) - 1;
@@ -664,52 +626,122 @@ VOID CreateEmptyListLabels( struct List * labels ) {
   }
 }
 
-VOID AddSf2Label(
-  struct List * labels,
-  struct SF2_Preset * preset,
-  struct SF2_ArgValues * instrumentArgValues,
-  struct SF2_Instrument * instrument,
-  struct SF2_ArgValues * sampleArgValues,
-  struct SF2_Sample * sample ) {
+BOOL CreateAmiSfListLabels( struct List * labels,
+                            struct AmiSF * amisf,
+                            struct ProgressDialog * dialog,
+                            ULONG * currentProgress,
+                            ULONG maxProgress ) {
 
-  UWORD bank = preset->sf2p_Bank;
-  UWORD presetNumber = preset->sf2p_Common.sf2c_Number;
-  UBYTE instrumentMin = instrumentArgValues->sf2v_LowNote;
-  UBYTE instrumentMax = instrumentArgValues->sf2v_HighNote;
-  UWORD instrumentNumber = instrument->sf2i_Common.sf2c_Number;
-  UBYTE sampleMin = sampleArgValues->sf2v_LowNote;
-  UBYTE sampleMax = sampleArgValues->sf2v_HighNote;
-  UWORD sampleNumber = sample->sf2s_Number;
-  CONST_STRPTR presetName = preset->sf2p_Common.sf2c_Name;
-  CONST_STRPTR gmName = GetMidiName( bank,
-                                     presetNumber,
-                                     instrumentMin,
-                                     instrumentMax,
-                                     sampleMin,
-                                     sampleMax );
-  CONST_STRPTR instrumentName = instrument->sf2i_Common.sf2c_Name;
-  CONST_STRPTR sampleName = sample->sf2s_Name;
+  LONG bankIndex;
+  LONG presetIndex;
 
-  struct Node * label;
+  for ( bankIndex = 0; bankIndex <= 128; ++bankIndex ) {
+    for ( presetIndex = 0; presetIndex <= 128; ++presetIndex ) {
 
-  LOG_V(( "V: Creating label %ld %ld %s %s %ld %s %ld %s\n",
-          bank, presetNumber, presetName, gmName,
-          instrumentNumber, instrumentName,
-          sampleNumber, sampleName ));
-  label = CreateSf2ListBrowserNode( bank,
-                                    presetNumber,
-                                    gmName,
-                                    presetName,
-                                    instrumentMin,
-                                    instrumentMax,
-                                    instrumentNumber,
-                                    instrumentName,
-                                    sampleMin,
-                                    sampleMax,
-                                    sampleNumber,
-                                    sampleName );
-  LOG_V(( "V: Inserting label\n" ));
-  AddTail( labels, label );
+      struct AmiSF_Preset * preset =
+        &( amisf->asf_Preset[ bankIndex ][ presetIndex ]);
+
+      if (( preset->asfp_Bank != 255 ) || ( preset->asfp_Preset != 255 )) {
+
+        UWORD noteCount = preset->asfp_NoteStart + preset->asfp_NoteCount;
+        LONG noteIndex = preset->asfp_NoteStart;
+        LONG minNote = 0;
+
+        for ( ; ( noteIndex < noteCount ); ++noteIndex ) {
+
+          struct AmiSF_Note * note = &( amisf->asf_Note[ noteIndex ]);
+          LONG maxNote = note->asfn_MaxNote;
+          CONST_STRPTR gmName = GetMidiName( bankIndex,
+                                             presetIndex,
+                                             minNote,
+                                             maxNote,
+                                             minNote,
+                                             maxNote );
+          LONG sampleNumber = note->asfn_SampleIndex - 1;
+          struct Node * label = CreateAmiSfListBrowserNode( bankIndex,
+                                                            presetIndex,
+                                                            gmName,
+                                                            minNote,
+                                                            maxNote,
+                                                            noteIndex,
+                                                            note->asfn_Attack,
+                                                            note->asfn_Decay,
+                                                            note->asfn_Sustain,
+                                                            note->asfn_Release,
+                                                            sampleNumber );
+
+          LOG_D(( "D: Found b:%ld p:%ld %s n:%ld-%ld -> %ld s:%ld\n",
+                   bankIndex, presetIndex,
+                   gmName,
+                   minNote, maxNote, noteIndex,
+                   sampleNumber ));
+          LOG_V(( "V: Inserting label\n" ));
+          AddTail( labels, label );
+
+          minNote = maxNote + 1;
+        }        
+      }
+    }
+  }
+  return FALSE;
+}
+
+const struct ColumnInfo * GetAmiSfColumnInfos( VOID ) {
+
+  return amiSfColumns;
+}
+
+const ULONG GetAmiSfColumnsWidth( VOID ) {
+
+  LONG i = 0;
+  ULONG result = 0;
+
+  while( 0 < amiSfColumns[ i ].ci_Width ) {
+
+    result += amiSfColumns[ i ].ci_Width;
+    ++i;
+  }
+  LOG_V(( "V: Width over all columns is %ld\n", result ));
+  return result;
+}
+
+BOOL GetAmiSfInformationForIndex( struct AmiSF_Preset ** preset,
+                                  struct AmiSF_Note ** note,
+                                  struct AmiSF_Sample ** sample,
+                                  struct AmiSF * amisf,
+                                  ULONG index ) {
+
+  LONG bankIndex;
+  LONG presetIndex;
+  LONG noteIndex;
+  LONG noteCount;
+
+  for ( bankIndex = 0; bankIndex <= 128; ++bankIndex ) {
+    for ( presetIndex = 0; presetIndex <= 128; ++presetIndex ) {
+
+      ( *preset ) = &( amisf->asf_Preset[ bankIndex ][ presetIndex ]);
+      noteCount = ( *preset )->asfp_NoteCount;
+
+      for ( noteIndex = 0; noteIndex < noteCount; ++noteIndex ) {
+
+        if ( !index ) {
+
+          LONG effectiveNoteIndex;
+          LONG effectiveSampleIndex;
+
+          effectiveNoteIndex = ( *preset )->asfp_NoteStart + noteIndex;
+          ( *note ) = &( amisf->asf_Note[ effectiveNoteIndex ]);
+          effectiveSampleIndex = ( *note )->asfn_SampleIndex - 1;
+          ( *sample ) = &( amisf->asf_SampleMetadata[ effectiveSampleIndex ]);
+
+          return TRUE;
+        }
+
+        --index;
+      }
+    }
+  }
+  return FALSE;
 }
 
 BOOL CreateSf2ListLabels(
@@ -722,22 +754,22 @@ BOOL CreateSf2ListLabels(
   BOOL abort = FALSE;
 
   /* Begin iteration over all presets - instruments - samples */
-  struct SF2_Preset * tempPreset;
+  struct SF2_Preset * preset;
   ULONG count = 0;
 
   FOR_LIST( &( sf2->sf2_Presets ),
-            tempPreset,
+            preset,
             struct SF2_Preset * ) {
 
     struct SF2_Args * argsP;
 
-    FOR_LIST( &( tempPreset->sf2p_Args ),
+    FOR_LIST( &( preset->sf2p_Args ),
               argsP,
               struct SF2_Args * ) {
 
       const LONG instrumentIndex = argsP->sf2a_Values.sf2v_NextNumber;
 
-      struct SF2_Instrument * tempInstrument;
+      struct SF2_Instrument * instrument;
       struct SF2_Args * argsI;
 
       if ( 0 > instrumentIndex ) {
@@ -746,19 +778,17 @@ BOOL CreateSf2ListLabels(
         continue;
       }
 
-      tempInstrument = sf2->sf2_InstrumentArray[ instrumentIndex ];
+      instrument = sf2->sf2_InstrumentArray[ instrumentIndex ];
 
-      FOR_LIST( &( tempInstrument->sf2i_Args ),
+      FOR_LIST( &( instrument->sf2i_Args ),
                 argsI,
                 struct SF2_Args * ) {
 
         const LONG sampleIndex = argsI->sf2a_Values.sf2v_NextNumber;
-        const LONG sampleMin = argsI->sf2a_Values.sf2v_LowNote;
-        const LONG sampleMax = argsI->sf2a_Values.sf2v_HighNote;
-        const LONG instrumentMin = argsP->sf2a_Values.sf2v_LowNote;
-        const LONG instrumentMax = argsP->sf2a_Values.sf2v_HighNote;
-
-        struct SF2_Sample * tempSample;
+        const UBYTE sampleMin = argsI->sf2a_Values.sf2v_LowNote;
+        const UBYTE sampleMax = argsI->sf2a_Values.sf2v_HighNote;
+        const UBYTE instrumentMin = argsP->sf2a_Values.sf2v_LowNote;
+        const UBYTE instrumentMax = argsP->sf2a_Values.sf2v_HighNote;
 
         if ( 0 > sampleIndex ) {
 
@@ -766,27 +796,50 @@ BOOL CreateSf2ListLabels(
           continue;
         }
 
-        if (( sampleMin > instrumentMax )
-          || ( instrumentMin > sampleMax)) {
+        if (( sampleMin <= instrumentMax )
+          && ( instrumentMin <= sampleMax)) {
 
           // Skip over unreachable samples
-          continue;
-        }
 
-        tempSample = sf2->sf2_SampleArray[ sampleIndex ];
+          /* Iteration payload below */
+          UWORD bank = preset->sf2p_Bank;
+          UWORD presetNumber = preset->sf2p_Common.sf2c_Number;
+          UWORD instrumentNumber = instrument->sf2i_Common.sf2c_Number;
+          struct SF2_Sample * sample = sf2->sf2_SampleArray[ sampleIndex ];
+          UWORD sampleNumber = sample->sf2s_Number;
+          CONST_STRPTR presetName = preset->sf2p_Common.sf2c_Name;
+          CONST_STRPTR gmName = GetMidiName( bank,
+                                             presetNumber,
+                                             instrumentMin,
+                                             instrumentMax,
+                                             sampleMin,
+                                             sampleMax );
+          CONST_STRPTR instrumentName = instrument->sf2i_Common.sf2c_Name;
+          CONST_STRPTR sampleName = sample->sf2s_Name;
 
-        /* Iteration payload below */
+          struct Node * label;
 
-        AddSf2Label( labels,
-                     tempPreset,
-                     &( argsP->sf2a_Values ),
-                     tempInstrument,
-                     &( argsI->sf2a_Values ),
-                     tempSample );
-
+          LOG_V(( "V: Creating label %ld %ld %s %s %ld %s %ld %s\n",
+                  bank, presetNumber, presetName, gmName,
+                  instrumentNumber, instrumentName,
+                  sampleNumber, sampleName ));
+          label = CreateSf2ListBrowserNode( bank,
+                                            presetNumber,
+                                            gmName,
+                                            presetName,
+                                            instrumentMin,
+                                            instrumentMax,
+                                            instrumentNumber,
+                                            instrumentName,
+                                            sampleMin,
+                                            sampleMax,
+                                            sampleNumber,
+                                            sampleName );
+          LOG_V(( "V: Inserting label\n" ));
+          AddTail( labels, label );
+          ++count;
+        }    
         /* Complete iteration over all presets - instruments - samples */
-
-        ++count;
       }
     }
     ++( *currentProgress );
@@ -801,6 +854,25 @@ BOOL CreateSf2ListLabels(
   LOG_I(( "I: Created %ld labels, progress %ld/%ld\n",
           count, *currentProgress, maxProgress ));
   return FALSE;
+}
+
+const struct ColumnInfo * GetSf2ColumnInfos( VOID ) {
+
+  return sf2Columns;
+}
+
+const ULONG GetSf2ColumnsWidth( VOID ) {
+
+  LONG i = 0;
+  ULONG result = 0;
+
+  while( 0 < sf2Columns[ i ].ci_Width ) {
+
+    result += sf2Columns[ i ].ci_Width;
+    ++i;
+  }
+  LOG_V(( "V: Width over all columns is %ld\n", result ));
+  return result;
 }
 
 BOOL GetSf2InformationForIndex(
@@ -889,105 +961,6 @@ BOOL GetSf2InformationForIndex(
   *preset = NULL;
   *instrument = NULL;
   *sample = NULL;
-  return FALSE;
-}
-
-BOOL CreateAmiSfListLabels( struct List * labels,
-                            struct AmiSF * amisf,
-                            struct ProgressDialog * dialog,
-                            ULONG * currentProgress,
-                            ULONG maxProgress ) {
-
-  LONG bankIndex;
-  LONG presetIndex;
-
-  for ( bankIndex = 0; bankIndex <= 128; ++bankIndex ) {
-    for ( presetIndex = 0; presetIndex <= 128; ++presetIndex ) {
-
-      struct AmiSF_Preset * preset =
-        &( amisf->asf_Preset[ bankIndex ][ presetIndex ]);
-
-      if (( preset->asfp_Bank != 255 ) || ( preset->asfp_Preset != 255 )) {
-
-        UWORD noteCount = preset->asfp_NoteStart + preset->asfp_NoteCount;
-        LONG noteIndex = preset->asfp_NoteStart;
-        LONG minNote = 0;
-
-        for ( ; ( noteIndex < noteCount ); ++noteIndex ) {
-
-          struct AmiSF_Note * note = &( amisf->asf_Note[ noteIndex ]);
-          LONG maxNote = note->asfn_MaxNote;
-          CONST_STRPTR gmName = GetMidiName( bankIndex,
-                                             presetIndex,
-                                             minNote,
-                                             maxNote,
-                                             minNote,
-                                             maxNote );
-          LONG sampleNumber = note->asfn_SampleIndex - 1;
-          struct Node * label = CreateAmiSfListBrowserNode( bankIndex,
-                                                            presetIndex,
-                                                            gmName,
-                                                            minNote,
-                                                            maxNote,
-                                                            noteIndex,
-                                                            note->asfn_Attack,
-                                                            note->asfn_Decay,
-                                                            note->asfn_Sustain,
-                                                            note->asfn_Release,
-                                                            sampleNumber );
-
-          LOG_D(( "D: Found b:%ld p:%ld %s n:%ld-%ld -> %ld s:%ld\n",
-                   bankIndex, presetIndex,
-                   gmName,
-                   minNote, maxNote, noteIndex,
-                   sampleNumber ));
-          LOG_V(( "V: Inserting label\n" ));
-          AddTail( labels, label );
-
-          minNote = maxNote + 1;
-        }        
-      }
-    }
-  }
-  return FALSE;
-}
-
-BOOL GetAmiSfInformationForIndex( struct AmiSF_Preset ** preset,
-                                  struct AmiSF_Note ** note,
-                                  struct AmiSF_Sample ** sample,
-                                  struct AmiSF * amisf,
-                                  ULONG index ) {
-
-  LONG bankIndex;
-  LONG presetIndex;
-  LONG noteIndex;
-  LONG noteCount;
-
-  for ( bankIndex = 0; bankIndex <= 128; ++bankIndex ) {
-    for ( presetIndex = 0; presetIndex <= 128; ++presetIndex ) {
-
-      ( *preset ) = &( amisf->asf_Preset[ bankIndex ][ presetIndex ]);
-      noteCount = ( *preset )->asfp_NoteCount;
-
-      for ( noteIndex = 0; noteIndex < noteCount; ++noteIndex ) {
-
-        if ( !index ) {
-
-          LONG effectiveNoteIndex;
-          LONG effectiveSampleIndex;
-
-          effectiveNoteIndex = ( *preset )->asfp_NoteStart + noteIndex;
-          ( *note ) = &( amisf->asf_Note[ effectiveNoteIndex ]);
-          effectiveSampleIndex = ( *note )->asfn_SampleIndex - 1;
-          ( *sample ) = &( amisf->asf_SampleMetadata[ effectiveSampleIndex ]);
-
-          return TRUE;
-        }
-
-        --index;
-      }
-    }
-  }
   return FALSE;
 }
 
