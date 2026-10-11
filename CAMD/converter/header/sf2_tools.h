@@ -49,4 +49,5 @@ VOID GetSF2ADSRs( struct SF2_Args * presetArgs,
                   WORD * decay,
                   WORD * sustain,
                   WORD * release );
+LONG GetMillisFromTimecents( WORD timecents );
 #endif /* SF2_TOOLS_H */

@@ -515,3 +515,30 @@ VOID GetSF2ADSRs( struct SF2_Args * presetArgs,
     *release += releaseModifier;
   }
 }
+
+LONG GetMillisFromTimecents( WORD timecents ) {
+
+  // 1200 * ln(seconds)/ln(2) = timecents
+  // => seconds = e^( timecents * ( ln( 2 ) / 1200 ) )
+  //              | |     |       | |   | |    |   | |
+  //              | |     |       | |   a |    |   | |
+  //              | |     |       | +--b--+    c   | |
+  //              | |     e       +---------d------+ |
+  //              | +-----------f--------------------+
+  //              +-------------g--------------------+
+  double a = IEEEDPFlt( 2 );
+  double b = IEEEDPLog( a );
+  double c = IEEEDPFlt( 1200 );
+  double d = IEEEDPDiv( b, c );
+  double e = IEEEDPFlt( timecents );
+  double f = IEEEDPMul( e, d );
+  double g = IEEEDPExp( f );
+
+  // seconds => milliseconds
+  double h = IEEEDPFlt( 1000 );
+  double i = IEEEDPMul( g, h );
+
+  LONG result = IEEEDPFix( i );
+
+  return result;
+}

@@ -49,19 +49,19 @@ static const struct ColumnInfo sf2Columns[] = {
   { (  3 * 8 ) + 8, "B#", CIF_CENTER },
   { (  3 * 8 ) + 8, "P#", CIF_CENTER },
   { ( 23 * 8 ) + 8, "GM Name", CIF_CENTER | CIF_DRAGGABLE },
-  { ( 12 * 8 ) + 8, "Preset Name", CIF_CENTER | CIF_DRAGGABLE },
+  { ( 20 * 8 ) + 8, "Preset Name", CIF_CENTER | CIF_DRAGGABLE },
   { (  3 * 8 ) + 8, "IN>", CIF_CENTER },
   { (  3 * 8 ) + 8, "<IN", CIF_CENTER },
   { (  5 * 8 ) + 8, "I#", CIF_CENTER },
-  { ( 12 * 8 ) + 8, "Instrument Name", CIF_CENTER | CIF_DRAGGABLE },
-  { (  6 * 8 ) + 8, "Attack (ms)", CIF_CENTER | CIF_DRAGGABLE },
-  { (  6 * 8 ) + 8, "Decay (ms)", CIF_CENTER | CIF_DRAGGABLE },
-  { (  6 * 8 ) + 8, "Sustain (ms)", CIF_CENTER | CIF_DRAGGABLE },
-  { (  6 * 8 ) + 8, "Release (ms)", CIF_CENTER | CIF_DRAGGABLE },
+  { ( 20 * 8 ) + 8, "Instrument Name", CIF_CENTER | CIF_DRAGGABLE },
+  { (  6 * 8 ) + 8, "ms Attack", CIF_CENTER | CIF_DRAGGABLE },
+  { (  6 * 8 ) + 8, "ms Decay", CIF_CENTER | CIF_DRAGGABLE },
+  { (  6 * 8 ) + 8, "cB Sustain", CIF_CENTER | CIF_DRAGGABLE },
+  { (  6 * 8 ) + 8, "ms Release", CIF_CENTER | CIF_DRAGGABLE },
   { (  3 * 8 ) + 8, "SN>", CIF_CENTER },
   { (  3 * 8 ) + 8, "<SN", CIF_CENTER },
   { (  5 * 8 ) + 8, "S#", CIF_CENTER },
-  { ( 10 * 8 ) + 8, "Sample Name", CIF_CENTER | CIF_DRAGGABLE },
+  { ( 20 * 8 ) + 8, "Sample Name", CIF_CENTER | CIF_DRAGGABLE },
   { -1, (STRPTR)~0, -1 }
 };
 
@@ -73,10 +73,10 @@ static const struct ColumnInfo amiSfColumns[] = {
   { (  3 * 8 ) + 8, "N>", CIF_CENTER },
   { (  3 * 8 ) + 8, "<N", CIF_CENTER },
   { (  5 * 8 ) + 8, "N#", CIF_CENTER },
-  { (  6 * 8 ) + 8, "Attack (ms)", CIF_CENTER | CIF_DRAGGABLE },
-  { (  6 * 8 ) + 8, "Decay (ms)", CIF_CENTER | CIF_DRAGGABLE },
-  { (  6 * 8 ) + 8, "Sustain (ms)", CIF_CENTER | CIF_DRAGGABLE },
-  { (  6 * 8 ) + 8, "Release (ms)", CIF_CENTER | CIF_DRAGGABLE },
+  { (  6 * 8 ) + 8, "ms Attack", CIF_CENTER | CIF_DRAGGABLE },
+  { (  6 * 8 ) + 8, "ms Decay", CIF_CENTER | CIF_DRAGGABLE },
+  { (  6 * 8 ) + 8, "cb Sustain", CIF_CENTER | CIF_DRAGGABLE },
+  { (  6 * 8 ) + 8, "ms Release", CIF_CENTER | CIF_DRAGGABLE },
   { (  5 * 8 ) + 8, "S#", CIF_CENTER },
   { -1, (STRPTR)~0, -1 }
 };
@@ -519,13 +519,22 @@ static struct Node * CreateSf2ListBrowserNode( UWORD bank,
   data->minNote = instrumentMinNote;
   data->maxNote = instrumentMaxNote;
   data->noteIndex = instrumentNumber;
-  data->attack = attack;
-  data->decay = decay;
+  data->attack = GetMillisFromTimecents( attack );
+  data->decay = GetMillisFromTimecents( decay );
   data->sustain = sustain;
-  data->release = release;
+  data->release = GetMillisFromTimecents( release );
   data->minSample = sampleMinNote;
   data->maxSample = sampleMaxNote;
   data->sampleIndex = sampleNumber;
+
+  LOG_D(( "V: Creating label b:%ld p:%ld >n:%ld <=n:%ld n#:%ld "
+          "a:%ld->%ld d:%ld-%ld "
+          "s:%ld r:%ld->%ld "
+          ">s:%ld <=s:%ld s#:%ld\n",
+          bank, preset, instrumentMinNote, instrumentMaxNote, instrumentNumber,
+          attack, data->attack, decay, data->decay,
+          sustain, release, data->release,
+          sampleMinNote, sampleMaxNote, sampleNumber ));
 
   return AllocListBrowserNode( columns,
                                LBNA_UserData, data,
