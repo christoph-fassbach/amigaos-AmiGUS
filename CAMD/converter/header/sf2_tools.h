@@ -43,5 +43,10 @@ LONG GetSF2SampleSize( struct SF2_Sample * sample );
 APTR GetSF2SampleData( struct SF2 * sf2,
                        struct SF2_Sample * sample,
                        LONG memorySize );
-
+VOID GetSF2ADSRs( struct SF2_Args * presetArgs,
+                  struct SF2_Args * instrumentArgs,
+                  WORD * attack,
+                  WORD * decay,
+                  WORD * sustain,
+                  WORD * release );
 #endif /* SF2_TOOLS_H */

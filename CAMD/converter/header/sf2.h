@@ -122,6 +122,7 @@ struct SF2_ArgValues {
   LONG sf2v_NextNumber; // -1 means ignore me for ever!
   UBYTE sf2v_LowNote;
   UBYTE sf2v_HighNote;
+  UWORD sf2v_Padding0; //
   WORD sf2v_Attack;    // in 1200*ld(seconds)
   WORD sf2v_Decay;     // in 1200*ld(seconds)
   WORD sf2v_Sustain;   // in centibels - 1000 means full

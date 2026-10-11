@@ -25,6 +25,7 @@
 
 #include "converter.h"
 #include "debug.h"
+#include "sf2_tools.h"
 #include "support.h"
 
 struct SfListNodeData {
@@ -43,7 +44,6 @@ struct SfListNodeData {
   LONG sampleIndex;
 };
 
-
 static const struct ColumnInfo sf2Columns[] = {
 // chars * 8   + 8 margin left / right
   { (  3 * 8 ) + 8, "B#", CIF_CENTER },
@@ -54,10 +54,10 @@ static const struct ColumnInfo sf2Columns[] = {
   { (  3 * 8 ) + 8, "<IN", CIF_CENTER },
   { (  5 * 8 ) + 8, "I#", CIF_CENTER },
   { ( 12 * 8 ) + 8, "Instrument Name", CIF_CENTER | CIF_DRAGGABLE },
-  { (  1 * 8 ) + 8, "Attack (ms)", CIF_CENTER | CIF_DRAGGABLE },
-  { (  1 * 8 ) + 8, "Decay (ms)", CIF_CENTER | CIF_DRAGGABLE },
-  { (  1 * 8 ) + 8, "Sustain (ms)", CIF_CENTER | CIF_DRAGGABLE },
-  { (  1 * 8 ) + 8, "Release (ms)", CIF_CENTER | CIF_DRAGGABLE },
+  { (  6 * 8 ) + 8, "Attack (ms)", CIF_CENTER | CIF_DRAGGABLE },
+  { (  6 * 8 ) + 8, "Decay (ms)", CIF_CENTER | CIF_DRAGGABLE },
+  { (  6 * 8 ) + 8, "Sustain (ms)", CIF_CENTER | CIF_DRAGGABLE },
+  { (  6 * 8 ) + 8, "Release (ms)", CIF_CENTER | CIF_DRAGGABLE },
   { (  3 * 8 ) + 8, "SN>", CIF_CENTER },
   { (  3 * 8 ) + 8, "<SN", CIF_CENTER },
   { (  5 * 8 ) + 8, "S#", CIF_CENTER },
@@ -501,6 +501,10 @@ static struct Node * CreateSf2ListBrowserNode( UWORD bank,
                                                UBYTE instrumentMaxNote,
                                                UWORD instrumentNumber,
                                                CONST_STRPTR instrumentName,
+                                               WORD attack,
+                                               WORD decay,
+                                               WORD sustain,
+                                               WORD release,
                                                UBYTE sampleMinNote,
                                                UBYTE sampleMaxNote,
                                                UWORD sampleNumber,
@@ -515,10 +519,10 @@ static struct Node * CreateSf2ListBrowserNode( UWORD bank,
   data->minNote = instrumentMinNote;
   data->maxNote = instrumentMaxNote;
   data->noteIndex = instrumentNumber;
-  data->attack = -1;
-  data->decay = -1;
-  data->sustain = -1;
-  data->release = -1;
+  data->attack = attack;
+  data->decay = decay;
+  data->sustain = sustain;
+  data->release = release;
   data->minSample = sampleMinNote;
   data->maxSample = sampleMaxNote;
   data->sampleIndex = sampleNumber;
@@ -817,12 +821,15 @@ BOOL CreateSf2ListLabels(
           CONST_STRPTR instrumentName = instrument->sf2i_Common.sf2c_Name;
           CONST_STRPTR sampleName = sample->sf2s_Name;
 
+          WORD attack;
+          WORD decay;
+          WORD sustain;
+          WORD release;
+
           struct Node * label;
 
-          LOG_V(( "V: Creating label %ld %ld %s %s %ld %s %ld %s\n",
-                  bank, presetNumber, presetName, gmName,
-                  instrumentNumber, instrumentName,
-                  sampleNumber, sampleName ));
+          GetSF2ADSRs( argsP, argsI, &attack, &decay, &sustain, &release );
+
           label = CreateSf2ListBrowserNode( bank,
                                             presetNumber,
                                             gmName,
@@ -831,6 +838,10 @@ BOOL CreateSf2ListLabels(
                                             instrumentMax,
                                             instrumentNumber,
                                             instrumentName,
+                                            attack,
+                                            decay,
+                                            sustain,
+                                            release,
                                             sampleMin,
                                             sampleMax,
                                             sampleNumber,

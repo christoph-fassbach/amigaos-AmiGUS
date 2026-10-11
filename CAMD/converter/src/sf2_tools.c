@@ -481,3 +481,37 @@ APTR GetSF2SampleData( struct SF2 * sf2,
 
   return samples;
 }
+
+VOID GetSF2ADSRs( struct SF2_Args * presetArgs,
+                  struct SF2_Args * instrumentArgs,
+                  WORD * attack,
+                  WORD * decay,
+                  WORD * sustain,
+                  WORD * release ) {
+
+  const WORD attackModifier = presetArgs->sf2a_Values.sf2v_Attack;
+  const WORD decayModifier = presetArgs->sf2a_Values.sf2v_Decay;
+  const WORD sustainModifier = presetArgs->sf2a_Values.sf2v_Sustain;
+  const WORD releaseModifier = presetArgs->sf2a_Values.sf2v_Release;
+
+  *attack = instrumentArgs->sf2a_Values.sf2v_Attack;
+  *decay = instrumentArgs->sf2a_Values.sf2v_Decay;
+  *sustain = instrumentArgs->sf2a_Values.sf2v_Sustain;
+  *release = instrumentArgs->sf2a_Values.sf2v_Release;
+  if ( PRESET_DEFAULT_ATTACK_VALUE != attackModifier ) {
+
+    *attack += attackModifier;
+  }
+  if ( PRESET_DEFAULT_DECAY_VALUE != decayModifier ) {
+
+    *decay += decayModifier;
+  }
+  if ( PRESET_DEFAULT_SUSTAIN_VALUE != sustainModifier ) {
+
+    *sustain += sustainModifier;
+  }
+  if ( PRESET_DEFAULT_RELEASE_VALUE != releaseModifier ) {
+
+    *release += releaseModifier;
+  }
+}
