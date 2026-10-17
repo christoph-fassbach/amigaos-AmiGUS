@@ -33,16 +33,59 @@
 #include "amigus_private.h"
 #include "errors.h"
 
-#define HAGEN_INTC0			    0x00
-#define HAGEN_INTE0			    0x08
+#define SASC_MAXIMUM_DEFINE_LENGTH_IS_32 12345678
 
-#define HAGEN_TIMER_CTRL    0xf0
-#define HAGEN_TIMER_RELOADH	0xf2
-#define HAGEN_TIMER_RELOADL	0xf4
-#define HAGEN_TIMER_READH	  0xf6
-#define HAGEN_TIMER_READL	  0xf8
+/*
+ * AmiGUS interrupt registers:
+#define	AMIGUS_CODEC_INT_CONTROL         0x00
+#define	AMIGUS_CODEC_INT_ENABLE          0x02
 
-#define HAGEN_TIMER_TIMEBASE 24576000
+#define AMIGUS_PCM_INT_CONTROL           0x00
+#define AMIGUS_PCM_INT_ENABLE            0x02
+
+#define AMIGUS_WT_INT_CONTROL_0          0x00
+#define AMIGUS_WT_INT_ENABLE_0           0x08
+ * AmiGUS interrupt flags:
+#define AMIGUS_CODEC_INT_F_TIMER         0x4000
+#define AMIGUS_PCM_INT_F_TIMER           0x4000
+#define AMIGUS_WT_INT_F_TIMER            0x4000
+ * results in:
+ */
+#define AMIGUS_INT_CONTROL               0x00
+#define	AMIGUS_CODEC_PCM_INT_ENABLE      0x02
+#define AMIGUS_WT_INT_ENABLE_0           0x08
+
+#define AMIGUS_INT_F_TIMER               0x4000
+
+#define AMIGUS_INT_F_SET                 0x8000
+#define AMIGUS_INT_F_CLEAR               0x0000
+
+/*
+ * Because all three AmiGUS parts' timers work the same,
+ * registers:
+#define AMIGUS_CODEC_TIMER_CONTROL       0xf0
+#define AMIGUS_CODEC_TIMER_RELOAD        0xf2
+
+#define AMIGUS_PCM_TIMER_CONTROL         0xf0
+#define AMIGUS_PCM_TIMER_RELOAD          0xf2
+
+#define AMIGUS_WT_TIMER_CONTROL          0xf0
+#define AMIGUS_WT_TIMER_RELOAD           0xf2
+ * flags:
+#define AMIGUS_TIMER_START               0x8000 // to be used with once or confinous
+#define AMIGUS_TIMER_STOP                0x0000
+#define AMIGUS_TIMER_ONCE                0x0001
+#define AMIGUS_TIMER_CONTINOUS           0x0000
+ * we just use:
+ */
+#define AMIGUS_TIMER_CONTROL             0xf0
+#define AMIGUS_TIMER_RELOAD              0xf2
+
+#define AMIGUS_TIMER_CLOCK               24576000  /* Hz = 1/s = quarz clock */
+
+#define AMIGUS_TIMER_START_CONTINOUS     0x8000
+#define AMIGUS_TIMER_START_ONCE          0x8001
+#define AMIGUS_TIMER_STOP                0x0000
 
 struct AmiGUS_Base * AmiGUS_Base;
 ULONG interruptCounter;
@@ -79,12 +122,12 @@ LONG __ASM__ countingIntHandler( __REG__( a0, APTR cardbase )) {
 
   // interruptCounter = ( ULONG ) cardbase;
 
-  UWORD status = ReadReg16( cardbase, HAGEN_INTC0 );
-  if ( 0x4000 & status ) {
+  UWORD status = ReadReg16( cardbase, AMIGUS_INT_CONTROL );
+  if ( AMIGUS_INT_F_TIMER & status ) {
 
     WriteReg16( cardbase,
-                HAGEN_INTC0,
-                0x4000 );
+                AMIGUS_INT_CONTROL,
+                AMIGUS_INT_F_CLEAR | AMIGUS_INT_F_TIMER );
     ++interruptCounter;
     return 1;
   }
@@ -95,44 +138,101 @@ LONG __ASM__ countingIntHandler( __REG__( a0, APTR cardbase )) {
  * Actual test functions
  *****************************************************************************/
 
-BOOL testTestInterrupt( struct AmiGUS * card,
-                        LONG which, 
-                        APTR base,
-                        APTR owner ) {
+BOOL testContinousTimerInterrupt( struct AmiGUS * card,
+                                  LONG which, 
+                                  APTR base,
+                                  APTR owner,
+                                  const ULONG expect ) {
 
-  ULONG returnValue;
+  ULONG installed;
 
   interruptCounter = 0;
 
   printf( "Using card 0x%08lx part 0x%04lx base 0x%08lx for owner 0x%08lx\n",
           card, which, base, owner );
-  printf( "Here is 0x%08lx, INT is 0x%08lx\n",
-          &( testTestInterrupt ), &( countingIntHandler ));
 
-  returnValue = AmiGUS_InstallInterrupt( card,
+  installed = AmiGUS_InstallInterrupt( card,
                                          which,
                                          owner,
                                          &( countingIntHandler ),
                                          base );
-  if ( AmiGUS_NoError != returnValue ) {
+  if ( AmiGUS_NoError != installed ) {
 
     return TRUE;
   }
 
-  WriteReg16( base, HAGEN_TIMER_CTRL,    0x0000 );
-  WriteReg32( base, HAGEN_TIMER_RELOADH, HAGEN_TIMER_TIMEBASE / 50 );
-  WriteReg16( base, HAGEN_TIMER_CTRL,    0x8000 );
+  // Deactivate all interrupts for this card
+  if ( AMIGUS_FLAG_WAVETABLE & which ) {
+    WriteReg16( base,
+                AMIGUS_WT_INT_ENABLE_0,
+                AMIGUS_INT_F_CLEAR | AMIGUS_INT_F_TIMER | 0x3FFF);
+  } else {
+    WriteReg16( base,
+                AMIGUS_CODEC_PCM_INT_ENABLE,
+                AMIGUS_INT_F_CLEAR | AMIGUS_INT_F_TIMER | 0x3FFF);
+  }
+  // Stop the timer
+  WriteReg16( base,
+              AMIGUS_TIMER_CONTROL,
+              AMIGUS_TIMER_STOP );
+  // Clear left over timer interrupt status flags
+  WriteReg16( base,
+              AMIGUS_INT_CONTROL,
+              AMIGUS_INT_F_CLEAR | AMIGUS_INT_F_TIMER );
+  // Continoues mode - set reload, then start timer
+  WriteReg32( base,
+              AMIGUS_TIMER_RELOAD,
+              AMIGUS_TIMER_CLOCK / expect );
+  WriteReg16( base,
+              AMIGUS_TIMER_CONTROL,
+              AMIGUS_TIMER_START_CONTINOUS );
+  // Enable interrupt for timer again
+  if ( AMIGUS_FLAG_WAVETABLE & which ) {
+    WriteReg16( base,
+                AMIGUS_WT_INT_ENABLE_0,
+                AMIGUS_INT_F_SET | AMIGUS_INT_F_TIMER );
+  } else {
+    WriteReg16( base,
+                AMIGUS_CODEC_PCM_INT_ENABLE,
+                AMIGUS_INT_F_SET | AMIGUS_INT_F_TIMER );
+  }
+
   Delay( 50 ); // wait 1s
-  WriteReg16( base, HAGEN_TIMER_CTRL,    0x0000 );
-  WriteReg16( base, HAGEN_INTE0,         0x4000 );
-  WriteReg16( base, HAGEN_INTC0,         0x4000 );
+
+  // Stop the timer
+  WriteReg16( base,
+              AMIGUS_TIMER_CONTROL,
+              AMIGUS_TIMER_STOP );
+  // Deactivate timer interrupt for this card
+  if ( AMIGUS_FLAG_WAVETABLE & which ) {
+    WriteReg16( base,
+                AMIGUS_WT_INT_ENABLE_0,
+                AMIGUS_INT_F_CLEAR | AMIGUS_INT_F_TIMER );
+  } else {
+    WriteReg16( base,
+                AMIGUS_CODEC_PCM_INT_ENABLE,
+                AMIGUS_INT_F_CLEAR | AMIGUS_INT_F_TIMER );
+  }
+  // Clear left over timer interrupt status flags
+  WriteReg16( base,
+              AMIGUS_INT_CONTROL,
+              AMIGUS_INT_F_CLEAR | AMIGUS_INT_F_TIMER );
 
   AmiGUS_RemoveInterrupt( card,
                           which,
                           owner );
 
-  printf( "Interrupt was called %ld times.\n", interruptCounter );
-  return FALSE;
+  printf( "Interrupt was called %ld times out of expected %ld - ",
+          interruptCounter, expect );
+
+  if ((( expect - ( expect / 100 )) <= interruptCounter ) &&
+    (( expect + ( expect / 100 )) >= interruptCounter )) {
+
+    printf( "OK\n" );
+    return FALSE;
+  }
+  printf( "Failed!\n" );
+  return TRUE;
 }
 
 /******************************************************************************
@@ -176,7 +276,21 @@ int main(int argc, char const *argv[]) {
     return 20;
   }
 
-  failed |= testTestInterrupt( card, AMIGUS_FLAG_WAVETABLE, card->agus_WavetableBase, owner );
+  failed |= testContinousTimerInterrupt( card,
+                                         AMIGUS_FLAG_CODEC,
+                                         card->agus_CodecBase,
+                                         owner,
+                                         100 );
+  failed |= testContinousTimerInterrupt( card,
+                                         AMIGUS_FLAG_PCM,
+                                         card->agus_PcmBase,
+                                         owner,
+                                         1000 );
+  failed |= testContinousTimerInterrupt( card,
+                                         AMIGUS_FLAG_WAVETABLE,
+                                         card->agus_WavetableBase,
+                                         owner,
+                                         10000 );
 
   AmiGUS_FreeCard( card,
                    AMIGUS_FLAG_PCM 
