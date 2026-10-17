@@ -25,9 +25,11 @@
 #undef NULL
 #endif
 
-#include <proto/exec.h>
-#include <proto/dos.h>
 #include <proto/amigus.h>
+#include <proto/dos.h>
+#include <proto/exec.h>
+#include <proto/timer.h>
+
 #include <stddef.h>
 
 #include "amigus_private.h"
@@ -88,6 +90,7 @@
 #define AMIGUS_TIMER_STOP                0x0000
 
 struct AmiGUS_Base * AmiGUS_Base;
+struct TimerBase * TimerBase;
 ULONG interruptCounter;
 
 /******************************************************************************
@@ -152,10 +155,10 @@ BOOL testContinousTimerInterrupt( struct AmiGUS * card,
           card, which, base, owner );
 
   installed = AmiGUS_InstallInterrupt( card,
-                                         which,
-                                         owner,
-                                         &( countingIntHandler ),
-                                         base );
+                                       which,
+                                       owner,
+                                       &( countingIntHandler ),
+                                       base );
   if ( AmiGUS_NoError != installed ) {
 
     return TRUE;
@@ -235,6 +238,227 @@ BOOL testContinousTimerInterrupt( struct AmiGUS * card,
   return TRUE;
 }
 
+BOOL testOneShotTimerInterrupt( struct AmiGUS * card,
+                                LONG which, 
+                                APTR base,
+                                APTR owner,
+                                ULONG interval ) {
+
+  ULONG installed;
+
+  interruptCounter = 0;
+
+  printf( "Using card 0x%08lx part 0x%04lx base 0x%08lx for owner 0x%08lx\n",
+          card, which, base, owner );
+
+  installed = AmiGUS_InstallInterrupt( card,
+                                       which,
+                                       owner,
+                                       &( countingIntHandler ),
+                                       base );
+  if ( AmiGUS_NoError != installed ) {
+
+    return TRUE;
+  }
+
+  // Deactivate all interrupts for this card
+  if ( AMIGUS_FLAG_WAVETABLE & which ) {
+    WriteReg16( base,
+                AMIGUS_WT_INT_ENABLE_0,
+                AMIGUS_INT_F_CLEAR | AMIGUS_INT_F_TIMER | 0x3FFF);
+  } else {
+    WriteReg16( base,
+                AMIGUS_CODEC_PCM_INT_ENABLE,
+                AMIGUS_INT_F_CLEAR | AMIGUS_INT_F_TIMER | 0x3FFF);
+  }
+  // Stop the timer
+  WriteReg16( base,
+              AMIGUS_TIMER_CONTROL,
+              AMIGUS_TIMER_STOP );
+  // Clear left over timer interrupt status flags
+  WriteReg16( base,
+              AMIGUS_INT_CONTROL,
+              AMIGUS_INT_F_CLEAR | AMIGUS_INT_F_TIMER );
+  // One shot mode - start timer, then set reload
+  WriteReg16( base,
+              AMIGUS_TIMER_CONTROL,
+              AMIGUS_TIMER_START_ONCE );
+  WriteReg32( base,
+              AMIGUS_TIMER_RELOAD,
+              AMIGUS_TIMER_CLOCK / interval );
+  // Enable interrupt for timer again
+  if ( AMIGUS_FLAG_WAVETABLE & which ) {
+    WriteReg16( base,
+                AMIGUS_WT_INT_ENABLE_0,
+                AMIGUS_INT_F_SET | AMIGUS_INT_F_TIMER );
+  } else {
+    WriteReg16( base,
+                AMIGUS_CODEC_PCM_INT_ENABLE,
+                AMIGUS_INT_F_SET | AMIGUS_INT_F_TIMER );
+  }
+
+  Delay( 50 ); // wait 1s
+
+  // Stop the timer
+  WriteReg16( base,
+              AMIGUS_TIMER_CONTROL,
+              AMIGUS_TIMER_STOP );
+  // Deactivate timer interrupt for this card
+  if ( AMIGUS_FLAG_WAVETABLE & which ) {
+    WriteReg16( base,
+                AMIGUS_WT_INT_ENABLE_0,
+                AMIGUS_INT_F_CLEAR | AMIGUS_INT_F_TIMER );
+  } else {
+    WriteReg16( base,
+                AMIGUS_CODEC_PCM_INT_ENABLE,
+                AMIGUS_INT_F_CLEAR | AMIGUS_INT_F_TIMER );
+  }
+  // Clear left over timer interrupt status flags
+  WriteReg16( base,
+              AMIGUS_INT_CONTROL,
+              AMIGUS_INT_F_CLEAR | AMIGUS_INT_F_TIMER );
+
+  AmiGUS_RemoveInterrupt( card,
+                          which,
+                          owner );
+
+  printf( "Interrupt was called %ld times out of expected %ld - ",
+          interruptCounter, 1 );
+
+  if ( 1 == interruptCounter ) {
+
+    printf( "OK\n" );
+    return FALSE;
+  }
+  printf( "Failed!\n" );
+  return TRUE;
+}
+
+VOID SleepCodecTicks( APTR amiGUS, ULONG ticks ) {
+
+  LONG rounds = 0;
+
+  //printf( "V: Sleeping for %ld ticks\n", ticks );
+  WriteReg16( amiGUS, 
+              AMIGUS_TIMER_CONTROL,
+              AMIGUS_TIMER_STOP );
+#if 0
+  WriteReg16( amiGUS,
+              AMIGUS_WT_INT_ENABLE_0,
+              AMIGUS_INT_F_CLEAR | AMIGUS_INT_F_TIMER );
+  WriteReg16( amiGUS,
+              AMIGUS_CODEC_PCM_INT_ENABLE,
+              AMIGUS_INT_F_CLEAR | AMIGUS_INT_F_TIMER );
+#endif
+  WriteReg16( amiGUS,
+              AMIGUS_INT_CONTROL,
+              AMIGUS_INT_F_CLEAR | AMIGUS_INT_F_TIMER );
+  WriteReg16( amiGUS, 
+              AMIGUS_TIMER_CONTROL,
+              AMIGUS_TIMER_START_ONCE );
+  WriteReg32( amiGUS, AMIGUS_TIMER_RELOAD, ticks );
+  while ( !( AMIGUS_INT_F_TIMER 
+          & ReadReg16( amiGUS, AMIGUS_INT_CONTROL ))) {
+
+    ++rounds;
+  }
+  //printf( "V: Woke up after %ld rounds.\n", rounds );
+}
+
+BOOL testShortSleep( APTR base ) {
+
+  BOOL failed = FALSE;
+
+  // Create a message port for the device communication
+  struct MsgPort * timerPort = CreateMsgPort();
+  if ( timerPort ) {
+
+    // Create the I/O Request structure
+    struct TimeRequest * timerRequest =
+      ( struct TimeRequest * ) CreateIORequest( timerPort,
+                                                sizeof( struct TimeRequest ));
+    if ( timerRequest ) {
+
+      // Open timer.device 
+      BYTE openError = OpenDevice( "timer.device",
+                                   UNIT_MICROHZ,
+                                   ( struct IORequest * ) timerRequest,
+                                   0 );
+      if ( !openError ) { 
+        struct EClockVal start;
+        struct EClockVal end;
+        ULONG ticsPerSecond;
+        ULONG elapsedTicks;
+        double millis;
+        ULONG roundedMillis;
+
+        // Set up the library base pointer to call the function directly
+        TimerBase = ( struct TimerBase * ) timerRequest->tr_node.io_Device;
+
+        ticsPerSecond = ReadEClock( &( start ));
+
+        // Delay( 50 / 8 );
+        SleepCodecTicks( base, AMIGUS_TIMER_CLOCK >> 3);
+
+        ReadEClock( &( end ));
+
+        if ( end.ev_lo >= start.ev_lo ) {
+
+          elapsedTicks = end.ev_lo - start.ev_lo;
+
+        } else {
+
+          elapsedTicks = (0xFFFFFFFF - start.ev_lo) + end.ev_lo + 1;
+        }
+
+        millis = (( double ) elapsedTicks * 1000.0 ) / ( double ) ticsPerSecond;
+        roundedMillis = (( elapsedTicks * 1000 ) / ticsPerSecond );
+
+#if 0
+        printf( "E-Clock frequency: %uHz\n", ticsPerSecond);
+        printf( "Start: Hi=%u, Lo=%u\n", start.ev_hi, start.ev_lo );
+        printf( "End: Hi=%u, Lo=%u\n", end.ev_hi, end.ev_lo );
+#endif
+        printf( "Elapsed ticks: %u ticks or %fms (rounded %ldms) "
+                "for 1/8th second - ",
+                elapsedTicks, millis, roundedMillis );
+
+        if (( 120 > roundedMillis ) || ( 130 < roundedMillis )) {
+
+          printf( "Insufficient timer precision!\n" );
+          failed |= TRUE;
+          printf( "Failed!\n" );
+
+        } else {
+
+          printf( "OK\n" );
+        }
+        CloseDevice(( struct IORequest * ) timerRequest );
+
+      } else {
+    
+        printf( "Could not open Timer Device\n" );
+        failed |= TRUE;
+      }
+
+      DeleteIORequest(( struct IORequest * ) timerRequest );
+
+    } else {
+    
+      printf( "Could not create Timer Request\n" );
+      failed |= TRUE;
+    }
+
+    DeleteMsgPort( timerPort );
+
+  } else {
+
+    printf( "Could not create Message Port\n" );
+    failed |= TRUE;
+  }
+  return failed;
+}
+
 /******************************************************************************
  * Finally, main triggering all tests:
  *****************************************************************************/
@@ -275,7 +499,7 @@ int main(int argc, char const *argv[]) {
             owner, reserve );
     return 20;
   }
-
+#if 1
   failed |= testContinousTimerInterrupt( card,
                                          AMIGUS_FLAG_CODEC,
                                          card->agus_CodecBase,
@@ -291,7 +515,25 @@ int main(int argc, char const *argv[]) {
                                          card->agus_WavetableBase,
                                          owner,
                                          10000 );
-
+  failed |= testOneShotTimerInterrupt( card,
+                                       AMIGUS_FLAG_CODEC,
+                                       card->agus_CodecBase,
+                                       owner,
+                                       100 );
+  failed |= testOneShotTimerInterrupt( card,
+                                       AMIGUS_FLAG_PCM,
+                                       card->agus_PcmBase,
+                                       owner,
+                                       1000 );
+  failed |= testOneShotTimerInterrupt( card,
+                                       AMIGUS_FLAG_WAVETABLE,
+                                       card->agus_WavetableBase,
+                                       owner,
+                                       10000 );
+#endif
+  failed |= testShortSleep( card->agus_CodecBase );
+  failed |= testShortSleep( card->agus_PcmBase );
+  failed |= testShortSleep( card->agus_WavetableBase );
   AmiGUS_FreeCard( card,
                    AMIGUS_FLAG_PCM 
                    | AMIGUS_FLAG_WAVETABLE
