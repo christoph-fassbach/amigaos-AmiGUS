@@ -261,4 +261,13 @@ amigus_lib_check: $(BDIR)amigus_hardware-$(LIB_CPU)-$(LIB_LOG).o
 	-curl --connect-timeout 2 --netrc --upload-file target/$@       ftp://192.168.0.4/cf0/Expansion/AmiGUS/amigus_lib_check
 	-curl --connect-timeout 2 --netrc --upload-file target/$@       ftp://192.168.0.12/sda4/Expansion/AmiGUS/amigus_lib_check
 
+
+amigus_timer: $(BDIR)amigus_hardware-$(LIB_CPU)-$(LIB_LOG).o
+	$(CC) $(CFLAGS) support/$@.o support/$@.c
+	$(LD) $(LFLAGS) target/$@ $(LFLAGS1) $(LFLAGST1) \
+    support/$@.o                                   \
+    $(LFLAGST2)
+	-cp target/$@ ~/Documents/FS-UAE/Shared/Projekte/AmiGUS/
+	-curl --connect-timeout 2 --netrc --upload-file target/$@       ftp://192.168.0.4/cf0/Expansion/AmiGUS/amigus_timer
+
 ###############################################################################
