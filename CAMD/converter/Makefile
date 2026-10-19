@@ -165,10 +165,9 @@ else
                   OBJNAME
 
   CFLAGS        = RESETOPTIONS                                                 \
-                  MATH=IEEE PRECISION=MIXED                                    \
+                  CPU=68$(APP_CPU) MATH=IEEE PRECISION=MIXED                   \
                   PARMS=STACK DATA=FAR CODE=FAR                                \
-                  NOSTACKCHECK NOCHECKABORT NOICONS                            \
-                  STRINGMERGE UNSIGNEDCHAR CPU=68$(APP_CPU)                    \
+                  NOSTACKCHECK NOCHECKABORT NOICONS STRINGMERGE UNSIGNEDCHAR   \
                   OPTIMIZE OPTIMIZERGLOBAL OPTIMIZERINLINE OPTIMIZERINLOCAL    \
                   OPTIMIZERLOOP OPTIMIZERPEEPHOLE OPTIMIZERSCHEDULE            \
                   IDIR=$(CAMD_INCLUDE) IDIR=$(NDK_C_INCLUDE) IDIR=$(HDIR)      \
