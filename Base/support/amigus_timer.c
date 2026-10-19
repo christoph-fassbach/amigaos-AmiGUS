@@ -339,9 +339,6 @@ VOID SleepCodecTicks( APTR amiGUS, ULONG ticks ) {
   LONG rounds = 0;
 
   //printf( "V: Sleeping for %ld ticks\n", ticks );
-  WriteReg16( amiGUS, 
-              AMIGUS_TIMER_CONTROL,
-              AMIGUS_TIMER_STOP );
 #if 0
   WriteReg16( amiGUS,
               AMIGUS_WT_INT_ENABLE_0,
@@ -350,6 +347,10 @@ VOID SleepCodecTicks( APTR amiGUS, ULONG ticks ) {
               AMIGUS_CODEC_PCM_INT_ENABLE,
               AMIGUS_INT_F_CLEAR | AMIGUS_INT_F_TIMER );
 #endif
+  WriteReg16( amiGUS, 
+              AMIGUS_TIMER_CONTROL,
+              AMIGUS_TIMER_STOP );
+  WriteReg32( amiGUS, AMIGUS_TIMER_RELOAD, ticks ); 
   WriteReg16( amiGUS,
               AMIGUS_INT_CONTROL,
               AMIGUS_INT_F_CLEAR | AMIGUS_INT_F_TIMER );
@@ -500,6 +501,13 @@ int main(int argc, char const *argv[]) {
     return 20;
   }
 #if 1
+  // TODO: Deadlock in PCM test if ever running AFTER the interrupt tests below
+  failed |= testShortSleep( card->agus_CodecBase );
+  failed |= testShortSleep( card->agus_PcmBase );
+  failed |= testShortSleep( card->agus_WavetableBase );
+#endif
+#if 1
+  // TODO: find out why the below causes a deadlock in short sleep PCM
   failed |= testContinousTimerInterrupt( card,
                                          AMIGUS_FLAG_CODEC,
                                          card->agus_CodecBase,
@@ -509,12 +517,12 @@ int main(int argc, char const *argv[]) {
                                          AMIGUS_FLAG_PCM,
                                          card->agus_PcmBase,
                                          owner,
-                                         1000 );
+                                         300 );
   failed |= testContinousTimerInterrupt( card,
                                          AMIGUS_FLAG_WAVETABLE,
                                          card->agus_WavetableBase,
                                          owner,
-                                         10000 );
+                                         600 );
   failed |= testOneShotTimerInterrupt( card,
                                        AMIGUS_FLAG_CODEC,
                                        card->agus_CodecBase,
@@ -524,16 +532,14 @@ int main(int argc, char const *argv[]) {
                                        AMIGUS_FLAG_PCM,
                                        card->agus_PcmBase,
                                        owner,
-                                       1000 );
+                                       300 );
   failed |= testOneShotTimerInterrupt( card,
                                        AMIGUS_FLAG_WAVETABLE,
                                        card->agus_WavetableBase,
                                        owner,
-                                       10000 );
+                                       600 );
 #endif
-  failed |= testShortSleep( card->agus_CodecBase );
-  failed |= testShortSleep( card->agus_PcmBase );
-  failed |= testShortSleep( card->agus_WavetableBase );
+
   AmiGUS_FreeCard( card,
                    AMIGUS_FLAG_PCM 
                    | AMIGUS_FLAG_WAVETABLE
