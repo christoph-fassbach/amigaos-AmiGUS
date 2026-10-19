@@ -165,6 +165,7 @@ else
                   OBJNAME
 
   CFLAGS        = RESETOPTIONS                                                 \
+                  MATH=IEEE PRECISION=MIXED                                    \
                   PARMS=STACK DATA=FAR CODE=FAR                                \
                   NOSTACKCHECK NOCHECKABORT NOICONS                            \
                   STRINGMERGE UNSIGNEDCHAR CPU=68$(APP_CPU)                    \
@@ -181,8 +182,9 @@ else
   LFLAGS        = NOICONS STRIPDEBUG \
                   TO 
   LFLAGS1       = FROM LIB:c.o
-  LFLAGS2       = LIBRARY LIB:scnb.lib LIB:amiga.lib
+  LFLAGS2       = LIBRARY LIB:scmieee.lib LIB:scnb.lib LIB:amiga.lib
   LFLAGST2      = LIBRARY LIB:sc.lib LIB:amiga.lib
+  LFLAGST3      = LIBRARY LIB:scmieee.lib LIB:sc.lib LIB:amiga.lib
   CC            = $(RUNNER) sc
   AS            = $(RUNNER) sc
   LD            = $(RUNNER) slink
@@ -247,7 +249,7 @@ test_sf2_tools: FOLDERS $(APP_OBJS)
             $(BDIR)sf2_tools-$(APP_CPU)-$(APP_LOG).o \
             $(BDIR)support-$(APP_CPU)-$(APP_LOG).o \
             $(BDIR)debug-$(APP_CPU)-$(APP_LOG).o \
-            $(LFLAGST2)
+            $(LFLAGST3)
 	@echo " "
 	$(RUNNER) test/$@
 	-@$(RM) test/$@ test/$@.o $(RM_SUFFIX)
@@ -259,7 +261,7 @@ test_support: FOLDERS $(APP_OBJS)
             $(BDIR)sf2_tools-$(APP_CPU)-$(APP_LOG).o \
             $(BDIR)support-$(APP_CPU)-$(APP_LOG).o \
             $(BDIR)debug-$(APP_CPU)-$(APP_LOG).o \
-            $(LFLAGST2)
+            $(LFLAGST3)
 	@echo " "
 	$(RUNNER) test/$@
 	-@$(RM) test/$@ test/$@.o $(RM_SUFFIX)
