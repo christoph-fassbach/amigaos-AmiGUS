@@ -27,7 +27,7 @@
 #include "debug.h"
 #include "interrupt.h"
 
-INLINE VOID HandlePlayback( VOID ) {
+VOID HandlePlayback2( VOID ) {
 
   struct AmiGUSPcmPlayback * playback = &AmiGUS_AHI_Base->agb_Playback;
 
@@ -140,7 +140,7 @@ LONG __ASM__ HandleInterrupt( __REG__( a0, APTR data )) {
 
   if ( AMIGUS_AHI_F_PLAY_STARTED & AmiGUS_AHI_Base->agb_StateFlags ) {
 
-    HandlePlayback();
+    HandlePlayback2();
 
     if ( status & AMIGUS_PCM_INT_F_PLAY_FIFO_EMPTY ) {
 

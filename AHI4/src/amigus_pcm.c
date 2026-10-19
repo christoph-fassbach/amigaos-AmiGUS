@@ -25,6 +25,9 @@
 #include "debug.h"
 #include "errors.h"
 
+VOID HandlePlayback( VOID );
+VOID HandlePlayback2( VOID );
+
 VOID StartAmiGusPcmPlayback( VOID ) {
 
   ULONG i;
@@ -72,12 +75,18 @@ VOID StartAmiGusPcmPlayback( VOID ) {
             | AMIGUS_PCM_INT_F_PLAY_FIFO_WTRMK );
 
   // Now write twice the amount of data into FIFO to kick off playback
+  /*
   for ( i = prefillSize; 0 < i; --i ) {
 
     WriteReg32( amiGUS,
                 AMIGUS_PCM_PLAY_FIFO_WRITE,
                 0L );
   }
+  */
+  AmiGUS_AHI_Base->agb_StateFlags = 0xFD;
+  HandlePlayback();
+  HandlePlayback2();
+
   // Use correct sample settings, prefill is selected to match all
   WriteReg16( amiGUS,
               AMIGUS_PCM_PLAY_SAMPLE_FORMAT,
