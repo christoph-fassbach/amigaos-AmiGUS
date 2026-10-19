@@ -24,7 +24,6 @@
 
 #include <proto/exec.h>
 
-#include "amigus_hardware.h"
 #include "amigus_mhi.h"
 #include "interrupt.h"
 #include "support.h"
@@ -44,6 +43,28 @@ ULONG                    * WriteReg16queue   = NULL;
 ULONG                      WritePos16queue   = 0;
 ULONG                    * WriteReg32queue   = NULL;
 ULONG                      WritePos32queue   = 0;
+
+/* From amigus_hardware.h */
+
+#define AMIGUS_HARDWARE_H
+
+#define	AMIGUS_CODEC_INT_CONTROL         0x00
+#define	AMIGUS_CODEC_INT_ENABLE          0x02
+
+#define	AMIGUS_CODEC_FIFO_WRITE          0x0a
+#define	AMIGUS_CODEC_FIFO_USAGE          0x0e
+
+/* AmiGUS Codec Interrupt Flags */
+#define AMIGUS_CODEC_INT_F_FIFO_EMPTY    0x0001
+#define AMIGUS_CODEC_INT_F_FIFO_WATERMRK 0x0004
+
+#define AMIGUS_INT_F_CLEAR               0x0000
+
+/* FIFO size */
+#define AMIGUS_CODEC_PLAY_FIFO_BYTES        4096
+#define AMIGUS_CODEC_PLAY_FIFO_WORDS     2048
+
+/* From amigus_hardware.c */
 
 UWORD ReadReg16( APTR amiGUS, ULONG offset ) {
 
@@ -84,6 +105,10 @@ ULONG GetVS1063EndFill( APTR amiGUS ) {
   return 0xEEeeEEee;
 }
 
+/* From interrupt.c */
+
+#include "../src/interrupt.c"
+
 /******************************************************************************
  * Test functions:
  *****************************************************************************/
@@ -93,9 +118,9 @@ BOOL testAlignedPlayback( VOID ) {
   BOOL failed = FALSE;
   ULONG u;
   UWORD inBuffer16[] = {
-    AMIGUS_PCM_REC_FIFO_WORDS - 1 - ( 2 << 1 ),
-    AMIGUS_PCM_REC_FIFO_WORDS - 1 - ( 4 << 1 ),
-    AMIGUS_PCM_REC_FIFO_WORDS - 1 - ( 2 << 1 ),
+    AMIGUS_CODEC_PLAY_FIFO_WORDS - 1 - ( 2 << 1 ),
+    AMIGUS_CODEC_PLAY_FIFO_WORDS - 1 - ( 4 << 1 ),
+    AMIGUS_CODEC_PLAY_FIFO_WORDS - 1 - ( 2 << 1 ),
   };
   ULONG outBuffer32[ 10 ];
 
@@ -103,9 +128,7 @@ BOOL testAlignedPlayback( VOID ) {
   struct AmiGUS_MHI_Buffer mhiBufferB;
   ULONG bufferA[] = { 1, 2, 3, 4 };
   ULONG bufferB[] = { 5, 6, 7, 8 };
-  struct AmiGUS_MHI_Handle * handle =
-    ( struct AmiGUS_MHI_Handle * )
-      AmiGUS_MHI_Base->agb_Clients.mlh_Head;
+  struct AmiGUS_MHI_Handle handle;
 
   mhiBufferA.agmb_Buffer = ( ULONG * ) &bufferA;
   mhiBufferA.agmb_BufferIndex = 0;
@@ -117,12 +140,12 @@ BOOL testAlignedPlayback( VOID ) {
   mhiBufferB.agmb_BufferMax = 4;
   mhiBufferB.agmb_BufferExtraBytes = 0;
 
-  NEW_LIST( &handle->agch_Buffers );
-  AddTail( ( struct List * ) &handle->agch_Buffers, 
+  NEW_LIST( &handle.agch_Buffers );
+  AddTail( ( struct List * ) &handle.agch_Buffers, 
            ( struct Node * ) &mhiBufferA );
-  AddTail( ( struct List * ) &handle->agch_Buffers,
+  AddTail( ( struct List * ) &handle.agch_Buffers,
            ( struct Node * ) &mhiBufferB );
-  handle->agch_CurrentBuffer = &mhiBufferA;
+  handle.agch_CurrentBuffer = &mhiBufferA;
 
   ReadReg16queue = inBuffer16;
   ReadPos16queue = 0;
@@ -132,17 +155,17 @@ BOOL testAlignedPlayback( VOID ) {
   outBuffer32[ 9 ] = 0;
 
   printf("Call 1:\n");
-  FillCodecBuffer( handle );
+  FillCodecBuffer( &handle );
   printf("Call 2:\n");
-  FillCodecBuffer( handle );
+  FillCodecBuffer( &handle );
   printf("Call 3:\n");
-  FillCodecBuffer( handle );
+  FillCodecBuffer( &handle );
   printf("Calls done.\n");
 
   for ( u = 0 ; u <= 8 ; ++u ) {
 
     failed |= ( outBuffer32[ u ] != u );
-    // printf("u = %ld is %ld\n", u, failed);
+    printf("u = %ld is %ld\n", u, failed);
   }
   failed |= ( outBuffer32[ 9 ] != 0 );
   printf( "\nAligned Playback test %s\n\n", failed ? "failed" : "OK" );
@@ -155,9 +178,9 @@ BOOL testUnalignedPlayback( VOID ) {
   BOOL failed = FALSE;
   ULONG u;
   UWORD inBuffer16[] = {
-    AMIGUS_PCM_REC_FIFO_WORDS - 1 - ( 2 << 1 ),
-    AMIGUS_PCM_REC_FIFO_WORDS - 1 - ( 4 << 1 ),
-    AMIGUS_PCM_REC_FIFO_WORDS - 1 - ( 4 << 1 ),
+    AMIGUS_CODEC_PLAY_FIFO_WORDS - 1 - ( 2 << 1 ),
+    AMIGUS_CODEC_PLAY_FIFO_WORDS - 1 - ( 4 << 1 ),
+    AMIGUS_CODEC_PLAY_FIFO_WORDS - 1 - ( 4 << 1 ),
   };
   ULONG outBuffer32[ 11 ];
   ULONG expectedBuffer32[ 11 ] = {
@@ -173,9 +196,7 @@ BOOL testUnalignedPlayback( VOID ) {
   UBYTE bufferA[] = { 0, 1, 0, 2, 0, 3, 0, 4, 0, 5, 0, 6, 0, 7, 0, 8,
                       0x12, 0x34, 0x56, 0x78 };
   ULONG bufferB[] = { 5, 6, 7, 8 };
-  struct AmiGUS_MHI_Handle * handle =
-    ( struct AmiGUS_MHI_Handle * )
-      AmiGUS_MHI_Base->agb_Clients.mlh_Head;
+  struct AmiGUS_MHI_Handle handle;
 
   mhiBufferA.agmb_Buffer = ( ULONG * ) &bufferA;
   mhiBufferA.agmb_BufferIndex = 0;
@@ -187,12 +208,12 @@ BOOL testUnalignedPlayback( VOID ) {
   mhiBufferB.agmb_BufferMax = 4;
   mhiBufferB.agmb_BufferExtraBytes = 0;
 
-  NEW_LIST( &handle->agch_Buffers );
-  AddTail( ( struct List * ) &handle->agch_Buffers, 
+  NEW_LIST( &handle.agch_Buffers );
+  AddTail( ( struct List * ) &handle.agch_Buffers, 
            ( struct Node * ) &mhiBufferA );
-  AddTail( ( struct List * ) &handle->agch_Buffers,
+  AddTail( ( struct List * ) &handle.agch_Buffers,
            ( struct Node * ) &mhiBufferB );
-  handle->agch_CurrentBuffer = &mhiBufferA;
+  handle.agch_CurrentBuffer = &mhiBufferA;
 
   ReadReg16queue = inBuffer16;
   ReadPos16queue = 0;
@@ -202,11 +223,11 @@ BOOL testUnalignedPlayback( VOID ) {
   outBuffer32[ 10 ] = 0;
 
   printf("Call 1:\n");
-  FillCodecBuffer( handle );
+  FillCodecBuffer( &handle );
   printf("Call 2:\n");
-  FillCodecBuffer( handle );
+  FillCodecBuffer( &handle );
   printf("Call 3:\n");
-  FillCodecBuffer( handle );
+  FillCodecBuffer( &handle );
   printf("Calls done.\n");
 
   for ( u = 0 ; u < 11 ; ++u ) {
@@ -231,13 +252,8 @@ int main(int argc, char const *argv[]) {
 
   BOOL failed = FALSE;
 
-  struct AmiGUS_MHI_Handle * handle = 
-    malloc( sizeof( struct AmiGUS_MHI_Handle ));
   AmiGUS_MHI_Base = malloc( sizeof( struct AmiGUS_MHI ));
   memset( AmiGUS_MHI_Base, 0, sizeof( struct AmiGUS_MHI ));
-  NEW_LIST( &AmiGUS_MHI_Base->agb_Clients );
-  AddTail(( struct List * ) &AmiGUS_MHI_Base->agb_Clients,
-          ( struct Node * ) handle );
 
   if ( !AmiGUS_MHI_Base ) {
 
@@ -248,7 +264,6 @@ int main(int argc, char const *argv[]) {
   failed |= testAlignedPlayback();
   failed |= testUnalignedPlayback();
 
-  free( handle );
   free( AmiGUS_MHI_Base );
 
   return ( failed ) ? 15 : 0;
