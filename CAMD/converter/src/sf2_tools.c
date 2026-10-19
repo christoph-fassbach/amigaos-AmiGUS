@@ -28,6 +28,43 @@
 #include "debug.h"
 #include "support.h"
 
+/*******************************************************************************
+ * Private functions.
+ ******************************************************************************/
+
+/**
+ * Converts a "timecents" value storing AD_R time values in SF2 format
+ * to seconds.
+ *
+ * @param timecents Time value for ADSR envelopes in SF2 format.
+ *
+ * @return Time value to seconds.
+ */
+static DOUBLE GetSecondsFromTimecents( WORD timecents ) {
+
+  // 1200 * ln(seconds)/ln(2) = timecents
+  // => seconds = e^( timecents * ( ln( 2 ) / 1200 ) )
+  //              | |     |       | |   | |    |   | |
+  //              | |     |       | |   a |    |   | |
+  //              | |     |       | +--b--+    c   | |
+  //              | |     e       +---------d------+ |
+  //              | +-----------f--------------------+
+  //              +-------------g--------------------+
+  DOUBLE a = IEEEDPFlt( 2 );
+  DOUBLE b = IEEEDPLog( a );
+  DOUBLE c = IEEEDPFlt( 1200 );
+  DOUBLE d = IEEEDPDiv( b, c );
+  DOUBLE e = IEEEDPFlt( timecents );
+  DOUBLE f = IEEEDPMul( e, d );
+  DOUBLE seconds = IEEEDPExp( f );
+
+  return seconds;
+}
+
+/*******************************************************************************
+ * Public functions.
+ ******************************************************************************/
+
 LONG GetTargetSampleRate( LONG sourceNote, LONG sourceRate, LONG targetNote ) {
 
   const LONG maxRate = 192000;      // TODO: move to AmiGUS HW constants?
@@ -38,23 +75,23 @@ LONG GetTargetSampleRate( LONG sourceNote, LONG sourceRate, LONG targetNote ) {
   // targetRate = sourceRate * e
   // targetRate = f          * e
   // g          = f          * e
-  double a = IEEEDPFlt( targetNote - sourceNote );
-  double b = IEEEDPFlt( 12 );
-  double c = IEEEDPDiv( a, b );
-  double d = IEEEDPFlt( 2 );
-  double e = IEEEDPPow( c, d );
-  double f = IEEEDPFlt( sourceRate );
-  double g = IEEEDPMul( f, e );
+  DOUBLE a = IEEEDPFlt( targetNote - sourceNote );
+  DOUBLE b = IEEEDPFlt( 12 );
+  DOUBLE c = IEEEDPDiv( a, b );
+  DOUBLE d = IEEEDPFlt( 2 );
+  DOUBLE e = IEEEDPPow( c, d );
+  DOUBLE f = IEEEDPFlt( sourceRate );
+  DOUBLE g = IEEEDPMul( f, e );
   // LONG targetRate = IEEEDPFix( g );
   // targetRegisterValue = ( sampleRate / maxRate ) * maxValue
   // targetRegisterValue = ( g          /       h ) * maxValue
   // targetRegisterValue =              i           * maxValue
   // targetRegisterValue =              i           * j
   // k                   =              i           * j
-  double h = IEEEDPFlt( maxRate );
-  double i = IEEEDPDiv( g, h );
-  double j = IEEEDPFlt( maxValue );
-  double k = IEEEDPMul( i, j );
+  DOUBLE h = IEEEDPFlt( maxRate );
+  DOUBLE i = IEEEDPDiv( g, h );
+  DOUBLE j = IEEEDPFlt( maxValue );
+  DOUBLE k = IEEEDPMul( i, j );
   LONG targetRegisterValue = IEEEDPFix( k );
 
   LOG_V(( "V: a=%ld b=%ld c=%ld d=%ld e=%ld f=%ld "
@@ -81,31 +118,20 @@ LONG GetTargetSampleRate( LONG sourceNote, LONG sourceRate, LONG targetNote ) {
 
 UWORD GetTargetADR( LONG timecents ) {
 
-  // 1200 * ln(seconds)/ln(2) = timecents
-  // => seconds = e^( timecents * ( ln( 2 ) / 1200 ) )
-  //              | |     |       | |   | |    |   | |
-  //              | |     |       | |   a |    |   | |
-  //              | |     |       | +--b--+    c   | |
-  //              | |     e       +---------d------+ |
-  //              | +-----------f--------------------+
-  //              +-------------g--------------------+
-  double a = IEEEDPFlt( 2 );
-  double b = IEEEDPLog( a );
-  double c = IEEEDPFlt( 1200 );
-  double d = IEEEDPDiv( b, c );
-  double e = IEEEDPFlt( timecents );
-  double f = IEEEDPMul( e, d );
-  double g = IEEEDPExp( f );
+  DOUBLE seconds = GetSecondsFromTimecents( timecents );
+
+  DOUBLE a = IEEEDPFlt( 2 );
+  DOUBLE b = IEEEDPLog( a );
 
   // increment = ( maxULONG / ( seconds  * 192.000 ))
   //             |     |      |    |          |  ||
   //             |     |      |    g          h  ||
   //             |     j      +----------i-------+|
   //             +----------k---------------------+
-  double h = IEEEDPFlt( 192000 );
-  double i = IEEEDPMul( g, h );
-  double j = IEEEDPMul( IEEEDPFlt( 0x7fFFffFF ), a );
-  double k = IEEEDPDiv( j, i );
+  DOUBLE h = IEEEDPFlt( 192000 );
+  DOUBLE i = IEEEDPMul( seconds, h );
+  DOUBLE j = IEEEDPMul( IEEEDPFlt( 0x7fFFffFF ), a );
+  DOUBLE k = IEEEDPDiv( j, i );
   const LONG increment = IEEEDPFix( k );
 
   LONG idealExponent;
@@ -124,13 +150,13 @@ UWORD GetTargetADR( LONG timecents ) {
 
   } else {
 
-    double l;
-    double m;
-    double n;
-    double o;
-    double p;
-    double q;
-    double r;
+    DOUBLE l;
+    DOUBLE m;
+    DOUBLE n;
+    DOUBLE o;
+    DOUBLE p;
+    DOUBLE q;
+    DOUBLE r;
 
     // The complicated case: we want to use full Mantissa precision available,
     // so we calculate the component and limit its length more than needed! :D
@@ -228,11 +254,11 @@ UWORD GetTargetS( WORD centibels ) {
     //          |  |   |         a        b   ||
     //          |  d   +--------------c-------+|
     //          +----e-------------------------+
-    double a = IEEEDPFlt( centibels );
-    double b = IEEEDPFlt( -200 );
-    double c = IEEEDPDiv( a, b );
-    double d = IEEEDPFlt( 10 );
-    double e = IEEEDPPow( c, d );
+    DOUBLE a = IEEEDPFlt( centibels );
+    DOUBLE b = IEEEDPFlt( -200 );
+    DOUBLE c = IEEEDPDiv( a, b );
+    DOUBLE d = IEEEDPFlt( 10 );
+    DOUBLE e = IEEEDPPow( c, d );
 
     // so...
     // SustainVolume = MaxVolume x Factor
@@ -247,8 +273,8 @@ UWORD GetTargetS( WORD centibels ) {
     //                 +------g-------+
     // To be applied like 
     // SustainVolume = ( MaxVolume x FactorShifted ) >> 16
-    double f = IEEEDPFlt( 1 << 16 );
-    double g = IEEEDPMul( f, e );
+    DOUBLE f = IEEEDPFlt( 1 << 16 );
+    DOUBLE g = IEEEDPMul( f, e );
   
     factor = IEEEDPFix( g );
   }
@@ -534,27 +560,13 @@ VOID GetSf2ADSRs( struct SF2_Args * presetArgs,
 
 LONG GetMillisFromTimecents( WORD timecents ) {
 
-  // 1200 * ln(seconds)/ln(2) = timecents
-  // => seconds = e^( timecents * ( ln( 2 ) / 1200 ) )
-  //              | |     |       | |   | |    |   | |
-  //              | |     |       | |   a |    |   | |
-  //              | |     |       | +--b--+    c   | |
-  //              | |     e       +---------d------+ |
-  //              | +-----------f--------------------+
-  //              +-------------g--------------------+
-  double a = IEEEDPFlt( 2 );
-  double b = IEEEDPLog( a );
-  double c = IEEEDPFlt( 1200 );
-  double d = IEEEDPDiv( b, c );
-  double e = IEEEDPFlt( timecents );
-  double f = IEEEDPMul( e, d );
-  double g = IEEEDPExp( f );
+  DOUBLE seconds = GetSecondsFromTimecents( timecents );
 
   // seconds => milliseconds
-  double h = IEEEDPFlt( 1000 );
-  double i = IEEEDPMul( g, h );
+  DOUBLE h = IEEEDPFlt( 1000 );
+  DOUBLE i = IEEEDPMul( seconds, h );
 
-  LONG result = IEEEDPFix( i );
+  LONG millis = IEEEDPFix( i );
 
-  return result;
+  return millis;
 }
