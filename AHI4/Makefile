@@ -39,9 +39,11 @@ ifeq ($(findstring /home,$(HOME)), /home)
   INSTALL0       = curl --connect-timeout 2 --netrc --upload-file $(MODE_FILE_DEST) ftp://192.168.0.4/cf0/Devs/AudioModes/
   INSTALL0       = curl --connect-timeout 2 --netrc --upload-file $(MODE_FILE_DEST) ftp://192.168.0.12/sda4/Devs/AudioModes/
   INSTALL0       = curl --connect-timeout 2 --netrc --upload-file $(MODE_FILE_DEST) ftp://192.168.0.60/cf3/Devs/AudioModes/
+  INSTALL0       = curl --connect-timeout 2 --netrc --upload-file $(MODE_FILE_DEST) ftp://192.168.0.120/sda0/Devs/AudioModes/
   INSTALL1       = curl --connect-timeout 2 --netrc --upload-file $(LIB_FILE_DEST)  ftp://192.168.0.4/cf0/Devs/AHI/$(LIB_NAME).audio
   INSTALL1       = curl --connect-timeout 2 --netrc --upload-file $(LIB_FILE_DEST)  ftp://192.168.0.12/sda4/Devs/AHI/$(LIB_NAME).audio
   INSTALL1       = curl --connect-timeout 2 --netrc --upload-file $(LIB_FILE_DEST)  ftp://192.168.0.60/cf3/Devs/AHI/$(LIB_NAME).audio
+  INSTALL1       = curl --connect-timeout 2 --netrc --upload-file $(LIB_FILE_DEST)  ftp://192.168.0.120/sda0/Devs/AHI/$(LIB_NAME).audio
   INSTALL2       =
 else
   AMIGAOS       = 1
