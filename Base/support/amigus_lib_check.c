@@ -94,13 +94,13 @@ static struct AmiGUS_Private * convertPublic2Private( struct AmiGUS * card ) {
  * Test functions:
  *****************************************************************************/
 
-LONG __ASM__ testInterruptHandler( __REG__( d1, APTR data )) {
+LONG __ASM__ testInterruptHandler( __REG__( a0, APTR data )) {
 
   return 0;
 }
 
 ULONG interruptCounter;
-LONG __ASM__ countingPcmIntHandler( __REG__( d1, APTR data )) {
+LONG __ASM__ countingPcmIntHandler( __REG__( a0, APTR data )) {
 
   struct AmiGUS * card = ( struct AmiGUS * ) data;
   UWORD status = ReadReg16( card->agus_PcmBase, AMIGUS_PCM_INT_CONTROL );
@@ -114,7 +114,7 @@ LONG __ASM__ countingPcmIntHandler( __REG__( d1, APTR data )) {
   return 0;
 }
 
-LONG __ASM__ countingWavetableIntHandler( __REG__( d1, APTR data )) {
+LONG __ASM__ countingWavetableIntHandler( __REG__( a0, APTR data )) {
 /*
   struct AmiGUS * card = ( struct AmiGUS * ) data;
   UWORD status = ReadReg16( card->agus_CodecBase, AMIGUS_CODEC_INT_CONTROL );
@@ -128,7 +128,7 @@ LONG __ASM__ countingWavetableIntHandler( __REG__( d1, APTR data )) {
   return 0;
 }
 
-LONG __ASM__ countingCodecIntHandler( __REG__( d1, APTR data )) {
+LONG __ASM__ countingCodecIntHandler( __REG__( a0, APTR data )) {
 
   struct AmiGUS * card = ( struct AmiGUS * ) data;
   UWORD status = ReadReg16( card->agus_CodecBase, AMIGUS_CODEC_INT_CONTROL );
