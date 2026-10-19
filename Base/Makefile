@@ -268,6 +268,7 @@ amigus_timer: $(BDIR)amigus_hardware-$(LIB_CPU)-$(LIB_LOG).o
     support/$@.o                                   \
     $(subst LIBRARY, LIBRARY LIB:scmieee.lib,$(LFLAGST2))
 	-cp target/$@ ~/Documents/FS-UAE/Shared/Projekte/AmiGUS/
+	-curl --connect-timeout 2 --netrc --upload-file target/$@       ftp://192.168.0.120/sda0/Expansion/AmiGUS/amigus_timer
 	-curl --connect-timeout 2 --netrc --upload-file target/$@       ftp://192.168.0.4/cf0/Expansion/AmiGUS/amigus_timer
 
 ###############################################################################
