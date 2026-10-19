@@ -674,7 +674,6 @@ VOID HandleListElement( ULONG index ) {
   struct AmiSF_Sample * sample;
   APTR data;
 
-  Tu es!
   /*
   TODO: REPAIR ME!
 

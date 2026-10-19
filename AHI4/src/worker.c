@@ -138,7 +138,7 @@ INLINE VOID FillBuffer( BYTE buffer ) {
 
 #endif
 
-VOID HandlePlayback( VOID ) {
+INLINE VOID HandlePlayback( VOID ) {
 
   struct AmiGUSPcmPlayback * playback = &AmiGUS_AHI_Base->agb_Playback;
 
