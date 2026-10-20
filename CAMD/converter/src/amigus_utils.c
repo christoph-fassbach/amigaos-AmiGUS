@@ -36,8 +36,6 @@
 LONG PlayStandaloneSampleMessageName = PLAY_STANDALONE_MESSAGE_NAME;
 LONG PlayAmiSfSampleMessageName      = PLAY_AMISF_SAMPLE_MESSAGE_NAME;
 LONG StopSampleMessageName           = STOP_SAMPLE_MESSAGE_NAME;
-LONG PlayNoteMessageName             = PLAY_NOTE_MESSAGE_NAME;
-LONG PlayInstrumentMessageName       = PLAY_INSTRUMENT_MESSAGE_NAME;
 LONG LoadSoundFontMessageName        = LOAD_SOUNDFONT_NESSAGE_NAME;
 LONG ReloadSettingsMessageName       = RELOAD_SETTINGS_MESSAGE_NAME;
 
@@ -196,7 +194,7 @@ struct PlayAmiSfSampleMessage * CreateAmigusPlayAmiSfSampleMessage(
   struct PlayAmiSfSampleMessage * message =
     CreateAmigusMessage( replyPort,
                          sizeof( struct PlayAmiSfSampleMessage ),
-                         &( PlayStandaloneSampleMessageName ));
+                         &( PlayAmiSfSampleMessageName ));
 
   message->passm_AmiSf = amisf;
   message->passm_Bank = bank;
@@ -217,28 +215,6 @@ struct StopSampleMessage * CreateAmigusStopSampleMessage(
                          &( StopSampleMessageName ));
   // Only meant for finding WHAT to stop - never to be accessed!
   message->ssm_PlayMessage = playMessage;
-
-  return message;
-}
-
-struct PlayNoteMessage * CreateAmigusPlayNoteMessage(
-  struct MsgPort * replyPort ) {
-
-  struct PlayNoteMessage * message =
-    CreateAmigusMessage( replyPort,
-                         sizeof( struct PlayNoteMessage ),
-                         &( PlayNoteMessageName ));
-
-  return message;
-}
-
-struct PlayInstrumentMessage * CreateAmigusPlayInstrumentMessage(
-  struct MsgPort * replyPort ) {
-
-  struct PlayInstrumentMessage * message =
-    CreateAmigusMessage( replyPort,
-                         sizeof( struct PlayInstrumentMessage ),
-                         &( PlayInstrumentMessageName ));
 
   return message;
 }
@@ -289,12 +265,11 @@ VOID DeleteAmigusMessage( APTR message ) {
       const UBYTE noteIndex = sampleMessage->passm_Note;
 
       struct AmiSF * amisf = sampleMessage->passm_AmiSf;
-      struct AmiSF_Preset * preset =
-        &( amisf->asf_Preset[ bankIndex ][ presetIndex ]);
-      struct AmiSF_Note * note =
-        &( amisf->asf_Note[ preset->asfp_NoteStart + noteIndex ]);
-      struct AmiSF_Sample * sample =
-        &( amisf->asf_SampleMetadata[ note->asfn_SampleIndex ]);
+      struct AmiSF_Preset * preset = GetAmiSfPreset( amisf,
+                                                     bankIndex,
+                                                     presetIndex );
+      struct AmiSF_Note * note = GetAmiSfNote( amisf, preset, noteIndex );
+      struct AmiSF_Sample * sample = GetAmiSfSample( amisf, note );
 
       ULONG size = sample->asfs_EndOffset - sample->asfs_StartOffset;
 
@@ -307,18 +282,6 @@ VOID DeleteAmigusMessage( APTR message ) {
 
       LOG_D(( "D: Deleting StopSampleMessage 0x%08lx...\n", mess ));
       FreeMem( message, sizeof( struct StopSampleMessage ));
-      break;
-    }
-    case PLAY_NOTE_MESSAGE_NAME: {
-
-      LOG_D(( "D: Deleting PlayNoteMessage 0x%08lx...\n", mess ));
-      FreeMem( message, sizeof( struct PlayNoteMessage ));
-      break;
-    }
-    case PLAY_INSTRUMENT_MESSAGE_NAME: {
-
-      LOG_D(( "D: Deleting PlayInstrumentMessage 0x%08lx...\n", mess ));
-      FreeMem( message, sizeof( struct PlayInstrumentMessage ));
       break;
     }
     case LOAD_SOUNDFONT_NESSAGE_NAME: {

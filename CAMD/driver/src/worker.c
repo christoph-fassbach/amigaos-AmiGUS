@@ -89,8 +89,9 @@ VOID HandleMessage( struct Message * message ) {
       const UBYTE noteIndex = sampleMessage->passm_Note;
 
       struct AmiSF * amisf = sampleMessage->passm_AmiSf;
-      struct AmiSF_Preset * preset =
-        GetAmiSfPreset( amisf, bankIndex, presetIndex );
+      struct AmiSF_Preset * preset = GetAmiSfPreset( amisf,
+                                                     bankIndex,
+                                                     presetIndex );
       struct AmiSF_Note * note = GetAmiSfNote( amisf, preset, noteIndex );
       struct AmiSF_Sample * sample = GetAmiSfSample( amisf, note );
       ULONG playbackRate =
@@ -98,7 +99,11 @@ VOID HandleMessage( struct Message * message ) {
 
       ULONG sampleDataSize = sample->asfs_EndOffset - sample->asfs_StartOffset;
 
-      LOG_D(( "D: Got sample @ 0x%08lx and size %ld BYTEs\n",
+      LOG_D(( "D: Got PlayAmiSfSampleMessage @ 0x%08lx for %ld-%ld-%ld, "
+              "preset 0x%08lx note 0x%08lx sample 0x%08lx, "
+              "data 0x%08lx and size %ld BYTEs\n",
+              message, bankIndex, presetIndex, noteIndex,
+              preset, note, sample,
               sampleMessage->passm_SampleData, sampleDataSize ));
 
       LoadAmiGusWavetableSample( sampleMessage->passm_SampleData,
@@ -114,7 +119,7 @@ VOID HandleMessage( struct Message * message ) {
                                     note->asfn_Sustain,
                                     note->asfn_Release );
 
-      LOG_D(( "D: Replying PlayStandaloneSampleMessage 0x%08lx...\n",
+      LOG_D(( "D: Replying PlayAmiSfSampleMessage 0x%08lx...\n",
               message ));
       ReplyMsg( message );
       break;
@@ -123,18 +128,6 @@ VOID HandleMessage( struct Message * message ) {
 
       StopAmiGusWavetablePlayback( 0 );
       LOG_D(( "D: Replying StopSampleMessage 0x%08lx...\n", message ));
-      ReplyMsg( message );
-      break;
-    }
-    case PLAY_NOTE_MESSAGE_NAME: {
-
-      LOG_D(( "D: Replying PlayNoteMessage 0x%08lx...\n", message ));
-      ReplyMsg( message );
-      break;
-    }
-    case PLAY_INSTRUMENT_MESSAGE_NAME: {
-
-      LOG_D(( "D: Replying PlayInstrumentMessage 0x%08lx...\n", message ));
       ReplyMsg( message );
       break;
     }

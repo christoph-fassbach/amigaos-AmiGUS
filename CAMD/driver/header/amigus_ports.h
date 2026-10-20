@@ -33,8 +33,6 @@
 #define PLAY_STANDALONE_MESSAGE_NAME     (( LONG ) CHAR_TO_ULONG( 'P', 'S', 'M', 0 ))
 #define PLAY_AMISF_SAMPLE_MESSAGE_NAME   (( LONG ) CHAR_TO_ULONG( 'P', 'A', 'M', 0 ))
 #define STOP_SAMPLE_MESSAGE_NAME         (( LONG ) CHAR_TO_ULONG( 'S', 'S', 'M', 0 ))
-#define PLAY_NOTE_MESSAGE_NAME           (( LONG ) CHAR_TO_ULONG( 'P', 'N', 'M', 0 ))
-#define PLAY_INSTRUMENT_MESSAGE_NAME     (( LONG ) CHAR_TO_ULONG( 'P', 'I', 'M', 0 ))
 #define LOAD_SOUNDFONT_NESSAGE_NAME      (( LONG ) CHAR_TO_ULONG( 'L', 'S', 'M', 0 ))
 #define RELOAD_SETTINGS_MESSAGE_NAME     (( LONG ) CHAR_TO_ULONG( 'R', 'S', 'M', 0 ))
 
@@ -67,20 +65,12 @@ struct StopSampleMessage {
   APTR ssm_PlayMessage;
 };
 
-struct PlayNoteMessage {
-  struct Message pnm_Message;
-};
-
-struct PlayInstrumentMessage {
-  struct Message pnm_Message;
-};
-
 struct LoadSoundFontMessage {
-  struct Message pnm_Message;
+  struct Message lsfm_Message;
 };
 
 struct ReloadSettingsMessage {
-  struct Message pnm_Message;
+  struct Message rsm_Message;
 };
 
 #endif /* AMIGUS_PORTS_H */

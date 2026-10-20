@@ -706,13 +706,21 @@ VOID HandleAmiSfListElement( ULONG index ) {
     presetIndex,
     noteIndex,
     data );
+
+  LOG_D(( "D: Sending PlayAmiSfSampleMessage @ 0x%08lx for %ld-%ld-%ld, "
+          "preset 0x%08lx note 0x%08lx sample 0x%08lx, "
+          "data 0x%08lx and size %ld BYTEs\n",
+          message, bankIndex, presetIndex, noteIndex,
+          preset, note, sample,
+          data, sample->asfs_EndOffset - sample->asfs_StartOffset ));
   SendAmigusMessage( message );
   Delay( 10 );
   message = ( struct Message * ) CreateAmigusStopSampleMessage(
     SF_Converter_Base->sfc_MidiReplyPort,
     message );
   SendAmigusMessage( message );
-  LOG_D(( "V: Got note at 0x%08lx\n", note ));
+
+  LOG_D(( "V: Playing AmiSF note done.\n" ));
 }
 
 VOID HandleSf2ListElement( ULONG index ) {
@@ -803,7 +811,8 @@ VOID HandleSf2ListElement( ULONG index ) {
     SF_Converter_Base->sfc_MidiReplyPort,
     message );
   SendAmigusMessage( message );
-  LOG_D(( "V: Got note at 0x%08lx\n", 12 ));
+
+  LOG_D(( "V: Playing SF2 note done.\n" ));
 }
 
 VOID HandleListElement( ULONG index ) {

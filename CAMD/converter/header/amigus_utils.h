@@ -49,12 +49,6 @@ struct StopSampleMessage * CreateAmigusStopSampleMessage(
   struct MsgPort * replyPort,
   APTR playMessage );
 
-struct PlayNoteMessage * CreateAmigusPlayNoteMessage(
-  struct MsgPort * replyPort );
-
-struct PlayInstrumentMessage * CreateAmigusPlayInstrumentMessage(
-  struct MsgPort * replyPort );
-
 struct LoadSoundFontMessage * CreateAmigusLoadSoundFontMessage(
   struct MsgPort * replyPort );
 
