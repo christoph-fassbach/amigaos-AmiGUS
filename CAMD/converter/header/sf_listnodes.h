@@ -37,11 +37,11 @@ BOOL CreateAmiSfListLabels( struct List * labels,
 /**
  * The order created here needs to be in sync with CreateSf2ListLabels.
  */
-BOOL GetAmiSfInformationForIndex( struct AmiSF_Preset ** preset,
-                                  struct AmiSF_Note ** note,
-                                  struct AmiSF_Sample ** sample,
-                                  struct AmiSF * amisf,
-                                  ULONG index );
+BOOL GetAmiSfIndicesForIndex( UBYTE * bankIndex,
+                              UBYTE * presetIndex,
+                              UBYTE * noteIndex,
+                              struct AmiSF * amisf,
+                              ULONG index );
 
 /**
  * The order created here needs to be in sync with GetSf2InformationForIndex.
@@ -57,7 +57,9 @@ BOOL CreateSf2ListLabels( struct List * labels,
  */
 BOOL GetSf2InformationForIndex(
   struct SF2_Preset ** preset,
+  struct SF2_Args ** presetArgs,
   struct SF2_Instrument ** instrument,
+  struct SF2_Args ** instrumentArgs,
   struct SF2_Sample ** sample,
   struct SF2 * sf2,
   const ULONG index );

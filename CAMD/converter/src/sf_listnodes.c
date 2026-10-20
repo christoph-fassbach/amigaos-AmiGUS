@@ -364,34 +364,30 @@ BOOL CreateAmiSfListLabels( struct List * labels,
   return FALSE;
 }
 
-BOOL GetAmiSfInformationForIndex( struct AmiSF_Preset ** preset,
-                                  struct AmiSF_Note ** note,
-                                  struct AmiSF_Sample ** sample,
-                                  struct AmiSF * amisf,
-                                  ULONG index ) {
+BOOL GetAmiSfIndicesForIndex( UBYTE * bankIndex,
+                              UBYTE * presetIndex,
+                              UBYTE * noteIndex,
+                              struct AmiSF * amisf,
+                              ULONG index ) {
 
-  LONG bankIndex;
-  LONG presetIndex;
-  LONG noteIndex;
-  LONG noteCount;
+  UBYTE tempBankIndex;
+  UBYTE tempPresetIndex;
+  UBYTE tempNoteIndex;
 
-  for ( bankIndex = 0; bankIndex <= 128; ++bankIndex ) {
-    for ( presetIndex = 0; presetIndex <= 128; ++presetIndex ) {
+  for ( tempBankIndex = 0; tempBankIndex <= 128; ++tempBankIndex ) {
+    for ( tempPresetIndex = 0; tempPresetIndex <= 128; ++tempPresetIndex ) {
 
-      ( *preset ) = &( amisf->asf_Preset[ bankIndex ][ presetIndex ]);
-      noteCount = ( *preset )->asfp_NoteCount;
+      struct AmiSF_Preset * preset  =
+        &( amisf->asf_Preset[ tempBankIndex ][ tempPresetIndex ]);
+      UWORD noteCount = preset->asfp_NoteCount;
 
-      for ( noteIndex = 0; noteIndex < noteCount; ++noteIndex ) {
+      for ( tempNoteIndex = 0; tempNoteIndex < noteCount; ++tempNoteIndex ) {
 
         if ( !index ) {
 
-          LONG effectiveNoteIndex;
-          LONG effectiveSampleIndex;
-
-          effectiveNoteIndex = ( *preset )->asfp_NoteStart + noteIndex;
-          ( *note ) = &( amisf->asf_Note[ effectiveNoteIndex ]);
-          effectiveSampleIndex = ( *note )->asfn_SampleIndex - 1;
-          ( *sample ) = &( amisf->asf_SampleMetadata[ effectiveSampleIndex ]);
+          *bankIndex = tempBankIndex;
+          *presetIndex = tempPresetIndex;
+          *noteIndex = tempNoteIndex;
 
           return TRUE;
         }
@@ -524,7 +520,9 @@ BOOL CreateSf2ListLabels(
 
 BOOL GetSf2InformationForIndex(
   struct SF2_Preset ** preset,
+  struct SF2_Args ** presetArgs,
   struct SF2_Instrument ** instrument,
+  struct SF2_Args ** instrumentArgs,
   struct SF2_Sample ** sample,
   struct SF2 * sf2,
   const ULONG index ) {
@@ -593,9 +591,11 @@ BOOL GetSf2InformationForIndex(
             argsP->sf2a_Values.sf2v_NextNumber,
             argsI->sf2a_Values.sf2v_NextNumber ));
 
-          *preset = ( APTR ) tempPreset;
-          *instrument = ( APTR ) tempInstrument;
-          *sample = ( APTR ) tempSample;
+          *preset = tempPreset;
+          *presetArgs = argsP;
+          *instrument = tempInstrument;
+          *instrumentArgs = argsI;
+          *sample = tempSample;
           return TRUE;
         }
 

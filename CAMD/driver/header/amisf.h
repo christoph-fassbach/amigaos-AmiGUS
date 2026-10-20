@@ -22,6 +22,8 @@
 #include <dos/dos.h>
 #include <exec/types.h>
 
+#include "compiler_extras.h"
+
 /*
  * defines are limited to 32 chars due to a SAS/C insufficiency !!!
  *
@@ -121,5 +123,34 @@ struct AmiSF * AllocAmiSFfromFile(
 );
 
 VOID FreeAmiSF( struct AmiSF * amisf );
+
+INLINE struct AmiSF_Preset * GetAmiSfPreset( struct AmiSF * amisf,
+                                             UBYTE bank,
+                                             UBYTE preset ) {
+
+  struct AmiSF_Preset * result = &( amisf->asf_Preset[ bank ][ preset ]);
+
+  return result;
+}
+
+INLINE struct AmiSF_Note * GetAmiSfNote( struct AmiSF * amisf,
+                                         struct AmiSF_Preset * preset,
+                                         UBYTE note ) {
+
+  LONG effectiveNote = preset->asfp_NoteStart + note;
+  struct AmiSF_Note * result = &( amisf->asf_Note[ effectiveNote ]);
+
+  return result;
+}
+
+INLINE struct AmiSF_Sample * GetAmiSfSample( struct AmiSF * amisf,
+                                             struct AmiSF_Note * note ) {
+
+  LONG effectiveSampleIndex = note->asfn_SampleIndex - 1;
+  struct AmiSF_Sample * result =
+    &( amisf->asf_SampleMetadata[ effectiveSampleIndex ]);
+
+  return result;
+}
 
 #endif /* AMISF_H */

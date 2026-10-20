@@ -33,12 +33,13 @@
  * MIDI driver helper variables - private variables.
  *****************************************************************************/
 
-LONG PlaySampleMessageName     = PLAY_SAMPLE_MESSAGE_NAME;
-LONG StopSampleMessageName     = STOP_SAMPLE_MESSAGE_NAME;
-LONG PlayNoteMessageName       = PLAY_NOTE_MESSAGE_NAME;
-LONG PlayInstrumentMessageName = PLAY_INSTRUMENT_MESSAGE_NAME;
-LONG LoadSoundFontMessageName  = LOAD_SOUNDFONT_NESSAGE_NAME;
-LONG ReloadSettingsMessageName = RELOAD_SETTINGS_MESSAGE_NAME;
+LONG PlayStandaloneSampleMessageName = PLAY_STANDALONE_MESSAGE_NAME;
+LONG PlayAmiSfSampleMessageName      = PLAY_AMISF_SAMPLE_MESSAGE_NAME;
+LONG StopSampleMessageName           = STOP_SAMPLE_MESSAGE_NAME;
+LONG PlayNoteMessageName             = PLAY_NOTE_MESSAGE_NAME;
+LONG PlayInstrumentMessageName       = PLAY_INSTRUMENT_MESSAGE_NAME;
+LONG LoadSoundFontMessageName        = LOAD_SOUNDFONT_NESSAGE_NAME;
+LONG ReloadSettingsMessageName       = RELOAD_SETTINGS_MESSAGE_NAME;
 
 /******************************************************************************
  * MIDI driver helper functions - private functions.
@@ -154,21 +155,54 @@ LOG_D(("Debug for SendAmigusMessage 8\n"));
   return ENoError;
 }
 
-struct PlaySampleMessage * CreateAmigusPlaySampleMessage(
+struct PlayStandaloneSampleMessage * CreateAmigusPlayStandaloneSampleMessage(
   struct MsgPort * replyPort,
-  struct AmiSF * amisf,
-  struct AmiSF_Note * note,
-  struct AmiSF_Sample * sample,
+  UWORD attack,
+  UWORD decay,
+  UWORD sustain,
+  UWORD release,
+  UWORD playbackFlags,
+  ULONG loopOffset,
+  ULONG endOffset,
+  ULONG playbackRate,
   APTR data ) {
 
-  struct PlaySampleMessage * message =
+  struct PlayStandaloneSampleMessage * message =
     CreateAmigusMessage( replyPort,
-                         sizeof( struct PlaySampleMessage ),
-                         &( PlaySampleMessageName ));
-  message->amisf = amisf;
-  message->note = note;
-  message->sample = sample;
-  message->data = data;
+                         sizeof( struct PlayStandaloneSampleMessage ),
+                         &( PlayStandaloneSampleMessageName ));
+
+  message->pssm_Attack = attack;
+  message->pssm_Decay = decay;
+  message->pssm_Sustain = sustain;
+  message->pssm_Release = release;
+  message->pssm_PlaybackFlags = playbackFlags;
+  message->pssm_PlaybackRate = playbackRate;
+  message->pssm_LoopOffset = loopOffset;
+  message->pssm_EndOffset = endOffset;
+  message->pssm_SampleData = data;
+
+  return message;
+}
+
+struct PlayAmiSfSampleMessage * CreateAmigusPlayAmiSfSampleMessage(
+  struct MsgPort * replyPort,
+  struct AmiSF * amisf,
+  UBYTE bank,
+  UBYTE preset,
+  UBYTE note,
+  APTR data ) {
+
+  struct PlayAmiSfSampleMessage * message =
+    CreateAmigusMessage( replyPort,
+                         sizeof( struct PlayAmiSfSampleMessage ),
+                         &( PlayStandaloneSampleMessageName ));
+
+  message->passm_AmiSf = amisf;
+  message->passm_Bank = bank;
+  message->passm_Preset = preset;
+  message->passm_Note = note;
+  message->passm_SampleData = data;
 
   return message;
 }
@@ -182,7 +216,7 @@ struct StopSampleMessage * CreateAmigusStopSampleMessage(
                          sizeof( struct StopSampleMessage ),
                          &( StopSampleMessageName ));
   // Only meant for finding WHAT to stop - never to be accessed!
-  message->playMessage = playMessage;
+  message->ssm_PlayMessage = playMessage;
 
   return message;
 }
@@ -236,17 +270,37 @@ VOID DeleteAmigusMessage( APTR message ) {
   struct Message * mess = (struct Message * ) message;
 
   switch ( *(( LONG * ) mess->mn_Node.ln_Name )) {
-    case PLAY_SAMPLE_MESSAGE_NAME: {
+    case PLAY_STANDALONE_MESSAGE_NAME: {
 
-      struct PlaySampleMessage * sampleMessage =
-        ( struct PlaySampleMessage * ) message;
-      ULONG size = sampleMessage->sample->asfs_EndOffset
-                 - sampleMessage->sample->asfs_StartOffset;
-      LOG_D(( "D: Deleting PlaySampleMessage 0x%08lx...\n", mess ));
-      FreeMem( sampleMessage->data, size );
-      FreeMem( sampleMessage->sample, sizeof( struct AmiSF_Sample ));
-      FreeMem( sampleMessage->note, sizeof( struct AmiSF_Note ));
-      FreeMem( sampleMessage, sizeof( struct PlaySampleMessage ));
+      struct PlayStandaloneSampleMessage * sampleMessage =
+        ( struct PlayStandaloneSampleMessage * ) message;
+      ULONG size = sampleMessage->pssm_EndOffset;
+      LOG_D(( "D: Deleting PlayStandaloneSampleMessage 0x%08lx...\n", mess ));
+      FreeMem( sampleMessage->pssm_SampleData, size );
+      FreeMem( sampleMessage, sizeof( struct PlayStandaloneSampleMessage ));
+      break;
+    }
+    case PLAY_AMISF_SAMPLE_MESSAGE_NAME: {
+      struct PlayAmiSfSampleMessage * sampleMessage =
+        ( struct PlayAmiSfSampleMessage * ) message;
+
+      const UBYTE bankIndex = sampleMessage->passm_Bank;
+      const UBYTE presetIndex = sampleMessage->passm_Preset;
+      const UBYTE noteIndex = sampleMessage->passm_Note;
+
+      struct AmiSF * amisf = sampleMessage->passm_AmiSf;
+      struct AmiSF_Preset * preset =
+        &( amisf->asf_Preset[ bankIndex ][ presetIndex ]);
+      struct AmiSF_Note * note =
+        &( amisf->asf_Note[ preset->asfp_NoteStart + noteIndex ]);
+      struct AmiSF_Sample * sample =
+        &( amisf->asf_SampleMetadata[ note->asfn_SampleIndex ]);
+
+      ULONG size = sample->asfs_EndOffset - sample->asfs_StartOffset;
+
+      LOG_D(( "D: Deleting PlayAmiSfSampleMessage 0x%08lx...\n", mess ));
+      FreeMem( sampleMessage->passm_SampleData, size );
+      FreeMem( sampleMessage, sizeof( struct PlayAmiSfSampleMessage ));
       break;
     }
     case STOP_SAMPLE_MESSAGE_NAME: {

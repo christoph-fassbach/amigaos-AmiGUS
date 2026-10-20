@@ -27,18 +27,6 @@ LONG GetTargetSampleRate( LONG sourceNote, LONG sourceRate, LONG targetNote );
 UWORD GetTargetADR( LONG timecents );
 UWORD GetTargetS( WORD centibels );
 
-struct AmiSF_Note * CreateAmiSF_Note(
-  struct SF2_Preset * preset,
-  struct SF2_Instrument * instrument,
-  struct SF2_Sample * sample,
-  ULONG targetNote );
-
-struct AmiSF_Sample * CreateAmiSF_Sample(
-  struct SF2_Preset * preset,
-  struct SF2_Instrument * instrument,
-  struct SF2_Sample * sample,
-  ULONG targetStartAddress );
-
 LONG GetSf2SampleSize( struct SF2_Sample * sample );
 APTR GetSf2SampleData( struct SF2 * sf2,
                        struct SF2_Sample * sample,

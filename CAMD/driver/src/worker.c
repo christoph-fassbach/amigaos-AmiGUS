@@ -52,25 +52,70 @@ VOID HandleMessage( struct Message * message ) {
             message->mn_Node.ln_Name ));
 
   switch ( *(( LONG * ) message->mn_Node.ln_Name )) {
-    case PLAY_SAMPLE_MESSAGE_NAME: {
+    case PLAY_STANDALONE_MESSAGE_NAME: {
 
-      struct PlaySampleMessage * sampleMessage =
-        ( struct PlaySampleMessage * ) message;
-      ULONG size = sampleMessage->sample->asfs_EndOffset    // bytes!
-                 - sampleMessage->sample->asfs_StartOffset;
+      struct PlayStandaloneSampleMessage * sampleMessage =
+        ( struct PlayStandaloneSampleMessage * ) message;
+
       LOG_D(( "D: Got sample @ 0x%08lx and size %ld BYTEs\n",
-              sampleMessage->data,
-              size ));
+              sampleMessage->pssm_SampleData,
+              sampleMessage->pssm_EndOffset ));
 
-      LoadAmiGusWavetableSample( sampleMessage->data,
-                                 sampleMessage->sample->asfs_StartOffset,
-                                 size );
-      StartAmiGusWavetablePlayback( sampleMessage->amisf,
-                                    sampleMessage->note,
-                                    sampleMessage->sample,
-                                    sampleMessage->note->asfn_BaseNote );
+      LoadAmiGusWavetableSample( sampleMessage->pssm_SampleData,
+                                 0,
+                                 sampleMessage->pssm_EndOffset );
+      StartAmiGusWavetablePlayback( 0,
+                                    sampleMessage->pssm_LoopOffset,
+                                    sampleMessage->pssm_EndOffset,
+                                    sampleMessage->pssm_PlaybackRate,
+                                    sampleMessage->pssm_PlaybackFlags,
+                                    sampleMessage->pssm_Attack,
+                                    sampleMessage->pssm_Decay,
+                                    sampleMessage->pssm_Sustain,
+                                    sampleMessage->pssm_Release );
 
-      LOG_D(( "D: Replying PlaySampleMessage 0x%08lx...\n", message ));
+      LOG_D(( "D: Replying PlayStandaloneSampleMessage 0x%08lx...\n",
+              message ));
+      ReplyMsg( message );
+      break;
+    }
+    case PLAY_AMISF_SAMPLE_MESSAGE_NAME: {
+
+      struct PlayAmiSfSampleMessage * sampleMessage =
+        ( struct PlayAmiSfSampleMessage * ) message;
+
+      const UBYTE bankIndex = sampleMessage->passm_Bank;
+      const UBYTE presetIndex = sampleMessage->passm_Preset;
+      const UBYTE noteIndex = sampleMessage->passm_Note;
+
+      struct AmiSF * amisf = sampleMessage->passm_AmiSf;
+      struct AmiSF_Preset * preset =
+        GetAmiSfPreset( amisf, bankIndex, presetIndex );
+      struct AmiSF_Note * note = GetAmiSfNote( amisf, preset, noteIndex );
+      struct AmiSF_Sample * sample = GetAmiSfSample( amisf, note );
+      ULONG playbackRate =
+        amisf->asf_PlaybackRate[ note->asfn_BasePlaybackIndex ];
+
+      ULONG sampleDataSize = sample->asfs_EndOffset - sample->asfs_StartOffset;
+
+      LOG_D(( "D: Got sample @ 0x%08lx and size %ld BYTEs\n",
+              sampleMessage->passm_SampleData, sampleDataSize ));
+
+      LoadAmiGusWavetableSample( sampleMessage->passm_SampleData,
+                                 sample->asfs_StartOffset,
+                                 sampleDataSize );
+      StartAmiGusWavetablePlayback( sample->asfs_StartOffset,
+                                    sample->asfs_LoopOffset,
+                                    sample->asfs_EndOffset,
+                                    playbackRate,
+                                    sample->asfs_PlaybackFlags,
+                                    note->asfn_Attack,
+                                    note->asfn_Decay,
+                                    note->asfn_Sustain,
+                                    note->asfn_Release );
+
+      LOG_D(( "D: Replying PlayStandaloneSampleMessage 0x%08lx...\n",
+              message ));
       ReplyMsg( message );
       break;
     }

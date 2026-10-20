@@ -25,11 +25,24 @@
 ULONG OpenAmigusPort( VOID );
 LONG SendAmigusMessage( struct Message * message );
 
-struct PlaySampleMessage * CreateAmigusPlaySampleMessage(
+struct PlayStandaloneSampleMessage * CreateAmigusPlayStandaloneSampleMessage(
+  struct MsgPort * replyPort,
+  UWORD attack,
+  UWORD decay,
+  UWORD sustain,
+  UWORD release,
+  UWORD playbackFlags,
+  ULONG loopOffset,
+  ULONG endOffset,
+  ULONG playbackRate,
+  APTR data );
+
+struct PlayAmiSfSampleMessage * CreateAmigusPlayAmiSfSampleMessage(
   struct MsgPort * replyPort,
   struct AmiSF * amisf,
-  struct AmiSF_Note * note,
-  struct AmiSF_Sample * sample,
+  UBYTE bank,
+  UBYTE preset,
+  UBYTE note,
   APTR data );
 
 struct StopSampleMessage * CreateAmigusStopSampleMessage(

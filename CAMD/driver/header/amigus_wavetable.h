@@ -34,10 +34,15 @@ VOID InitAmiGus( VOID );
 VOID LoadAmiGusWavetableSample( ULONG * source, ULONG target, ULONG size );
 
 // Only plays from inside Wavetable memory!
-VOID StartAmiGusWavetablePlayback( struct AmiSF * amisf,
-                                   struct AmiSF_Note * note,
-                                   struct AmiSF_Sample * sample,
-                                   UBYTE playbackNote );
+VOID StartAmiGusWavetablePlayback( ULONG startOffset,
+                                   ULONG loopOffset,
+                                   ULONG endOffset,
+                                   ULONG playbackRate,
+                                   UWORD playbackFlags,
+                                   UWORD attack,
+                                   UWORD decay,
+                                   UWORD sustain,
+                                   UWORD release );
 
 VOID StopAmiGusWavetablePlayback( UWORD channel );
 
