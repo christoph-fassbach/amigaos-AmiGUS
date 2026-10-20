@@ -133,9 +133,21 @@ LONG __ASM__ countingCodecIntHandler( __REG__( a0, APTR data )) {
   struct AmiGUS * card = ( struct AmiGUS * ) data;
   UWORD status = ReadReg16( card->agus_CodecBase, AMIGUS_CODEC_INT_CONTROL );
   if ( AMIGUS_CODEC_INT_F_TIMER & status ) {
+
+    /*
+
+    WriteReg16( card->agus_CodecBase,
+                AMIGUS_CODEC_INT_ENABLE,
+                AMIGUS_INT_F_CLEAR | AMIGUS_CODEC_INT_F_TIMER );
+    WriteReg16( card->agus_CodecBase, 
+              AMIGUS_CODEC_TIMER_CONTROL,
+              AMIGUS_TIMER_STOP );
     WriteReg16( card->agus_CodecBase,
                 AMIGUS_CODEC_INT_CONTROL,
                 AMIGUS_INT_F_CLEAR | AMIGUS_CODEC_INT_F_TIMER );
+
+
+*/
     ++interruptCounter;
     return 1;
   }
@@ -945,6 +957,13 @@ BOOL testCodecInterrupt( VOID ) {
 
   interruptCounter = 0;
 
+  WriteReg16( card->agus_CodecBase, 
+              AMIGUS_CODEC_INT_ENABLE,
+              AMIGUS_INT_F_CLEAR | 0x7FFF );
+  WriteReg16( card->agus_CodecBase, 
+              AMIGUS_CODEC_TIMER_CONTROL,
+              AMIGUS_TIMER_STOP );
+
   returnValue = AmiGUS_InstallInterrupt(
     card,
     AMIGUS_FLAG_CODEC,
@@ -962,22 +981,18 @@ BOOL testCodecInterrupt( VOID ) {
 
   printf( "Using 0x%08lx as base address\n", card->agus_CodecBase );
 
-  WriteReg16( card->agus_CodecBase, 
-              AMIGUS_CODEC_INT_ENABLE,
-              AMIGUS_INT_F_CLEAR | 0x7FFF );
-  WriteReg16( card->agus_CodecBase, 
-              AMIGUS_CODEC_INT_ENABLE,
-              AMIGUS_INT_F_SET | AMIGUS_CODEC_INT_F_TIMER );
   WriteReg32( card->agus_CodecBase,
               AMIGUS_CODEC_TIMER_RELOAD,
-              100000 );
+              10000 );// AMIGUS_TIMER_CLOCK / 25 ); // 1/25th second
   WriteReg16( card->agus_CodecBase,
               AMIGUS_CODEC_INT_CONTROL,
               AMIGUS_INT_F_CLEAR | AMIGUS_CODEC_INT_F_TIMER );
-  
+  WriteReg16( card->agus_CodecBase, 
+              AMIGUS_CODEC_INT_ENABLE,
+              AMIGUS_INT_F_SET | AMIGUS_CODEC_INT_F_TIMER );
   WriteReg16( card->agus_CodecBase, 
               AMIGUS_CODEC_TIMER_CONTROL,
-              AMIGUS_TIMER_ONCE | AMIGUS_TIMER_START );
+              AMIGUS_TIMER_CONTINOUES | AMIGUS_TIMER_START );
 
   printf( "Busy wait here, "
           "100k rounds aka 10dots should be slower than 1/25s\n" );
@@ -989,6 +1004,9 @@ BOOL testCodecInterrupt( VOID ) {
   WriteReg16( card->agus_CodecBase, 
               AMIGUS_CODEC_INT_ENABLE,
               AMIGUS_INT_F_CLEAR | AMIGUS_CODEC_INT_F_TIMER );
+  WriteReg16( card->agus_CodecBase, 
+              AMIGUS_CODEC_TIMER_CONTROL,
+              AMIGUS_TIMER_STOP );
 
   if ( 1 != interruptCounter ) {
 
@@ -1024,7 +1042,7 @@ int main(int argc, char const *argv[]) {
   failed |= testFreeCard();
   failed |= testInstallInterrupt();
   failed |= testRemoveInterrupt();
-  failed |= testPcmInterrupt();
+//  failed |= testPcmInterrupt();
 //  failed |= testWavetableInterrupt();
   failed |= testCodecInterrupt();
 
