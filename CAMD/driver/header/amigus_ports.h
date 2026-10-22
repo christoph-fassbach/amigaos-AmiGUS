@@ -42,9 +42,9 @@ struct PlayStandaloneSampleMessage {
   UWORD pssm_Decay;
   UWORD pssm_Sustain;
   UWORD pssm_Release;
-  UWORD pssm_PlaybackFlags;
-  UWORD pssm_Padding0;
   ULONG pssm_PlaybackRate;
+  UWORD pssm_PlaybackVolume;
+  UWORD pssm_PlaybackFlags;
   ULONG pssm_LoopOffset;
   ULONG pssm_EndOffset;
   APTR pssm_SampleData;
@@ -56,7 +56,7 @@ struct PlayAmiSfSampleMessage {
   UBYTE passm_Bank;
   UBYTE passm_Preset;
   UBYTE passm_Note;
-  UBYTE passm_Padding;
+  UBYTE passm_Velocity;
   APTR passm_SampleData;
 };
 

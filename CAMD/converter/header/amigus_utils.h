@@ -31,10 +31,11 @@ struct PlayStandaloneSampleMessage * CreateAmigusPlayStandaloneSampleMessage(
   UWORD decay,
   UWORD sustain,
   UWORD release,
+  ULONG playbackRate,
+  UWORD playbackVolume,
   UWORD playbackFlags,
   ULONG loopOffset,
   ULONG endOffset,
-  ULONG playbackRate,
   APTR data );
 
 struct PlayAmiSfSampleMessage * CreateAmigusPlayAmiSfSampleMessage(
@@ -43,6 +44,7 @@ struct PlayAmiSfSampleMessage * CreateAmigusPlayAmiSfSampleMessage(
   UBYTE bank,
   UBYTE preset,
   UBYTE note,
+  UBYTE velocity,
   APTR data );
 
 struct StopSampleMessage * CreateAmigusStopSampleMessage(

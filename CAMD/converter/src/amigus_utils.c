@@ -159,10 +159,11 @@ struct PlayStandaloneSampleMessage * CreateAmigusPlayStandaloneSampleMessage(
   UWORD decay,
   UWORD sustain,
   UWORD release,
+  ULONG playbackRate,
+  UWORD playbackVolume,
   UWORD playbackFlags,
   ULONG loopOffset,
   ULONG endOffset,
-  ULONG playbackRate,
   APTR data ) {
 
   struct PlayStandaloneSampleMessage * message =
@@ -174,8 +175,9 @@ struct PlayStandaloneSampleMessage * CreateAmigusPlayStandaloneSampleMessage(
   message->pssm_Decay = decay;
   message->pssm_Sustain = sustain;
   message->pssm_Release = release;
-  message->pssm_PlaybackFlags = playbackFlags;
   message->pssm_PlaybackRate = playbackRate;
+  message->pssm_PlaybackVolume = playbackVolume;
+  message->pssm_PlaybackFlags = playbackFlags;
   message->pssm_LoopOffset = loopOffset;
   message->pssm_EndOffset = endOffset;
   message->pssm_SampleData = data;
@@ -189,6 +191,7 @@ struct PlayAmiSfSampleMessage * CreateAmigusPlayAmiSfSampleMessage(
   UBYTE bank,
   UBYTE preset,
   UBYTE note,
+  UBYTE velocity,
   APTR data ) {
 
   struct PlayAmiSfSampleMessage * message =
@@ -200,6 +203,7 @@ struct PlayAmiSfSampleMessage * CreateAmigusPlayAmiSfSampleMessage(
   message->passm_Bank = bank;
   message->passm_Preset = preset;
   message->passm_Note = note;
+  message->passm_Velocity = velocity;
   message->passm_SampleData = data;
 
   return message;

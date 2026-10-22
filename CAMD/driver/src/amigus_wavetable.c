@@ -87,6 +87,7 @@ VOID StartAmiGusWavetablePlayback( ULONG startOffset,
                                    ULONG loopOffset,
                                    ULONG endOffset,
                                    ULONG playbackRate,
+                                   UWORD playbackVolume,
                                    UWORD playbackFlags,
                                    UWORD attack,
                                    UWORD decay,
@@ -95,8 +96,7 @@ VOID StartAmiGusWavetablePlayback( ULONG startOffset,
 
   struct AmiGUS_CAMD * base = AmiGUS_CAMD_Base;
   APTR card = base->agb_AmiGUS->agus_WavetableBase;
-  const UWORD channelVolumeMax = 0x4001;
-  const UWORD sustainVolume = ( channelVolumeMax * sustain ) >> 16;
+  const UWORD sustainVolume = ( playbackVolume * sustain ) >> 16;
   const UWORD startFlags = AMIGUS_WT_F_CONTROL_START
               | AMIGUS_WT_F_CONTROL_KEY_ON
               | AMIGUS_WT_F_CONTROL_INTERPOLATE
@@ -106,25 +106,20 @@ VOID StartAmiGusWavetablePlayback( ULONG startOffset,
   WriteReg16( card, AMIGUS_WT_CHANNEL_NUMBER, 0x0000 );
   WriteReg16( card, AMIGUS_WT_CHANNEL_CONTROL, 0x0000 );
 
-  LOG_D(( "D: Playback start: 0x%08lx - 0x%08lx, loop 0x%08lx, rate 0x%08lx, "
+  LOG_D(( "D: Playback start: 0x%08lx - 0x%08lx, loop 0x%08lx, "
+          "rate 0x%08lx, volume 0x%04lx, "
           "ADSR 0x%04lx %04lx %04lx %04lx, flags 0x%04lx\n",
-          startOffset,
-          endOffset,
-          loopOffset,
-          playbackRate,
-          attack,
-          decay,
-          sustainVolume,
-          release,
-          startFlags ));
+          startOffset, endOffset, loopOffset,
+          playbackRate, playbackVolume,
+          attack, decay, sustainVolume, release, startFlags ));
   WriteReg32( card, AMIGUS_WT_CHANNEL_START_32BIT, startOffset );
   WriteReg32( card, AMIGUS_WT_CHANNEL_LOOP_32BIT, loopOffset );
   WriteReg32( card, AMIGUS_WT_CHANNEL_END_32BIT, endOffset );
   WriteReg32( card, AMIGUS_WT_CHANNEL_RATE_32BIT, playbackRate );
 
   // TODO: Rework the below, obviously, state dependent!
-  WriteReg16( card, AMIGUS_WT_CHANNEL_VOLUME_LEFT, channelVolumeMax );
-  WriteReg16( card, AMIGUS_WT_CHANNEL_VOLUME_RIGHT, channelVolumeMax );
+  WriteReg16( card, AMIGUS_WT_CHANNEL_VOLUME_LEFT, playbackVolume );
+  WriteReg16( card, AMIGUS_WT_CHANNEL_VOLUME_RIGHT, playbackVolume );
 
   WriteReg16( card, AMIGUS_WT_CHANNEL_ATTACK, attack );
   WriteReg16( card, AMIGUS_WT_CHANNEL_DECAY, decay );

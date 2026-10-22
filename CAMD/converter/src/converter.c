@@ -674,6 +674,7 @@ VOID HandleAmiSfListElement( ULONG index ) {
   UBYTE bankIndex;
   UBYTE presetIndex;
   UBYTE noteIndex;
+  UBYTE velocity = 127;  // TODO: get from velocity
   APTR data;
 
   if ( !( GetAmiSfIndicesForIndex( &bankIndex,
@@ -705,6 +706,7 @@ VOID HandleAmiSfListElement( ULONG index ) {
     bankIndex,
     presetIndex,
     noteIndex,
+    velocity,
     data );
 
   LOG_D(( "D: Sending PlayAmiSfSampleMessage @ 0x%08lx for %ld-%ld-%ld, "
@@ -740,10 +742,11 @@ VOID HandleSf2ListElement( ULONG index ) {
   WORD decay;
   WORD sustain;
   WORD release;
+  ULONG playbackRate;
+  UWORD playbackVolume = 0x4000; // TODO: get from velocity
   UWORD playbackFlags;
   ULONG loopOffset;
   ULONG endOffset;
-  ULONG playbackRate;
   APTR data;
 
   if ( !( GetSf2InformationForIndex( &preset,
@@ -800,10 +803,11 @@ VOID HandleSf2ListElement( ULONG index ) {
     decay,
     sustain,
     release,
+    playbackRate,
+    playbackVolume,
     playbackFlags,
     loopOffset,
     endOffset,
-    playbackRate,
     data );
   SendAmigusMessage( message );
   Delay( 10 );

@@ -68,6 +68,7 @@ VOID HandleMessage( struct Message * message ) {
                                     sampleMessage->pssm_LoopOffset,
                                     sampleMessage->pssm_EndOffset,
                                     sampleMessage->pssm_PlaybackRate,
+                                    sampleMessage->pssm_PlaybackVolume,
                                     sampleMessage->pssm_PlaybackFlags,
                                     sampleMessage->pssm_Attack,
                                     sampleMessage->pssm_Decay,
@@ -84,40 +85,43 @@ VOID HandleMessage( struct Message * message ) {
       struct PlayAmiSfSampleMessage * sampleMessage =
         ( struct PlayAmiSfSampleMessage * ) message;
 
-      const UBYTE bankIndex = sampleMessage->passm_Bank;
-      const UBYTE presetIndex = sampleMessage->passm_Preset;
-      const UBYTE noteIndex = sampleMessage->passm_Note;
+      const UBYTE bank = sampleMessage->passm_Bank;
+      const UBYTE preset = sampleMessage->passm_Preset;
+      const UBYTE note = sampleMessage->passm_Note;
+      const UBYTE velocity = sampleMessage->passm_Velocity;
 
       struct AmiSF * amisf = sampleMessage->passm_AmiSf;
-      struct AmiSF_Preset * preset = GetAmiSfPreset( amisf,
-                                                     bankIndex,
-                                                     presetIndex );
-      struct AmiSF_Note * note = GetAmiSfNote( amisf, preset, noteIndex );
-      struct AmiSF_Sample * sample = GetAmiSfSample( amisf, note );
+      struct AmiSF_Preset * sfPreset = GetAmiSfPreset( amisf, bank, preset );
+      struct AmiSF_Note * sfNote = GetAmiSfNote( amisf, sfPreset, note );
+      struct AmiSF_Sample * sfSample = GetAmiSfSample( amisf, sfNote );
       ULONG playbackRate =
-        amisf->asf_PlaybackRate[ note->asfn_BasePlaybackIndex ];
+        amisf->asf_PlaybackRate[ sfNote->asfn_BasePlaybackIndex ];
+      ULONG sampleDataSize =
+        sfSample->asfs_EndOffset - sfSample->asfs_StartOffset;
+      // Automatically limited to 127 * 127 + 2 * 127 = 16383 = 0x3FFF :D
+      LONG volume = ( WORD ) velocity * ( WORD ) velocity;
+      UWORD playbackVolume = ( UWORD )( volume ) + (( UWORD ) velocity << 1 );
 
-      ULONG sampleDataSize = sample->asfs_EndOffset - sample->asfs_StartOffset;
-
-      LOG_D(( "D: Got PlayAmiSfSampleMessage @ 0x%08lx for %ld-%ld-%ld, "
+      LOG_D(( "D: Got PlayAmiSfSampleMessage @ 0x%08lx for %ld-%ld-%ld-%ld, "
               "preset 0x%08lx note 0x%08lx sample 0x%08lx, "
               "data 0x%08lx and size %ld BYTEs\n",
-              message, bankIndex, presetIndex, noteIndex,
-              preset, note, sample,
+              message, bank, preset, note, velocity,
+              sfPreset, sfNote, sfSample,
               sampleMessage->passm_SampleData, sampleDataSize ));
 
       LoadAmiGusWavetableSample( sampleMessage->passm_SampleData,
-                                 sample->asfs_StartOffset,
+                                 sfSample->asfs_StartOffset,
                                  sampleDataSize );
-      StartAmiGusWavetablePlayback( sample->asfs_StartOffset,
-                                    sample->asfs_LoopOffset,
-                                    sample->asfs_EndOffset,
+      StartAmiGusWavetablePlayback( sfSample->asfs_StartOffset,
+                                    sfSample->asfs_LoopOffset,
+                                    sfSample->asfs_EndOffset,
                                     playbackRate,
-                                    sample->asfs_PlaybackFlags,
-                                    note->asfn_Attack,
-                                    note->asfn_Decay,
-                                    note->asfn_Sustain,
-                                    note->asfn_Release );
+                                    playbackVolume,
+                                    sfSample->asfs_PlaybackFlags,
+                                    sfNote->asfn_Attack,
+                                    sfNote->asfn_Decay,
+                                    sfNote->asfn_Sustain,
+                                    sfNote->asfn_Release );
 
       LOG_D(( "D: Replying PlayAmiSfSampleMessage 0x%08lx...\n",
               message ));
