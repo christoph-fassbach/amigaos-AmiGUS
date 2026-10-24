@@ -72,7 +72,6 @@ struct SF_Converter {
   struct ProgressDialog       * sfc_ProgressDialog;
 
   struct List                   sfc_InstrumentLabels;
-  struct List                   sfc_PercussionLabels;
 
   struct Process              * sfc_MainProcess;
 
