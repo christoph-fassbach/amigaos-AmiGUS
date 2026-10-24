@@ -40,6 +40,7 @@ enum ErrorCodes
   EOpenLabelBase,
   EOpenLayoutBase,
   EOpenListBrowserBase,
+  EOpenSliderBase,
   EOpenUtilityBase,
   EOpenWindowBase,
   ECreateMessagePort,

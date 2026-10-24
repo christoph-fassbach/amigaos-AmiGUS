@@ -17,8 +17,9 @@
  */
 
 #include <intuition/intuitionbase.h>
-#include <reaction/reaction_macros.h>
 #include <gadgets/getfile.h>
+#include <libraries/gadtools.h>
+#include <reaction/reaction_macros.h>
 
 #include <proto/alib.h>
 #include <proto/dos.h>
@@ -28,6 +29,7 @@
 #include <proto/label.h>
 #include <proto/layout.h>
 #include <proto/listbrowser.h>
+#include <proto/slider.h>
 #include <proto/window.h>
 
 #include "converter.h"
@@ -63,6 +65,7 @@ struct ClassLibrary      * GetFileBase;
 struct ClassLibrary      * LabelBase;
 struct ClassLibrary      * LayoutBase;
 struct ClassLibrary      * ListBrowserBase;
+struct ClassLibrary      * SliderBase;
 struct ClassLibrary      * WindowBase;
 
 /* Locals also defined here! */
@@ -74,6 +77,9 @@ enum GadgetIds {
   GadgetId_GetOutputFile,
   GadgetId_ReadButton,
   GadgetId_WriteButton,
+  GadgetId_PlayButton,
+  GadgetId_NoteSlider,
+  GadgetId_VelocitySlider,
   GadgetId_Instruments,
   GadgetId_End
 };
@@ -141,6 +147,7 @@ ULONG Startup( VOID ) {
   OpenLib(( struct Library ** )&LabelBase, "images/label.image", 0, EOpenLabelBase );
   OpenLib(( struct Library ** )&LayoutBase, "gadgets/layout.gadget", 0, EOpenLayoutBase );
   OpenLib(( struct Library ** )&ListBrowserBase, "gadgets/listbrowser.gadget", 0, EOpenListBrowserBase );
+  OpenLib(( struct Library ** )&SliderBase, "gadgets/slider.gadget", 0, EOpenSliderBase );
   OpenLib(( struct Library ** )&WindowBase, "window.class", 0, EOpenWindowBase );
 
   NewList( &( SF_Converter_Base->sfc_InstrumentLabels ));
@@ -178,6 +185,7 @@ VOID Cleanup( VOID ) {
   FreeListLabels( &( base->sfc_InstrumentLabels ));
 
   CloseLib(( struct Library ** )&WindowBase );
+  CloseLib(( struct Library ** )&SliderBase );
   CloseLib(( struct Library ** )&ListBrowserBase );
   CloseLib(( struct Library ** )&LayoutBase );
   CloseLib(( struct Library ** )&LabelBase );
@@ -291,6 +299,51 @@ VOID OpenWin( VOID ) { // TODO: enable error handling and return values
       LabelEnd,
       LAYOUT_AddChild, base->sfc_ListBrowser,
       CHILD_WeightedHeight, 1000,
+
+      LAYOUT_AddChild, HLayoutObject,
+        LAYOUT_VertAlignment, LALIGN_CENTER,
+
+        LAYOUT_AddChild, SliderObject,
+          SLIDER_Orientation, SLIDER_HORIZONTAL,
+          SLIDER_Min, 0,
+          SLIDER_Max, 127,
+          SLIDER_Level, 17,
+          SLIDER_Ticks, 8,
+          SLIDER_LevelPlace, PLACETEXT_RIGHT,
+          SLIDER_LevelFormat, "%3ld",
+          SLIDER_LevelMaxLen, 3,
+          GA_ID, GadgetId_NoteSlider,
+          GA_RelVerify, TRUE,
+        SliderEnd,
+        CHILD_Label, LabelObject,
+          LABEL_Text ,"Note offset: ",
+        LabelEnd,
+
+        LAYOUT_AddChild, SliderObject,
+          SLIDER_Orientation, SLIDER_HORIZONTAL,
+          SLIDER_Min, 0,
+          SLIDER_Max, 127,
+          SLIDER_Level, 17,
+          SLIDER_Ticks, 8,
+          SLIDER_LevelPlace, PLACETEXT_RIGHT,
+          SLIDER_LevelFormat, "%3ld",
+          SLIDER_LevelMaxLen, 3,
+          GA_ID, GadgetId_VelocitySlider,
+          GA_RelVerify, TRUE,
+        SliderEnd,
+        CHILD_Label, LabelObject,
+          LABEL_Text ,"Velocity: ",
+        LabelEnd,
+
+        LAYOUT_AddChild, ButtonObject,
+          GA_Text, " Play ",
+          GA_ID, GadgetId_PlayButton,
+          GA_RelVerify, TRUE,
+          GA_Disabled, TRUE,
+        LayoutEnd,
+        CHILD_WeightedWidth, 0,
+      LayoutEnd,
+      CHILD_WeightedHeight, 0,
 
       LAYOUT_AddChild, HLayoutObject,
         LAYOUT_VertAlignment, LALIGN_CENTER,
@@ -674,7 +727,7 @@ VOID HandleAmiSfListElement( ULONG index ) {
   UBYTE bankIndex;
   UBYTE presetIndex;
   UBYTE noteIndex;
-  UBYTE velocity = 127;  // TODO: get from velocity
+  UBYTE velocity = 127;  // TODO: get from velocity slider
   APTR data;
 
   if ( !( GetAmiSfIndicesForIndex( &bankIndex,
@@ -686,6 +739,7 @@ VOID HandleAmiSfListElement( ULONG index ) {
     LOG_E(( "E: Could not get information for index %ld\n", index ));
     return;
   }
+  // TODO: add a note slider and add some to note index here!
   preset = GetAmiSfPreset( amisf, bankIndex, presetIndex );
   note = GetAmiSfNote( amisf, preset, noteIndex );
   sample = GetAmiSfSample( amisf, note );
