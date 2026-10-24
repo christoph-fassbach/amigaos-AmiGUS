@@ -303,7 +303,7 @@ VOID OpenWin( VOID ) { // TODO: enable error handling and return values
       LAYOUT_AddChild, HLayoutObject,
         LAYOUT_VertAlignment, LALIGN_CENTER,
 
-        LAYOUT_AddChild, SliderObject,
+        LAYOUT_AddChild, base->sfc_NoteSlider = SliderObject,
           SLIDER_Orientation, SLIDER_HORIZONTAL,
           SLIDER_Min, 0,
           SLIDER_Max, 127,
@@ -316,10 +316,10 @@ VOID OpenWin( VOID ) { // TODO: enable error handling and return values
           GA_RelVerify, TRUE,
         SliderEnd,
         CHILD_Label, LabelObject,
-          LABEL_Text ,"Note offset: ",
+          LABEL_Text ,"Note: ",
         LabelEnd,
 
-        LAYOUT_AddChild, SliderObject,
+        LAYOUT_AddChild, base->sfc_VelocitySlider = SliderObject,
           SLIDER_Orientation, SLIDER_HORIZONTAL,
           SLIDER_Min, 0,
           SLIDER_Max, 127,
@@ -339,7 +339,6 @@ VOID OpenWin( VOID ) { // TODO: enable error handling and return values
           GA_Text, " Play ",
           GA_ID, GadgetId_PlayButton,
           GA_RelVerify, TRUE,
-          GA_Disabled, TRUE,
         LayoutEnd,
         CHILD_WeightedWidth, 0,
       LayoutEnd,
@@ -714,7 +713,7 @@ VOID HandleWriteButton( VOID ) {
   base->sfc_ProgressDialog = NULL;
 }
 
-VOID HandleAmiSfListElement( ULONG index ) {
+VOID HandleAmiSfListElement( ULONG index, UBYTE noteOverride, UBYTE velocity ) {
 
   struct SF_Converter * base = SF_Converter_Base;
   struct AmiSF * amisf = base->sfc_AmiSF;
@@ -727,7 +726,6 @@ VOID HandleAmiSfListElement( ULONG index ) {
   UBYTE bankIndex;
   UBYTE presetIndex;
   UBYTE noteIndex;
-  UBYTE velocity = 127;  // TODO: get from velocity slider
   APTR data;
 
   if ( !( GetAmiSfIndicesForIndex( &bankIndex,
@@ -759,7 +757,7 @@ VOID HandleAmiSfListElement( ULONG index ) {
     amisf,
     bankIndex,
     presetIndex,
-    noteIndex,
+    noteOverride,
     velocity,
     data );
 
@@ -779,7 +777,7 @@ VOID HandleAmiSfListElement( ULONG index ) {
   LOG_D(( "V: Playing AmiSF note done.\n" ));
 }
 
-VOID HandleSf2ListElement( ULONG index ) {
+VOID HandleSf2ListElement( ULONG index, UBYTE noteOverride, UBYTE velocity ) {
 
   struct SF_Converter * base = SF_Converter_Base;
   struct SF2 * sf2 = base->sfc_Sf2;
@@ -797,7 +795,7 @@ VOID HandleSf2ListElement( ULONG index ) {
   WORD sustain;
   WORD release;
   ULONG playbackRate;
-  UWORD playbackVolume = 0x4000; // TODO: get from velocity
+  UWORD playbackVolume = ( velocity * velocity ) + ( velocity << 1 ) + 1;
   UWORD playbackFlags;
   ULONG loopOffset;
   ULONG endOffset;
@@ -840,7 +838,7 @@ VOID HandleSf2ListElement( ULONG index ) {
   data = GetSf2SampleData( sf2, sample, size );
   playbackRate = GetTargetSampleRate( sample->sf2s_SampleNote,
                                       sample->sf2s_SampleRate,
-                                      sample->sf2s_SampleNote );
+                                      noteOverride );
 
   playbackFlags = AMISF_PLAY_RESOLUTION_16BIT
                   | AMISF_PLAY_LOOPED
@@ -876,19 +874,107 @@ VOID HandleSf2ListElement( ULONG index ) {
 VOID HandleListElement( ULONG index ) {
 
   struct SF_Converter * base = SF_Converter_Base;
+  UBYTE minNote = 0;
+  UBYTE maxNote = 127;
 
   if ( base->sfc_Sf2 ) {
 
-    HandleSf2ListElement( index );
+    struct SF2_Preset * preset;
+    struct SF2_Args * presetArgs;
+    struct SF2_Instrument * instrument;
+    struct SF2_Args * instrumentArgs;
+    struct SF2_Sample * sample;
+
+    if ( !( GetSf2InformationForIndex( &preset,
+                                       &presetArgs,
+                                       &instrument,
+                                       &instrumentArgs,
+                                       &sample,
+                                       base->sfc_Sf2,
+                                       index ))) {
+
+      LOG_E(( "E: Could not get information for index %ld\n", index ));
+      return;
+    }
+
+    minNote = MAX( instrumentArgs->sf2a_Values.sf2v_LowNote,
+                   presetArgs->sf2a_Values.sf2v_LowNote );
+    maxNote = MIN( instrumentArgs->sf2a_Values.sf2v_HighNote,
+                   presetArgs->sf2a_Values.sf2v_HighNote );
 
   } else if ( base->sfc_AmiSF ) {
 
-    HandleAmiSfListElement( index );
+    UBYTE bankIndex;
+    UBYTE presetIndex;
+    UBYTE noteIndex;
+    struct AmiSF_Preset * preset;
+    struct AmiSF_Note * note;
+    struct AmiSF_Sample * sample;
 
-  } else {
+    if ( !( GetAmiSfIndicesForIndex( &bankIndex,
+                                     &presetIndex,
+                                     &noteIndex,
+                                     base->sfc_AmiSF,
+                                     index ))) {
 
-    LOG_I(( "I: List element %ld pushed, but no SoundFont loaded!\n", index ));
+      LOG_E(( "E: Could not get information for index %ld\n", index ));
+      return;
+    }
+
+    preset = GetAmiSfPreset( base->sfc_AmiSF, bankIndex, presetIndex );
+    note = GetAmiSfNote( base->sfc_AmiSF, preset, noteIndex );
+    sample = GetAmiSfSample( base->sfc_AmiSF, note );
+
+    maxNote = note->asfn_MaxNote;
+    if ( 0 == noteIndex ) {
+
+      minNote = 0;
+
+    } else {
+
+      note = GetAmiSfNote( base->sfc_AmiSF, preset, noteIndex - 1 );
+      minNote = note->asfn_MaxNote + 1;
+    }
   }
+  SetGadgetAttrs( base->sfc_NoteSlider,
+                  base->sfc_MainWindow,
+                  NULL,
+                  SLIDER_Min, ( WORD ) minNote,
+                  SLIDER_Max, ( WORD ) maxNote,
+                  SLIDER_Level, ( WORD ) minNote,
+                  SLIDER_Ticks, ( WORD ) maxNote - minNote,
+                  TAG_DONE );
+  RefreshGList( base->sfc_NoteSlider,
+                base->sfc_MainWindow,
+                NULL,
+                -1 );
+  return;
+}
+
+VOID HandlePlayButton( VOID ) {
+
+  struct SF_Converter * base = SF_Converter_Base;
+  ULONG index;
+  ULONG note;
+  ULONG velocity;
+
+  if (( GetAttr( LISTBROWSER_Selected, base->sfc_ListBrowser, &index ) )
+    && ( GetAttr( SLIDER_Level, base->sfc_NoteSlider, &note ) )
+    && ( GetAttr( SLIDER_Level, base->sfc_VelocitySlider, &velocity ) )) {
+
+    LOG_D(( "D: Play pushed on index %ld note %ld velocity %ld\n",
+            index, note, velocity ));
+
+    if ( base->sfc_AmiSF ) {
+
+      HandleAmiSfListElement( index, ( UBYTE ) note, ( UBYTE ) velocity );
+
+    } else if ( base->sfc_Sf2 ) {
+
+      HandleSf2ListElement( index, ( UBYTE ) note, ( UBYTE ) velocity );
+    }
+  }
+  return;
 }
 
 VOID HandleEvents( VOID ) {
@@ -974,6 +1060,11 @@ VOID HandleEvents( VOID ) {
                   break;
                 }
               }
+              break;
+            }
+            case GadgetId_PlayButton: {
+
+              HandlePlayButton();
               break;
             }
             default: {

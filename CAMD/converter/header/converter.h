@@ -67,6 +67,8 @@ struct SF_Converter {
   struct Gadget               * sfc_OutputGetFile;
   struct Gadget               * sfc_WriteButton;
   struct Gadget               * sfc_ListBrowser;
+  struct Gadget               * sfc_NoteSlider;
+  struct Gadget               * sfc_VelocitySlider;
   struct ProgressDialog       * sfc_ProgressDialog;
 
   struct List                   sfc_InstrumentLabels;
