@@ -307,7 +307,7 @@ VOID OpenWin( VOID ) { // TODO: enable error handling and return values
           SLIDER_Orientation, SLIDER_HORIZONTAL,
           SLIDER_Min, 0,
           SLIDER_Max, 127,
-          SLIDER_Level, 17,
+          SLIDER_Level, 0,
           SLIDER_Ticks, 8,
           SLIDER_LevelPlace, PLACETEXT_RIGHT,
           SLIDER_LevelFormat, "%3ld",
@@ -323,7 +323,7 @@ VOID OpenWin( VOID ) { // TODO: enable error handling and return values
           SLIDER_Orientation, SLIDER_HORIZONTAL,
           SLIDER_Min, 0,
           SLIDER_Max, 127,
-          SLIDER_Level, 17,
+          SLIDER_Level, 127,
           SLIDER_Ticks, 8,
           SLIDER_LevelPlace, PLACETEXT_RIGHT,
           SLIDER_LevelFormat, "%3ld",
@@ -713,7 +713,7 @@ VOID HandleWriteButton( VOID ) {
   base->sfc_ProgressDialog = NULL;
 }
 
-VOID HandleAmiSfListElement( ULONG index, UBYTE noteOverride, UBYTE velocity ) {
+VOID HandleAmiSfPlay( ULONG index, UBYTE noteOverride, UBYTE velocity ) {
 
   struct SF_Converter * base = SF_Converter_Base;
   struct AmiSF * amisf = base->sfc_AmiSF;
@@ -767,17 +767,19 @@ VOID HandleAmiSfListElement( ULONG index, UBYTE noteOverride, UBYTE velocity ) {
           message, bankIndex, presetIndex, noteIndex,
           preset, note, sample,
           data, sample->asfs_EndOffset - sample->asfs_StartOffset ));
-  SendAmigusMessage( message );
-  Delay( 10 );
-  message = ( struct Message * ) CreateAmigusStopSampleMessage(
+  if ( !( SendAmigusMessage( message ))) {
+
+    Delay( 10 );
+    message = ( struct Message * ) CreateAmigusStopSampleMessage(
     SF_Converter_Base->sfc_MidiReplyPort,
     message );
-  SendAmigusMessage( message );
+    SendAmigusMessage( message );
 
+  }
   LOG_D(( "V: Playing AmiSF note done.\n" ));
 }
 
-VOID HandleSf2ListElement( ULONG index, UBYTE noteOverride, UBYTE velocity ) {
+VOID HandleSf2Play( ULONG index, UBYTE noteOverride, UBYTE velocity ) {
 
   struct SF_Converter * base = SF_Converter_Base;
   struct SF2 * sf2 = base->sfc_Sf2;
@@ -861,13 +863,14 @@ VOID HandleSf2ListElement( ULONG index, UBYTE noteOverride, UBYTE velocity ) {
     loopOffset,
     endOffset,
     data );
-  SendAmigusMessage( message );
-  Delay( 10 );
-  message = ( struct Message * ) CreateAmigusStopSampleMessage(
+  if ( !( SendAmigusMessage( message ))) {
+
+    Delay( 10 );
+    message = ( struct Message * ) CreateAmigusStopSampleMessage(
     SF_Converter_Base->sfc_MidiReplyPort,
     message );
-  SendAmigusMessage( message );
-
+    SendAmigusMessage( message );
+  }
   LOG_D(( "V: Playing SF2 note done.\n" ));
 }
 
@@ -936,18 +939,22 @@ VOID HandleListElement( ULONG index ) {
       minNote = note->asfn_MaxNote + 1;
     }
   }
-  SetGadgetAttrs( base->sfc_NoteSlider,
+  if (( base->sfc_Sf2 )
+    || ( base->sfc_AmiSF )) {
+
+    SetGadgetAttrs( base->sfc_NoteSlider,
+                    base->sfc_MainWindow,
+                    NULL,
+                    SLIDER_Min, ( WORD ) minNote,
+                    SLIDER_Max, ( WORD ) maxNote,
+                    SLIDER_Level, ( WORD ) minNote,
+                    SLIDER_Ticks, ( WORD ) maxNote - minNote,
+                    TAG_DONE );
+    RefreshGList( base->sfc_NoteSlider,
                   base->sfc_MainWindow,
                   NULL,
-                  SLIDER_Min, ( WORD ) minNote,
-                  SLIDER_Max, ( WORD ) maxNote,
-                  SLIDER_Level, ( WORD ) minNote,
-                  SLIDER_Ticks, ( WORD ) maxNote - minNote,
-                  TAG_DONE );
-  RefreshGList( base->sfc_NoteSlider,
-                base->sfc_MainWindow,
-                NULL,
-                -1 );
+                  -1 );
+  }
   return;
 }
 
@@ -967,11 +974,11 @@ VOID HandlePlayButton( VOID ) {
 
     if ( base->sfc_AmiSF ) {
 
-      HandleAmiSfListElement( index, ( UBYTE ) note, ( UBYTE ) velocity );
+      HandleAmiSfPlay( index, ( UBYTE ) note, ( UBYTE ) velocity );
 
     } else if ( base->sfc_Sf2 ) {
 
-      HandleSf2ListElement( index, ( UBYTE ) note, ( UBYTE ) velocity );
+      HandleSf2Play( index, ( UBYTE ) note, ( UBYTE ) velocity );
     }
   }
   return;
