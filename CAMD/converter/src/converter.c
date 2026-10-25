@@ -84,6 +84,10 @@ enum GadgetIds {
   GadgetId_End
 };
 
+/******************************************************************************
+ * Converter - private functions.
+ *****************************************************************************/
+
 ULONG OpenLib( struct Library ** library, STRPTR name, ULONG version, ULONG error ) {
 
   *library = OpenLibrary( name, version );
@@ -595,47 +599,6 @@ VOID HandleSourceFileButton( VOID ) {
                   TAG_END );
 }
 
-VOID HandleReadButton( VOID ) {
-
-  struct SF_Converter * base = SF_Converter_Base;
-  BOOL abort = FALSE;
-
-  base->sfc_ProgressDialog =
-    CreateProgressDialog( base->sfc_MainWindow,
-                          "Please wait...",
-                          "Loading and parsing SoundFont ...",
-                          "Cancel" );
-  ShowProgressDialog( base->sfc_ProgressDialog );
-
-  LOG_D(( "D: Reading %s.\n", base->sfc_SourceFileName ));
-
-  FreeSf2( base->sfc_Sf2 );
-  base->sfc_Sf2 = NULL;
-  FreeConversionInfo( base->sfc_Sf2ConversionInfo );
-  base->sfc_Sf2ConversionInfo = NULL;
-  FreeAmiSF( base->sfc_AmiSF );
-  base->sfc_AmiSF = NULL;
-
-  // Will need to try both, SF2 and AmiSF, and see what works.
-  if (( !( abort ))
-    && ( C_endswithi( base->sfc_SourceFileName, SF2_Suffix ))) {
-
-    abort = HandleSf2Read( base );
-  }
-  if (( !( abort ))
-    && ( !( base->sfc_Sf2 ))
-    && ( C_endswithi( base->sfc_SourceFileName, AmiSF_Suffix ))) {
-
-    abort = HandleAmiSFRead( base );
-  }
-
-  CloseProgressDialog( base->sfc_ProgressDialog );
-  FreeProgressDialog( base->sfc_ProgressDialog );
-  base->sfc_ProgressDialog = NULL;
-
-  UpdateWriteButtonStatus();
-}
-
 VOID HandleTargetFileButton( VOID ) {
 
   struct SF_Converter * base = SF_Converter_Base;
@@ -948,7 +911,7 @@ VOID HandleListElement( ULONG index ) {
                     SLIDER_Min, ( WORD ) minNote,
                     SLIDER_Max, ( WORD ) maxNote,
                     SLIDER_Level, ( WORD ) minNote,
-                    SLIDER_Ticks, ( WORD ) maxNote - minNote,
+                    SLIDER_Ticks, ( WORD ) ((( maxNote - minNote ) / 12 ) + 2),
                     TAG_DONE );
     RefreshGList( base->sfc_NoteSlider,
                   base->sfc_MainWindow,
@@ -956,6 +919,49 @@ VOID HandleListElement( ULONG index ) {
                   -1 );
   }
   return;
+}
+
+
+VOID HandleReadButton( VOID ) {
+
+  struct SF_Converter * base = SF_Converter_Base;
+  BOOL abort = FALSE;
+
+  base->sfc_ProgressDialog =
+    CreateProgressDialog( base->sfc_MainWindow,
+                          "Please wait...",
+                          "Loading and parsing SoundFont ...",
+                          "Cancel" );
+  ShowProgressDialog( base->sfc_ProgressDialog );
+
+  LOG_D(( "D: Reading %s.\n", base->sfc_SourceFileName ));
+
+  FreeSf2( base->sfc_Sf2 );
+  base->sfc_Sf2 = NULL;
+  FreeConversionInfo( base->sfc_Sf2ConversionInfo );
+  base->sfc_Sf2ConversionInfo = NULL;
+  FreeAmiSF( base->sfc_AmiSF );
+  base->sfc_AmiSF = NULL;
+
+  // Will need to try both, SF2 and AmiSF, and see what works.
+  if (( !( abort ))
+    && ( C_endswithi( base->sfc_SourceFileName, SF2_Suffix ))) {
+
+    abort = HandleSf2Read( base );
+  }
+  if (( !( abort ))
+    && ( !( base->sfc_Sf2 ))
+    && ( C_endswithi( base->sfc_SourceFileName, AmiSF_Suffix ))) {
+
+    abort = HandleAmiSFRead( base );
+  }
+
+  CloseProgressDialog( base->sfc_ProgressDialog );
+  FreeProgressDialog( base->sfc_ProgressDialog );
+  base->sfc_ProgressDialog = NULL;
+
+  UpdateWriteButtonStatus();
+  HandleListElement( 0 );
 }
 
 VOID HandlePlayButton( VOID ) {
@@ -1119,6 +1125,10 @@ VOID CloseWin( VOID ) {
     SF_Converter_Base->sfc_Screen = NULL;
   }
 }
+
+/******************************************************************************
+ * Converter - public functions.
+ *****************************************************************************/
 
 int main( VOID ) {
 
