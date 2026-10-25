@@ -39,7 +39,7 @@ BOOL CreateAmiSfListLabels( struct List * labels,
  */
 BOOL GetAmiSfIndicesForIndex( UBYTE * bankIndex,
                               UBYTE * presetIndex,
-                              UBYTE * noteIndex,
+                              LONG * noteIndex,
                               struct AmiSF * amisf,
                               ULONG index );
 

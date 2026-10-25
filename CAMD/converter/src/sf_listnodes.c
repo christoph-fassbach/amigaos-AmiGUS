@@ -366,7 +366,7 @@ BOOL CreateAmiSfListLabels( struct List * labels,
 
 BOOL GetAmiSfIndicesForIndex( UBYTE * bankIndex,
                               UBYTE * presetIndex,
-                              UBYTE * noteIndex,
+                              LONG * noteIndex,
                               struct AmiSF * amisf,
                               ULONG index ) {
 
@@ -387,7 +387,7 @@ BOOL GetAmiSfIndicesForIndex( UBYTE * bankIndex,
 
           *bankIndex = tempBankIndex;
           *presetIndex = tempPresetIndex;
-          *noteIndex = tempNoteIndex;
+          *noteIndex = preset->asfp_NoteStart + tempNoteIndex;
 
           return TRUE;
         }

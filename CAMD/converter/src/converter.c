@@ -725,7 +725,7 @@ VOID HandleAmiSfPlay( ULONG index, UBYTE noteOverride, UBYTE velocity ) {
   struct Message * message;
   UBYTE bankIndex;
   UBYTE presetIndex;
-  UBYTE noteIndex;
+  LONG noteIndex;
   APTR data;
 
   if ( !( GetAmiSfIndicesForIndex( &bankIndex,
@@ -737,9 +737,9 @@ VOID HandleAmiSfPlay( ULONG index, UBYTE noteOverride, UBYTE velocity ) {
     LOG_E(( "E: Could not get information for index %ld\n", index ));
     return;
   }
-  // TODO: add a note slider and add some to note index here!
+
   preset = GetAmiSfPreset( amisf, bankIndex, presetIndex );
-  note = GetAmiSfNote( amisf, preset, noteIndex );
+  note = GetAmiSfNote( amisf, noteIndex );
   sample = GetAmiSfSample( amisf, note );
   data = GetAmiSfSampleData( amisf, sample );
 
@@ -909,7 +909,7 @@ VOID HandleListElement( ULONG index ) {
 
     UBYTE bankIndex;
     UBYTE presetIndex;
-    UBYTE noteIndex;
+    LONG noteIndex;
     struct AmiSF_Preset * preset;
     struct AmiSF_Note * note;
     struct AmiSF_Sample * sample;
@@ -919,23 +919,23 @@ VOID HandleListElement( ULONG index ) {
                                      &noteIndex,
                                      base->sfc_AmiSF,
                                      index ))) {
-
+ 
       LOG_E(( "E: Could not get information for index %ld\n", index ));
       return;
     }
 
     preset = GetAmiSfPreset( base->sfc_AmiSF, bankIndex, presetIndex );
-    note = GetAmiSfNote( base->sfc_AmiSF, preset, noteIndex );
+    note = GetAmiSfNote( base->sfc_AmiSF, noteIndex );
     sample = GetAmiSfSample( base->sfc_AmiSF, note );
 
     maxNote = note->asfn_MaxNote;
-    if ( 0 == noteIndex ) {
+    if ( preset->asfp_NoteStart == noteIndex ) {
 
       minNote = 0;
 
     } else {
 
-      note = GetAmiSfNote( base->sfc_AmiSF, preset, noteIndex - 1 );
+      note = GetAmiSfNote( base->sfc_AmiSF, noteIndex - 1 );
       minNote = note->asfn_MaxNote + 1;
     }
   }

@@ -266,13 +266,15 @@ VOID DeleteAmigusMessage( APTR message ) {
 
       const UBYTE bankIndex = sampleMessage->passm_Bank;
       const UBYTE presetIndex = sampleMessage->passm_Preset;
-      const UBYTE noteIndex = sampleMessage->passm_Note;
 
       struct AmiSF * amisf = sampleMessage->passm_AmiSf;
       struct AmiSF_Preset * preset = GetAmiSfPreset( amisf,
                                                      bankIndex,
                                                      presetIndex );
-      struct AmiSF_Note * note = GetAmiSfNote( amisf, preset, noteIndex );
+      const LONG noteIndex = GetAmiSfNoteIndex( amisf,
+                                                preset,
+                                                sampleMessage->passm_Note );
+      struct AmiSF_Note * note = GetAmiSfNote( amisf, noteIndex );
       struct AmiSF_Sample * sample = GetAmiSfSample( amisf, note );
 
       ULONG size = sample->asfs_EndOffset - sample->asfs_StartOffset;
