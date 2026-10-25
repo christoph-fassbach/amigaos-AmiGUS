@@ -138,14 +138,14 @@ INLINE LONG GetAmiSfNoteIndex( struct AmiSF * amisf,
                                struct AmiSF_Preset * preset,
                                UBYTE note ) {
 
-  LONG noteStart = preset->asfp_NoteStart;
-  LONG noteOffset;
+  LONG noteIndex = preset->asfp_NoteStart;
 
-  for ( noteOffset = 0;
-        ( note > amisf->asf_Note[ noteStart + noteOffset ].asfn_MaxNote );
-        ++noteOffset );
+  while ( note > amisf->asf_Note[ noteIndex ].asfn_MaxNote ) {
 
-  return noteOffset + noteStart;
+    ++noteIndex;
+  }
+
+  return noteIndex;
 }
 
 INLINE struct AmiSF_Note * GetAmiSfNote( struct AmiSF * amisf,
