@@ -92,10 +92,13 @@ VOID HandleMessage( struct Message * message ) {
 
       struct AmiSF * amisf = sampleMessage->passm_AmiSf;
       struct AmiSF_Preset * sfPreset = GetAmiSfPreset( amisf, bank, preset );
-      struct AmiSF_Note * sfNote = GetAmiSfNote( amisf, sfPreset, note );
+      const LONG noteIndex = GetAmiSfNoteIndex( amisf, sfPreset, note );
+      struct AmiSF_Note * sfNote = GetAmiSfNote( amisf, noteIndex );
       struct AmiSF_Sample * sfSample = GetAmiSfSample( amisf, sfNote );
+      ULONG playbackRateIndex =
+        note + sfNote->asfn_BasePlaybackIndex - sfNote->asfn_BaseNote;
       ULONG playbackRate =
-        amisf->asf_PlaybackRate[ sfNote->asfn_BasePlaybackIndex ];
+        amisf->asf_PlaybackRate[ playbackRateIndex ];
       ULONG sampleDataSize =
         sfSample->asfs_EndOffset - sfSample->asfs_StartOffset;
       // Automatically limited to 127 * 127 + 2 * 127 = 16383 = 0x3FFF :D
