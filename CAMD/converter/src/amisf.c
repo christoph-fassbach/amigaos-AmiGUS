@@ -16,10 +16,11 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <amigus/amisf.h>
+
 #include <proto/dos.h>
 #include <proto/exec.h>
 
-#include "amisf.h"
 #include "converter.h"
 #include "debug.h"
 #include "errors.h"
