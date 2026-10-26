@@ -22,12 +22,14 @@
 /**
  * Enumeration of all possible error codes.
  */
-enum ErrorCodes
-  {
+enum ErrorCodes {
+
   ENoError = 0,
   /* Insert errors below. */
   /* Global errors 0x0001 - 0x00ff */
   EWrongDriverCPUVersion,
+  ELibraryBaseInconsistency,
+  EOpenAmiGusBase,
   EOpenCamdBase,
   EOpenDosBase,
   EOpenGfxBase,
@@ -47,6 +49,20 @@ enum ErrorCodes
   EOpenLogFile,
   EAllocateLogMem,
   EAllocateAmiGUSCAMDToolBase,
+  EHandleUnknown,
+  EAllocateAmiGUSCAMDBase,
+  EAllocateInterrupt,
+  EAllocateHandle,
+  EAllocateBuffer,
+  EDriverInUse,
+  EDriverNotInUse,
+  EWorkerProcessCreationFailed,
+  EWorkerProcessDied,
+  EWorkerProcessSignalsFailed,
+  EMainProcessSignalsFailed,
+  EAmiGUSNotFound,
+  EAmiGUSDetectError,
+  EAmiGUSFirmwareOutdated,
   ENoMidiNodes,
   ECreateMidi,
   EAddMidiLink,
@@ -102,8 +118,8 @@ enum ErrorCodes
   EAmiSFsampleWriteError,
 
   /* Insert errors above. */
-  EUnknownError,
+  EUnknownError = 0x1600,
   EAmountOfErrors
-  };
+};
 
 #endif /* ERRORS_H */
