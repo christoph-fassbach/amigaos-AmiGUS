@@ -26,6 +26,7 @@
 #include "debug.h"
 #include "errors.h"
 #include "progress_dialog.h"
+#include "sf_math.h"
 #include "sf2.h"
 #include "sf2_conversion.h"
 #include "sf2_tools.h"
@@ -170,10 +171,10 @@ static BOOL FillPresetNotes(
         asf_Note->asfn_BasePlaybackIndex = GetPlaybackRateOffset(
           amisf,
           tempSample->sf2s_SampleRate );
-        asf_Note->asfn_Attack = GetTargetADR( attack );
-        asf_Note->asfn_Decay = GetTargetADR( decay );
-        asf_Note->asfn_Sustain = GetTargetS( sustain );
-        asf_Note->asfn_Release = GetTargetADR( release );
+        asf_Note->asfn_Attack = GetAmiGusPeriodsFromTimecents( attack );
+        asf_Note->asfn_Decay = GetAmiGusPeriodsFromTimecents( decay );
+        asf_Note->asfn_Sustain = GetAmiGusFactorShift16FromCentibels( sustain );
+        asf_Note->asfn_Release = GetAmiGusPeriodsFromTimecents( release );
         asf_Note->asfn_SampleIndex = info->ci_Sf2ToAmiSfSample[ sampleIndex ];
 
         /* Complete iteration over all presets - instruments - samples */
@@ -302,7 +303,7 @@ static BOOL FillRates(
     for ( i = 0; i < maxSampleNote ; ++i ) {
 
       amisf->asf_PlaybackRate[ playbackRateCount + i ] =
-        GetTargetSampleRate( maxSampleNote, sampleRate, i );
+        GetAmiGusSampleRate( maxSampleNote, sampleRate, i );
     }
 
     // Remember the sample rate, and where it will be found
@@ -318,7 +319,7 @@ static BOOL FillRates(
           ++i ) {
 
       amisf->asf_PlaybackRate[ playbackRateCount + i ] =
-        GetTargetSampleRate( minSampleNote,
+        GetAmiGusSampleRate( minSampleNote,
                              sampleRate,
                              i - maxSampleNote + minSampleNote );
     }

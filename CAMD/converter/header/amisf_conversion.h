@@ -41,7 +41,4 @@ LONG WriteAmiSFtoFile(
 
 APTR GetAmiSfSampleData( struct AmiSF * amisf, struct AmiSF_Sample * sample );
 
-LONG GetMillisFromPeriods( UWORD periods );
-LONG GetCentibelsFromFactorShift16( UWORD factorShift16 );
-
 #endif /* AMISF_CONVERSION_H */

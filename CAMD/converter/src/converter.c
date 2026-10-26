@@ -41,6 +41,7 @@
 #include "progress_dialog.h"
 #include "sf_listnode_data.h"
 #include "sf_listnodes.h"
+#include "sf_math.h"
 #include "sf2_conversion.h"
 #include "sf2_optimizer.h"
 #include "sf2_reader.h"
@@ -794,14 +795,14 @@ VOID HandleSf2Play( ULONG index, UBYTE noteOverride, UBYTE velocity ) {
           sample->sf2s_LoopEndOffset - sample->sf2s_SampleStartOffset ));
   
   GetSf2ADSRs( presetArgs, instrumentArgs, &attack, &decay, &sustain, &release );
-  attack = GetTargetADR( attack );
-  decay = GetTargetADR( decay );
-  release = GetTargetADR( release );
-  sustain = GetTargetS( sustain );
+  attack = GetAmiGusPeriodsFromTimecents( attack );
+  decay = GetAmiGusPeriodsFromTimecents( decay );
+  release = GetAmiGusPeriodsFromTimecents( release );
+  sustain = GetAmiGusFactorShift16FromCentibels( sustain );
 
   size = GetSf2SampleSize( sample );
   data = GetSf2SampleData( sf2, sample, size );
-  playbackRate = GetTargetSampleRate( sample->sf2s_SampleNote,
+  playbackRate = GetAmiGusSampleRate( sample->sf2s_SampleNote,
                                       sample->sf2s_SampleRate,
                                       noteOverride );
 

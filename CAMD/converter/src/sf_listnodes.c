@@ -26,6 +26,7 @@
 #include "converter.h"
 #include "debug.h"
 #include "sf_listnode_data.h"
+#include "sf_math.h"
 #include "sf2_tools.h"
 #include "support.h"
 
