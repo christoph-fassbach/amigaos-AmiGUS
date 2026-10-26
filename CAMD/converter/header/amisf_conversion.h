@@ -30,7 +30,6 @@ struct AmiSF * AllocAmiSFfromSF2(
   struct ProgressDialog * dialog
 );
 
-
 LONG WriteAmiSFtoFile(
   struct AmiSF * amisf,
   STRPTR filePath,

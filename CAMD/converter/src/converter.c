@@ -35,6 +35,7 @@
 #include "converter.h"
 
 #include "amigus_utils.h"
+#include "amisf_conversion.h"
 #include "camd_utils.h"
 #include "debug.h"
 #include "errors.h"
