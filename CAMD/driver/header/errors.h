@@ -37,7 +37,7 @@ enum ErrorCodes {
   EOpenButtonBase,
   EOpenDoubBasBase,
   EOpenDoubTransBase,
-  EOpenFuelGaugeBase,
+  EOpenFuelBase,
   EOpenGetFileBase,
   EOpenLabelBase,
   EOpenLayoutBase,

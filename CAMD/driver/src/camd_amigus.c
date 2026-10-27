@@ -31,15 +31,21 @@
 #include "compiler_extras.h"
 #include "debug.h"
 #include "errors.h"
+#include "progress_dialog.h"
 #include "support.h"
 #include "worker.h"
 
-// As declared in amigus_camd.h
+// Libraries as declared in amigus_camd.h:
 struct ExecBase          * SysBase           = NULL;
 struct DosLibrary        * DOSBase           = NULL;
 struct IntuitionBase     * IntuitionBase     = NULL;
 struct Library           * AmiGUS_Base       = NULL;
 struct AmiGUS_CAMD       * AmiGUS_CAMD_Base  = NULL;
+// And for ProgressDialogs in ReAction:
+struct ClassLibrary      * FuelGaugeBase     = NULL;
+struct ClassLibrary      * LabelBase         = NULL;
+struct ClassLibrary      * LayoutBase        = NULL;
+struct ClassLibrary      * WindowBase        = NULL;
 
 STRPTR _LibVersionString = "$VER: " LIBRARY_IDSTRING "\r\n";
 
@@ -164,6 +170,41 @@ VOID __ASM__ __SAVE_DS__ AmiGUS_PlaySound(
 struct MidiPortData AmiGUS_MidiPortData = { AmiGUS_ActivateXmit };
 
 /******************************************************************************
+ * CAMD MIDI driver's private functions.
+ *****************************************************************************/
+
+ULONG OpenLib( struct Library ** library,
+               STRPTR name,
+               ULONG version,
+               ULONG error,
+               BOOL fatal ) {
+
+  *library = OpenLibrary( name, version );
+  if ( *library ) {
+
+    return ENoError;
+  }
+
+  DisplayError( error );
+
+  if ( fatal ) {
+
+    AmiGUS_Expunge();
+  }
+
+  return error;
+}
+
+VOID CloseLib( struct Library ** library ) {
+
+  if (( library ) && ( *library )) {
+
+    CloseLibrary( *library );
+    *library = NULL;
+  }
+}
+
+/******************************************************************************
  * CAMD MIDI driver's "public" function definitions.
  *****************************************************************************/
 
@@ -212,31 +253,25 @@ BOOL __ASM__ __SAVE_DS__ AmiGUS_Init(
   }
   AmiGUS_CAMD_Base = base;
 
-  DOSBase =
-    ( struct DosLibrary * ) OpenLibrary( "dos.library", 34 );
+  OpenLib(( APTR )&DOSBase, "dos.library", 34, EOpenDosBase, TRUE );
   if ( !( DOSBase )) {
 
-    DisplayError( EOpenDosBase );
-    AmiGUS_Expunge();
     return FALSE;
   }
-  IntuitionBase =
-    ( struct IntuitionBase * ) OpenLibrary( "intuition.library", 34 );
+  OpenLib(( APTR )&IntuitionBase, "intuition.library", 34, EOpenDosBase, TRUE );
   if ( !( IntuitionBase )) {
 
-    DisplayError( EOpenIntuitionBase );
-    AmiGUS_Expunge();
     return FALSE;
   }
-
-  AmiGUS_Base =
-    ( struct Library * ) OpenLibrary( "amigus.library", 1 );
+  OpenLib(( APTR )&AmiGUS_Base, "amigus.library", 1, EOpenAmiGusBase, TRUE );
   if ( !( AmiGUS_Base )) {
 
-    DisplayError( EOpenAmiGusBase );
-    AmiGUS_Expunge();
     return FALSE;
   }
+  OpenLib(( struct Library ** ) &FuelGaugeBase, "gadgets/fuelgauge.gadget", 0, EOpenFuelBase, FALSE );
+  OpenLib(( struct Library ** ) &LabelBase, "images/label.image", 0, EOpenLabelBase, FALSE );
+  OpenLib(( struct Library ** ) &LayoutBase, "gadgets/layout.gadget", 0, EOpenLayoutBase, FALSE );
+  OpenLib(( struct Library ** ) &WindowBase, "window.class", 0, EOpenWindowBase, FALSE );
 
 #if 1
 
@@ -277,6 +312,12 @@ BOOL __ASM__ __SAVE_DS__ AmiGUS_Init(
 
     base->agb_CardBase = base->agb_AmiGUS->agus_WavetableBase;
 
+    base->agb_ProgressDialog =
+      CreateProgressDialog( NULL,
+                            "Please wait...",
+                            "Loading AmiSF ...",
+                            "Cancel" );
+
     LOG_D(( "D: AmiGUS_CAMD using Wavetable @ 0x%08lx on %s\n",
             base->agb_CardBase,
             base->agb_AmiGUS->agus_TypeName ));
@@ -297,6 +338,8 @@ VOID __ASM__ __SAVE_DS__ AmiGUS_Expunge( VOID ) {
                    AMIGUS_FLAG_WAVETABLE,
                    AmiGUS_CAMD_Base );
 
+  FreeProgressDialog( AmiGUS_CAMD_Base->agb_ProgressDialog );
+
   if ( AmiGUS_CAMD_Base->agb_LogFile ) {
 
     Close( AmiGUS_CAMD_Base->agb_LogFile );
@@ -309,18 +352,16 @@ VOID __ASM__ __SAVE_DS__ AmiGUS_Expunge( VOID ) {
     FreeMem( AmiGUS_CAMD_Base->agb_LogMem, ... );
   }    
   */
-  if ( AmiGUS_Base ) {
+  CloseLib(( struct Library ** ) &WindowBase );
+  CloseLib(( struct Library ** ) &LayoutBase );
+  CloseLib(( struct Library ** ) &LabelBase );
+  CloseLib(( struct Library ** ) &FuelGaugeBase );
 
-    CloseLibrary(( struct Library * ) AmiGUS_Base );
-  }
-  if ( IntuitionBase ) {
+  CloseLib(( struct Library ** ) &AmiGUS_Base );
+  CloseLib(( struct Library ** ) &IntuitionBase );
+  CloseLib(( struct Library ** ) &DOSBase );
 
-    CloseLibrary(( struct Library * ) IntuitionBase );
-  }
-  if ( DOSBase ) {
 
-    CloseLibrary(( struct Library *) DOSBase );
-  }
   if ( AmiGUS_CAMD_Base ) {
 
     FreeMem( AmiGUS_CAMD_Base, sizeof( struct AmiGUS_CAMD ));
@@ -335,6 +376,7 @@ APTR __ASM__ __SAVE_DS__ AmiGUS_OpenPort (
   __REG__( a2, APTR userdata )
 ) {
 
+  struct AmiGUS_CAMD * base = AmiGUS_CAMD_Base;
   LONG amiSfPathVarLength;
   LONG amiSfModeVarLength;
 
@@ -346,25 +388,25 @@ APTR __ASM__ __SAVE_DS__ AmiGUS_OpenPort (
   // TODO: Allocate / reserve card
   // TODO: check port num
   
-  AmiGUS_CAMD_Base->agb_TransmitFunction = transmitHandler;
-  AmiGUS_CAMD_Base->agb_ReceiveFunction = receiveHandler;
-  AmiGUS_CAMD_Base->agb_CAMD_userdata = userdata;
+  base->agb_TransmitFunction = transmitHandler;
+  base->agb_ReceiveFunction = receiveHandler;
+  base->agb_CAMD_userdata = userdata;
 
   /*
    * ------------------------------------------------------
    * Part X: Prepare worker task communication. <- TODO
    * ------------------------------------------------------
    */
-  AmiGUS_CAMD_Base->agb_WorkerWorkSignal = -1;
-  AmiGUS_CAMD_Base->agb_WorkerStopSignal = -1;
-  AmiGUS_CAMD_Base->agb_MainProcess = ( struct Process * ) FindTask( NULL );
-  AmiGUS_CAMD_Base->agb_MainSignal = AllocSignal( -1 );
-  if ( -1 == AmiGUS_CAMD_Base->agb_MainSignal ) {
+  base->agb_WorkerWorkSignal = -1;
+  base->agb_WorkerStopSignal = -1;
+  base->agb_MainProcess = ( struct Process * ) FindTask( NULL );
+  base->agb_MainSignal = AllocSignal( -1 );
+  if ( -1 == base->agb_MainSignal ) {
 
     DisplayError( EMainProcessSignalsFailed );
     return NULL;
   }
-  AmiGUS_CAMD_Base->agb_WorkerReady = FALSE;
+  base->agb_WorkerReady = FALSE;
 
   /*
    * ------------------------------------------------------
@@ -372,7 +414,7 @@ APTR __ASM__ __SAVE_DS__ AmiGUS_OpenPort (
    * ------------------------------------------------------
    */
   LOG_D(( "D: Creating worker process for AmiGUS_CAMD_Base @ %08lx\n",
-          (LONG) AmiGUS_CAMD_Base ));
+          (LONG) base ));
   if ( CreateWorkerProcess() ) {
 
     LOG_D(( "D: No worker, failed.\n" ));
@@ -386,27 +428,30 @@ APTR __ASM__ __SAVE_DS__ AmiGUS_OpenPort (
    */
 
   amiSfPathVarLength = GetVar( "AmiGUS/CAMD-AmiSF-PATH",
-                               AmiGUS_CAMD_Base->agb_AmiSfPath,
-                               sizeof( AmiGUS_CAMD_Base->agb_AmiSfPath ),
+                               base->agb_AmiSfPath,
+                               sizeof( base->agb_AmiSfPath ),
                                0 );
   amiSfModeVarLength = GetVar( "AmiGUS/CAMD-AmiSF-MODE",
-                               ( STRPTR ) &( AmiGUS_CAMD_Base->agb_AmiSfMode ),
-                               sizeof( AmiGUS_CAMD_Base->agb_AmiSfMode ),
+                               ( STRPTR ) &( base->agb_AmiSfMode ),
+                               sizeof( base->agb_AmiSfMode ),
                                0 );
 
   LOG_D(( "D: AmiSF path var length %ld, is '%s'.\n",
-          amiSfPathVarLength, AmiGUS_CAMD_Base->agb_AmiSfPath ));
+          amiSfPathVarLength, base->agb_AmiSfPath ));
   LOG_D(( "D: AmiSF mode var length %ld, is '%s'.\n",
-          amiSfModeVarLength, ( STRPTR ) &( AmiGUS_CAMD_Base->agb_AmiSfMode )));
+          amiSfModeVarLength, ( STRPTR ) &( base->agb_AmiSfMode )));
   if ( 0 < amiSfPathVarLength ) {
 
-    AmiGUS_CAMD_Base->agb_AmiSf = AllocAmiSFfromFile(
-      AmiGUS_CAMD_Base->agb_AmiSfPath,
-      NULL );
-    PrepareSamples( AmiGUS_CAMD_Base->agb_AmiSf,
-                    AmiGUS_CAMD_Base->agb_AmiSfMode,
-                    AmiGUS_CAMD_Base->agb_SampleBuffer,
-                    NULL );
+    ShowProgressDialog( base->agb_ProgressDialog );
+
+    base->agb_AmiSf = AllocAmiSFfromFile( base->agb_AmiSfPath,
+                                          base->agb_ProgressDialog );
+    PrepareSamples( base->agb_AmiSf,
+                    base->agb_AmiSfMode,
+                    base->agb_SampleBuffer,
+                    base->agb_ProgressDialog );
+
+    CloseProgressDialog( base->agb_ProgressDialog );
   }
 
   LOG_D(( "D: OpenPort done, returning 0x%lx.\n",

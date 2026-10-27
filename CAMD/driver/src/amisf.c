@@ -24,6 +24,7 @@
 #include "amisf.h"
 #include "debug.h"
 #include "errors.h"
+#include "progress_dialog.h"
 #include "support.h"
 
 struct AmiSF * AllocAmiSFfromFile( STRPTR filePath,
@@ -32,6 +33,9 @@ struct AmiSF * AllocAmiSFfromFile( STRPTR filePath,
   LONG expected;
   LONG actual;
   UBYTE header[ 8 ];
+  ULONG maxProgress = 1000;
+  ULONG currentProgress = 1;
+
   struct AmiSF * amisf = AllocMem( sizeof( struct AmiSF ),
                                    MEMF_ANY | MEMF_CLEAR );
 
@@ -61,6 +65,9 @@ struct AmiSF * AllocAmiSFfromFile( STRPTR filePath,
     return NULL;
   }
 
+  ++currentProgress;
+  HandleProgressDialogTick( dialog, currentProgress, maxProgress );
+
   ///////////////////////////////////////////////////////////////////
 
   expected = 128 * 128 * sizeof( struct AmiSF_Preset );
@@ -70,6 +77,8 @@ struct AmiSF * AllocAmiSFfromFile( STRPTR filePath,
   if ( actual != expected ) {
     // TODO: handle error
   }
+  ++currentProgress;
+  HandleProgressDialogTick( dialog, currentProgress, maxProgress );
 
   ///////////////////////////////////////////////////////////////////
 
@@ -94,6 +103,9 @@ struct AmiSF * AllocAmiSFfromFile( STRPTR filePath,
     // TODO: handle error
   }
 
+  ++currentProgress;
+  HandleProgressDialogTick( dialog, currentProgress, maxProgress );
+
   ///////////////////////////////////////////////////////////////////
 
   expected = 1 * sizeof( ULONG );
@@ -116,6 +128,8 @@ struct AmiSF * AllocAmiSFfromFile( STRPTR filePath,
   if ( actual != expected ) {
     // TODO: handle error
   }
+  ++currentProgress;
+  HandleProgressDialogTick( dialog, currentProgress, maxProgress );
 
   ///////////////////////////////////////////////////////////////////
 
@@ -139,6 +153,8 @@ struct AmiSF * AllocAmiSFfromFile( STRPTR filePath,
   if ( actual != expected ) {
     // TODO: handle error
   }
+  ++currentProgress;
+  HandleProgressDialogTick( dialog, currentProgress, maxProgress );
 
   amisf->asf_PlaybackRateOffset = AllocMem( expected,
                                             MEMF_ANY | MEMF_CLEAR );
@@ -151,6 +167,8 @@ struct AmiSF * AllocAmiSFfromFile( STRPTR filePath,
   if ( actual != expected ) {
     // TODO: handle error
   }
+  ++currentProgress;
+  HandleProgressDialogTick( dialog, currentProgress, maxProgress );
 
   ///////////////////////////////////////////////////////////////////
 
@@ -174,6 +192,8 @@ struct AmiSF * AllocAmiSFfromFile( STRPTR filePath,
   if ( actual != expected ) {
     // TODO: handle error
   }
+  ++currentProgress;
+  HandleProgressDialogTick( dialog, currentProgress, maxProgress );
 
   ///////////////////////////////////////////////////////////////////
 
@@ -192,6 +212,9 @@ struct AmiSF * AllocAmiSFfromFile( STRPTR filePath,
   if ( actual != expected ) {
     // TODO: handle error
   }
+  ++currentProgress;
+  maxProgress = ( amisf->asf_SampleDataSize >> 12 ) + 10;
+  HandleProgressDialogTick( dialog, currentProgress, maxProgress );
 
   expected = Seek( amisf->asf_SampleSourceFile, OFFSET_CURRENT, 0 );
   if ( amisf->asf_SampleSourceOffset != expected ) {
@@ -276,11 +299,17 @@ VOID PrepareSamples( struct AmiSF * amisf,
                      struct ProgressDialog * dialog ) {
 
   LONG overallRead = 0;
+  LONG bytesRead;
+  ULONG maxProgress = ( amisf->asf_SampleDataSize >> 12 ) + 10;
+  ULONG currentProgress = 10;
+
+  HandleProgressDialogTick( dialog, currentProgress, maxProgress );
 
   switch ( mode ) {
     case CHAR_TO_ULONG( 'R', 'A', 'M', 0 ): {
 
       // Preloads all samples to Amiga RAM.
+      ULONG i;
 
       LOG_D(( "D: Loading all samples to Amiga RAM.\n" ));
       amisf->asf_SampleData = AllocMem( amisf->asf_SampleDataSize,
@@ -288,24 +317,25 @@ VOID PrepareSamples( struct AmiSF * amisf,
       Seek( amisf->asf_SampleSourceFile,
             amisf->asf_SampleSourceOffset,
             OFFSET_BEGINING );
-      overallRead = Read( amisf->asf_SampleSourceFile,
-                          amisf->asf_SampleData,
-                          amisf->asf_SampleDataSize );
-      if ( overallRead != amisf->asf_SampleDataSize ) {
 
-        LOG_E(( "E: Failed to read %ld BYTEs of sample data, "
-                "got %ld instead.\n",
-                amisf->asf_SampleDataSize, overallRead ));
+      do {
 
-      } else {
+        bytesRead = Read(
+          amisf->asf_SampleSourceFile, 
+          ( APTR )(( ULONG )( amisf->asf_SampleData ) + overallRead ),
+          AMISF_SAMPLE_BUFFER_SIZE );
+        overallRead += bytesRead;
+        ++currentProgress;
+        HandleProgressDialogTick( dialog, currentProgress, maxProgress );
 
-        ULONG i;
 
-        for ( i = 0; i < amisf->asf_SampleCount; ++i ) {
+      } while (( 0 != bytesRead )
+        && ( overallRead < amisf->asf_SampleDataSize ));
 
-          amisf->asf_SampleMetadata[ i ].asfs_StatusFlags
-            |= AMISF_STATUS_LOCATION_SYS_RAM;
-        }
+      for ( i = 0; i < amisf->asf_SampleCount; ++i ) {
+
+        amisf->asf_SampleMetadata[ i ].asfs_StatusFlags
+          |= AMISF_STATUS_LOCATION_SYS_RAM;
       }
 
       break;
@@ -322,8 +352,6 @@ VOID PrepareSamples( struct AmiSF * amisf,
     default: {
 
       // Preloads all samples to AmiGUS RAM.
-      LONG bytesRead;
-      LONG overallRead = 0;
 
       LOG_D(( "D: Loading all samples to AmiGUS.\n" ));
       Seek( amisf->asf_SampleSourceFile,
@@ -339,6 +367,9 @@ VOID PrepareSamples( struct AmiSF * amisf,
                                    overallRead,
                                    bytesRead );
         overallRead += bytesRead;
+        ++currentProgress;
+        HandleProgressDialogTick( dialog, currentProgress, maxProgress );
+
 
       } while (( 0 != bytesRead )
         && ( overallRead < amisf->asf_SampleDataSize ));

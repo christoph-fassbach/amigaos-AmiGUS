@@ -139,7 +139,9 @@ struct AmiGUS_CAMD {
   BYTE                          agb_WorkerWorkSignal;
   BYTE                          agb_WorkerStopSignal;
 
-  BYTE                          agb_SampleLoadingDialog;
+  BYTE                          agb_ShowProgressDialog;
+  struct ProgressDialog       * agb_ProgressDialog;
+
   UBYTE                         agb_SampleBuffer[ AMISF_SAMPLE_BUFFER_SIZE ];
   BYTE                          agb_AmiSfPath[ AMISF_PATH_BUFFER_SIZE ];
   ULONG                         agb_AmiSfMode;
@@ -163,5 +165,12 @@ extern struct AmiGUS_CAMD       * AmiGUS_CAMD_Base;
 extern struct DosLibrary        * DOSBase;
 extern struct IntuitionBase     * IntuitionBase;
 extern struct ExecBase          * SysBase;
+/*
+ * And some reaction classes for ProgressDialogs:
+ */
+extern struct ClassLibrary      * FuelGaugeBase;
+extern struct ClassLibrary      * LabelBase;
+extern struct ClassLibrary      * LayoutBase;
+extern struct ClassLibrary      * WindowBase;
 
 #endif /* AMIGUS_CAMD_H */
