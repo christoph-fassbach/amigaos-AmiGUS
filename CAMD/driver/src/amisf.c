@@ -20,16 +20,17 @@
 #include <proto/exec.h>
 
 #include "amigus_camd.h"
+#include "amigus_wavetable.h"
 #include "amisf.h"
 #include "debug.h"
 #include "errors.h"
 #include "support.h"
 
-struct AmiSF * AllocAmiSFfromFile(
-  STRPTR filePath,
-  struct ProgressDialog * dialog
-) {
-// TODO: Use also for converter!
+#define AMISF_SAMPLE_TRANSIT_BUFFER_SIZE 4096
+
+struct AmiSF * AllocAmiSFfromFile( STRPTR filePath,
+                                   struct ProgressDialog * dialog ) {
+
   LONG expected;
   LONG actual;
   UBYTE header[ 8 ];
@@ -255,6 +256,11 @@ VOID FreeAmiSF( struct AmiSF * amisf ) {
     Close( amisf->asf_SampleSourceFile );
     amisf->asf_SampleSourceFile = NULL;
   }
+  if ( amisf->asf_SampleData ) {
+
+    FreeMem( amisf->asf_SampleData, amisf->asf_SampleDataSize );
+    amisf->asf_SampleData = NULL;
+  }
 
   FreeMem( amisf, sizeof( struct AmiSF ));
   LOG_D(( "D: Free'd AmiSF with %ld notes, %ld samples, %ld bytes sample data, "
@@ -266,3 +272,82 @@ VOID FreeAmiSF( struct AmiSF * amisf ) {
           amisf->asf_PlaybackRateCount ));
 }
 
+VOID PrepareSamples( struct AmiSF * amisf,
+                     ULONG mode,
+                     struct ProgressDialog * dialog ) {
+
+  LONG overallRead = 0;
+
+  switch ( mode ) {
+    case CHAR_TO_ULONG( 'R', 'A', 'M', 0 ): {
+
+      // Preloads all samples to Amiga RAM.
+
+      LOG_D(( "D: Loading all samples to Amiga RAM.\n" ));
+      amisf->asf_SampleData = AllocMem( amisf->asf_SampleDataSize,
+                                        MEMF_ANY );
+      Seek( amisf->asf_SampleSourceFile,
+            amisf->asf_SampleSourceOffset,
+            OFFSET_BEGINING );
+      overallRead = Read( amisf->asf_SampleSourceFile,
+                          amisf->asf_SampleData,
+                          amisf->asf_SampleDataSize );
+      if ( overallRead != amisf->asf_SampleDataSize ) {
+
+        LOG_E(( "E: Failed to read %ld BYTEs of sample data, "
+                "got %ld instead.\n",
+                amisf->asf_SampleDataSize, overallRead ));
+
+      } else {
+
+        ULONG i;
+
+        for ( i = 0; i < amisf->asf_SampleCount; ++i ) {
+
+          amisf->asf_SampleMetadata[ i ].asfs_StatusFlags
+            |= AMISF_STATUS_LOCATION_SYS_RAM;
+        }
+      }
+
+      break;
+    }
+    case CHAR_TO_ULONG( 'D', 'S', 'K', 0 ): {
+      // Preloads all samples to AmiGUS RAM.
+      LOG_D(( "D: Keeping all samples on Disk for lazy loading.\n" ));
+      break;
+    }
+    case CHAR_TO_ULONG( 'G', 'U', 'S', 0 ):
+    default: {
+
+      // Preloads all samples to AmiGUS RAM.
+      LONG bytesRead;
+      LONG overallRead = 0;
+      ULONG * buffer;
+
+      LOG_D(( "D: Loading all samples to AmiGUS.\n" ));
+      buffer = AllocMem( AMISF_SAMPLE_TRANSIT_BUFFER_SIZE,
+                         MEMF_ANY );
+      Seek( amisf->asf_SampleSourceFile,
+            amisf->asf_SampleSourceOffset,
+            OFFSET_BEGINING );
+
+      do {
+
+        bytesRead = Read( amisf->asf_SampleSourceFile, 
+                          buffer,
+                          AMISF_SAMPLE_TRANSIT_BUFFER_SIZE );
+        LoadAmiGusWavetableSample( buffer,
+                                   overallRead,
+                                   bytesRead );
+        overallRead += bytesRead;
+
+      } while (( 0 != bytesRead )
+        && ( overallRead < amisf->asf_SampleDataSize ));
+
+      FreeMem( buffer, AMISF_SAMPLE_TRANSIT_BUFFER_SIZE );
+
+      break;
+    }
+  }
+  LOG_D(( "D: Loaded %ld BYTEs sample data.\n", overallRead ));
+}

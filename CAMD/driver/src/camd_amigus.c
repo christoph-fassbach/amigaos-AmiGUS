@@ -27,6 +27,7 @@
 
 #include "amigus_camd.h"
 #include "amigus_wavetable.h"
+#include "amisf.h"
 #include "compiler_extras.h"
 #include "debug.h"
 #include "errors.h"
@@ -334,6 +335,10 @@ APTR __ASM__ __SAVE_DS__ AmiGUS_OpenPort (
   __REG__( a2, APTR userdata )
 ) {
 
+  LONG amiSfPathVarLength;
+  LONG amiSfModeVarLength;
+
+
   LOG_D(( "D: OpenPort called for "
           "data=0x%08lx port=%ld txh=0x%08lx rxh=0x%08lx user=0x%08lx\n",
           data, portnum, transmitHandler, receiveHandler, userdata ));
@@ -372,6 +377,35 @@ APTR __ASM__ __SAVE_DS__ AmiGUS_OpenPort (
 
     LOG_D(( "D: No worker, failed.\n" ));
     return NULL;
+  }
+
+  /*
+   * ------------------------------------------------------
+   * Part X: Load Settings
+   * ------------------------------------------------------
+   */
+
+  amiSfPathVarLength = GetVar( "AmiGUS/CAMD-AmiSF-PATH",
+                               AmiGUS_CAMD_Base->agb_AmiSfPath,
+                               sizeof( AmiGUS_CAMD_Base->agb_AmiSfPath ),
+                               0 );
+  amiSfModeVarLength = GetVar( "AmiGUS/CAMD-AmiSF-MODE",
+                               ( STRPTR ) &( AmiGUS_CAMD_Base->agb_AmiSfMode ),
+                               sizeof( AmiGUS_CAMD_Base->agb_AmiSfMode ),
+                               0 );
+
+  LOG_D(( "D: AmiSF path var length %ld, is '%s'.\n",
+          amiSfPathVarLength, AmiGUS_CAMD_Base->agb_AmiSfPath ));
+  LOG_D(( "D: AmiSF mode var length %ld, is '%s'.\n",
+          amiSfModeVarLength, ( STRPTR ) &( AmiGUS_CAMD_Base->agb_AmiSfMode )));
+  if (( 0 < amiSfPathVarLength ) &&  ( 0 < amiSfModeVarLength )) {
+
+    AmiGUS_CAMD_Base->agb_AmiSf = AllocAmiSFfromFile(
+      AmiGUS_CAMD_Base->agb_AmiSfPath,
+      NULL );
+    PrepareSamples( AmiGUS_CAMD_Base->agb_AmiSf,
+                    AmiGUS_CAMD_Base->agb_AmiSfMode,
+                    NULL );
   }
 
   LOG_D(( "D: OpenPort done, returning 0x%lx.\n",

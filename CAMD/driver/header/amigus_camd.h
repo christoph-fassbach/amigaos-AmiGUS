@@ -129,6 +129,11 @@ struct AmiGUS_CAMD {
   BYTE                          agb_Padding0;
   struct MsgPort              * agb_WorkerPort;
 
+  BYTE                          agb_AmiSfPath[ 256 ];
+  ULONG                         agb_AmiSfMode;
+  struct AmiSF                * agb_AmiSf;
+
+
   /* CAMD pointers */
   TransmitFunctionType          agb_TransmitFunction;
   ReceiveFunctionType           agb_ReceiveFunction;

@@ -124,6 +124,10 @@ struct AmiSF * AllocAmiSFfromFile(
 
 VOID FreeAmiSF( struct AmiSF * amisf );
 
+VOID PrepareSamples( struct AmiSF * amisf,
+                     ULONG mode,
+                     struct ProgressDialog * dialog );
+
 INLINE struct AmiSF_Preset * GetAmiSfPreset( struct AmiSF * amisf,
                                              UBYTE bank,
                                              UBYTE preset ) {
