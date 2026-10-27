@@ -26,8 +26,6 @@
 #include "errors.h"
 #include "support.h"
 
-#define AMISF_SAMPLE_TRANSIT_BUFFER_SIZE 4096
-
 struct AmiSF * AllocAmiSFfromFile( STRPTR filePath,
                                    struct ProgressDialog * dialog ) {
 
@@ -274,6 +272,7 @@ VOID FreeAmiSF( struct AmiSF * amisf ) {
 
 VOID PrepareSamples( struct AmiSF * amisf,
                      ULONG mode,
+                     UBYTE * buffer,
                      struct ProgressDialog * dialog ) {
 
   LONG overallRead = 0;
@@ -312,8 +311,11 @@ VOID PrepareSamples( struct AmiSF * amisf,
       break;
     }
     case CHAR_TO_ULONG( 'D', 'S', 'K', 0 ): {
-      // Preloads all samples to AmiGUS RAM.
+
+      // Preloads no samples.
+
       LOG_D(( "D: Keeping all samples on Disk for lazy loading.\n" ));
+
       break;
     }
     case CHAR_TO_ULONG( 'G', 'U', 'S', 0 ):
@@ -322,11 +324,8 @@ VOID PrepareSamples( struct AmiSF * amisf,
       // Preloads all samples to AmiGUS RAM.
       LONG bytesRead;
       LONG overallRead = 0;
-      ULONG * buffer;
 
       LOG_D(( "D: Loading all samples to AmiGUS.\n" ));
-      buffer = AllocMem( AMISF_SAMPLE_TRANSIT_BUFFER_SIZE,
-                         MEMF_ANY );
       Seek( amisf->asf_SampleSourceFile,
             amisf->asf_SampleSourceOffset,
             OFFSET_BEGINING );
@@ -335,16 +334,14 @@ VOID PrepareSamples( struct AmiSF * amisf,
 
         bytesRead = Read( amisf->asf_SampleSourceFile, 
                           buffer,
-                          AMISF_SAMPLE_TRANSIT_BUFFER_SIZE );
-        LoadAmiGusWavetableSample( buffer,
+                          AMISF_SAMPLE_BUFFER_SIZE );
+        LoadAmiGusWavetableSample( ( ULONG * ) buffer,
                                    overallRead,
                                    bytesRead );
         overallRead += bytesRead;
 
       } while (( 0 != bytesRead )
         && ( overallRead < amisf->asf_SampleDataSize ));
-
-      FreeMem( buffer, AMISF_SAMPLE_TRANSIT_BUFFER_SIZE );
 
       break;
     }

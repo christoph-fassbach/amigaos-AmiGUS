@@ -60,6 +60,17 @@
  */
 #define AMIGUS_MEM_LOG_BORDERS      "********************************"
 
+/*
+ * Size of the buffer used for loading samples from disk to RAM or AmiGUS.
+ */
+#define AMISF_SAMPLE_BUFFER_SIZE         4096
+
+/*
+ * Size of the buffer used for the file path to the .AmiSF sound font file.
+ */
+#define AMISF_PATH_BUFFER_SIZE           256
+
+
 /******************************************************************************
  * CAMD MIDI driver replacement forward declarations
  *****************************************************************************/
@@ -122,14 +133,15 @@ struct AmiGUS_CAMD {
 
   struct Process              * agb_MainProcess;
   struct Process              * agb_WorkerProcess;
+  struct MsgPort              * agb_WorkerPort;
   LONG                          agb_WorkerReady;
   BYTE                          agb_MainSignal;
   BYTE                          agb_WorkerWorkSignal;
   BYTE                          agb_WorkerStopSignal;
-  BYTE                          agb_Padding0;
-  struct MsgPort              * agb_WorkerPort;
 
-  BYTE                          agb_AmiSfPath[ 256 ];
+  BYTE                          agb_SampleLoadingDialog;
+  UBYTE                         agb_SampleBuffer[ AMISF_SAMPLE_BUFFER_SIZE ];
+  BYTE                          agb_AmiSfPath[ AMISF_PATH_BUFFER_SIZE ];
   ULONG                         agb_AmiSfMode;
   struct AmiSF                * agb_AmiSf;
 

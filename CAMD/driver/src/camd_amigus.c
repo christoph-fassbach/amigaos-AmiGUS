@@ -398,13 +398,14 @@ APTR __ASM__ __SAVE_DS__ AmiGUS_OpenPort (
           amiSfPathVarLength, AmiGUS_CAMD_Base->agb_AmiSfPath ));
   LOG_D(( "D: AmiSF mode var length %ld, is '%s'.\n",
           amiSfModeVarLength, ( STRPTR ) &( AmiGUS_CAMD_Base->agb_AmiSfMode )));
-  if (( 0 < amiSfPathVarLength ) &&  ( 0 < amiSfModeVarLength )) {
+  if ( 0 < amiSfPathVarLength ) {
 
     AmiGUS_CAMD_Base->agb_AmiSf = AllocAmiSFfromFile(
       AmiGUS_CAMD_Base->agb_AmiSfPath,
       NULL );
     PrepareSamples( AmiGUS_CAMD_Base->agb_AmiSf,
                     AmiGUS_CAMD_Base->agb_AmiSfMode,
+                    AmiGUS_CAMD_Base->agb_SampleBuffer,
                     NULL );
   }
 
