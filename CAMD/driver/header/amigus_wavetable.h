@@ -34,7 +34,8 @@ VOID InitAmiGus( VOID );
 VOID LoadAmiGusWavetableSample( ULONG * source, ULONG target, ULONG size );
 
 // Only plays from inside Wavetable memory!
-VOID StartAmiGusWavetablePlayback( ULONG startOffset,
+VOID StartAmiGusWavetablePlayback( UBYTE amiGusChannel,
+                                   ULONG startOffset,
                                    ULONG loopOffset,
                                    ULONG endOffset,
                                    ULONG playbackRate,

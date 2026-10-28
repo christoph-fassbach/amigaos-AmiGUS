@@ -30,5 +30,6 @@ struct MidiChannelState {
 };
 
 UBYTE AllocateNextAmiGusChannel( UBYTE midiChannel );
+UBYTE GetUsedAmiGusChannel( UBYTE midiChannel );
 
 #endif /* AMIGUS_CHANNELS_H */

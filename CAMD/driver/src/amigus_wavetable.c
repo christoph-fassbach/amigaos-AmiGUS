@@ -83,7 +83,8 @@ VOID LoadAmiGusWavetableSample( ULONG * source, ULONG target, ULONG size ) {
   LOG_D(( "D: Copied %ld LONGs to 0x%08lx\n", i, target ));
 }
 
-VOID StartAmiGusWavetablePlayback( ULONG startOffset,
+VOID StartAmiGusWavetablePlayback( UBYTE amiGusChannel,
+                                   ULONG startOffset,
                                    ULONG loopOffset,
                                    ULONG endOffset,
                                    ULONG playbackRate,
@@ -103,8 +104,8 @@ VOID StartAmiGusWavetablePlayback( ULONG startOffset,
               | playbackFlags;
 
   // TODO: Obviously, channel allocation/scheduling missing!
-  WriteReg16( card, AMIGUS_WT_CHANNEL_NUMBER, 0x0000 );
-  WriteReg16( card, AMIGUS_WT_CHANNEL_CONTROL, 0x0000 );
+  WriteReg16( card, AMIGUS_WT_CHANNEL_NUMBER, amiGusChannel );
+  WriteReg16( card, AMIGUS_WT_CHANNEL_CONTROL, AMIGUS_WT_F_CONTROL_ALL_OFF );
 
   LOG_D(( "D: Playback start: 0x%08lx - 0x%08lx, loop 0x%08lx, "
           "rate 0x%08lx, volume 0x%04lx, "

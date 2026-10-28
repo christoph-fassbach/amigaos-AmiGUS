@@ -32,6 +32,9 @@
 #include "support.h"
 #include "worker.h"
 
+#define MESSAGE_MIDI_CHANNEL             15
+#define PLAY_STANDALONE_SAMPLE_START     0
+
 BOOL HandleMidi( VOID ) {
 
   struct AmiGUS_CAMD * base = AmiGUS_CAMD_Base;
@@ -56,15 +59,17 @@ VOID HandleMessage( struct Message * message ) {
 
       struct PlayStandaloneSampleMessage * sampleMessage =
         ( struct PlayStandaloneSampleMessage * ) message;
+      UBYTE channel = AllocateNextAmiGusChannel( MESSAGE_MIDI_CHANNEL );
 
       LOG_D(( "D: Got sample @ 0x%08lx and size %ld BYTEs\n",
               sampleMessage->pssm_SampleData,
               sampleMessage->pssm_EndOffset ));
 
       LoadAmiGusWavetableSample( sampleMessage->pssm_SampleData,
-                                 0,
+                                 PLAY_STANDALONE_SAMPLE_START,
                                  sampleMessage->pssm_EndOffset );
-      StartAmiGusWavetablePlayback( 0,
+      StartAmiGusWavetablePlayback( channel,
+                                    PLAY_STANDALONE_SAMPLE_START,
                                     sampleMessage->pssm_LoopOffset,
                                     sampleMessage->pssm_EndOffset,
                                     sampleMessage->pssm_PlaybackRate,
@@ -84,6 +89,7 @@ VOID HandleMessage( struct Message * message ) {
 
       struct PlayAmiSfSampleMessage * sampleMessage =
         ( struct PlayAmiSfSampleMessage * ) message;
+      UBYTE channel = AllocateNextAmiGusChannel( MESSAGE_MIDI_CHANNEL );
 
       const UBYTE bank = sampleMessage->passm_Bank;
       const UBYTE preset = sampleMessage->passm_Preset;
@@ -115,7 +121,8 @@ VOID HandleMessage( struct Message * message ) {
       LoadAmiGusWavetableSample( sampleMessage->passm_SampleData,
                                  sfSample->asfs_StartOffset,
                                  sampleDataSize );
-      StartAmiGusWavetablePlayback( sfSample->asfs_StartOffset,
+      StartAmiGusWavetablePlayback( channel,
+                                    sfSample->asfs_StartOffset,
                                     sfSample->asfs_LoopOffset,
                                     sfSample->asfs_EndOffset,
                                     playbackRate,
@@ -133,7 +140,8 @@ VOID HandleMessage( struct Message * message ) {
     }
     case STOP_SAMPLE_MESSAGE_NAME: {
 
-      StopAmiGusWavetablePlayback( 0 );
+      UBYTE channel = GetUsedAmiGusChannel( MESSAGE_MIDI_CHANNEL );
+      StopAmiGusWavetablePlayback( channel );
       LOG_D(( "D: Replying StopSampleMessage 0x%08lx...\n", message ));
       ReplyMsg( message );
       break;
