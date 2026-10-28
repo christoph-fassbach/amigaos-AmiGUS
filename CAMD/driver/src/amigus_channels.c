@@ -32,3 +32,12 @@ UBYTE AllocateNextAmiGusChannel( UBYTE midiChannel ) {
 
   return currentChannelIndex;
 }
+
+UBYTE GetUsedAmiGusChannel( UBYTE midiChannel ) {
+
+  struct AmiGUS_CAMD * base = AmiGUS_CAMD_Base;
+  UBYTE amiGusChannel =
+    base->agb_MidiChannelState[ midiChannel ].mcs_AmigusChannelUsed;
+
+  return amiGusChannel;
+}
