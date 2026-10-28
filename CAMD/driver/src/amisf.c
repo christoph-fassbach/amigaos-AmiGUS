@@ -327,7 +327,7 @@ VOID PrepareSamples( struct AmiSF * amisf,
         overallRead += bytesRead;
         ++currentProgress;
         HandleProgressDialogTick( dialog, currentProgress, maxProgress );
-
+        // TODO: Handle pushing cancel everywhere!
 
       } while (( 0 != bytesRead )
         && ( overallRead < amisf->asf_SampleDataSize ));

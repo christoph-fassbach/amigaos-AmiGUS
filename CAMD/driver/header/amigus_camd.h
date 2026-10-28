@@ -22,6 +22,7 @@
 #include <amigus/amigus.h>
 #include <dos/dos.h>
 
+#include "amigus_channels.h"
 #include "compiler_extras.h"
 
 /******************************************************************************
@@ -139,7 +140,7 @@ struct AmiGUS_CAMD {
   BYTE                          agb_WorkerWorkSignal;
   BYTE                          agb_WorkerStopSignal;
 
-  BYTE                          agb_ShowProgressDialog;
+  BYTE                          agb_ShowProgressDialog; // TODO: make disable-able
   struct ProgressDialog       * agb_ProgressDialog;
 
   UBYTE                         agb_SampleBuffer[ AMISF_SAMPLE_BUFFER_SIZE ];
@@ -147,6 +148,12 @@ struct AmiGUS_CAMD {
   ULONG                         agb_AmiSfMode;
   struct AmiSF                * agb_AmiSf;
 
+  UBYTE                         agb_NextAmiGusChannel;
+  UBYTE                         agb_Padding0;
+  UBYTE                         agb_Padding1;
+  UBYTE                         agb_Padding2;
+
+  struct MidiChannelState       agb_MidiChannelState[ 16 ];
 
   /* CAMD pointers */
   TransmitFunctionType          agb_TransmitFunction;
