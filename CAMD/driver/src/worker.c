@@ -27,6 +27,7 @@
 #include "amigus_ports.h"
 #include "amigus_wavetable.h"
 #include "amisf.h"
+#include "camd_interpreter.h"
 #include "debug.h"
 #include "errors.h"
 #include "support.h"
@@ -38,14 +39,22 @@
 BOOL HandleMidi( VOID ) {
 
   struct AmiGUS_CAMD * base = AmiGUS_CAMD_Base;
-  ULONG midiData = base->agb_TransmitFunction( base->agb_CAMD_userdata );
-  ULONG bufferEmpty = GET_REG( REG_D1 );
+  ULONG bufferEmpty;
+  ULONG midiByte;
+  BOOL complete;
 
+  do {
+
+    midiByte = base->agb_TransmitFunction( base->agb_CAMD_userdata );
+    bufferEmpty = GET_REG( REG_D1 );
+
+    complete = ParseMidiByte( midiByte );
+
+  } while (( !( bufferEmpty )) && ( !( complete )));
   LOG_INT(( "WORKER: Received data=0x%02lx empty=0x%02lx\n",
-            midiData, bufferEmpty ));
-  // TODO: Translate MIDI information to AmiGUS actions and execute them!
+            midiByte, bufferEmpty ));
   
-  return ( BOOL ) ( 0 == bufferEmpty );
+  return ( BOOL ) ( !( bufferEmpty ));
 }
 
 VOID HandleMessage( struct Message * message ) {
