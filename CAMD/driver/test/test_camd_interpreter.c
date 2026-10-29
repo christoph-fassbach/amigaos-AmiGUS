@@ -110,6 +110,9 @@ BOOL testInterpretMidiMessage( VOID ) {
 
   struct MidiMessage midiMessage;
   BOOL failed = FALSE;
+  struct MidiChannelState * channel;
+
+  printf("\n");
 
   midiMessage.mm_Status = 0x90;
   midiMessage.mm_Channel = 0x04;
@@ -121,6 +124,36 @@ BOOL testInterpretMidiMessage( VOID ) {
   midiMessage.mm_Status = 0x80;
 
   failed |= ( !( InterpretMidiMessage( &midiMessage )));
+
+  // Select Preset 7 in channel 4
+  midiMessage.mm_Status = 0xC0;
+  midiMessage.mm_Channel = 0x04;
+  midiMessage.mm_Data0 = 0x07;
+
+  channel = &( AmiGUS_CAMD_Base->agb_MidiChannelState[ 0x04 ]);
+  failed |= ( 0x00 != channel->mcs_Preset );
+  failed |= ( !( InterpretMidiMessage( &midiMessage )));
+  failed |= ( 0x07 != channel->mcs_Preset );
+
+  // Select Bank 128 in channel 4
+
+  channel = &( AmiGUS_CAMD_Base->agb_MidiChannelState[ 0x04 ]);
+  channel->mcs_Bank = 0x17;
+
+  midiMessage.mm_Status = 0xB0;
+  midiMessage.mm_Channel = 0x04;
+  midiMessage.mm_Data0 = 0x00;
+  midiMessage.mm_Data1 = 0x01;
+
+  failed |= ( !( InterpretMidiMessage( &midiMessage )));
+
+  midiMessage.mm_Status = 0xB0;
+  midiMessage.mm_Channel = 0x04;
+  midiMessage.mm_Data0 = 0x20;
+  midiMessage.mm_Data1 = 0x00;
+
+  failed |= ( !( InterpretMidiMessage( &midiMessage )));
+  failed |= ( 0x80 != channel->mcs_Bank );
 
   return failed;
 }

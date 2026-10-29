@@ -128,6 +128,42 @@ VOID AmiGusNoteOn( struct MidiMessage * midiMessage ) {
                                 sfNote->asfn_Release );
 }
 
+BOOL AmiGusControlChange( struct MidiMessage * midiMessage ) {
+
+  struct AmiGUS_CAMD * base = AmiGUS_CAMD_Base;
+  struct MidiChannelState * channel =
+    &( base->agb_MidiChannelState[ midiMessage->mm_Channel ]);
+
+  switch ( midiMessage->mm_Data0 ) {
+    case 0x00: {
+
+      channel->mcs_Bank &= 0x7F;
+      channel->mcs_Bank |= ((( UWORD ) midiMessage->mm_Data1 ) << 7 );
+
+      return TRUE;
+    }
+    case 0x20: {
+
+      channel->mcs_Bank &= 0x80;
+      channel->mcs_Bank |= midiMessage->mm_Data1;
+
+      return TRUE;
+    }
+    default: {
+      break;
+    }
+  }
+  return FALSE;
+}
+
+VOID AmiGusProgramChange( struct MidiMessage * midiMessage ) {
+ 
+  struct AmiGUS_CAMD * base = AmiGUS_CAMD_Base;
+  struct MidiChannelState * channel =
+    &( base->agb_MidiChannelState[ midiMessage->mm_Channel ]);
+        
+  channel->mcs_Preset = midiMessage->mm_Data0;  
+}
 
 BOOL TokenizeMidiByte( UBYTE midiByte, struct MidiMessage * midiMessage ) {
 
@@ -234,10 +270,25 @@ BOOL InterpretMidiMessage( struct MidiMessage * midiMessage ) {
       return FALSE;
     }
     case MIDI_CONTROL_CHANGE: {
-      return FALSE;
+
+      LOG_D(( "D: Called CONTROL_CHANGE for channel %ld sub 0x%08lx data %ld\n",
+              midiMessage->mm_Channel,
+              midiMessage->mm_Data0,
+              midiMessage->mm_Data1 ));
+
+      AmiGusControlChange( midiMessage );
+
+      return TRUE;
     }
     case MIDI_PROGRAM_CHANGE: {
-      return FALSE;
+
+      LOG_D(( "D: Called POGRAM_CHANGE for channel %ld preset %ld\n",
+              midiMessage->mm_Channel,
+              midiMessage->mm_Data0 ));
+
+      AmiGusProgramChange( midiMessage );
+
+      return TRUE;
     }
     case MIDI_CHANNEL_PRESSURE: {
       return FALSE;
