@@ -111,15 +111,11 @@ VOID HandleMessage( struct Message * message ) {
       const LONG noteIndex = GetAmiSfNoteIndex( amisf, sfPreset, note );
       struct AmiSF_Note * sfNote = GetAmiSfNote( amisf, noteIndex );
       struct AmiSF_Sample * sfSample = GetAmiSfSample( amisf, sfNote );
-      ULONG playbackRateIndex =
-        note + sfNote->asfn_BasePlaybackIndex - sfNote->asfn_BaseNote;
-      ULONG playbackRate =
-        amisf->asf_PlaybackRate[ playbackRateIndex ];
+      ULONG playbackRate = GetPlaybackRate( amisf, sfNote, note );
       ULONG sampleDataSize =
         sfSample->asfs_EndOffset - sfSample->asfs_StartOffset;
       // Automatically limited to 127 * 127 + 2 * 127 = 16383 = 0x3FFF :D
-      LONG volume = ( WORD ) velocity * ( WORD ) velocity;
-      UWORD playbackVolume = ( UWORD )( volume ) + (( UWORD ) velocity << 1 );
+      UWORD playbackVolume = GetPlaybackVolume( velocity );
 
       LOG_D(( "D: Got PlayAmiSfSampleMessage @ 0x%08lx for %ld-%ld-%ld-%ld, "
               "preset 0x%08lx note 0x%08lx sample 0x%08lx, "

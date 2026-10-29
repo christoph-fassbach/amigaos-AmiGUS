@@ -32,6 +32,32 @@
 
 struct AmiGUS_CAMD * AmiGUS_CAMD_Base;
 
+UBYTE AllocateNextAmiGusChannel( UBYTE midiChannel ) {
+
+  return 7;
+}
+
+UBYTE GetUsedAmiGusChannel( UBYTE midiChannel ) {
+
+  return 7;
+}
+
+VOID StartAmiGusWavetablePlayback( UBYTE amiGusChannel,
+                                   ULONG startOffset,
+                                   ULONG loopOffset,
+                                   ULONG endOffset,
+                                   ULONG playbackRate,
+                                   UWORD playbackVolume,
+                                   UWORD playbackFlags,
+                                   UWORD attack,
+                                   UWORD decay,
+                                   UWORD sustain,
+                                   UWORD release ) {
+}
+
+VOID StopAmiGusWavetablePlayback( UWORD channel ) {
+}
+
 /******************************************************************************
  * Test functions:
  *****************************************************************************/
@@ -40,7 +66,6 @@ BOOL testTokenizeMidiByte( VOID ) {
 
   struct MidiMessage midiMessage;
   BOOL failed = FALSE;
-  UBYTE i;
 
   printf("\n");
 
@@ -81,20 +106,60 @@ BOOL testTokenizeMidiByte( VOID ) {
   return failed;
 }
 
+BOOL testInterpretMidiMessage( VOID ) {
+
+  struct MidiMessage midiMessage;
+  BOOL failed = FALSE;
+
+  midiMessage.mm_Status = 0x90;
+  midiMessage.mm_Channel = 0x04;
+  midiMessage.mm_Data0 = 0x3C;
+  midiMessage.mm_Data1 = 0x40;
+
+  failed |= ( !( InterpretMidiMessage( &midiMessage )));
+
+  midiMessage.mm_Status = 0x80;
+
+  failed |= ( !( InterpretMidiMessage( &midiMessage )));
+
+  return failed;
+}
+
 /******************************************************************************
  * Finally, main triggering all tests:
  *****************************************************************************/
 int main( int argc, char const *argv[] ) {
 
   BOOL failed = FALSE;
-/*
+  struct AmiSF * amisf = AllocMem( sizeof( struct AmiSF ),
+                                   MEMF_PUBLIC | MEMF_CLEAR );
+
   AmiGUS_CAMD_Base = AllocMem( sizeof( struct AmiGUS_CAMD ),
                                MEMF_PUBLIC | MEMF_CLEAR );
-*/
+  AmiGUS_CAMD_Base->agb_AmiSf = amisf;
+  amisf->asf_NoteCount = 100;
+  amisf->asf_Note = AllocMem( sizeof( struct AmiSF_Note ) * 100,
+                              MEMF_PUBLIC | MEMF_CLEAR );
+  amisf->asf_PlaybackRateCount = 1000;
+  amisf->asf_PlaybackRate = AllocMem( sizeof( ULONG ) * 1000,
+                                      MEMF_PUBLIC | MEMF_CLEAR );
+  amisf->asf_SampleMetadata = AllocMem( sizeof( struct AmiSF_Sample ) * 100,
+                                        MEMF_PUBLIC | MEMF_CLEAR );
+
+  amisf->asf_Preset[0][0].asfp_NoteCount = 3;
+  amisf->asf_Note[1].asfn_MaxNote = 0x40;
+  amisf->asf_Note[2].asfn_MaxNote = 0x7F;
+
+
   failed |= testTokenizeMidiByte();
-/*
-  FreeMem( AmiGUS_CAMD_Base, sizeof( struct AmiGUS_CAMD ));
-*/
+  failed |= testInterpretMidiMessage();
+
+  FreeMem( amisf->asf_SampleMetadata, sizeof( struct AmiSF_Sample ) * 100 );
+  FreeMem( amisf->asf_PlaybackRate, sizeof( struct AmiSF_Note ) * 1000 );
+  FreeMem( amisf->asf_Note, sizeof( struct AmiSF_Note ) * 100 );
+  FreeMem( AmiGUS_CAMD_Base->agb_AmiSf, sizeof( struct AmiGUS_CAMD ));
+  FreeMem( AmiGUS_CAMD_Base, sizeof( struct AmiSF ));
+
   printf( "\nDone, result %s.\n", 
           failed ? "FAIL!" : "OK." );
 

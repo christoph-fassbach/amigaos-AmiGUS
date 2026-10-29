@@ -21,6 +21,8 @@
 
 #include <exec/types.h>
 
+#include "amisf.h"
+
 struct MidiMessage {
 
   UBYTE mm_Status;
@@ -42,5 +44,24 @@ struct MidiMessage {
  *         FALSE otherwise.
  */
 BOOL TokenizeMidiByte( UBYTE midiByte, struct MidiMessage * midiMessage );
+
+/**
+ * Interprets a MIDI message.
+ *
+ * Tracks the MIDI state in the MidiChannelState array 
+ * and feeds the resulting output straight into AmiGUS for playback.
+ *
+ * @param midiMessage MIDI message to handle.
+ *
+ * @return TRUE if the MIDI message was interpretable,
+ *         FALSE otherwise.
+ */
+BOOL InterpretMidiMessage( struct MidiMessage * midiMessage );
+
+ULONG GetPlaybackRate( struct AmiSF * amisf,
+                       struct AmiSF_Note * sfNote,
+                       UBYTE note );
+
+UWORD GetPlaybackVolume( UBYTE velocity );
 
 #endif /* CAMD_INTERPRETER_H */

@@ -23,10 +23,14 @@
 
 struct MidiChannelState {
 
+  UBYTE mcs_IsActive;
   UBYTE mcs_AmigusChannelUsed;
+  UBYTE mcs_ActiveNote;
+  UBYTE mcs_ActiveVelocity;
+  UBYTE mcs_Bank;
+  UBYTE mcs_Preset;
   UBYTE mcs_Padding0;
   UBYTE mcs_Padding1;
-  UBYTE mcs_Padding2;
 };
 
 UBYTE AllocateNextAmiGusChannel( UBYTE midiChannel );
