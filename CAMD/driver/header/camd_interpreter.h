@@ -21,8 +21,16 @@
 
 #include <exec/types.h>
 
+struct MidiMessage {
+
+  UBYTE mm_Status;
+  UBYTE mm_Channel;
+  UBYTE mm_Data0;
+  UBYTE mm_Data1;
+};
+
 /**
- * Parses a stream of MIDI bytes into messages.
+ * Tokenizes a stream of MIDI bytes into messages.
  *
  * Needs to be called per byte and sets 
  * the midiMessage to a valid value when completed.
@@ -33,6 +41,6 @@
  * @return TRUE if the MIDI message is complete,
  *         FALSE otherwise.
  */
-BOOL ParseMidiByte( UBYTE midiByte );
+BOOL TokenizeMidiByte( UBYTE midiByte, struct MidiMessage * midiMessage );
 
 #endif /* CAMD_INTERPRETER_H */

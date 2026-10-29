@@ -36,40 +36,47 @@ struct AmiGUS_CAMD * AmiGUS_CAMD_Base;
  * Test functions:
  *****************************************************************************/
 
-BOOL testParseMidiByte( VOID ) {
+BOOL testTokenizeMidiByte( VOID ) {
 
+  struct MidiMessage midiMessage;
   BOOL failed = FALSE;
   UBYTE i;
 
   printf("\n");
 
   // Channel 13 Note 60 Velocity 127 = on -> to be done
-  failed |= ( ParseMidiByte( 0x9D ) != FALSE ); // Note On, Channel 13
-  failed |= ( ParseMidiByte( 0x3C ) != FALSE ); // Note 60
-  failed |= ( ParseMidiByte( 0x7F ) != TRUE );  // Velocity 127
+  failed |= ( TokenizeMidiByte( 0x9D, &midiMessage ) != FALSE ); // Note On, Channel 13
+  failed |= ( TokenizeMidiByte( 0x3C, &midiMessage ) != FALSE ); // Note 60
+  failed |= ( TokenizeMidiByte( 0x7F, &midiMessage ) != TRUE );  // Velocity 127
+  failed |= ( *(( ULONG * ) &midiMessage ) != 0x900D3C7F );
 
   // Channel 13 Note 61 Velocity 127 = on -> to be ignored
-  failed |= ( ParseMidiByte( 0x8D ) != FALSE ); // Note Off, Channel 13
-  failed |= ( ParseMidiByte( 0x40 ) != FALSE ); // Note 61
-  failed |= ( ParseMidiByte( 0x7F ) != TRUE );  // Velocity 127
+  failed |= ( TokenizeMidiByte( 0x8D, &midiMessage ) != FALSE ); // Note Off, Channel 13
+  failed |= ( TokenizeMidiByte( 0x40, &midiMessage ) != FALSE ); // Note 61
+  failed |= ( TokenizeMidiByte( 0x7F, &midiMessage ) != TRUE );  // Velocity 127
+  failed |= ( *(( ULONG * ) &midiMessage ) != 0x800D407F );
 
   // Channel 13 Note 60 Velocity 127 = off -> to be done
-  failed |= ( ParseMidiByte( 0x8D ) != FALSE ); // Note Off, Channel 13
-  failed |= ( ParseMidiByte( 0x3C ) != FALSE ); // Note 60
-  failed |= ( ParseMidiByte( 0x7F ) != TRUE );  // Velocity 127
+  failed |= ( TokenizeMidiByte( 0x8D, &midiMessage ) != FALSE ); // Note Off, Channel 13
+  failed |= ( TokenizeMidiByte( 0x3C, &midiMessage ) != FALSE ); // Note 60
+  failed |= ( TokenizeMidiByte( 0x7F, &midiMessage ) != TRUE );  // Velocity 127
+  failed |= ( *(( ULONG * ) &midiMessage ) != 0x800D3C7F );
 
   // Select Bank 129
-  failed |= ( ParseMidiByte( 0xB0 ) != FALSE ); // Control Change channel 0
-  failed |= ( ParseMidiByte( 0x00 ) != FALSE ); // #0 (Bank MSB)
-  failed |= ( ParseMidiByte( 0x01 ) != TRUE );  // MSB 1 * 128
+  failed |= ( TokenizeMidiByte( 0xB0, &midiMessage ) != FALSE ); // Control Change channel 0
+  failed |= ( TokenizeMidiByte( 0x00, &midiMessage ) != FALSE ); // #0 (Bank MSB)
+  failed |= ( TokenizeMidiByte( 0x01, &midiMessage ) != TRUE );  // MSB 1 * 128
+  failed |= ( *(( ULONG * ) &midiMessage ) != 0xB0000001 );
 
-  failed |= ( ParseMidiByte( 0xB0 ) != FALSE ); // Control Change channel 0
-  failed |= ( ParseMidiByte( 0x20 ) != FALSE ); // #32 (Bank LSB)
-  failed |= ( ParseMidiByte( 0x01 ) != TRUE );  // LSB 1
+  failed |= ( TokenizeMidiByte( 0xB0, &midiMessage ) != FALSE ); // Control Change channel 0
+  failed |= ( TokenizeMidiByte( 0x20, &midiMessage ) != FALSE ); // #32 (Bank LSB)
+  failed |= ( TokenizeMidiByte( 0x01, &midiMessage ) != TRUE );  // LSB 1
+  failed |= ( *(( ULONG * ) &midiMessage ) != 0xB0002001 );
 
   // Select Preset 4
-  failed |= ( ParseMidiByte( 0xC0 ) != FALSE ); // Program Change channel 0
-  failed |= ( ParseMidiByte( 0x04 ) != TRUE );  // Preset 4
+  failed |= ( TokenizeMidiByte( 0xC0, &midiMessage ) != FALSE ); // Program Change channel 0
+  failed |= ( TokenizeMidiByte( 0x04, &midiMessage ) != TRUE );  // Preset 4
+  failed |= ( *(( ULONG * ) &midiMessage ) != 0xC0000400 );
 
   return failed;
 }
@@ -84,7 +91,7 @@ int main( int argc, char const *argv[] ) {
   AmiGUS_CAMD_Base = AllocMem( sizeof( struct AmiGUS_CAMD ),
                                MEMF_PUBLIC | MEMF_CLEAR );
 */
-  failed |= testParseMidiByte();
+  failed |= testTokenizeMidiByte();
 /*
   FreeMem( AmiGUS_CAMD_Base, sizeof( struct AmiGUS_CAMD ));
 */

@@ -38,14 +38,9 @@ typedef enum {
 
 } MidiState;
 
-BOOL ParseMidiByte( UBYTE midiByte ) {
+BOOL TokenizeMidiByte( UBYTE midiByte, struct MidiMessage * midiMessage ) {
 
   static MidiState state;
-
-  static UBYTE status;
-  static UBYTE channel;
-  static UBYTE date0;
-  static UBYTE date1;
 
   // Handle realtime messages w/o changing state machine
   if ( 0xF8 <= midiByte ) {
@@ -64,10 +59,10 @@ BOOL ParseMidiByte( UBYTE midiByte ) {
       return FALSE;
     }
 
-    status = midiByte & 0xF0;
-    channel = midiByte & 0x0F;
+    midiMessage->mm_Status = midiByte & 0xF0;
+    midiMessage->mm_Channel = midiByte & 0x0F;
 
-    switch ( status ) {
+    switch ( midiMessage->mm_Status ) {
       case MIDI_PROGRAM_CHANGE:
       case MIDI_CHANNEL_PRESSURE: {
         state = STATE_WAIT_DATA1;
@@ -84,25 +79,31 @@ BOOL ParseMidiByte( UBYTE midiByte ) {
   // Handle data bytes
   switch ( state ) {
     case STATE_WAIT_DATA1: {
-      date0 = midiByte;
-      date1 = 0;
+      midiMessage->mm_Data0 = midiByte;
+      midiMessage->mm_Data1 = 0;
       state = STATE_WAIT_STATUS;
       //TODO: Handle the message!
       LOG_D(( "D: MIDI message completed, %02lx %02lx %02lx %02lx\n",
-              status, channel, date0, date1 ));
+              midiMessage->mm_Status,
+              midiMessage->mm_Channel,
+              midiMessage->mm_Data0,
+              midiMessage->mm_Data1 ));
       return TRUE;
     }
     case STATE_WAIT_DATA2_2: {
-      date1 = midiByte;
+      midiMessage->mm_Data0 = midiByte;
       state = STATE_WAIT_DATA2_1;
       return FALSE;
     }
     case STATE_WAIT_DATA2_1: {
-      date0 = midiByte;
+      midiMessage->mm_Data1 = midiByte;
       state = STATE_WAIT_STATUS;
       //TODO: Handle the message!
       LOG_D(( "D: MIDI message completed, %02lx %02lx %02lx %02lx\n",
-              status, channel, date0, date1 ));
+              midiMessage->mm_Status,
+              midiMessage->mm_Channel,
+              midiMessage->mm_Data0,
+              midiMessage->mm_Data1 ));
       return TRUE;
     }
     case STATE_WAIT_STATUS:

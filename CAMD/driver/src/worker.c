@@ -41,6 +41,7 @@ BOOL HandleMidi( VOID ) {
   struct AmiGUS_CAMD * base = AmiGUS_CAMD_Base;
   ULONG bufferEmpty;
   ULONG midiByte;
+  struct MidiMessage midiMessage;
   BOOL complete;
 
   do {
@@ -48,7 +49,7 @@ BOOL HandleMidi( VOID ) {
     midiByte = base->agb_TransmitFunction( base->agb_CAMD_userdata );
     bufferEmpty = GET_REG( REG_D1 );
 
-    complete = ParseMidiByte( midiByte );
+    complete = TokenizeMidiByte( midiByte, &midiMessage );
 
   } while (( !( bufferEmpty )) && ( !( complete )));
   LOG_INT(( "WORKER: Received data=0x%02lx empty=0x%02lx\n",
