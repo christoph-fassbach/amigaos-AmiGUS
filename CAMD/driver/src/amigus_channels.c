@@ -18,26 +18,100 @@
 
 #include "amigus_camd.h"
 #include "amigus_channels.h"
+#include "support.h"
 
-UBYTE AllocateNextAmiGusChannel( UBYTE midiChannel ) {
+UBYTE AllocateNextAmiGusChannel( UBYTE channel, UBYTE note, UBYTE velocity ) {
 
   struct AmiGUS_CAMD * base = AmiGUS_CAMD_Base;
-  struct MidiChannelState * currentChannelState =
-    &( base->agb_MidiChannelState[ midiChannel ]);
-  const UBYTE currentChannelIndex = base->agb_NextAmiGusChannel;
+  struct AmiGusChannelState * channelState;
+  UBYTE leastRecentlyUsedIndex = 0xFF;
+  ULONG leastRecentlyUsedId = 0xFFffFFff;
+  UBYTE i;
+  UBYTE selected;
 
-  currentChannelState->mcs_AmigusChannelUsed = currentChannelIndex;
-  ++base->agb_NextAmiGusChannel;
-  base->agb_NextAmiGusChannel &= 0x1F; // Poor man's mod 32 ;-)
+  for ( i = 0; 32 > i; ++i ) {
 
-  return currentChannelIndex;
+    channelState = &( base->agb_AmiGusChannelState[ i ]);
+
+    if ( channelState->acs_UsageId < leastRecentlyUsedId ) {
+
+      leastRecentlyUsedId = channelState->acs_UsageId;
+      leastRecentlyUsedIndex = i;
+    }
+    if ( !( channelState->acs_IsActive )) {
+
+      selected = i;
+      break;
+    }
+  }
+  if ( 32 == i ) {
+
+    channelState = &( base->agb_AmiGusChannelState[ leastRecentlyUsedIndex ]);
+    selected = leastRecentlyUsedIndex;
+  }
+
+  channelState->acs_IsActive = TRUE;
+  channelState->acs_UsageId = base->agb_NextAmiGusChannelUsageId;
+  channelState->acs_MidiChannel = channel;
+  channelState->acs_MidiNote = note;
+  channelState->acs_MidiVelocity = velocity;
+
+  ++base->agb_NextAmiGusChannelUsageId;
+  if ( 0xFFffFFff == base->agb_NextAmiGusChannelUsageId ) {
+
+    ULONG min = 0xFFffFFff;
+    for ( i = 0; 32 > i; ++i ) {
+
+      min = MIN( min, base->agb_AmiGusChannelState[ i ].acs_UsageId );
+    }      
+    for ( i = 0; 32 > i; ++i ) {
+
+      base->agb_AmiGusChannelState[ i ].acs_UsageId -= min;
+    }
+    base->agb_NextAmiGusChannelUsageId -= min;
+  }
+
+  return selected;
 }
 
-UBYTE GetUsedAmiGusChannel( UBYTE midiChannel ) {
+UBYTE FreeAmiGusChannel( UBYTE channel, UBYTE note, UBYTE velocity ) {
 
   struct AmiGUS_CAMD * base = AmiGUS_CAMD_Base;
-  UBYTE amiGusChannel =
-    base->agb_MidiChannelState[ midiChannel ].mcs_AmigusChannelUsed;
+  struct AmiGusChannelState * channelState;
+  UBYTE leastRecentlyUsedIndex =
+    GetUsedAmiGusChannel( channel, note, velocity );
 
-  return amiGusChannel;
+  if ( 0xFF > leastRecentlyUsedIndex ) {
+
+    channelState = &( base->agb_AmiGusChannelState[ leastRecentlyUsedIndex ]);
+    channelState->acs_IsActive = FALSE;
+  }
+
+  return leastRecentlyUsedIndex; 
+}
+
+UBYTE GetUsedAmiGusChannel( UBYTE channel, UBYTE note, UBYTE velocity ) {
+
+  struct AmiGUS_CAMD * base = AmiGUS_CAMD_Base;
+  struct AmiGusChannelState * channelState;
+  ULONG leastRecentlyUsedId = 0xFFffFFff;
+  UBYTE i;
+  UBYTE selected = 0xFF;
+
+  for ( i = 0; 32 > i; ++i ) {
+
+    channelState = &( base->agb_AmiGusChannelState[ i ]);
+
+    if (( channelState->acs_IsActive )
+      && ( channelState->acs_UsageId < leastRecentlyUsedId )
+      && ( channelState->acs_MidiChannel == channel )
+      && ( channelState->acs_MidiNote == note )
+      && ( channelState->acs_MidiVelocity == velocity )) {
+
+      leastRecentlyUsedId = channelState->acs_UsageId;
+      selected = i;
+    }
+  }
+
+  return selected;
 }

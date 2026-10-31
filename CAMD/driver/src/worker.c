@@ -73,7 +73,9 @@ VOID HandleMessage( struct Message * message ) {
 
       struct PlayStandaloneSampleMessage * sampleMessage =
         ( struct PlayStandaloneSampleMessage * ) message;
-      UBYTE channel = AllocateNextAmiGusChannel( MESSAGE_MIDI_CHANNEL );
+      UBYTE channel = AllocateNextAmiGusChannel( MESSAGE_MIDI_CHANNEL,
+                                                 200,
+                                                 200 );
 
       LOG_D(( "D: Got sample @ 0x%08lx and size %ld BYTEs\n",
               sampleMessage->pssm_SampleData,
@@ -103,12 +105,14 @@ VOID HandleMessage( struct Message * message ) {
 
       struct PlayAmiSfSampleMessage * sampleMessage =
         ( struct PlayAmiSfSampleMessage * ) message;
-      UBYTE channel = AllocateNextAmiGusChannel( MESSAGE_MIDI_CHANNEL );
-
       const UBYTE bank = sampleMessage->passm_Bank;
       const UBYTE preset = sampleMessage->passm_Preset;
       const UBYTE note = sampleMessage->passm_Note;
       const UBYTE velocity = sampleMessage->passm_Velocity;
+
+      UBYTE channel = AllocateNextAmiGusChannel( MESSAGE_MIDI_CHANNEL,
+                                                 200,
+                                                 200 );
 
       struct AmiSF * amisf = sampleMessage->passm_AmiSf;
       struct AmiSF_Preset * sfPreset = GetAmiSfPreset( amisf, bank, preset );
@@ -150,7 +154,7 @@ VOID HandleMessage( struct Message * message ) {
     }
     case STOP_SAMPLE_MESSAGE_NAME: {
 
-      UBYTE channel = GetUsedAmiGusChannel( MESSAGE_MIDI_CHANNEL );
+      UBYTE channel = GetUsedAmiGusChannel( MESSAGE_MIDI_CHANNEL, 200, 200 );
       StopAmiGusWavetablePlayback( channel );
       LOG_D(( "D: Replying StopSampleMessage 0x%08lx...\n", message ));
       ReplyMsg( message );

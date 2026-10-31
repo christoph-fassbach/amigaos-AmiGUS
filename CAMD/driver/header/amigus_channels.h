@@ -22,18 +22,27 @@
 #include <exec/types.h>
 
 struct MidiChannelState {
-
-  UBYTE mcs_IsActive;
-  UBYTE mcs_AmigusChannelUsed;
-  UBYTE mcs_ActiveNote;
-  UBYTE mcs_ActiveVelocity;
   UBYTE mcs_Bank;
   UBYTE mcs_Preset;
   UBYTE mcs_Padding0;
   UBYTE mcs_Padding1;
 };
 
-UBYTE AllocateNextAmiGusChannel( UBYTE midiChannel );
-UBYTE GetUsedAmiGusChannel( UBYTE midiChannel );
+struct AmiGusChannelState {
+
+  UBYTE acs_IsActive;
+  UBYTE acs_MidiChannel;
+  UBYTE acs_MidiNote;
+  UBYTE acs_MidiVelocity;
+  ULONG acs_UsageId;
+};
+
+/**
+ * @params all midi values, midi channel,
+ * @return AmiGUS channel used.
+ */
+UBYTE AllocateNextAmiGusChannel( UBYTE channel, UBYTE note, UBYTE velocity );
+UBYTE FreeAmiGusChannel( UBYTE channel, UBYTE note, UBYTE velocity );
+UBYTE GetUsedAmiGusChannel( UBYTE channel, UBYTE note, UBYTE velocity );
 
 #endif /* AMIGUS_CHANNELS_H */

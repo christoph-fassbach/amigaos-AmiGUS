@@ -17,6 +17,7 @@
  */
 
 #include "amigus_camd.h"
+#include "amigus_channels.h"
 #include "amigus_wavetable.h"
 #include "camd_interpreter.h"
 #include "debug.h"
@@ -47,52 +48,29 @@ VOID AmiGusNoteOff( struct MidiMessage * midiMessage ) {
   struct AmiGUS_CAMD * base = AmiGUS_CAMD_Base;
   struct AmiSF * amisf = base->agb_AmiSf;
   UBYTE midiChannel = midiMessage->mm_Channel;
-  struct MidiChannelState * channel =
-    &( base->agb_MidiChannelState[ midiChannel ]);
+  UBYTE note = midiMessage->mm_Data0;
+  UBYTE velocity = midiMessage->mm_Data1;
+  UBYTE amigusChannelId = FreeAmiGusChannel( midiChannel, note, velocity );
 
-  UBYTE noteStoping = midiMessage->mm_Data0;
-  UBYTE velocityStoping = midiMessage->mm_Data1;
-
-  UBYTE notePlaying = channel->mcs_ActiveNote;
-  UBYTE velocityPlaying = channel->mcs_ActiveVelocity;
-  UBYTE amiGusChannel;
-
-  if ( !channel->mcs_IsActive ) {
+  if ( 0xFF != amigusChannelId ) {
   
     LOG_D(( "D: Trying to stop channel %ld, but not active!\n", midiChannel ));
 
     return;
   }
-  if (( noteStoping != notePlaying )
-    || ( velocityStoping != velocityPlaying )) {
-
-    LOG_D(( "D: Trying to stop channel %ld, "
-            "but mismatching note %ld = %ld or velocity %ld = %ld!\n",
-            midiChannel,
-            noteStoping, notePlaying, velocityStoping, velocityPlaying ));
-
-    return;
-  }
-
-  channel->mcs_IsActive = FALSE;
-  channel->mcs_AmigusChannelUsed = CAMD_INTERPRETER_INVALID;
-  channel->mcs_ActiveNote = CAMD_INTERPRETER_INVALID;
-  channel->mcs_ActiveVelocity = CAMD_INTERPRETER_INVALID;
-
-  amiGusChannel = GetUsedAmiGusChannel( midiChannel );
-  StopAmiGusWavetablePlayback( amiGusChannel );
+  StopAmiGusWavetablePlayback( amigusChannelId );
 }
 
 VOID AmiGusNoteOn( struct MidiMessage * midiMessage ) {
  
   struct AmiGUS_CAMD * base = AmiGUS_CAMD_Base;
   struct AmiSF * amisf = base->agb_AmiSf;
-  UBYTE channelId = midiMessage->mm_Channel;
-  struct MidiChannelState * channel =
-    &( base->agb_MidiChannelState[ channelId ]);
+  UBYTE midiChannelId = midiMessage->mm_Channel;
+  struct MidiChannelState * midiChannel =
+    &( base->agb_MidiChannelState[ midiChannelId ]);
 
-  UBYTE bank = channel->mcs_Bank;
-  UBYTE preset = channel->mcs_Preset;
+  UBYTE bank = midiChannel->mcs_Bank;
+  UBYTE preset = midiChannel->mcs_Preset;
   UBYTE note = midiMessage->mm_Data0;
   UBYTE velocity = midiMessage->mm_Data1;
 
@@ -104,18 +82,20 @@ VOID AmiGusNoteOn( struct MidiMessage * midiMessage ) {
   ULONG playbackRate = GetPlaybackRate( amisf, sfNote, note );
   UWORD playbackVolume = GetPlaybackVolume( velocity );
 
-  if ( !( channel->mcs_IsActive )) {
-  
-    channel->mcs_AmigusChannelUsed = AllocateNextAmiGusChannel( channelId );
-    channel->mcs_IsActive = TRUE;
+  UBYTE amigusChannelId;
+
+  if ( 0x09 == midiChannelId ) {
+
+    // TODO: Use percussions here!
+    // Percussions on bank 128, presets selecting drum kits, 
+    return;
   }
 
-  channel->mcs_ActiveNote = note;
-  channel->mcs_ActiveVelocity = velocity;
+  amigusChannelId = AllocateNextAmiGusChannel( midiChannelId, note, velocity );
 
   // TODO: Sample handling
 
-  StartAmiGusWavetablePlayback( channel->mcs_AmigusChannelUsed,
+  StartAmiGusWavetablePlayback( amigusChannelId,
                                 sfSample->asfs_StartOffset,
                                 sfSample->asfs_LoopOffset,
                                 sfSample->asfs_EndOffset,
@@ -135,6 +115,8 @@ BOOL AmiGusControlChange( struct MidiMessage * midiMessage ) {
     &( base->agb_MidiChannelState[ midiMessage->mm_Channel ]);
 
   switch ( midiMessage->mm_Data0 ) {
+    // See MIDI 1.0 Detailed Specification
+    // T-3 p.75 - T-5 p.77
     case 0x00: {
 
       channel->mcs_Bank &= 0x7F;
@@ -142,6 +124,8 @@ BOOL AmiGusControlChange( struct MidiMessage * midiMessage ) {
 
       return TRUE;
     }
+    // case 0x08: { balance }-T5
+    // case 0x0A: { pan }
     case 0x20: {
 
       channel->mcs_Bank &= 0x80;
@@ -149,6 +133,11 @@ BOOL AmiGusControlChange( struct MidiMessage * midiMessage ) {
 
       return TRUE;
     }
+    // case 0x46: { sound variation }
+    // case 0x47: { timbre / harmonic }
+    // case 0x48: { release }
+    // case 0x49: { attack }
+    // case 0x4a: { brightness }
     default: {
       break;
     }
@@ -297,6 +286,8 @@ BOOL InterpretMidiMessage( struct MidiMessage * midiMessage ) {
       return FALSE;
     }
     case MIDI_SYSTEM_MSG: {
+      // See MIDI 1.0 Detailed Specification
+      // T-6 p.78 - T-7 p.79
       return FALSE;
     }
     default: {

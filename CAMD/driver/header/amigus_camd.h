@@ -148,12 +148,10 @@ struct AmiGUS_CAMD {
   ULONG                         agb_AmiSfMode;
   struct AmiSF                * agb_AmiSf;
 
-  UBYTE                         agb_NextAmiGusChannel;
-  UBYTE                         agb_Padding0;
-  UBYTE                         agb_Padding1;
-  UBYTE                         agb_Padding2;
+  ULONG                         agb_NextAmiGusChannelUsageId;
 
   struct MidiChannelState       agb_MidiChannelState[ 16 ];
+  struct AmiGusChannelState     agb_AmiGusChannelState[ 32 ];
 
   /* CAMD pointers */
   TransmitFunctionType          agb_TransmitFunction;
