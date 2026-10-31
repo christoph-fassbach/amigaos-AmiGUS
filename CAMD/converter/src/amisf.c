@@ -24,16 +24,18 @@
 #include "converter.h"
 #include "debug.h"
 #include "errors.h"
+#include "progress_dialog.h"
 #include "support.h"
 
-struct AmiSF * AllocAmiSFfromFile(
-  STRPTR filePath,
-  struct ProgressDialog * dialog
-) {
+struct AmiSF * AllocAmiSFfromFile( STRPTR filePath,
+                                   struct ProgressDialog * dialog ) {
 
   LONG expected;
   LONG actual;
   UBYTE header[ 8 ];
+  ULONG maxProgress = 1000;
+  ULONG currentProgress = 1;
+
   struct AmiSF * amisf = AllocMem( sizeof( struct AmiSF ),
                                    MEMF_ANY | MEMF_CLEAR );
 
@@ -63,6 +65,9 @@ struct AmiSF * AllocAmiSFfromFile(
     return NULL;
   }
 
+  ++currentProgress;
+  HandleProgressDialogTick( dialog, currentProgress, maxProgress );
+
   ///////////////////////////////////////////////////////////////////
 
   expected = 129 * 129 * sizeof( struct AmiSF_Preset );
@@ -72,6 +77,9 @@ struct AmiSF * AllocAmiSFfromFile(
   if ( actual != expected ) {
     // TODO: handle error
   }
+  ++currentProgress;
+  HandleProgressDialogTick( dialog, currentProgress, maxProgress );
+
 
   ///////////////////////////////////////////////////////////////////
 
@@ -96,6 +104,9 @@ struct AmiSF * AllocAmiSFfromFile(
     // TODO: handle error
   }
 
+  ++currentProgress;
+  HandleProgressDialogTick( dialog, currentProgress, maxProgress );
+
   ///////////////////////////////////////////////////////////////////
 
   expected = 1 * sizeof( ULONG );
@@ -118,6 +129,8 @@ struct AmiSF * AllocAmiSFfromFile(
   if ( actual != expected ) {
     // TODO: handle error
   }
+  ++currentProgress;
+  HandleProgressDialogTick( dialog, currentProgress, maxProgress );
 
   ///////////////////////////////////////////////////////////////////
 
@@ -141,6 +154,8 @@ struct AmiSF * AllocAmiSFfromFile(
   if ( actual != expected ) {
     // TODO: handle error
   }
+  ++currentProgress;
+  HandleProgressDialogTick( dialog, currentProgress, maxProgress );
 
   amisf->asf_PlaybackRateOffset = AllocMem( expected,
                                             MEMF_ANY | MEMF_CLEAR );
@@ -153,6 +168,8 @@ struct AmiSF * AllocAmiSFfromFile(
   if ( actual != expected ) {
     // TODO: handle error
   }
+  ++currentProgress;
+  HandleProgressDialogTick( dialog, currentProgress, maxProgress );
 
   ///////////////////////////////////////////////////////////////////
 
@@ -176,6 +193,8 @@ struct AmiSF * AllocAmiSFfromFile(
   if ( actual != expected ) {
     // TODO: handle error
   }
+  ++currentProgress;
+  HandleProgressDialogTick( dialog, currentProgress, maxProgress );
 
   ///////////////////////////////////////////////////////////////////
 
@@ -194,6 +213,9 @@ struct AmiSF * AllocAmiSFfromFile(
   if ( actual != expected ) {
     // TODO: handle error
   }
+  ++currentProgress;
+  maxProgress = ( amisf->asf_SampleDataSize >> 12 ) + 10;
+  HandleProgressDialogTick( dialog, currentProgress, maxProgress );
 
   expected = Seek( amisf->asf_SampleSourceFile, OFFSET_CURRENT, 0 );
   if ( amisf->asf_SampleSourceOffset != expected ) {
@@ -255,6 +277,11 @@ VOID FreeAmiSF( struct AmiSF * amisf ) {
 
     Close( amisf->asf_SampleSourceFile );
     amisf->asf_SampleSourceFile = NULL;
+  }
+  if ( amisf->asf_SampleData ) {
+
+    FreeMem( amisf->asf_SampleData, amisf->asf_SampleDataSize );
+    amisf->asf_SampleData = NULL;
   }
 
   FreeMem( amisf, sizeof( struct AmiSF ));

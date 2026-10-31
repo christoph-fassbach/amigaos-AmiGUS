@@ -322,6 +322,7 @@ BOOL __ASM__ __SAVE_DS__ AmiGUS_Init(
             base->agb_CardBase,
             base->agb_AmiGUS->agus_TypeName ));
     InitAmiGus();
+    base->agb_MidiChannelState[ 9 ].mcs_Bank = 128; // Prepare percussions
   }
 
   LOG_D(( "D: AmiGUS_CAMD_Base ready @ 0x%08lx\n", base ));

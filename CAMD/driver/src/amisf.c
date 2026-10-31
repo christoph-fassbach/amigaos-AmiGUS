@@ -47,7 +47,6 @@ struct AmiSF * AllocAmiSFfromFile( STRPTR filePath,
     return NULL;
   }
 
-
   expected = 8 * sizeof( UBYTE );
   actual = Read( amisf->asf_SampleSourceFile,
                  header,
@@ -70,7 +69,7 @@ struct AmiSF * AllocAmiSFfromFile( STRPTR filePath,
 
   ///////////////////////////////////////////////////////////////////
 
-  expected = 128 * 128 * sizeof( struct AmiSF_Preset );
+  expected = 129 * 129 * sizeof( struct AmiSF_Preset );
   actual = Read( amisf->asf_SampleSourceFile,
                  &( amisf->asf_Preset ),
                  expected );

@@ -82,16 +82,9 @@ VOID AmiGusNoteOn( struct MidiMessage * midiMessage ) {
   ULONG playbackRate = GetPlaybackRate( amisf, sfNote, note );
   UWORD playbackVolume = GetPlaybackVolume( velocity );
 
-  UBYTE amigusChannelId;
-
-  if ( 0x09 == midiChannelId ) {
-
-    // TODO: Use percussions here!
-    // Percussions on bank 128, presets selecting drum kits, 
-    return;
-  }
-
-  amigusChannelId = AllocateNextAmiGusChannel( midiChannelId, note, velocity );
+  UBYTE amigusChannelId = AllocateNextAmiGusChannel( midiChannelId,
+                                                     note,
+                                                     velocity );
 
   // TODO: Sample handling
 
