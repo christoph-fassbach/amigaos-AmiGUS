@@ -30,7 +30,7 @@ struct AmiSF * AllocAmiSFfromFile(
   STRPTR filePath,
   struct ProgressDialog * dialog
 ) {
-// TODO: Use also for converter!
+
   LONG expected;
   LONG actual;
   UBYTE header[ 8 ];
@@ -65,7 +65,7 @@ struct AmiSF * AllocAmiSFfromFile(
 
   ///////////////////////////////////////////////////////////////////
 
-  expected = 128 * 128 * sizeof( struct AmiSF_Preset );
+  expected = 129 * 129 * sizeof( struct AmiSF_Preset );
   actual = Read( amisf->asf_SampleSourceFile,
                  &( amisf->asf_Preset ),
                  expected );

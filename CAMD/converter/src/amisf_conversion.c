@@ -66,8 +66,6 @@ static BOOL FillPresetNotes(
   ULONG * maxProgress
 ) {
 
-  UBYTE lastBank = 255;
-  UBYTE lastPreset = 255;
   ULONG nextNoteIndex = 0;
 
   UWORD i;
@@ -93,6 +91,9 @@ static BOOL FillPresetNotes(
     struct SF2_Args * argsP;
     const LONG bank = sf2Preset->sf2p_Bank;
     const LONG preset = sf2Preset->sf2p_Common.sf2c_Number;
+    struct AmiSF_Preset * asf_Preset = &( amisf->asf_Preset[ bank ][ preset ]);
+
+    asf_Preset->asfp_NoteStart = nextNoteIndex; // Absolute start index
 
     FOR_LIST( &( sf2Preset->sf2p_Args ),
               argsP,
@@ -127,8 +128,6 @@ static BOOL FillPresetNotes(
         WORD release;
 
         struct SF2_Sample * tempSample;
-        struct AmiSF_Preset * asf_Preset =
-          &( amisf->asf_Preset[ bank ][ preset ]);
         struct AmiSF_Note * asf_Note;
         BOOL abort;
 
@@ -148,16 +147,9 @@ static BOOL FillPresetNotes(
         tempSample = sf2->sf2_SampleArray[ sampleIndex ];
 
         /* Iteration payload below */
-        // Fill the new preset with information as soon as we reach a new one
-        if (( lastBank != bank ) || ( lastPreset != preset )) {
-
-          asf_Preset->asfp_Bank = bank;
-          asf_Preset->asfp_Preset = preset;
-          asf_Preset->asfp_NoteStart = nextNoteIndex; // Absolute start index
-          // asf_Preset->asfp_NoteCount = 0; done by AllocMem( ... MEMF_CLEAR );
-          lastBank = bank;
-          lastPreset = preset;
-        }
+        asf_Preset->asfp_Bank = bank;
+        asf_Preset->asfp_Preset = preset;
+        // asf_Preset->asfp_NoteCount = 0; done by AllocMem( ... MEMF_CLEAR );
 
         // Remember: all the notes are "pooled" in a single array addressed by
         // only indices, hence here it is enough to just get the current note...
@@ -584,7 +576,7 @@ LONG WriteAmiSFtoFile(
   }
   written = Write( fileHandle,
                    &( amisf->asf_Preset ),
-                   128 * 128 * sizeof( struct AmiSF_Preset ));
+                   129 * 129 * sizeof( struct AmiSF_Preset ));
   if ( -1 == written ) {
 
     Close( fileHandle );

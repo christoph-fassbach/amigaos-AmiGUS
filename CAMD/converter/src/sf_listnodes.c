@@ -314,8 +314,8 @@ BOOL CreateAmiSfListLabels( struct List * labels,
   LONG bankIndex;
   LONG presetIndex;
 
-  for ( bankIndex = 0; bankIndex <= 128; ++bankIndex ) {
-    for ( presetIndex = 0; presetIndex <= 128; ++presetIndex ) {
+  for ( bankIndex = 0; 129 > bankIndex; ++bankIndex ) {
+    for ( presetIndex = 0; 129 > presetIndex; ++presetIndex ) {
 
       struct AmiSF_Preset * preset =
         &( amisf->asf_Preset[ bankIndex ][ presetIndex ]);
