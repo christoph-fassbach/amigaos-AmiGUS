@@ -365,7 +365,7 @@ UWORD GetAmiGusFactorShift16FromCentibels( WORD centibels ) {
     return 0;
   }
 
-  LOG_D(( "V: %ld centibels => %ld factor\n", 
+  LOG_V(( "V: %ld centibels => %ld factor\n",
           centibels,
           factor ));
 
