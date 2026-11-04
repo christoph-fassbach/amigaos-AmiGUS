@@ -198,8 +198,12 @@ BOOL HandleProgressDialogTick( struct ProgressDialog * dialog,
   return result;
 }
 
-VOID CloseProgressDialog( struct ProgressDialog * dialog ) {
+VOID DisposeProgressDialog( struct ProgressDialog * dialog ) {
 
+  if ( !( dialog )) {
+
+    return;
+  }
   DisposeObject( dialog->pd_ProgressContent );
 
   if ( dialog->pd_ParentWindow ) {
@@ -209,12 +213,6 @@ VOID CloseProgressDialog( struct ProgressDialog * dialog ) {
                       WA_BusyPointer, FALSE,
                       TAG_DONE );
   }
-}
 
-VOID FreeProgressDialog( struct ProgressDialog * dialog ) {
-
-  if ( dialog ) {
-
-    FreeMem( dialog, sizeof( struct ProgressDialog ));
-  }
+  FreeMem( dialog, sizeof( struct ProgressDialog ));
 }

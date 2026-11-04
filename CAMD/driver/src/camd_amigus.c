@@ -312,12 +312,6 @@ BOOL __ASM__ __SAVE_DS__ AmiGUS_Init(
 
     base->agb_CardBase = base->agb_AmiGUS->agus_WavetableBase;
 
-    base->agb_ProgressDialog =
-      CreateProgressDialog( NULL,
-                            "Please wait...",
-                            "Loading AmiSF ...",
-                            "Cancel" );
-
     LOG_D(( "D: AmiGUS_CAMD using Wavetable @ 0x%08lx on %s\n",
             base->agb_CardBase,
             base->agb_AmiGUS->agus_TypeName ));
@@ -338,8 +332,6 @@ VOID __ASM__ __SAVE_DS__ AmiGUS_Expunge( VOID ) {
   AmiGUS_FreeCard( AmiGUS_CAMD_Base->agb_AmiGUS,
                    AMIGUS_FLAG_WAVETABLE,
                    AmiGUS_CAMD_Base );
-
-  FreeProgressDialog( AmiGUS_CAMD_Base->agb_ProgressDialog );
 
   if ( AmiGUS_CAMD_Base->agb_LogFile ) {
 
@@ -443,6 +435,11 @@ APTR __ASM__ __SAVE_DS__ AmiGUS_OpenPort (
           amiSfModeVarLength, ( STRPTR ) &( base->agb_AmiSfMode )));
   if ( 0 < amiSfPathVarLength ) {
 
+    base->agb_ProgressDialog = 
+      CreateProgressDialog( NULL,
+                            "Please wait...",
+                            "Loading AmiSF ...",
+                            "Cancel" );
     ShowProgressDialog( base->agb_ProgressDialog );
 
     base->agb_AmiSf = AllocAmiSFfromFile( base->agb_AmiSfPath,
@@ -452,7 +449,8 @@ APTR __ASM__ __SAVE_DS__ AmiGUS_OpenPort (
                     base->agb_SampleBuffer,
                     base->agb_ProgressDialog );
 
-    CloseProgressDialog( base->agb_ProgressDialog );
+    DisposeProgressDialog( base->agb_ProgressDialog );
+    base->agb_ProgressDialog = NULL;
   }
 
   LOG_D(( "D: OpenPort done, returning 0x%lx.\n",
