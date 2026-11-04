@@ -325,8 +325,12 @@ BOOL __ASM__ __SAVE_DS__ AmiGUS_Init(
 
 VOID __ASM__ __SAVE_DS__ AmiGUS_Expunge( VOID ) {
 
-  LOG_D(( "D: AmiGUS_CAMD_Base @ 0x%08lx leaving the building...\n",
-          AmiGUS_CAMD_Base ));
+  struct AmiGUS_CAMD * base = AmiGUS_CAMD_Base;
+
+  LOG_D(( "D: AmiGUS_CAMD_Base @ 0x%08lx leaving the building...\n", base ));
+
+  FreeAmiSF( base->agb_AmiSf );
+  base->agb_AmiSf = NULL;
 
   // Even if reserve failed, would not matter at all...
   AmiGUS_FreeCard( AmiGUS_CAMD_Base->agb_AmiGUS,
@@ -420,37 +424,47 @@ APTR __ASM__ __SAVE_DS__ AmiGUS_OpenPort (
    * ------------------------------------------------------
    */
 
-  amiSfPathVarLength = GetVar( "AmiGUS/CAMD-AmiSF-PATH",
-                               base->agb_AmiSfPath,
-                               sizeof( base->agb_AmiSfPath ),
-                               0 );
-  amiSfModeVarLength = GetVar( "AmiGUS/CAMD-AmiSF-MODE",
-                               ( STRPTR ) &( base->agb_AmiSfMode ),
-                               sizeof( base->agb_AmiSfMode ),
-                               0 );
+   if ( !( base->agb_AmiSf )) {
 
-  LOG_D(( "D: AmiSF path var length %ld, is '%s'.\n",
-          amiSfPathVarLength, base->agb_AmiSfPath ));
-  LOG_D(( "D: AmiSF mode var length %ld, is '%s'.\n",
-          amiSfModeVarLength, ( STRPTR ) &( base->agb_AmiSfMode )));
-  if ( 0 < amiSfPathVarLength ) {
+    LOG_I(( "I: Loading AmiSF...\n" ));
 
-    base->agb_ProgressDialog = 
-      CreateProgressDialog( NULL,
-                            "Please wait...",
-                            "Loading AmiSF ...",
-                            "Cancel" );
-    ShowProgressDialog( base->agb_ProgressDialog );
+    amiSfPathVarLength = GetVar( "AmiGUS/CAMD-AmiSF-PATH",
+                                 base->agb_AmiSfPath,
+                                 sizeof( base->agb_AmiSfPath ),
+                                 0 );
 
-    base->agb_AmiSf = AllocAmiSFfromFile( base->agb_AmiSfPath,
-                                          base->agb_ProgressDialog );
-    PrepareSamples( base->agb_AmiSf,
-                    base->agb_AmiSfMode,
-                    base->agb_SampleBuffer,
-                    base->agb_ProgressDialog );
+    amiSfModeVarLength = GetVar( "AmiGUS/CAMD-AmiSF-MODE",
+                                 ( STRPTR ) &( base->agb_AmiSfMode ),
+                                 sizeof( base->agb_AmiSfMode ),
+                                 0 );
 
-    DisposeProgressDialog( base->agb_ProgressDialog );
-    base->agb_ProgressDialog = NULL;
+    LOG_D(( "D: AmiSF path var length %ld, is '%s'.\n",
+            amiSfPathVarLength, base->agb_AmiSfPath ));
+    LOG_D(( "D: AmiSF mode var length %ld, is '%s'.\n",
+            amiSfModeVarLength, ( STRPTR ) &( base->agb_AmiSfMode )));
+
+    if ( 0 < amiSfPathVarLength ) {
+
+      base->agb_ProgressDialog = 
+        CreateProgressDialog( NULL,
+                              "Please wait...",
+                              "Loading AmiSF ...",
+                              "Cancel" );
+      ShowProgressDialog( base->agb_ProgressDialog );
+
+      base->agb_AmiSf = AllocAmiSFfromFile( base->agb_AmiSfPath,
+                                            base->agb_ProgressDialog );
+      PrepareSamples( base->agb_AmiSf,
+                      base->agb_AmiSfMode,
+                      base->agb_SampleBuffer,
+                      base->agb_ProgressDialog );
+
+      DisposeProgressDialog( base->agb_ProgressDialog );
+      base->agb_ProgressDialog = NULL;
+    }
+  } else {
+
+    LOG_I(( "I: AmiSF already loaded.\n" ));
   }
 
   LOG_D(( "D: OpenPort done, returning 0x%lx.\n",
