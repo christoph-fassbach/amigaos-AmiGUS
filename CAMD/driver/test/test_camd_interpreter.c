@@ -32,12 +32,17 @@
 
 struct AmiGUS_CAMD * AmiGUS_CAMD_Base;
 
-UBYTE AllocateNextAmiGusChannel( UBYTE midiChannel ) {
+UBYTE AllocateNextAmiGusChannel( UBYTE channel, UBYTE note, UBYTE velocity ) {
 
   return 7;
 }
 
-UBYTE GetUsedAmiGusChannel( UBYTE midiChannel ) {
+UBYTE FreeAmiGusChannel( UBYTE channel, UBYTE note, UBYTE velocity ) {
+
+  return 7;
+}
+
+UBYTE GetUsedAmiGusChannel( UBYTE channel, UBYTE note, UBYTE velocity ) {
 
   return 7;
 }
