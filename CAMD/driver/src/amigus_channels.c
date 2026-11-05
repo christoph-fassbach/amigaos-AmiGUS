@@ -18,6 +18,7 @@
 
 #include "amigus_camd.h"
 #include "amigus_channels.h"
+#include "debug.h"
 #include "support.h"
 
 UBYTE AllocateNextAmiGusChannel( UBYTE channel, UBYTE note, UBYTE velocity ) {
@@ -56,7 +57,9 @@ UBYTE AllocateNextAmiGusChannel( UBYTE channel, UBYTE note, UBYTE velocity ) {
   channelState->acs_MidiNote = note;
   channelState->acs_MidiVelocity = velocity;
 
+  // Increment next channel ...
   ++base->agb_NextAmiGusChannelUsageId;
+  // ... and handle next channel ID overflow back to ... well, close to 0
   if ( 0xFFffFFff == base->agb_NextAmiGusChannelUsageId ) {
 
     ULONG min = 0xFFffFFff;
@@ -70,6 +73,10 @@ UBYTE AllocateNextAmiGusChannel( UBYTE channel, UBYTE note, UBYTE velocity ) {
     }
     base->agb_NextAmiGusChannelUsageId -= min;
   }
+
+  // Anyway, produce debug output and return result
+  LOG_D(( "D: Allocated %ld for channel %ld note %ld velocity %ld\n",
+          selected, channel, note, velocity ));
 
   return selected;
 }
@@ -102,14 +109,41 @@ UBYTE GetUsedAmiGusChannel( UBYTE channel, UBYTE note, UBYTE velocity ) {
 
     channelState = &( base->agb_AmiGusChannelState[ i ]);
 
-    if (( channelState->acs_IsActive )
-      && ( channelState->acs_UsageId < leastRecentlyUsedId )
-      && ( channelState->acs_MidiChannel == channel )
-      && ( channelState->acs_MidiNote == note )
-      && ( channelState->acs_MidiVelocity == velocity )) {
+    if ( channelState->acs_IsActive ) {
+      if ( channelState->acs_UsageId < leastRecentlyUsedId ) {
+        if ( channelState->acs_MidiChannel == channel ) {
+          if ( channelState->acs_MidiNote == note ) {
+            if (( 0 == velocity )
+              || ( channelState->acs_MidiVelocity == velocity )) {
 
-      leastRecentlyUsedId = channelState->acs_UsageId;
-      selected = i;
+              leastRecentlyUsedId = channelState->acs_UsageId;
+              selected = i;
+              LOG_D(( "V: AmiGUS channel %ld selected\n", i ));
+
+            } else {
+
+              LOG_D(( "V: AmiGUS channel %ld: Midi velocity %ld != %ld\n",
+                      i, channelState->acs_MidiVelocity, velocity ));
+            }
+          } else {
+
+            LOG_D(( "V: AmiGUS channel %ld: Midi note %ld != %ld\n",
+                    i, channelState->acs_MidiNote, note ));
+          }
+        } else {
+
+          LOG_D(( "V: AmiGUS channel %ld: Midi channel %ld != %ld\n",
+                  i, channelState->acs_MidiChannel, channel ));
+        }
+      } else {
+
+        LOG_D(( "V: AmiGUS channel %ld: LRU ID %ld >= %ld\n",
+                i, channelState->acs_UsageId, leastRecentlyUsedId ));
+      }
+    } else {
+
+      LOG_D(( "V: AmiGUS channel %ld: IsActive %ld\n",
+              i, channelState->acs_IsActive ));
     }
   }
 

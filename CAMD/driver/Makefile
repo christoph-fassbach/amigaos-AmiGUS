@@ -249,7 +249,6 @@ test_amigus_channels: FOLDERS $(LIB_OBJS)
 	@echo " "
 	$(CC) $(CFLAGS) test/$@.o test/$@.c
 	$(LD) $(LFLAGS) test/$@ $(LFLAGS1) $(LFLAGST1) test/$@.o \
-            $(BDIR)amigus_channels-$(LIB_CPU)-$(LIB_LOG).o \
             $(LFLAGST2)
 	@echo " "
 	$(RUNNER) test/$@

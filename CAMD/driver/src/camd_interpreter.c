@@ -52,7 +52,7 @@ VOID AmiGusNoteOff( struct MidiMessage * midiMessage ) {
   UBYTE velocity = midiMessage->mm_Data1;
   UBYTE amigusChannelId = FreeAmiGusChannel( midiChannel, note, velocity );
 
-  if ( 0xFF != amigusChannelId ) {
+  if ( 0xFF == amigusChannelId ) {
   
     LOG_D(( "D: Trying to stop channel %ld, but not active!\n", midiChannel ));
 
@@ -117,7 +117,8 @@ BOOL AmiGusControlChange( struct MidiMessage * midiMessage ) {
 
       return TRUE;
     }
-    // case 0x08: { balance }-T5
+    // case 0x07: { volume }-T3
+    // case 0x08: { balance }-T3
     // case 0x0A: { pan }
     case 0x20: {
 
@@ -135,6 +136,11 @@ BOOL AmiGusControlChange( struct MidiMessage * midiMessage ) {
       break;
     }
   }
+  LOG_W(( "W: Did not understand Control Change 0x%02lx-%02lx-%02lx-%02lx\n",
+          midiMessage->mm_Status,
+          midiMessage->mm_Channel,
+          midiMessage->mm_Data0,
+          midiMessage->mm_Data1 ));
   return FALSE;
 }
 
@@ -164,6 +170,8 @@ BOOL TokenizeMidiByte( UBYTE midiByte, struct MidiMessage * midiMessage ) {
     // TODO: Handle System Common / SysEx messages (0xF0 - 0xF7)
     if (( midiByte & 0xF0) == MIDI_SYSTEM_MSG ) {
 
+      // Device Volume and master balance see 
+      // MIDI 1.0 Detailed Specification, p.57
       state = STATE_WAIT_STATUS;
       return FALSE;
     }
@@ -191,8 +199,8 @@ BOOL TokenizeMidiByte( UBYTE midiByte, struct MidiMessage * midiMessage ) {
       midiMessage->mm_Data0 = midiByte;
       midiMessage->mm_Data1 = 0;
       state = STATE_WAIT_STATUS;
-      //TODO: Handle the message!
-      LOG_D(( "D: MIDI message completed, %02lx %02lx %02lx %02lx\n",
+
+      LOG_D(( "D: MIDI message completed, 0x%02lx-%02lx-%02lx-%02lx\n",
               midiMessage->mm_Status,
               midiMessage->mm_Channel,
               midiMessage->mm_Data0,
@@ -207,8 +215,8 @@ BOOL TokenizeMidiByte( UBYTE midiByte, struct MidiMessage * midiMessage ) {
     case STATE_WAIT_DATA2_1: {
       midiMessage->mm_Data1 = midiByte;
       state = STATE_WAIT_STATUS;
-      //TODO: Handle the message!
-      LOG_D(( "D: MIDI message completed, %02lx %02lx %02lx %02lx\n",
+
+      LOG_D(( "D: MIDI message completed, 0x%02lx-%02lx-%02lx-%02lx\n",
               midiMessage->mm_Status,
               midiMessage->mm_Channel,
               midiMessage->mm_Data0,
@@ -239,12 +247,20 @@ BOOL InterpretMidiMessage( struct MidiMessage * midiMessage ) {
     }
     case MIDI_NOTE_ON: {
 
+      UBYTE velocity = midiMessage->mm_Data1;
       LOG_D(( "D: Called NOTE_ON for channel %ld note %ld velocity %ld\n",
               midiMessage->mm_Channel,
               midiMessage->mm_Data0,
-              midiMessage->mm_Data1 ));
+              velocity ));
 
-      AmiGusNoteOn( midiMessage );
+      if ( velocity ) {
+
+        AmiGusNoteOn( midiMessage );
+
+      } else {
+
+        AmiGusNoteOff( midiMessage );
+      }
 
       return TRUE;
     }

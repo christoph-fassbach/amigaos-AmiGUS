@@ -21,6 +21,16 @@
 
 #include <proto/exec.h>
 
+#define DEBUG_H
+#define LOG_INT(X) printf X
+#define LOG_V(X)   printf X
+#define LOG_D(X)   printf X
+#define LOG_I(X)   printf X
+#define LOG_W(X)   printf X
+#define LOG_E(X)   printf X
+
+#include "../src/amigus_channels.c"
+
 #include "amigus_camd.h"
 
 struct AmiGUS_CAMD * AmiGUS_CAMD_Base;
