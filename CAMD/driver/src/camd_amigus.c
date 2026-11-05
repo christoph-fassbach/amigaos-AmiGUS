@@ -483,6 +483,8 @@ VOID __ASM__ __SAVE_DS__ AmiGUS_ClosePort (
   // TODO: Deallocate / free card
   // TODO: check port num
 
+  InitAmiGus();
+
   DestroyWorkerProcess();
   FreeSignal( AmiGUS_CAMD_Base->agb_MainSignal );
 }
