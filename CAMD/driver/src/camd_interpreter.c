@@ -42,7 +42,15 @@
 #define MIDI_PERCUSSIONS_CHANNEL        9
 #define MIDI_PERCUSSIONS_BANK           128
 #define MIDI_CHANNEL_COUNT              16
+
+#define MIDI_VOLUME_MIN_VALUE           0
+#define MIDI_VOLUME_MAX_VALUE           127
 #define MIDI_VOLUME_VALUE_COUNT         128
+
+#define MIDI_PANNING_VALUE_COUNT        128
+#define MIDI_PANNING_ALL_LEFT_VALUE     0
+#define MIDI_PANNING_MID_VALUE          64
+#define MIDI_PANNING_ALL_RIGHT_VALUE    127
 
 typedef enum {
 
@@ -58,7 +66,7 @@ typedef enum {
  * direction to be translated to AmiGUS compatible channel volume settings.
  *
  * MIDI in:    x = 0..127
- * AmiGUS out: y = 40 * log10( x / 127 )
+ * AmiGUS out: y = 0xFFFF + 0xFFFF * (( 40 * log10( x / 127 )) / 100 )
  */
 static const UWORD AmiGusMidiVolumeMapping[ MIDI_VOLUME_VALUE_COUNT ] = {
 
@@ -233,7 +241,7 @@ VOID AmiGusNoteOn( struct MidiMessage * midiMessage ) {
   struct AmiSF_Sample * sfSample = GetAmiSfSample( amisf, sfNote );
 
   ULONG playbackRate = GetPlaybackRate( amisf, sfNote, note );
-  UWORD playbackVolume = GetPlaybackVolume( velocity, 
+  UWORD playbackVolume = GetPlaybackVolume( velocity,
                                             midiChannel->mcs_Volume );
 
   UBYTE amigusChannelId = AllocateNextAmiGusChannel( midiChannelId,
@@ -279,7 +287,18 @@ BOOL AmiGusControlChange( struct MidiMessage * midiMessage ) {
       return TRUE;
     }
     // case 0x08: { balance }-T3
-    // case 0x0A: { pan }
+    case 0x0A: {
+
+      // See MIDI 1.0 Detailed Specification
+      // T-3 p.75 - Channel Panning MSB
+      // and pp.13/18:
+      // 00 = hard left, 64 (40H) = center, and 127 (7FH) = hard right
+
+      channel->mcs_Panning = midiMessage->mm_Data1;
+
+      //return TRUE;
+      break;
+    }
     case 0x20: {
 
       // See MIDI 1.0 Detailed Specification
@@ -340,7 +359,8 @@ VOID InitMidiState( VOID ) {
     }
     
     state->mcs_Preset = 0;
-    state->mcs_Volume = 127;
+    state->mcs_Volume = MIDI_VOLUME_MAX_VALUE;
+    state->mcs_Panning = MIDI_PANNING_MID_VALUE;
   }
   for ( i = 0; 32 > i ; ++i ) {
 
@@ -516,6 +536,10 @@ ULONG GetPlaybackRate( struct AmiSF * amisf,
 
   return playbackRate;
 }
+
+/******************************************************************************
+ * Volume calculation functions - public functions.
+ *****************************************************************************/
 
 UWORD GetPlaybackVolume( UBYTE velocity, UBYTE channelVolume ) {
 

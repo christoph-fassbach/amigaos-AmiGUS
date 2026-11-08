@@ -25,7 +25,7 @@ struct MidiChannelState {
   UBYTE mcs_Bank;
   UBYTE mcs_Preset;
   UBYTE mcs_Volume;
-  UBYTE mcs_Padding0;
+  UBYTE mcs_Panning;
 };
 
 struct AmiGusChannelState {
