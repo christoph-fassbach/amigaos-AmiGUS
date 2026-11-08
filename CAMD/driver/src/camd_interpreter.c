@@ -313,6 +313,27 @@ BOOL AmiGusControlChange( struct MidiMessage * midiMessage ) {
     // case 0x48: { release }
     // case 0x49: { attack }
     // case 0x4a: { brightness }
+    case 0x78:
+      // See MIDI 1.0 Detailed Specification
+      // T-5 p.77 - 120 / All Sound Off
+    case 0x7B: {
+      // See MIDI 1.0 Detailed Specification
+      // T-5 p.77 - 123 / All Notes Off
+      struct AmiGusChannelState * state;
+      UBYTE i = 0;
+      for ( i = 0; 32 > i; ++i ) {
+
+        state = &( base->agb_AmiGusChannelState[ i ]);
+
+        if (( state->acs_IsActive )
+          && (state->acs_MidiChannel == midiMessage->mm_Data1 )) {
+
+          state->acs_IsActive = FALSE;
+          StopAmiGusWavetablePlayback( i );
+        }
+      }
+      return TRUE;
+    }
     default: {
       break;
     }
