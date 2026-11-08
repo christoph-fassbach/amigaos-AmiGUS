@@ -265,17 +265,25 @@ BOOL AmiGusControlChange( struct MidiMessage * midiMessage ) {
     // See MIDI 1.0 Detailed Specification
     // T-3 p.75 - T-5 p.77
     case 0x00: {
-
+      // See MIDI 1.0 Detailed Specification
+      // T-3 p.75 - Bank Select MSB
       channel->mcs_Bank &= 0x7F;
       channel->mcs_Bank |= ((( UWORD ) midiMessage->mm_Data1 ) << 7 );
 
       return TRUE;
     }
-    // case 0x07: { volume }-T3
+    case 0x07: {
+      // See MIDI 1.0 Detailed Specification
+      // T-3 p.75 - Channel Volume MSB
+      channel->mcs_Volume = midiMessage->mm_Data1;
+      return TRUE;
+    }
     // case 0x08: { balance }-T3
     // case 0x0A: { pan }
     case 0x20: {
 
+      // See MIDI 1.0 Detailed Specification
+      // T-3 p.75 - Bank Select LSB
       channel->mcs_Bank &= 0x80;
       channel->mcs_Bank |= midiMessage->mm_Data1;
 
