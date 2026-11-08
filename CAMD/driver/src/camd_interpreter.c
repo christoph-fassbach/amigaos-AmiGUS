@@ -280,6 +280,9 @@ BOOL AmiGusControlChange( struct MidiMessage * midiMessage ) {
 
       return TRUE;
     }
+    // case 0x01: Modulation wheel or lever
+    // See MIDI 1.0 Detailed Specification
+    // T-3 p.75
     case 0x07: {
       // See MIDI 1.0 Detailed Specification
       // T-3 p.75 - Channel Volume MSB
@@ -296,8 +299,8 @@ BOOL AmiGusControlChange( struct MidiMessage * midiMessage ) {
 
       channel->mcs_Panning = midiMessage->mm_Data1;
 
-      //return TRUE;
-      break;
+      LOG_W(( "W: TODO: Panning not implemented!\n" ));
+      return TRUE;
     }
     case 0x20: {
 
@@ -316,6 +319,9 @@ BOOL AmiGusControlChange( struct MidiMessage * midiMessage ) {
     case 0x78:
       // See MIDI 1.0 Detailed Specification
       // T-5 p.77 - 120 / All Sound Off
+    case 0x79: 
+      // See MIDI 1.0 Detailed Specification
+      // T-5 p.77 - 121 / Reset All Controllers
     case 0x7B: {
       // See MIDI 1.0 Detailed Specification
       // T-5 p.77 - 123 / All Notes Off
@@ -334,6 +340,9 @@ BOOL AmiGusControlChange( struct MidiMessage * midiMessage ) {
       }
       return TRUE;
     }
+    case 0x7E: 
+    // See MIDI 1.0 Detailed Specification
+    // T-5 p.77 - 123 / Mono On (Poly Off)
     default: {
       break;
     }
@@ -508,14 +517,18 @@ BOOL InterpretMidiMessage( struct MidiMessage * midiMessage ) {
     }
     case MIDI_CONTROL_CHANGE: {
 
+      BOOL success = AmiGusControlChange( midiMessage );
+
       LOG_D(( "D: Called CONTROL_CHANGE for channel %ld sub 0x%08lx data %ld\n",
               midiMessage->mm_Channel,
               midiMessage->mm_Data0,
               midiMessage->mm_Data1 ));
 
-      AmiGusControlChange( midiMessage );
+      if ( success ) {
 
-      return TRUE;
+        return success;
+      }
+      break;
     }
     case MIDI_PROGRAM_CHANGE: {
 

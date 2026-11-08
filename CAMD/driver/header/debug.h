@@ -96,7 +96,7 @@ VOID RawPutChar( BYTE putCh );
 #elif defined (FILE_LOG)
 
 // LOG_INT(X) would crash
-#define LOG_V(X) debug_fprintf X
+// #define LOG_V(X) debug_fprintf X -> Noisy!!
 #define LOG_D(X) debug_fprintf X
 #define LOG_I(X) debug_fprintf X
 #define LOG_W(X) debug_fprintf X
