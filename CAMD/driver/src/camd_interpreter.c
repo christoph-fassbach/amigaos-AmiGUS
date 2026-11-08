@@ -45,7 +45,15 @@
 
 #define MIDI_VOLUME_MIN_VALUE           0
 #define MIDI_VOLUME_MAX_VALUE           127
+
+#define MIDI_VOLUME_MIN_VALUE           0
+#define MIDI_VOLUME_MAX_VALUE           127
 #define MIDI_VOLUME_VALUE_COUNT         128
+
+#define MIDI_PANNING_VALUE_COUNT        128
+#define MIDI_PANNING_ALL_LEFT_VALUE     0
+#define MIDI_PANNING_MID_VALUE          64
+#define MIDI_PANNING_ALL_RIGHT_VALUE    127
 
 #define MIDI_PANNING_VALUE_COUNT        128
 #define MIDI_PANNING_ALL_LEFT_VALUE     0
@@ -200,6 +208,146 @@ static const UWORD AmiGusMidiVolumeMapping[ MIDI_VOLUME_VALUE_COUNT ] = {
   0xFFFF
 };
 
+/**
+ * Panning lookup values for 0 to 127 panning values input from CAMD / MIDI
+ * direction to be translated to AmiGUS compatible channel volume factors.
+ * Left channel here, right channel is to be looked up for ( 127 - x )
+ * 
+ * MIDI in:    x = 0..127
+ * AmiGUS out: y = ( cos( x / 127 * pi / 2) ) * 0xFFFF
+ */
+static const UWORD AmiGusMidiPanningMapping[ MIDI_PANNING_VALUE_COUNT ] = {
+
+  0xFFFF,
+  0xFFFA,
+  0xFFEB,
+  0xFFD2,
+  0xFFAF,
+  0xFF82,
+  0xFF4B,
+  0xFF0A,
+  0xFEBE,
+  0xFE69,
+  0xFE0A,
+  0xFDA1,
+  0xFD2E,
+  0xFCB2,
+  0xFC2B,
+  0xFB9A,
+  0xFB00,
+  0xFA5C,
+  0xF9AE,
+  0xF8F6,
+  0xF834,
+  0xF769,
+  0xF694,
+  0xF5B5,
+  0xF4CD,
+  0xF3DB,
+  0xF2DF,
+  0xF1DB,
+  0xF0CC,
+  0xEFB4,
+  0xEE93,
+  0xED68,
+  0xEC35,
+  0xEAF7,
+  0xE9B1,
+  0xE862,
+  0xE709,
+  0xE5A7,
+  0xE43D,
+  0xE2C9,
+  0xE14D,
+  0xDFC8,
+  0xDE3A,
+  0xDCA3,
+  0xDB03,
+  0xD95C,
+  0xD7AB,
+  0xD5F2,
+  0xD431,
+  0xD267,
+  0xD095,
+  0xCEBB,
+  0xCCD9,
+  0xCAEF,
+  0xC8FD,
+  0xC703,
+  0xC502,
+  0xC2F8,
+  0xC0E7,
+  0xBECE,
+  0xBCAE,
+  0xBA87,
+  0xB858,
+  0xB622,
+  0xB3E5,
+  0xB1A1,
+  0xAF55,
+  0xAD03,
+  0xAAAB,
+  0xA84B,
+  0xA5E5,
+  0xA378,
+  0xA106,
+  0x9E8C,
+  0x9C0D,
+  0x9987,
+  0x96FC,
+  0x946A,
+  0x91D3,
+  0x8F36,
+  0x8C93,
+  0x89EB,
+  0x873D,
+  0x848A,
+  0x81D2,
+  0x7F15,
+  0x7C53,
+  0x798C,
+  0x76C0,
+  0x73F0,
+  0x711B,
+  0x6E42,
+  0x6B64,
+  0x6882,
+  0x659C,
+  0x62B2,
+  0x5FC4,
+  0x5CD3,
+  0x59DE,
+  0x56E5,
+  0x53E9,
+  0x50E9,
+  0x4DE7,
+  0x4AE1,
+  0x47D9,
+  0x44CD,
+  0x41BF,
+  0x3EAF,
+  0x3B9B,
+  0x3886,
+  0x356E,
+  0x3255,
+  0x2F39,
+  0x2C1B,
+  0x28FC,
+  0x25DB,
+  0x22B9,
+  0x1F95,
+  0x1C70,
+  0x194A,
+  0x1623,
+  0x12FB,
+  0x0FD2,
+  0x0CA9,
+  0x097F,
+  0x0655,
+  0x032B,
+  0x0000
+};
+
 /******************************************************************************
  * Low-Level MIDI functions - private functions.
  *****************************************************************************/
@@ -242,7 +390,12 @@ VOID AmiGusNoteOn( struct MidiMessage * midiMessage ) {
 
   ULONG playbackRate = GetPlaybackRate( amisf, sfNote, note );
   UWORD playbackVolume = GetPlaybackVolume( velocity,
-                                            midiChannel->mcs_Volume );
+                                            midiChannel->mcs_Volume);
+  UWORD leftVolume = GetLeftPlaybackVolume( playbackVolume,
+                                            midiChannel->mcs_Panning );
+  UWORD rightVolume = GetRightPlaybackVolume( playbackVolume,
+                                              midiChannel->mcs_Panning );
+
 
   UBYTE amigusChannelId = AllocateNextAmiGusChannel( midiChannelId,
                                                      note,
@@ -255,7 +408,8 @@ VOID AmiGusNoteOn( struct MidiMessage * midiMessage ) {
                                 sfSample->asfs_LoopOffset,
                                 sfSample->asfs_EndOffset,
                                 playbackRate,
-                                playbackVolume,
+                                leftVolume,
+                                rightVolume,
                                 sfSample->asfs_PlaybackFlags,
                                 sfNote->asfn_Attack,
                                 sfNote->asfn_Decay,
@@ -284,6 +438,7 @@ BOOL AmiGusControlChange( struct MidiMessage * midiMessage ) {
       // See MIDI 1.0 Detailed Specification
       // T-3 p.75 - Channel Volume MSB
       channel->mcs_Volume = midiMessage->mm_Data1;
+
       return TRUE;
     }
     // case 0x08: { balance }-T3
@@ -296,8 +451,7 @@ BOOL AmiGusControlChange( struct MidiMessage * midiMessage ) {
 
       channel->mcs_Panning = midiMessage->mm_Data1;
 
-      //return TRUE;
-      break;
+      return TRUE;
     }
     case 0x20: {
 
@@ -541,19 +695,50 @@ ULONG GetPlaybackRate( struct AmiSF * amisf,
  * Volume calculation functions - public functions.
  *****************************************************************************/
 
-UWORD GetPlaybackVolume( UBYTE velocity, UBYTE channelVolume ) {
+UWORD GetPlaybackVolume( UBYTE velocity, UBYTE volume ) {
 
   UWORD velocityFactor = AmiGusMidiVolumeMapping[ velocity ];
-  UWORD volumeFactor = AmiGusMidiVolumeMapping[ channelVolume ];
-  ULONG volume = ( UWORD ) velocityFactor * ( UWORD ) volumeFactor;
-  UWORD playbackVolume = volume >> 19;
+  UWORD volumeFactor = AmiGusMidiVolumeMapping[ volume ];
+  ULONG longVolume = ( UWORD ) velocityFactor * ( UWORD ) volumeFactor;
+  UWORD playbackVolume = longVolume >> 19;
 
-  LOG_D(( "V: GetPlaybackVolume( %ld, %ld) -> "
+  LOG_V(( "V: GetPlaybackVolume( %ld, %ld ) -> "
           "%ld * %ld = 0x%08lx = 0x%04lx \n",
-          velocity, channelVolume,
+          velocity, volume,
           AmiGusMidiVolumeMapping[ velocity ],
-          AmiGusMidiVolumeMapping[ channelVolume ],
-          volume, playbackVolume ));
+          AmiGusMidiVolumeMapping[ volume ],
+          longVolume, playbackVolume ));
 
   return playbackVolume;
+}
+
+UWORD GetLeftPlaybackVolume( UWORD volume, UBYTE panning ) {
+
+  UWORD leftFactor = AmiGusMidiPanningMapping[ panning ];
+  ULONG longLeftVolume = ( UWORD ) volume * ( UWORD ) leftFactor;
+  UWORD leftVolume = longLeftVolume >> 16;
+
+  LOG_V(( "V: GetLeftPlaybackVolume( %ld, %ld ) -> "
+          "%ld * %ld = 0x%08lx = 0x%04lx \n",
+          volume, panning,
+          volume, leftFactor,
+          longLeftVolume, leftVolume ));
+
+  return leftVolume;
+}
+
+UWORD GetRightPlaybackVolume( UWORD volume, UBYTE panning ) {
+
+  UWORD rightFactor =
+    AmiGusMidiPanningMapping[ MIDI_PANNING_ALL_RIGHT_VALUE - panning ];
+  ULONG longRightVolume = ( UWORD ) volume * ( UWORD ) rightFactor;
+  UWORD rightVolume = longRightVolume >> 16;
+
+  LOG_V(( "V: GetRightPlaybackVolume( %ld, %ld ) -> "
+          "%ld * %ld = 0x%08lx = 0x%04lx \n",
+          volume, panning,
+          volume, rightFactor,
+          longRightVolume, rightVolume ));
+
+  return rightVolume;
 }

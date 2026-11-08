@@ -67,6 +67,8 @@ ULONG GetPlaybackRate( struct AmiSF * amisf,
                        struct AmiSF_Note * sfNote,
                        UBYTE note );
 
-UWORD GetPlaybackVolume( UBYTE velocity, UBYTE channelVolume );
+UWORD GetPlaybackVolume( UBYTE velocity, UBYTE volume );
+UWORD GetLeftPlaybackVolume( UWORD volume, UBYTE panning );
+UWORD GetRightPlaybackVolume( UWORD volume, UBYTE panning );
 
 #endif /* CAMD_INTERPRETER_H */
