@@ -18,21 +18,31 @@
 
 #include "amigus_camd.h"
 #include "amigus_channels.h"
+#include "amigus_hardware.h"
 #include "amigus_wavetable.h"
 #include "camd_interpreter.h"
 #include "debug.h"
 
-// MIDI status messages types
-#define MIDI_NOTE_OFF         0x80
-#define MIDI_NOTE_ON          0x90
-#define MIDI_POLY_PRESSURE    0xA0
-#define MIDI_CONTROL_CHANGE   0xB0
-#define MIDI_PROGRAM_CHANGE   0xC0
-#define MIDI_CHANNEL_PRESSURE 0xD0
-#define MIDI_PITCH_BEND       0xE0
-#define MIDI_SYSTEM_MSG       0xF0
+/******************************************************************************
+ * Private constants.
+ *****************************************************************************/
 
-#define CAMD_INTERPRETER_INVALID 0x80
+// MIDI status messages types
+#define MIDI_NOTE_OFF                   0x80
+#define MIDI_NOTE_ON                    0x90
+#define MIDI_POLY_PRESSURE              0xA0
+#define MIDI_CONTROL_CHANGE             0xB0
+#define MIDI_PROGRAM_CHANGE             0xC0
+#define MIDI_CHANNEL_PRESSURE           0xD0
+#define MIDI_PITCH_BEND                 0xE0
+#define MIDI_SYSTEM_MSG                 0xF0
+
+#define CAMD_INTERPRETER_INVALID        0x80
+
+#define MIDI_PERCUSSIONS_CHANNEL        9
+#define MIDI_PERCUSSIONS_BANK           128
+#define MIDI_CHANNEL_COUNT              16
+#define MIDI_VOLUME_VALUE_COUNT         128
 
 typedef enum {
 
@@ -42,6 +52,149 @@ typedef enum {
   STATE_WAIT_DATA2_1
 
 } MidiState;
+
+/**
+ * Volume lookup values for 0 to 127 volume values input from CAMD / MIDI
+ * direction to be translated to AmiGUS compatible channel volume settings.
+ *
+ * MIDI in:    x = 0..127
+ * AmiGUS out: y = 40 * log10( x / 127 )
+ */
+static const UWORD AmiGusMidiVolumeMapping[ MIDI_VOLUME_VALUE_COUNT ] = {
+
+  0x0000,
+  0x2892,
+  0x4765,
+  0x596D,
+  0x6638,
+  0x7025,
+  0x7840,
+  0x7F1B,
+  0x850B,
+  0x8A48,
+  0x8EF8,
+  0x9335,
+  0x9714,
+  0x9AA3,
+  0x9DEE,
+  0xA100,
+  0xA3DF,
+  0xA691,
+  0xA91C,
+  0xAB83,
+  0xADCB,
+  0xAFF7,
+  0xB208,
+  0xB402,
+  0xB5E7,
+  0xB7B7,
+  0xB976,
+  0xBB24,
+  0xBCC2,
+  0xBE51,
+  0xBFD3,
+  0xC148,
+  0xC2B2,
+  0xC410,
+  0xC564,
+  0xC6AE,
+  0xC7EF,
+  0xC927,
+  0xCA56,
+  0xCB7E,
+  0xCC9E,
+  0xCDB7,
+  0xCECA,
+  0xCFD6,
+  0xD0DB,
+  0xD1DB,
+  0xD2D5,
+  0xD3CA,
+  0xD4BA,
+  0xD5A5,
+  0xD68B,
+  0xD76C,
+  0xD849,
+  0xD922,
+  0xD9F7,
+  0xDAC8,
+  0xDB95,
+  0xDC5E,
+  0xDD24,
+  0xDDE7,
+  0xDEA6,
+  0xDF63,
+  0xE01C,
+  0xE0D2,
+  0xE185,
+  0xE236,
+  0xE2E3,
+  0xE38F,
+  0xE437,
+  0xE4DD,
+  0xE581,
+  0xE623,
+  0xE6C2,
+  0xE75F,
+  0xE7FA,
+  0xE893,
+  0xE92A,
+  0xE9BE,
+  0xEA51,
+  0xEAE2,
+  0xEB71,
+  0xEBFF,
+  0xEC8B,
+  0xED15,
+  0xED9D,
+  0xEE24,
+  0xEEA9,
+  0xEF2C,
+  0xEFAF,
+  0xF02F,
+  0xF0AE,
+  0xF12C,
+  0xF1A9,
+  0xF224,
+  0xF29D,
+  0xF316,
+  0xF38D,
+  0xF403,
+  0xF478,
+  0xF4EB,
+  0xF55E,
+  0xF5CF,
+  0xF63F,
+  0xF6AE,
+  0xF71C,
+  0xF789,
+  0xF7F5,
+  0xF860,
+  0xF8CA,
+  0xF933,
+  0xF99B,
+  0xFA02,
+  0xFA68,
+  0xFACD,
+  0xFB32,
+  0xFB95,
+  0xFBF8,
+  0xFC59,
+  0xFCBA,
+  0xFD1A,
+  0xFD7A,
+  0xFDD8,
+  0xFE36,
+  0xFE93,
+  0xFEEF,
+  0xFF4A,
+  0xFFA5,
+  0xFFFF
+};
+
+/******************************************************************************
+ * Low-Level MIDI functions - private functions.
+ *****************************************************************************/
 
 VOID AmiGusNoteOff( struct MidiMessage * midiMessage ) {
  
@@ -80,7 +233,8 @@ VOID AmiGusNoteOn( struct MidiMessage * midiMessage ) {
   struct AmiSF_Sample * sfSample = GetAmiSfSample( amisf, sfNote );
 
   ULONG playbackRate = GetPlaybackRate( amisf, sfNote, note );
-  UWORD playbackVolume = GetPlaybackVolume( velocity );
+  UWORD playbackVolume = GetPlaybackVolume( velocity, 
+                                            midiChannel->mcs_Volume );
 
   UBYTE amigusChannelId = AllocateNextAmiGusChannel( midiChannelId,
                                                      note,
@@ -151,6 +305,42 @@ VOID AmiGusProgramChange( struct MidiMessage * midiMessage ) {
     &( base->agb_MidiChannelState[ midiMessage->mm_Channel ]);
         
   channel->mcs_Preset = midiMessage->mm_Data0;  
+}
+
+/******************************************************************************
+ * High-Level MIDI functions - public functions.
+ *****************************************************************************/
+
+VOID InitMidiState( VOID ) {
+
+  struct AmiGUS_CAMD * base = AmiGUS_CAMD_Base;
+
+  ULONG i;
+
+  base->agb_NextAmiGusChannelUsageId = 32;
+  for ( i = 0; 16 > i ; ++i ) {
+
+    struct MidiChannelState * state = &( base->agb_MidiChannelState[ i ]);
+    if ( MIDI_PERCUSSIONS_CHANNEL != i ) {
+
+      state->mcs_Bank = 0;
+
+    } else {
+
+      // Prepare percussions
+      state->mcs_Bank = MIDI_PERCUSSIONS_BANK;
+    }
+    
+    state->mcs_Preset = 0;
+    state->mcs_Volume = 127;
+  }
+  for ( i = 0; 32 > i ; ++i ) {
+
+    struct AmiGusChannelState * state = &( base->agb_AmiGusChannelState[ i ]);
+
+    state->acs_IsActive = 0;
+    state->acs_UsageId = i;
+  }
 }
 
 BOOL TokenizeMidiByte( UBYTE midiByte, struct MidiMessage * midiMessage ) {
@@ -319,10 +509,19 @@ ULONG GetPlaybackRate( struct AmiSF * amisf,
   return playbackRate;
 }
 
-UWORD GetPlaybackVolume( UBYTE velocity ) {
+UWORD GetPlaybackVolume( UBYTE velocity, UBYTE channelVolume ) {
 
-  LONG volume = ( WORD ) velocity * ( WORD ) velocity;
-  UWORD playbackVolume = ( UWORD )( volume ) + (( UWORD ) velocity << 1 );
+  UWORD velocityFactor = AmiGusMidiVolumeMapping[ velocity ];
+  UWORD volumeFactor = AmiGusMidiVolumeMapping[ channelVolume ];
+  ULONG volume = ( UWORD ) velocityFactor * ( UWORD ) volumeFactor;
+  UWORD playbackVolume = volume >> 19;
+
+  LOG_D(( "V: GetPlaybackVolume( %ld, %ld) -> "
+          "%ld * %ld = 0x%08lx = 0x%04lx \n",
+          velocity, channelVolume,
+          AmiGusMidiVolumeMapping[ velocity ],
+          AmiGusMidiVolumeMapping[ channelVolume ],
+          volume, playbackVolume ));
 
   return playbackVolume;
 }

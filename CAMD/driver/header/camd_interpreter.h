@@ -32,6 +32,11 @@ struct MidiMessage {
 };
 
 /**
+ * Initializes the MIDI state machine(s) to default value.
+ */
+VOID InitMidiState( VOID );
+
+/**
  * Tokenizes a stream of MIDI bytes into messages.
  *
  * Needs to be called per byte and sets 
@@ -62,6 +67,6 @@ ULONG GetPlaybackRate( struct AmiSF * amisf,
                        struct AmiSF_Note * sfNote,
                        UBYTE note );
 
-UWORD GetPlaybackVolume( UBYTE velocity );
+UWORD GetPlaybackVolume( UBYTE velocity, UBYTE channelVolume );
 
 #endif /* CAMD_INTERPRETER_H */

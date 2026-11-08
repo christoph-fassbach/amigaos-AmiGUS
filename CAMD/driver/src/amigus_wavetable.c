@@ -77,7 +77,7 @@ VOID LoadAmiGusWavetableSample( ULONG * source, ULONG target, ULONG size ) {
     ULONG data = source[ i ];
     WriteReg32( card, AMIGUS_WT_DATA_32BIT, data );
     if (( 10 > i ) || ( size - 10 < i )) {
-      LOG_D(( "D: %ld = 0x%08lx\n", i, data ));
+      LOG_V(( "V: %ld = 0x%08lx\n", i, data ));
     }
   }
   LOG_D(( "D: Copied %ld LONGs to 0x%08lx\n", i, target ));

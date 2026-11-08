@@ -28,6 +28,7 @@
 #include "amigus_camd.h"
 #include "amigus_wavetable.h"
 #include "amisf.h"
+#include "camd_interpreter.h"
 #include "compiler_extras.h"
 #include "debug.h"
 #include "errors.h"
@@ -316,7 +317,6 @@ BOOL __ASM__ __SAVE_DS__ AmiGUS_Init(
             base->agb_CardBase,
             base->agb_AmiGUS->agus_TypeName ));
     InitAmiGus();
-    base->agb_MidiChannelState[ 9 ].mcs_Bank = 128; // Prepare percussions
   }
 
   LOG_D(( "D: AmiGUS_CAMD_Base ready @ 0x%08lx\n", base ));
@@ -420,7 +420,7 @@ APTR __ASM__ __SAVE_DS__ AmiGUS_OpenPort (
 
   /*
    * ------------------------------------------------------
-   * Part X: Load Settings
+   * Part X: Load Settings & SoundFont
    * ------------------------------------------------------
    */
 
@@ -466,6 +466,13 @@ APTR __ASM__ __SAVE_DS__ AmiGUS_OpenPort (
 
     LOG_I(( "I: AmiSF already loaded.\n" ));
   }
+
+  /*
+   * ------------------------------------------------------
+   * Part X: Reset MIDI state to default
+   * ------------------------------------------------------
+   */
+  InitMidiState();
 
   LOG_D(( "D: OpenPort done, returning 0x%lx.\n",
           &AmiGUS_MidiPortData ));

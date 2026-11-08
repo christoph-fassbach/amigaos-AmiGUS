@@ -122,8 +122,7 @@ VOID HandleMessage( struct Message * message ) {
       ULONG playbackRate = GetPlaybackRate( amisf, sfNote, note );
       ULONG sampleDataSize =
         sfSample->asfs_EndOffset - sfSample->asfs_StartOffset;
-      // Automatically limited to 127 * 127 + 2 * 127 = 16383 = 0x3FFF :D
-      UWORD playbackVolume = GetPlaybackVolume( velocity );
+      UWORD playbackVolume = GetPlaybackVolume( velocity, 127 );
 
       LOG_D(( "D: Got PlayAmiSfSampleMessage @ 0x%08lx for %ld-%ld-%ld-%ld, "
               "preset 0x%08lx note 0x%08lx sample 0x%08lx, "
