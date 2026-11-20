@@ -395,7 +395,7 @@ VOID AmiGusNoteOn( struct MidiMessage * midiMessage ) {
                                             midiChannel->mcs_Panning );
   UWORD rightVolume = GetRightPlaybackVolume( playbackVolume,
                                               midiChannel->mcs_Panning );
-
+  UWORD sustainVolume = ( playbackVolume * sfNote->asfn_Sustain ) >> 16;
 
   UBYTE amigusChannelId = AllocateNextAmiGusChannel( midiChannelId,
                                                      note,
@@ -413,7 +413,7 @@ VOID AmiGusNoteOn( struct MidiMessage * midiMessage ) {
                                 sfSample->asfs_PlaybackFlags,
                                 sfNote->asfn_Attack,
                                 sfNote->asfn_Decay,
-                                sfNote->asfn_Sustain,
+                                sustainVolume,
                                 sfNote->asfn_Release );
 }
 

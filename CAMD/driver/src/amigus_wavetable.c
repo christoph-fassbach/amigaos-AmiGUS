@@ -98,7 +98,6 @@ VOID StartAmiGusWavetablePlayback( UBYTE amiGusChannel,
 
   struct AmiGUS_CAMD * base = AmiGUS_CAMD_Base;
   APTR card = base->agb_AmiGUS->agus_WavetableBase;
-//  const UWORD sustainVolume = ( playbackVolume * sustain ) >> 16;
   const UWORD startFlags = AMIGUS_WT_F_CONTROL_START
               | AMIGUS_WT_F_CONTROL_KEY_ON
               | AMIGUS_WT_F_CONTROL_INTERPOLATE
@@ -125,7 +124,7 @@ VOID StartAmiGusWavetablePlayback( UBYTE amiGusChannel,
 
   WriteReg16( card, AMIGUS_WT_CHANNEL_ATTACK, attack );
   WriteReg16( card, AMIGUS_WT_CHANNEL_DECAY, decay );
-  WriteReg16( card, AMIGUS_WT_CHANNEL_SUSTAIN, sustain ); // unclear! sustainVolume?
+  WriteReg16( card, AMIGUS_WT_CHANNEL_SUSTAIN, sustain );
   WriteReg16( card, AMIGUS_WT_CHANNEL_RELEASE, release );
 
   WriteReg16( card, AMIGUS_WT_CHANNEL_CONTROL, startFlags );

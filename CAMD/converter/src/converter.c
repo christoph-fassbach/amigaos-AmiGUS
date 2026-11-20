@@ -800,6 +800,8 @@ VOID HandleSf2Play( ULONG index, UBYTE noteOverride, UBYTE velocity ) {
   decay = GetAmiGusPeriodsFromTimecents( decay );
   release = GetAmiGusPeriodsFromTimecents( release );
   sustain = GetAmiGusFactorShift16FromCentibels( sustain );
+  sustain *= playbackVolume;
+  sustain >>= 16;
 
   size = GetSf2SampleSize( sample );
   data = GetSf2SampleData( sf2, sample, size );
