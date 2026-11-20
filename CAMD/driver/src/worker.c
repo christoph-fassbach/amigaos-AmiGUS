@@ -90,6 +90,7 @@ VOID HandleMessage( struct Message * message ) {
                                     sampleMessage->pssm_EndOffset,
                                     sampleMessage->pssm_PlaybackRate,
                                     sampleMessage->pssm_PlaybackVolume,
+                                    sampleMessage->pssm_PlaybackVolume,
                                     sampleMessage->pssm_PlaybackFlags,
                                     sampleMessage->pssm_Attack,
                                     sampleMessage->pssm_Decay,
@@ -123,6 +124,7 @@ VOID HandleMessage( struct Message * message ) {
       ULONG sampleDataSize =
         sfSample->asfs_EndOffset - sfSample->asfs_StartOffset;
       UWORD playbackVolume = GetPlaybackVolume( velocity, 127 );
+      UWORD sustainVolume = ( playbackVolume * sfNote->asfn_Sustain ) >> 16;
 
       LOG_D(( "D: Got PlayAmiSfSampleMessage @ 0x%08lx for %ld-%ld-%ld-%ld, "
               "preset 0x%08lx note 0x%08lx sample 0x%08lx, "
@@ -140,10 +142,11 @@ VOID HandleMessage( struct Message * message ) {
                                     sfSample->asfs_EndOffset,
                                     playbackRate,
                                     playbackVolume,
+                                    playbackVolume,
                                     sfSample->asfs_PlaybackFlags,
                                     sfNote->asfn_Attack,
                                     sfNote->asfn_Decay,
-                                    sfNote->asfn_Sustain,
+                                    sustainVolume,
                                     sfNote->asfn_Release );
 
       LOG_D(( "D: Replying PlayAmiSfSampleMessage 0x%08lx...\n",
