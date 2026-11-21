@@ -52,6 +52,9 @@ struct ConversionInfo * AllocConversionInfo( struct SF2 * sf2 ) {
             struct SF2_Preset * ) {
 
     struct SF2_Args * argsP;
+    const LONG bank = sf2Preset->sf2p_Bank;
+    const LONG preset = sf2Preset->sf2p_Common.sf2c_Number;
+    LONG currentPresetMaxNote = -1;
 
     FOR_LIST( &( sf2Preset->sf2p_Args ),
               argsP,
@@ -81,6 +84,8 @@ struct ConversionInfo * AllocConversionInfo( struct SF2 * sf2 ) {
         const LONG instrumentMax = argsP->sf2a_Values.sf2v_HighNote;
         struct SF2_Sample * tempSample;
         struct ConversionRates * rate;
+        const LONG noteMin =  MAX( instrumentMin, sampleMin );
+        const LONG noteMax =  MIN( instrumentMax, sampleMax );
 
         if ( 0 > sampleIndex ) {
 
@@ -91,9 +96,20 @@ struct ConversionInfo * AllocConversionInfo( struct SF2 * sf2 ) {
         if (( sampleMin > instrumentMax )
           || ( instrumentMin > sampleMax)) {
 
-          // Skip over unreachable samples
+          // Skip over unreachable samples - TODO - use noteMin/Max?
           continue;
         }
+
+        if ( noteMax < currentPresetMaxNote ) {
+
+          // Skip over multiple samples to be played for
+          // overlapping note ranges, write warning and pick only first.
+          LOG_W(( "W: Found attempt to play multiple samples for "
+                 "b:%ld, p:%ld, n:%ld-%ld, that will not sound as expected.\n",
+                bank, preset, noteMin, noteMax ));
+          continue;
+        }
+        currentPresetMaxNote = noteMax;
 
         tempSample = sf2->sf2_SampleArray[ sampleIndex ];
         /* Iteration payload below */

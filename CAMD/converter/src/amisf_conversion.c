@@ -92,6 +92,7 @@ static BOOL FillPresetNotes(
     const LONG bank = sf2Preset->sf2p_Bank;
     const LONG preset = sf2Preset->sf2p_Common.sf2c_Number;
     struct AmiSF_Preset * asf_Preset = &( amisf->asf_Preset[ bank ][ preset ]);
+    LONG currentPresetMaxNote = -1;
 
     asf_Preset->asfp_NoteStart = nextNoteIndex; // Absolute start index
 
@@ -122,6 +123,7 @@ static BOOL FillPresetNotes(
         const LONG sampleMax = argsI->sf2a_Values.sf2v_HighNote;
         const LONG instrumentMin = argsP->sf2a_Values.sf2v_LowNote;
         const LONG instrumentMax = argsP->sf2a_Values.sf2v_HighNote;
+        const LONG noteMax =  MIN( instrumentMax, sampleMax );
         WORD attack;
         WORD decay;
         WORD sustain;
@@ -143,6 +145,14 @@ static BOOL FillPresetNotes(
           // Skip over unreachable samples
           continue;
         }
+        if ( noteMax < currentPresetMaxNote ) {
+
+          // Skip over multiple samples to be played for
+          // overlapping note ranges and pick only first.
+          // Warning was happening when information was collected.
+          continue;
+        }
+        currentPresetMaxNote = noteMax;
 
         tempSample = sf2->sf2_SampleArray[ sampleIndex ];
 
