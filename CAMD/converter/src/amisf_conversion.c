@@ -123,6 +123,7 @@ static BOOL FillPresetNotes(
         const LONG sampleMax = argsI->sf2a_Values.sf2v_HighNote;
         const LONG instrumentMin = argsP->sf2a_Values.sf2v_LowNote;
         const LONG instrumentMax = argsP->sf2a_Values.sf2v_HighNote;
+        const LONG noteMin =  MAX( instrumentMin, sampleMin );
         const LONG noteMax =  MIN( instrumentMax, sampleMax );
         WORD attack;
         WORD decay;
@@ -139,8 +140,7 @@ static BOOL FillPresetNotes(
           continue;
         }
 
-        if (( sampleMin > instrumentMax )
-          || ( instrumentMin > sampleMax)) {
+        if ( noteMin > noteMax ) {
 
           // Skip over unreachable samples
           continue;

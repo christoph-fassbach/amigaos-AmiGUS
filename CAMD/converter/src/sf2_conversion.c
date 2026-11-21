@@ -93,10 +93,9 @@ struct ConversionInfo * AllocConversionInfo( struct SF2 * sf2 ) {
           continue;
         }
 
-        if (( sampleMin > instrumentMax )
-          || ( instrumentMin > sampleMax)) {
+        if ( noteMin > noteMax ) {
 
-          // Skip over unreachable samples - TODO - use noteMin/Max?
+          // Skip over unreachable samples
           continue;
         }
 
