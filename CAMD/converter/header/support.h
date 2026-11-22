@@ -320,6 +320,31 @@ STRPTR C_strncat( STRPTR target, UWORD max, LONG count, ... );
  */
 STRPTR C_strcat_VD( LONG count, ... );
 
+/**
+ * Puts a single character to a location pointed to,
+ * moving the location forward afterwards.
+ * Core of BufferPrintf below.
+ *
+ * @param c Character to place.
+ * @param target Pointer to the target location pointer.
+ */
+VOID __ASM__ MemPutChar(
+  __REG__( d0, UBYTE c ),
+  __REG__( a3, UBYTE ** target )
+);
+
+/**
+ * Formats and prints a format into a buffer, not caring if the buffer is
+ * sized sufficiently, so handle with care!
+ *
+ * @param buffer Target buffer for holding the resulting string.
+ * @param format Format string to print, followe by varargs.
+ *
+ * @return Pointer to the end of the printed string,
+ *         hopefully somewhere in target buffer still.
+ */
+STRPTR * BufferPrintf( STRPTR buffer, STRPTR format, ... );
+
 /******************************************************************************
  * Endianess helpers - public functions.
  *****************************************************************************/

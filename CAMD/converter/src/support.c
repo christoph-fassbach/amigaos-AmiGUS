@@ -419,6 +419,33 @@ STRPTR C_strcat_VD(LONG count, ...) {
   return result;
 }
 
+VOID __ASM__ MemPutChar(
+  __REG__( d0, UBYTE c ),
+  __REG__( a3, UBYTE ** target )
+) {
+
+  **target = c;
+  ++( *target );
+}
+
+STRPTR * BufferPrintf( STRPTR buffer, STRPTR format, ... ) {
+
+  STRPTR * target = &buffer;
+  RawDoFmt(
+    format,
+    /*
+    /------+-----------------------> Cast to required APTR 
+    |      |  /------+-------------> Nice math in LONGs to make it work 
+    |      |  |      | /-----+-----> STRPTR, address of format, first argument
+    |      |  |      | |     | /-+-> 4 bytes later, the next argument follows
+    |      |  |      | |     | | |   */
+    ( APTR ) (( LONG ) &format + 4 ),
+    &MemPutChar,
+    target );
+
+  return target;
+}
+
 /******************************************************************************
  * Endianess helpers - public functions.
  *****************************************************************************/

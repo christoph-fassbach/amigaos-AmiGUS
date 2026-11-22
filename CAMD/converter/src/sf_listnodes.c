@@ -42,40 +42,6 @@ struct SfListNodeData {
   LONG sampleIndex;
 };
 
-/**
- * Puts a single character to a location pointed to,
- * moving the location forward afterwards.
- * Core of memory and file debug prints below.
- *
- * @param c Character to place.
- * @param target Pointer to the target location pointer.
- */
-VOID __ASM__ MemPutChar(
-  __REG__( d0, UBYTE c ),
-  __REG__( a3, UBYTE ** target )
-) {
-
-  **target = c;
-  ++( *target );
-}
-
-VOID BufferPrintf( APTR buffer, STRPTR format, ... ) {
-
-  RawDoFmt(
-    format,
-    /*
-    /------+-----------------------> Cast to required APTR 
-    |      |  /------+-------------> Nice math in LONGs to make it work 
-    |      |  |      | /-----+-----> STRPTR, address of format, first argument
-    |      |  |      | |     | /-+-> 4 bytes later, the next argument follows
-    |      |  |      | |     | | |   */
-    ( APTR ) (( LONG ) &format + 4 ),
-    &MemPutChar,
-    buffer );
-
-  return;
-}
-
 static struct Node * CreateAmiSfListBrowserNode( UWORD bank,
                                                  UWORD preset,
                                                  CONST_STRPTR name,
@@ -91,10 +57,8 @@ static struct Node * CreateAmiSfListBrowserNode( UWORD bank,
                                                  LONG sampleNumber ) {
 
   UBYTE baseRateAmiGusText[ 12 ];
-  UBYTE * baseRateAmiGusTextPointer = baseRateAmiGusText;
   UBYTE baseRateHertzText[ 8 ];
-  UBYTE * baseRateHertzTextPointer = baseRateHertzText;
-  LONG baseRateHertz;
+  LONG baseRateHertz = GetHertzFromAmiGusRate( baseRate );
   LONG i = 0;
   LONG columns = GetAmiSfColumnCount();
   struct SfListNodeData * data = AllocMem( sizeof( struct SfListNodeData ),
@@ -106,9 +70,9 @@ static struct Node * CreateAmiSfListBrowserNode( UWORD bank,
   data->sustain = GetCentibelsFromFactorShift16( sustain );
   data->release = GetMillisFromPeriods( release );
   data->sampleIndex = sampleNumber;
-  BufferPrintf( &baseRateAmiGusTextPointer, "0x%08lx", baseRate );
-  baseRateHertz = GetHertzFromAmiGusRate( baseRate );
-  BufferPrintf( &baseRateHertzTextPointer, "%ld", baseRateHertz );
+
+  BufferPrintf( baseRateAmiGusText, "0x%08lx", baseRate );
+  BufferPrintf( baseRateHertzText, "%ld", baseRateHertz );
 
   LOG_V(( "V: Creating label b:%ld p:%ld >n:%ld <=n:%ld n#:%ld bn:%ld "
           "br:%s aka %s "
