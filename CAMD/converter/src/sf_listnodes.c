@@ -42,18 +42,60 @@ struct SfListNodeData {
   LONG sampleIndex;
 };
 
+/**
+ * Puts a single character to a location pointed to,
+ * moving the location forward afterwards.
+ * Core of memory and file debug prints below.
+ *
+ * @param c Character to place.
+ * @param target Pointer to the target location pointer.
+ */
+VOID __ASM__ MemPutChar(
+  __REG__( d0, UBYTE c ),
+  __REG__( a3, UBYTE ** target )
+) {
+
+  **target = c;
+  ++( *target );
+}
+
+VOID BufferPrintf( APTR buffer, STRPTR format, ... ) {
+
+  RawDoFmt(
+    format,
+    /*
+    /------+-----------------------> Cast to required APTR 
+    |      |  /------+-------------> Nice math in LONGs to make it work 
+    |      |  |      | /-----+-----> STRPTR, address of format, first argument
+    |      |  |      | |     | /-+-> 4 bytes later, the next argument follows
+    |      |  |      | |     | | |   */
+    ( APTR ) (( LONG ) &format + 4 ),
+    &MemPutChar,
+    buffer );
+
+  return;
+}
+
 static struct Node * CreateAmiSfListBrowserNode( UWORD bank,
                                                  UWORD preset,
                                                  CONST_STRPTR name,
                                                  UBYTE minNote,
                                                  UBYTE maxNote,
                                                  UWORD noteIndex,
+                                                 UBYTE baseNote,
+                                                 ULONG baseRate,
                                                  UWORD attack,
                                                  UWORD decay,
                                                  UWORD sustain,
                                                  UWORD release,
                                                  LONG sampleNumber ) {
 
+  UBYTE baseRateAmiGusText[ 12 ];
+  UBYTE * baseRateAmiGusTextPointer = baseRateAmiGusText;
+  UBYTE baseRateHertzText[ 8 ];
+  UBYTE * baseRateHertzTextPointer = baseRateHertzText;
+  LONG baseRateHertz;
+  LONG i = 0;
   LONG columns = GetAmiSfColumnCount();
   struct SfListNodeData * data = AllocMem( sizeof( struct SfListNodeData ),
                                            MEMF_ANY );
@@ -64,49 +106,65 @@ static struct Node * CreateAmiSfListBrowserNode( UWORD bank,
   data->sustain = GetCentibelsFromFactorShift16( sustain );
   data->release = GetMillisFromPeriods( release );
   data->sampleIndex = sampleNumber;
+  BufferPrintf( &baseRateAmiGusTextPointer, "0x%08lx", baseRate );
+  baseRateHertz = GetHertzFromAmiGusRate( baseRate );
+  BufferPrintf( &baseRateHertzTextPointer, "%ld", baseRateHertz );
 
-  LOG_V(( "V: Creating label b:%ld p:%ld >n:%ld <=n:%ld n#:%ld "
+  LOG_V(( "V: Creating label b:%ld p:%ld >n:%ld <=n:%ld n#:%ld bn:%ld "
+          "br:%s aka %s "
           "a:%ld->%ld d:%ld->%ld "
           "s:%ld->%ld r:%ld->%ld "
           "s#:%ld\n",
-          bank, preset, minNote, maxNote, noteIndex,
+          bank, preset, minNote, maxNote, noteIndex, baseNote,
+          baseRateAmiGusText, baseRateHertzText,
           attack, data->attack, decay, data->decay,
           sustain, data->sustain, release, data->release,
           sampleNumber ));
 
   return AllocListBrowserNode( columns,
                                LBNA_UserData, data,
-                               LBNA_Column, 0,
+                               LBNA_Column, i++,
                                  LBNCA_Integer, GetListNumber( bank ),
                                  LBNCA_Justification, LCJ_RIGHT,
-                               LBNA_Column, 1,
+                               LBNA_Column, i++,
                                  LBNCA_Integer, GetListNumber( preset ),
                                  LBNCA_Justification, LCJ_RIGHT,
-                               LBNA_Column, 2,
+                               LBNA_Column, i++,
                                  LBNCA_CopyText, FALSE,
                                  LBNCA_Text, name,
-                               LBNA_Column, 3,
+                               LBNA_Column, i++,
                                  LBNCA_Integer, GetListNumber( minNote ),
                                  LBNCA_Justification, LCJ_RIGHT,
-                               LBNA_Column, 4,
+                               LBNA_Column, i++,
                                  LBNCA_Integer, GetListNumber( maxNote ),
                                  LBNCA_Justification, LCJ_RIGHT,
-                               LBNA_Column, 5,
+                               LBNA_Column, i++,
                                  LBNCA_Integer, &( data->noteIndex ),
                                  LBNCA_Justification, LCJ_RIGHT,
-                               LBNA_Column, 6,
+                               LBNA_Column, i++,
+                                 LBNCA_Integer, GetListNumber( baseNote ),
+                                 LBNCA_Justification, LCJ_RIGHT,
+                               LBNA_Column, i++,
+                                 LBNCA_CopyText, TRUE,
+                                 LBNCA_Text, baseRateAmiGusText,
+                                 LBNCA_Justification, LCJ_CENTER,
+                               LBNA_Column, i++,
+                                 LBNCA_CopyText, TRUE,
+                                 LBNCA_Text, baseRateHertzText,
+                                 LBNCA_Justification, LCJ_RIGHT,
+                               LBNA_Column, i++,
                                  LBNCA_Integer, &( data->attack ),
                                  LBNCA_Justification, LCJ_RIGHT,
-                               LBNA_Column, 7,
+                               LBNA_Column, i++,
                                  LBNCA_Integer, &( data->decay ),
                                  LBNCA_Justification, LCJ_RIGHT,
-                               LBNA_Column, 8,
+                               LBNA_Column, i++,
                                  LBNCA_Integer, &( data->sustain ),
                                  LBNCA_Justification, LCJ_RIGHT,
-                               LBNA_Column, 9,
+                               LBNA_Column, i++,
                                  LBNCA_Integer, &( data->release ),
                                  LBNCA_Justification, LCJ_RIGHT,
-                               LBNA_Column, 10,
+                               LBNA_Column, i++,
                                  LBNCA_Integer, &( data->sampleIndex ),
                                  LBNCA_Justification, LCJ_RIGHT,
                                TAG_DONE );
@@ -329,6 +387,9 @@ BOOL CreateAmiSfListLabels( struct List * labels,
         for ( ; ( noteIndex < noteCount ); ++noteIndex ) {
 
           struct AmiSF_Note * note = &( amisf->asf_Note[ noteIndex ]);
+          LONG baseNote = note->asfn_BaseNote;
+          ULONG baseRate = 
+            amisf->asf_PlaybackRate[ note->asfn_BasePlaybackIndex ];
           LONG maxNote = note->asfn_MaxNote;
           CONST_STRPTR gmName = GetMidiName( bankIndex,
                                              presetIndex,
@@ -343,6 +404,8 @@ BOOL CreateAmiSfListLabels( struct List * labels,
                                                             minNote,
                                                             maxNote,
                                                             noteIndex,
+                                                            baseNote,
+                                                            baseRate,
                                                             note->asfn_Attack,
                                                             note->asfn_Decay,
                                                             note->asfn_Sustain,

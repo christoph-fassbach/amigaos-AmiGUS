@@ -117,6 +117,36 @@ BOOL testGetAmiGusFactorShift16FromCentibels( VOID ) {
   return failed;
 }
 
+BOOL testGetAmiGusSampleRate( VOID ) {
+
+  BOOL failed = FALSE;
+  LONG actual;
+  LONG expected;
+
+  printf( "\nTesting AmiGUS Sample Rate Calculation:\n" );
+  actual = GetAmiGusSampleRate( 57, 33000, 57 );
+  expected = 0x0B000000;
+  failed |= ( expected != actual );
+  printf( "Sample rate expected: %08lx actual %08lx\n", expected, actual );
+
+  return failed;
+}
+
+BOOL testGetHertzFromAmiGusRate( VOID ) {
+
+  BOOL failed = FALSE;
+  LONG actual;
+  LONG expected;
+
+  printf( "\nTesting Hertz Sample Rate Calculation:\n" );
+  actual = GetHertzFromAmiGusRate( 0x0B000000 );
+  expected = 33000;
+  failed |= ( expected != actual );
+  printf( "Sample rate expected: %ld actual %ld\n", expected, actual );
+
+  return failed;
+}
+
 /******************************************************************************
  * Finally, main triggering all tests:
  *****************************************************************************/
@@ -129,6 +159,10 @@ int main( int argc, char const *argv[] ) {
 
   failed |= testGetAmiGusPeriodsFromTimecents();
   failed |= testGetAmiGusFactorShift16FromCentibels();
+  failed |= testGetAmiGusSampleRate();
+  failed |= testGetHertzFromAmiGusRate();
+
+  printf( "\nOverall result: %s\n", failed ? "FAILED!" : "OK." );
 
   CloseLibrary(( struct Library * )MathIeeeDoubTransBase );
   CloseLibrary(( struct Library * )MathIeeeDoubBasBase );

@@ -145,6 +145,26 @@ LONG GetMillisFromTimecents( WORD timecents ) {
   return millis;
 }
 
+LONG GetHertzFromAmiGusRate( LONG rate ) {
+
+  const LONG maxRate = 192000;      // TODO: move to AmiGUS HW constants?
+  const LONG maxValue = 0x40000000; // TODO: move to AmiGUS HW constants?
+
+  // hertz = ( rate * maxRate ) / maxValue
+  // hertz = (   a  *    b    ) / maxValue
+  // hertz = (      c         ) / maxValue
+  // hertz = (      c         ) / d
+  // e     = (      c         ) / d
+  DOUBLE a = IEEEDPFlt( rate );
+  DOUBLE b = IEEEDPFlt( maxRate );
+  DOUBLE c = IEEEDPMul( a, b );
+  DOUBLE d = IEEEDPFlt( maxValue );
+  DOUBLE e = IEEEDPDiv( c, d );
+  LONG hertz = IEEEDPFix( e );
+
+  return hertz;
+}
+
 LONG GetAmiGusSampleRate( LONG sourceNote, LONG sourceRate, LONG targetNote ) {
 
   const LONG maxRate = 192000;      // TODO: move to AmiGUS HW constants?

@@ -57,6 +57,17 @@ LONG GetCentibelsFromFactorShift16( UWORD factorShift16 );
  */
 LONG GetMillisFromTimecents( WORD timecents );
 
+/**
+ * Converts a sample rate as understood by AmiGUS, 
+ * i.e. a fraction of the maximum sample rate 192000Hz divided by 2^30,
+ * back to human readable Hz.
+ *
+ * @param rate Sample rate for AmiGUS.
+ *
+ * @return Sample rate in Hz
+ */
+LONG GetHertzFromAmiGusRate( LONG rate );
+
 LONG GetAmiGusSampleRate( LONG sourceNote, LONG sourceRate, LONG targetNote );
 UWORD GetAmiGusPeriodsFromTimecents( LONG timecents );
 UWORD GetAmiGusFactorShift16FromCentibels( WORD centibels );
